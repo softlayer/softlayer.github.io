@@ -1,12 +1,13 @@
 ---
 title: "Get IPMI info for BMS"
-description: "lorem ipsum"
+description: "Retrieve IPMI address, username, and password for all hardware on the account"
 date: "2014-09-01"
-categories:
+classes:
   - "SoftLayer_Account"
 tags:
   - "IPMI"
   - "dedicated"
+  - "auth"
 ---
 
 ```
@@ -16,15 +17,13 @@ import sys
 import pprint
 import logging
  
- apiUsername = ''
- apiKey = ''
-  
-	 
-	 pp = pprint.PrettyPrinter(indent=4)
-	 client = SoftLayer.Client(username=apiUsername,api_key=apiKey)
+apiUsername = ''
+apiKey = ''
+  	 
+pp = pprint.PrettyPrinter(indent=4)
+client = SoftLayer.Client(username=apiUsername,api_key=apiKey)
 	  
-		mask =
-		"mask[networkManagementIpAddress,remoteManagementAccounts[username,password]]"
+mask = "mask[networkManagementIpAddress,remoteManagementAccounts[username,password]]"
 		 
-		 result = client['SoftLayer_Account'].getHardware(
+result = client['SoftLayer_Account'].getHardware(
 ```

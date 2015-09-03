@@ -2,9 +2,14 @@
 title: "Retrieve metric data for a single server."
 description: "
  This example shows how to use the SoftLayer API to retrieve metric data for
- Advanced Monitoring on a single hardware or virtual guest server instance.
-
- We will call the SoftLayer API to retrieve the monitoring agents,
+ Advanced Monitoring on a single hardware or virtual guest server instance."
+date: "2014-09-01"
+classes: ["SoftLayer_Monitoring_Agent", "SoftLayer_Hardware_Server"]
+tags:
+  - "monitoring"
+  - "metrics"
+---
+We will call the SoftLayer API to retrieve the monitoring agents,
  configuration template, and configuration values for a server instance.
  Then we will demonstrate how to find definitions that you have enabled for
  metric tracking, how to check that they are enabled, and how to then use them
@@ -16,15 +21,6 @@ description: "
 the portal. If you wish to use additional or substitute names for any of those
 shown below you can do so by looking at the current options available in the
  SoftLayer portal or by further debugging the output of this script.
-"
-date: "2014-09-01"
-categories:
-  - "SoftLayer_Account"
-tags:
-  - "IPMI"
-  - "dedicated"
----
-
 ```
 <?php
  

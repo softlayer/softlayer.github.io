@@ -1,20 +1,13 @@
 ---
-title: "create child account!"
-description: "lorem"
+title: "Create child SoftLayer Account"
+description: "Create SoftLayer End-Customer Account on Brand Account"
 date: "2014-09-01"
-categories:
-  - "example"
-  - "hello"
+classes: ["SoftLayer_Brand"]
 tags:
-  - "example"
-  - "hugo"
-  - "blog"
+  - "bap"
 ---
 
 ```
-# Create SoftLayer End-Customer Account on Brand Account
-# Use at your own risk
-
 import SoftLayer
 from pprint import pprint as pp
 import json
