@@ -10,7 +10,7 @@ tags:
   - "deprecated"
 ---
 
-```
+```perl
 #!/usr/bin perl
 use warnings;
 use strict;

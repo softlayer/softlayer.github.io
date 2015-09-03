@@ -10,7 +10,7 @@ tags:
   - "auth"
 ---
 
-```
+```python
 import SoftLayer
 from SoftLayer import utils
 import sys

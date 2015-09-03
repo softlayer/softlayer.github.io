@@ -9,7 +9,7 @@ tags:
   - "ordering"
 ---
 
-```
+```python
 import SoftLayer.API
 
 from pprint import pprint as pp

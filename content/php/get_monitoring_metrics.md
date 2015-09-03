@@ -21,7 +21,7 @@ We will call the SoftLayer API to retrieve the monitoring agents,
 the portal. If you wish to use additional or substitute names for any of those
 shown below you can do so by looking at the current options available in the
  SoftLayer portal or by further debugging the output of this script.
-```
+```php
 <?php
  
 // Include XmlrpcClient.class.php if you'd like to use our XML-RPC client
