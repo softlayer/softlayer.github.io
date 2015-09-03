@@ -1,7 +1,7 @@
 ---
 title: "Cancel software licenses by IP"
 description: "Cancel all software licenses associated with a specific IPv4 address"
-date: "20-3-09-01"
+date: "2013-09-01"
 classes: ["SoftLayer_Account", "SoftLayer_Billing_Item_Cancellation_Request"]
 tags:
   - "license"
