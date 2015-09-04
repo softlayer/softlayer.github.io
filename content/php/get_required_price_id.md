@@ -8,7 +8,7 @@ tags:
   - "ordering"
   - "categories"
 ---
-```
+```php
 <?php
 
 require_once('softlayer-api-php-client/SoftLayer/SoapClient.class.php');

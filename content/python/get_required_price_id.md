@@ -8,7 +8,8 @@ tags:
   - "ordering"
   - "categories"
 ---
-```
+
+```python
 import SoftLayer
 
 apiUsername = ''
