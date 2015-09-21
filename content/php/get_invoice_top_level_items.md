@@ -1,6 +1,6 @@
 ---
 title: "Get top level billing items for all owned accounts"
-description: "With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the ->allOwnedAccounts bits"
+description: "Get invoice details for all sub-account in a given date range"
 date: "2015-05-24"
 classes: ["SoftLayer_Brand", "SoftLayer_Account", "SoftLayer_Billing_Invoice"]
 tags:
@@ -10,6 +10,7 @@ tags:
     - "invoice"
     - "brand"
 ---
+With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the ->allOwnedAccounts bits
 
 
 ```php
