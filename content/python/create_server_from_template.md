@@ -7,6 +7,7 @@ classes: ["SoftLayer_Product_Order"]
 tags:
   - "virtual server"
   - "ordering"
+	- "deprecated"
 ---
 
 ```python
