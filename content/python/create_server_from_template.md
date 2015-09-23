@@ -4,10 +4,8 @@ description: "Provide an image template with a virtual machine order instead of
 an OS"
 date: "2014-09-01"
 classes: ["SoftLayer_Product_Order"]
-tags:
-  - "virtual server"
-  - "ordering"
-	- "deprecated"
+tags: ["virtual server", "ordering", "deprecated"]
+
 ---
 
 ```python
