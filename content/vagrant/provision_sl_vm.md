@@ -35,8 +35,8 @@ In addition to the prerequisites above, you will also require the *vagrant-softl
 ```
 
 + Create the SoftLayer 'box' that includes the metadata file and install into Vagrant:
-    tar cvzf softlayer.box metadata.json
-    vagrant box add --name softlayer softlayer.box
+    'tar cvzf softlayer.box metadata.json'
+    'vagrant box add --name softlayer softlayer.box'
 
 + Create a vagrant file with the softlayer provider settings included:
 ```ruby
@@ -48,6 +48,8 @@ config.vm.provider :softlayer do |sl, config_override|
   config_override.ssh.username = 'root'
   config_override.ssh.private_key_path = [ File.expand_path("~/.ssh/id_rsa") ]
 
+  sl.domain = "example.com"
+  sl.hostname = "vagrant"
   sl.start_cpus = 2
   sl.max_memory = 4096
   sl.operating_system = 'UBUNTU_LATEST'
