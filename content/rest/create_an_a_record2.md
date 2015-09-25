@@ -21,7 +21,20 @@ Example CURL: `curl -u username:api_key "https://api.softlayer.com/rest/v3/SoftL
 
 Example Response:
 ```json
-[{"id":123456789,"name":"domain.com","serial":2015092400,"updateDate":"2015-09-24T13:46:20-06:00"},{"id":1795354,"name":"global.domain.com","serial":2015050613,"updateDate":"2015-05-06T14:47:45-06:00"}]
+[
+    {
+        "id": 123456789,
+        "name": "domain.com",
+        "serial": 2015092400,
+        "updateDate": "2015-09-24T13:46:20-06:00"
+    },
+    {
+        "id": 1795354,
+        "name": "global.domain.com",
+        "serial": 2015050613,
+        "updateDate": "2015-05-06T14:47:45-06:00"
+    }
+]
 ```
 
 
@@ -38,6 +51,24 @@ Example CURL: `curl -u username:api_key "https://api.softlayer.com/rest/v3/SoftL
 
 Example Response:
 ```json
-{"data":"184.172.7.100","domainId":123456789,"expire":null,"host":"testing","id":58406111,"minimum":null,"mxPriority":null,"refresh":null,"retry":null,"ttl":86400,"type":"A","domain":{"id":123456789,"name":"domain.com","serial":2015092401,"updateDate":"2015-09-24T15:51:41-06:00"}}
+{
+    "data": "184.172.7.100",
+    "domain": {
+        "id": 123456789,
+        "name": "domain.com",
+        "serial": 2015092401,
+        "updateDate": "2015-09-24T15:51:41-06:00"
+    },
+    "domainId": 123456789,
+    "expire": null,
+    "host": "testing",
+    "id": 58406111,
+    "minimum": null,
+    "mxPriority": null,
+    "refresh": null,
+    "retry": null,
+    "ttl": 86400,
+    "type": "A"
+}
 ```
 

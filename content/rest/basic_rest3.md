@@ -17,7 +17,84 @@ Example CURL: ` curl -u username:api_key "https://api.softlayer.com/rest/v3/Soft
 
 Example Response:
 ```json
-{"accountManagedResourcesFlag":false,"accountStatusId":1001,"address1":"4849 Alpha Rd","allowedPptpVpnQuantity":1,"brandId":2,"city":"Dallas","claimedTaxExemptTxFlag":false,"companyName":"SoftLayer Internal - Development Community","country":"US","createDate":"2014-02-04T10:33:56-06:00","email":"pjackson@softlayer.com","firstName":"Phil","id":307608,"isReseller":0,"lastName":"Jackson","lateFeeProtectionFlag":true,"modifyDate":"2014-02-04T10:34:18-06:00","officePhone":"281.714.3156","postalCode":"75244-4608","state":"TX","statusDate":null,"hardware":[{"hostname":"bsdal5167180245106688"},{"hostname":"db-server"},{"hostname":"db-server"},{"hostname":"deleteme"},{"hostname":"pjacksontestorder"},{"hostname":"rcdeleteme"},{"hostname":"rcpartitionexem"},{"hostname":"rctdeletepar"},{"hostname":"rctestpar2"},{"hostname":"rctestpower"},{"hostname":"rcvtest-6"},{"hostname":"rcvyatta1"}],"hourlyVirtualGuests":[{"domain":"lablayer.info","hostname":"api-lab"},{"domain":"cgallo.com","hostname":"cgallo-test1"},{"domain":"sec.ibm.com","hostname":"dal09-tst-eos-01a"},{"domain":"example.com","hostname":"host1"},{"domain":"test.com","hostname":"hostnametest-44ea"},{"domain":"test.com","hostname":"hostnametest-6f6a"},{"domain":"test.com","hostname":"hostnametest-709f"},{"domain":"test.com","hostname":"hostnametest-7c92"},{"domain":"oeg.dal.slcommunity.org","hostname":"oeg-es1"},{"domain":"oeg.dal.slcommunity.org","hostname":"oeg-es2"},{"domain":"oeg.dal.slcommunity.org","hostname":"oeg-mon1"},{"domain":"oeg.dal.slcommunity.org","hostname":"oeg-search1"},{"domain":"cgallo.com","hostname":"partition-test"},{"domain":"example.com","hostname":"philprompttest"},{"domain":"test.com","hostname":"pjacksonsony-test01"},{"domain":"test.com","hostname":"pjacksonsony-test02"},{"domain":"ryan.softlayer.ws","hostname":"test03"},{"domain":"softlayer.com","hostname":"testdisk"},{"domain":"test.com","hostname":"vm"}]}
+{
+    "accountManagedResourcesFlag": false,
+    "accountStatusId": 1001,
+    "address1": "4849 Alpha Rd",
+    "allowedPptpVpnQuantity": 1,
+    "brandId": 2,
+    "city": "Dallas",
+    "claimedTaxExemptTxFlag": false,
+    "companyName": "SoftLayer Internal - Development Community",
+    "country": "US",
+    "createDate": "2014-02-04T10:33:56-06:00",
+    "email": "asd@softlayer.com",
+    "firstName": "Phil",
+    "hardware": [
+        {
+            "hostname": "bsdal5167180245106688"
+        },
+        {
+            "hostname": "db-server"
+        },
+        {
+            "hostname": "db-server"
+        },
+        {
+            "hostname": "deleteme"
+        },
+        {
+            "hostname": "pjacksontestorder"
+        }
+    ],
+    "hourlyVirtualGuests": [
+        {
+            "domain": "lablayer.info",
+            "hostname": "api-lab"
+        },
+        {
+            "domain": "sec.ibm.com",
+            "hostname": "dal09-tst-eos-01a"
+        },
+        {
+            "domain": "example.com",
+            "hostname": "host1"
+        },
+        {
+            "domain": "test.com",
+            "hostname": "hostnametest-44ea"
+        },
+        {
+            "domain": "test.com",
+            "hostname": "hostnametest-6f6a"
+        },
+        {
+            "domain": "test.com",
+            "hostname": "hostnametest-709f"
+        },
+        {
+            "domain": "test.com",
+            "hostname": "hostnametest-7c92"
+        },
+        {
+            "domain": "oeg.dal.slcommunity.org",
+            "hostname": "oeg-es1"
+        },
+        {
+            "domain": "oeg.dal.slcommunity.org",
+            "hostname": "oeg-es2"
+        }
+    ],
+    "id": 307608,
+    "isReseller": 0,
+    "lastName": "Asd",
+    "lateFeeProtectionFlag": true,
+    "modifyDate": "2014-02-04T10:34:18-06:00",
+    "officePhone": "281.714.1234",
+    "postalCode": "75244-4608",
+    "state": "TX",
+    "statusDate": null
+}
 ```
 
 

@@ -20,6 +20,127 @@ Example CURL: `curl -u username:api_key -G --data "objectMask=mask[id,fullyQuali
 
 Example Response:
 ```json
-[{"fullyQualifiedDomainName":"bsdal5167180245106688.bsd.citrix.dc","id":115628,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms173.sr03.dal05"},{"hostname":"bcs173b.sr03.dal05"},{"hostname":"bas08b.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"},{"hostname":"bcs173a.sr03.dal05"},{"hostname":"bas08a.sr03.dal05"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs173a.sr03.dal05"},{"hostname":"bas08a.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs173a.sr03.dal05"},{"hostname":"fas08a.sr03.dal05"},{"hostname":"fcr03a.dal05"},{"hostname":"fcr03b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs173b.sr03.dal05"},{"hostname":"bas08b.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs173b.sr03.dal05"},{"hostname":"fas08b.sr03.dal05"},{"hostname":"fcr03a.dal05"},{"hostname":"fcr03b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"db-server.fakegameco.com","id":457960,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bcs87a.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"},{"hostname":"bcs87b.sr01.tor01"},{"hostname":"bms87.sr01.tor01"}],"uplinkComponent":{"name":"FastEthernet0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs87a.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs87a.sr01.tor01"},{"hostname":"fas09a.sr01.tor01"},{"hostname":"fcr01a.tor01"},{"hostname":"fcr01b.tor01"},{"hostname":"fas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs87b.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs87b.sr01.tor01"},{"hostname":"fas09a.sr01.tor01"},{"hostname":"fcr01a.tor01"},{"hostname":"fcr01b.tor01"},{"hostname":"fas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"db-server.fakegameco.com","id":475440,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms80.sr01.tor01"},{"hostname":"bcs80a.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"},{"hostname":"bcs80b.sr01.tor01"}],"uplinkComponent":{"name":"FastEthernet0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs80a.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs80a.sr01.tor01"},{"hostname":"fas09a.sr01.tor01"},{"hostname":"fcr01a.tor01"},{"hostname":"fcr01b.tor01"},{"hostname":"fas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs80b.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs80b.sr01.tor01"},{"hostname":"fas09a.sr01.tor01"},{"hostname":"fcr01a.tor01"},{"hostname":"fcr01b.tor01"},{"hostname":"fas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"deleteme.bsd.citrix.dc","id":686945,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms196.sr01.dal05"},{"hostname":"bcs196b.sr01.dal05"},{"hostname":"bas15b.sr01.dal05"},{"hostname":"bcr01b.dal05"},{"hostname":"mbr01b.dal05"},{"hostname":"mbr01a.dal05"},{"hostname":"bcs196a.sr01.dal05"},{"hostname":"bas15a.sr01.dal05"},{"hostname":"bcr01a.dal05"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs196a.sr01.dal05"},{"hostname":"bas15a.sr01.dal05"},{"hostname":"bcr01a.dal05"},{"hostname":"mbr01b.dal05"},{"hostname":"bcr01b.dal05"},{"hostname":"mbr01a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs196a.sr01.dal05"},{"hostname":"fas15a.sr01.dal05"},{"hostname":"fcr01a.dal05"},{"hostname":"fcr01b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs196b.sr01.dal05"},{"hostname":"bas15b.sr01.dal05"},{"hostname":"bcr01b.dal05"},{"hostname":"mbr01b.dal05"},{"hostname":"mbr01a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs196b.sr01.dal05"},{"hostname":"fas15b.sr01.dal05"},{"hostname":"fcr01b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth"},{"name":"eth"}]},{"fullyQualifiedDomainName":"pjacksontestorder.example.com","id":478182,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms113.sr06.dal01"},{"hostname":"bcs113.sr06.dal01"},{"hostname":"bas03.sr06.dal01"},{"hostname":"bcr01.dal01"},{"hostname":"mbr01a.dal01"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs113.sr06.dal01"},{"hostname":"bas03.sr06.dal01"},{"hostname":"bcr01.dal01"},{"hostname":"mbr01a.dal01"}],"uplinkComponent":{"name":"GigabitEthernet0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs113.sr06.dal01"},{"hostname":"fas03.sr06.dal01"},{"hostname":"fcr01.dal01"}],"uplinkComponent":{"name":"GigabitEthernet0","status":"ACTIVE"}},{"name":"eth"},{"name":"eth"}]},{"fullyQualifiedDomainName":"rcdeleteme.bsd.citrix.dc","id":132521,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms150.sr03.dal05"},{"hostname":"bcs150b.sr03.dal05"},{"hostname":"bas17b.sr03.dal05"},{"hostname":"bcr04a.dal05"},{"hostname":"bcr04b.dal05"},{"hostname":"bcs150a.sr03.dal05"},{"hostname":"bas17a.sr03.dal05"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs150a.sr03.dal05"},{"hostname":"bas17a.sr03.dal05"},{"hostname":"bcr04a.dal05"},{"hostname":"bcr04b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs150a.sr03.dal05"},{"hostname":"fas17a.sr03.dal05"},{"hostname":"fcr04b.dal05"},{"hostname":"fcr04a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs150b.sr03.dal05"},{"hostname":"bas17b.sr03.dal05"},{"hostname":"bcr04a.dal05"},{"hostname":"bcr04b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs150b.sr03.dal05"},{"hostname":"fas17b.sr03.dal05"},{"hostname":"fcr04b.dal05"},{"hostname":"fcr04a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"rcpartitionexem.softlayer.com","id":146696,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms310.sr01.ams01"},{"hostname":"bcs310a.sr01.ams01"},{"hostname":"bas06a.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"},{"hostname":"bcs310b.sr01.ams01"},{"hostname":"bas06b.sr01.ams01"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs310a.sr01.ams01"},{"hostname":"bas06a.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs310a.sr01.ams01"},{"hostname":"fas06a.sr01.ams01"},{"hostname":"fcr01b.ams01"},{"hostname":"fcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs310b.sr01.ams01"},{"hostname":"bas06b.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs310b.sr01.ams01"},{"hostname":"fas06b.sr01.ams01"},{"hostname":"fcr01b.ams01"},{"hostname":"fcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"rctdeletepar.softlayer.com","id":120065,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms202.sr03.dal05"},{"hostname":"bcs202a.sr03.dal05"},{"hostname":"bas06a.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"},{"hostname":"bcs202b.sr03.dal05"},{"hostname":"bas06b.sr03.dal05"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs202a.sr03.dal05"},{"hostname":"bas06a.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs202a.sr03.dal05"},{"hostname":"fas06a.sr03.dal05"},{"hostname":"fcr03a.dal05"},{"hostname":"fcr03b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs202b.sr03.dal05"},{"hostname":"bas06b.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs202b.sr03.dal05"},{"hostname":"fas06b.sr03.dal05"},{"hostname":"fcr03a.dal05"},{"hostname":"fcr03b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"rctestpar2.softlayer.com","id":155392,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms206.sr03.dal05"},{"hostname":"bcs206a.sr03.dal05"},{"hostname":"bas06a.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"},{"hostname":"bcs206b.sr03.dal05"},{"hostname":"bas06b.sr03.dal05"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs206a.sr03.dal05"},{"hostname":"bas06a.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs206a.sr03.dal05"},{"hostname":"fas06a.sr03.dal05"},{"hostname":"fcr03a.dal05"},{"hostname":"fcr03b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs206b.sr03.dal05"},{"hostname":"bas06b.sr03.dal05"},{"hostname":"bcr03b.dal05"},{"hostname":"bcr03a.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs206b.sr03.dal05"},{"hostname":"fas06b.sr03.dal05"},{"hostname":"fcr03a.dal05"},{"hostname":"fcr03b.dal05"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"rctestpower.softlayer.com","id":152060,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms312.sr01.ams01"},{"hostname":"bcs312b.sr01.ams01"},{"hostname":"bas06b.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"},{"hostname":"bcs312a.sr01.ams01"},{"hostname":"bas06a.sr01.ams01"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs312a.sr01.ams01"},{"hostname":"bas06a.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs312a.sr01.ams01"},{"hostname":"fas06a.sr01.ams01"},{"hostname":"fcr01b.ams01"},{"hostname":"fcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs312b.sr01.ams01"},{"hostname":"bas06b.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs312b.sr01.ams01"},{"hostname":"fas06b.sr01.ams01"},{"hostname":"fcr01b.ams01"},{"hostname":"fcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"rcvtest-6.example.org","id":320532,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms79.sr01.tor01"},{"hostname":"bcs79a.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"},{"hostname":"bcs79b.sr01.tor01"}],"uplinkComponent":{"name":"FastEthernet0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs79a.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs79a.sr01.tor01"},{"hostname":"fas09a.sr01.tor01"},{"hostname":"fcr01a.tor01"},{"hostname":"fcr01b.tor01"},{"hostname":"fas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"USER_OFF"}},{"name":"eth","networkHardware":[{"hostname":"bcs79b.sr01.tor01"},{"hostname":"bas09a.sr01.tor01"},{"hostname":"bcr01b.tor01"},{"hostname":"bcr01a.tor01"},{"hostname":"bas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs79b.sr01.tor01"},{"hostname":"fas09a.sr01.tor01"},{"hostname":"fcr01a.tor01"},{"hostname":"fcr01b.tor01"},{"hostname":"fas09b.sr01.tor01"}],"uplinkComponent":{"name":"Ethernet","status":"DISABLED"}}]},{"fullyQualifiedDomainName":"rcvyatta1.test.com","id":185231,"networkComponents":[{"name":"mgmt","networkHardware":[{"hostname":"bms180.sr01.ams01"},{"hostname":"bcs180b.sr01.ams01"},{"hostname":"bas12b.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"},{"hostname":"bcs180a.sr01.ams01"},{"hostname":"bas12a.sr01.ams01"}],"uplinkComponent":{"name":"Ethernet1","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"bcs180a.sr01.ams01"},{"hostname":"bas12a.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"ACTIVE"}},{"name":"eth","networkHardware":[{"hostname":"fcs180a.sr01.ams01"},{"hostname":"fas12a.sr01.ams01"},{"hostname":"fcr01b.ams01"},{"hostname":"fcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet1\/0","status":"USER_OFF"}},{"name":"eth","networkHardware":[{"hostname":"bcs180b.sr01.ams01"},{"hostname":"bas12b.sr01.ams01"},{"hostname":"bcr01b.ams01"},{"hostname":"bcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}},{"name":"eth","networkHardware":[{"hostname":"fcs180b.sr01.ams01"},{"hostname":"fas12b.sr01.ams01"},{"hostname":"fcr01b.ams01"},{"hostname":"fcr01a.ams01"}],"uplinkComponent":{"name":"GigabitEthernet2\/0","status":"DISABLED"}}]}]
+[
+    {
+        "fullyQualifiedDomainName": "bsdal5167180245106688.bsd.citrix.dc",
+        "id": 115628,
+        "networkComponents": [
+            {
+                "name": "mgmt",
+                "networkHardware": [
+                    {
+                        "hostname": "bms173.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bcs173b.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bas08b.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bcr03b.dal05"
+                    },
+                    {
+                        "hostname": "bcr03a.dal05"
+                    },
+                    {
+                        "hostname": "bcs173a.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bas08a.sr03.dal05"
+                    }
+                ],
+                "uplinkComponent": {
+                    "name": "Ethernet1",
+                    "status": "ACTIVE"
+                }
+            },
+            {
+                "name": "eth",
+                "networkHardware": [
+                    {
+                        "hostname": "bcs173a.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bas08a.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bcr03b.dal05"
+                    },
+                    {
+                        "hostname": "bcr03a.dal05"
+                    }
+                ],
+                "uplinkComponent": {
+                    "name": "GigabitEthernet1/0",
+                    "status": "ACTIVE"
+                }
+            },
+            {
+                "name": "eth",
+                "networkHardware": [
+                    {
+                        "hostname": "fcs173a.sr03.dal05"
+                    },
+                    {
+                        "hostname": "fas08a.sr03.dal05"
+                    },
+                    {
+                        "hostname": "fcr03a.dal05"
+                    },
+                    {
+                        "hostname": "fcr03b.dal05"
+                    }
+                ],
+                "uplinkComponent": {
+                    "name": "GigabitEthernet1/0",
+                    "status": "ACTIVE"
+                }
+            },
+            {
+                "name": "eth",
+                "networkHardware": [
+                    {
+                        "hostname": "bcs173b.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bas08b.sr03.dal05"
+                    },
+                    {
+                        "hostname": "bcr03b.dal05"
+                    },
+                    {
+                        "hostname": "bcr03a.dal05"
+                    }
+                ],
+                "uplinkComponent": {
+                    "name": "GigabitEthernet2/0",
+                    "status": "DISABLED"
+                }
+            },
+            {
+                "name": "eth",
+                "networkHardware": [
+                    {
+                        "hostname": "fcs173b.sr03.dal05"
+                    },
+                    {
+                        "hostname": "fas08b.sr03.dal05"
+                    },
+                    {
+                        "hostname": "fcr03a.dal05"
+                    },
+                    {
+                        "hostname": "fcr03b.dal05"
+                    }
+                ],
+                "uplinkComponent": {
+                    "name": "GigabitEthernet2/0",
+                    "status": "DISABLED"
+                }
+            }
+        ]
+    }
+]
 ```
 

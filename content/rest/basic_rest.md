@@ -17,6 +17,22 @@ Example CURL: `curl -u username:api_key "https://api.softlayer.com/rest/v3/SoftL
 
 Example Response:
 ```json
-{"companyName":"SoftLayer Internal - Development Community","hardware":[{"hostname":"bsdal5167180245106688"},{"hostname":"db-server"},{"hostname":"db-server"},{"hostname":"deleteme"},{"hostname":"pjacksontestorder"},{"hostname":"rcdeleteme"},{"hostname":"rcpartitionexem"},{"hostname":"rctdeletepar"},{"hostname":"rctestpar2"},{"hostname":"rctestpower"},{"hostname":"rcvtest-6"},{"hostname":"rcvyatta1"}]}
+{
+    "companyName": "SoftLayer Internal - Development Community",
+    "hardware": [
+        {
+            "hostname": "bsdal5167180245106688"
+        },
+        {
+            "hostname": "db-server"
+        },
+        {
+            "hostname": "db-server"
+        },
+        {
+            "hostname": "deleteme"
+        }
+    ]
+}
 ```
 
