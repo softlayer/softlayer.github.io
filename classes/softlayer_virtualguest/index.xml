@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Softlayer_virtualguest on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/classes/softlayer_virtualguest/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Sat, 01 Aug 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Create a new virtual server with all options</title>
+      <link>https://softlayer.github.io/python/create_vsi_options/</link>
+      <pubDate>Sat, 01 Aug 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/create_vsi_options/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&#39;&#39;&#39;
+An example of how to create a VSI from the SL python library
+&#39;&#39;&#39;
+from __future__ import print_function
+import SoftLayer
+from SoftLayer.managers.vs import VSManager
+
+def create_vsi():
+    #Create a client to the SoftLayer_Account API service.
+    #Note: currently set without the user ID and API key since
+    #it will by default use the values set in the CLI
+    #to use other values use SoftLayer.Client(sl_username, sl_api_key)
+    client = SoftLayer.Client()
+    vsi_mgr = VSManager(client)
+
+    # uncomment to display create options
+    # print(vsi_mgr.get_create_options())
+
+    # common values
+    datacenter = &#39;sjc01&#39; # the data center code
+    domain = &#39;example.com&#39; # the domain name suffix for the host
+    os_code = &#39;CENTOS_6_64&#39; # the operating system code
+    local_disk = True # local disk or SAN
+    hourly = True # hourly or monthly billing
+    dedicated = False # multi-tenant or single tenant
+    private_vlan = &#39;825831&#39; # VLAN for the server see VLAN list above
+    nic_speed = 1000 # speed of network device
+    disks = [100] # size of the disks
+    private = True # private networking only or include public internet networking as well
+    ssh_keys = [227113, 229467] # the IDs of the ssh keys to load on the server - use slcli sshkey list
+
+    # server properties
+    hostname = &#39;myhost&#39;
+    cpus = 4
+    memory = 8192
+    tags = &#39;owner:bob,project:poc,type:docker&#39;
+
+    # code that can verify the create operation without actually doing it
+    # template = vsi_mgr.verify_create_instance(hostname=hostname, domain=domain,
+    #                                 cpus=cpus, memory=memory, datacenter=datacenter,
+    #                                 os_code=os_code, local_disk=local_disk,
+    #                                 hourly=hourly, dedicated=dedicated,
+    #                                 private_vlan=private_vlan, disks=disks,
+    #                                 nic_speed=nic_speed, private=private,
+    #                                 ssh_keys=ssh_keys, tags=tags)
+    # print(template)
+
+    result = vsi_mgr.create_instance(hostname=hostname, domain=domain,
+                                     cpus=cpus, memory=memory, datacenter=datacenter,
+                                     os_code=os_code, local_disk=local_disk,
+                                     hourly=hourly, dedicated=dedicated,
+                                     private_vlan=private_vlan, disks=disks,
+                                     nic_speed=nic_speed, private=private,
+                                     ssh_keys=ssh_keys, tags=tags)
+    print(result)
+
+if __name__ == &#39;__main__&#39;:
+    create_vsi()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find active VMs by creator</title>
+      <link>https://softlayer.github.io/python/find_my_vms/</link>
+      <pubDate>Tue, 23 Jun 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/find_my_vms/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&#39;&#39;&#39;
+Code example of how to list virtual instances from a SoftLayer account
+You can call the script from the command and provide the user ID you
+want to check. The script expects that you have the SoftLayer CLI
+installed and have it configured with the credentials you&#39;d like
+to use with SoftLayer.
+
+You can run the script with the user ID you&#39;d like to check under
+the account you have configured:
+find_my_active_vms userid
+
+The output of the script is in a csv format with tabs as the
+column separator.
+&#39;&#39;&#39;
+from __future__ import print_function
+import sys
+import SoftLayer
+
+
+def list_my_vms(creator_id=None):
+    &amp;quot;&amp;quot;&amp;quot;
+    Get the list of active VMs based on the creator ID
+
+    Keyword arguments:
+    creator_id -- the SoftLayer ID of the VM&#39;s creator (default: None)
+    &amp;quot;&amp;quot;&amp;quot;
+
+    # create a client to the SoftLayer_Account API service.
+    client = SoftLayer.Client()
+
+    # number of results that we expect at a time
+    chunk = 200
+    mask = &amp;quot;id,fullyQualifiedDomainName,primaryIpAddress,createDate,billingItem[orderItem[description, order[userRecord[username], id]]]&amp;quot;
+
+    # get the data from the SoftLayer APIs
+    vms = client.iter_call(&amp;quot;Account&amp;quot;, &amp;quot;getVirtualGuests&amp;quot;, chunk=chunk, mask=mask)
+    if creator_id is None:
+        # if the creator wasn&#39;t provided use the
+        # user provided to the API call as the creator
+        creator_id = client.auth.username
+
+    # add table header
+    print(&#39;VM ID&#39;, &#39;\t&#39;, &#39;Host&#39;, &#39;\t&#39;, &#39;Public IP&#39;, &#39;\t&#39;, &#39;Create Date&#39;)
+    for vsi in vms:
+        # navigate to the creator property under the VMs billing item
+        if &#39;billingItem&#39; in vsi.keys():
+            billing_item = vsi[&#39;billingItem&#39;]
+            if &#39;orderItem&#39; in billing_item.keys():
+                vm_creator_userid = billing_item[&#39;orderItem&#39;][&#39;order&#39;][&#39;userRecord&#39;][&#39;username&#39;]
+                if creator_id == vm_creator_userid:
+                    print(str(vsi[&#39;id&#39;]), &#39;\t&#39;,
+                          vsi[&#39;fullyQualifiedDomainName&#39;], &#39;\t&#39;,
+                          vsi.get(&#39;primaryIpAddress&#39;, &#39;N/A&#39;), &#39;\t&#39;, vsi[&#39;createDate&#39;])
+
+if __name__ == &#39;__main__&#39;:
+    if len(sys.argv) == 1:
+        list_my_vms()
+    else:
+        list_my_vms(sys.argv[1])
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
