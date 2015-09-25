@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Vagrants on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/vagrant/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Thu, 24 Sep 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Provision a SoftLayer server from vagrant</title>
+      <link>https://softlayer.github.io/vagrant/provision_sl_vm/</link>
+      <pubDate>Thu, 24 Sep 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/vagrant/provision_sl_vm/</guid>
+      <description>
+
+&lt;h4 id=&#34;prerequisites:9d8db6aad1d2f7d234bcbcee47d805cd&#34;&gt;Prerequisites&lt;/h4&gt;
+
+&lt;p&gt;In addition to the prerequisites above, you will also require the &lt;em&gt;vagrant-softlayer&lt;/em&gt; plugin.  Additionally, the following one-time setup steps must be performed:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Create a .softlayer file in the project root, containing your personal SoftLayer settings for:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;api_key - your SoftLayer API key&lt;/li&gt;
+&lt;li&gt;user_name - Your SoftLayer user name&lt;/li&gt;
+&lt;li&gt;ssh_key - The identifying string of your SSH public key stored in SoftLayer (e.g., &amp;lsquo;John Public Key&amp;rsquo;). Use the &lt;code&gt;slcli sshkey list&lt;/code&gt; command to look at the keys loaded in the account.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note that the Vagrantfile currently assumes that the corresponding private key is stored in ~/.ssh/id_rsa, on the vagrant workstation&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+  &amp;quot;api_key&amp;quot;: &amp;quot;api-key&amp;quot;,
+  &amp;quot;username&amp;quot;: &amp;quot;sl_user_name&amp;quot;,
+  &amp;quot;ssh_key&amp;quot;: &amp;quot;stored_ssh_key_entry_name&amp;quot;,
+  &amp;quot;datacenter&amp;quot;: &amp;quot;wdc01&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Create a metadata.json file with the following contents:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;provider&amp;quot;: &amp;quot;softlayer&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Create the SoftLayer &amp;lsquo;box&amp;rsquo; that includes the metadata file and install into Vagrant:
+&amp;lsquo;tar cvzf softlayer.box metadata.json&amp;rsquo;
+&amp;lsquo;vagrant box add &amp;ndash;name softlayer softlayer.box&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Create a vagrant file with the softlayer provider settings included:&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;sl_user_data_file = File.join(File.dirname(File.expand_path(__FILE__)), &#39;.softlayer&#39;)
+sl_user_data = JSON.parse(File.open(sl_user_data_file).read, :symbolize_names =&amp;gt; true)
+
+config.vm.provider :softlayer do |sl, config_override|
+  config_override.vm.box = &#39;softlayer&#39;
+  config_override.ssh.username = &#39;root&#39;
+  config_override.ssh.private_key_path = [ File.expand_path(&amp;quot;~/.ssh/id_rsa&amp;quot;) ]
+
+  sl.domain = &amp;quot;example.com&amp;quot;
+  sl.hostname = &amp;quot;vagrant&amp;quot;
+  sl.start_cpus = 2
+  sl.max_memory = 4096
+  sl.operating_system = &#39;UBUNTU_LATEST&#39;
+
+  sl_user_data.each do |k, v|
+    sl.send(&amp;quot;#{k}=&amp;quot;, v)
+  end
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;deploy:9d8db6aad1d2f7d234bcbcee47d805cd&#34;&gt;Deploy&lt;/h4&gt;
+
+&lt;p&gt;Run the following:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;vagrant up --provider=softlayer&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;This will spin up a new VM in SoftLayer.  You can &lt;code&gt;vagrant ssh&lt;/code&gt;, &lt;code&gt;vagrant destroy&lt;/code&gt;, etc. as normal.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

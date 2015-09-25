@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Softlayer_product_order on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/classes/softlayer_product_order/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Wed, 08 Jul 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Order a vyatta server with placeOrder</title>
+      <link>https://softlayer.github.io/php/order_vyatta/</link>
+      <pubDate>Wed, 08 Jul 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/order_vyatta/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+require_once &#39;./SoftLayer/SoapClient.class.php&#39;;
+$apiUser = &#39;&#39;;
+$key = &#39;&#39;;
+
+$client = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $apiUser, $key);
+$template = new stdClass();
+$template_extra = new stdClass();
+$template-&amp;gt;packageId = 174;
+$template-&amp;gt;location  = 224092;
+$template-&amp;gt;quantity  = 1;
+$template_extra-&amp;gt;os = 21;  //vyatta
+$template_extra-&amp;gt;hostname = &#39;foo-vga-small&#39;;
+$template_extra-&amp;gt;domain = &#39;softlayer-singapore-test.com&#39;;
+
+//These might be invalid now, please double check on ordering
+$template_extra-&amp;gt;price_id = array(13739, // Single Quad Xeon 1270 3.4G 8M
+                                   21010, // 4G
+                                   878, // Raid
+                                   //31693, // Raid 1
+                                   1267, // 500G
+                                   274, // 1GbE
+                                   342, // 20T
+                                   // 21, // 1IP
+                                   56, // Ping/TCP Mon
+                                   57, // Notification 
+                                   );
+
+$my_template = new stdClass();
+
+ for ($cnt = 0; $cnt &amp;lt; $template-&amp;gt;quantity; $cnt++) {
+    $domain = new stdClass();
+    $domain-&amp;gt;hostname = &amp;quot;$template_extra-&amp;gt;hostname-$cnt&amp;quot;;
+    $domain-&amp;gt;domain = $template_extra-&amp;gt;domain;
+    $template-&amp;gt;hardware[] = $domain;
+  }
+if (empty($template-&amp;gt;imageTemplateGlobalIdentifier))
+{
+    $template_extra-&amp;gt;price_id[] = $template_extra-&amp;gt;os;
+}
+
+foreach ($template_extra-&amp;gt;price_id as $id) {
+    $price = new stdClass();
+    $price-&amp;gt;id = $id;
+    $template-&amp;gt;prices[] = $price;
+}
+$my_template-&amp;gt;orderContainers = array();
+$my_template-&amp;gt;orderContainers[0]-&amp;gt;prices = $template-&amp;gt;prices;
+$my_template-&amp;gt;orderContainers[0]-&amp;gt;hardware = $template-&amp;gt;hardware;
+$my_template-&amp;gt;orderContainers[0]-&amp;gt;quantity = $template-&amp;gt;quantity;
+$my_template-&amp;gt;orderContainers[0]-&amp;gt;location = $template-&amp;gt;location;
+$my_template-&amp;gt;orderContainers[0]-&amp;gt;packageId = $template-&amp;gt;packageId;
+
+print_r($my_template);
+$result = $client-&amp;gt;verifyOrder($my_template);
+print_r($result);
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Upgrade virtual guest</title>
+      <link>https://softlayer.github.io/php/upgrade_virtual_guest/</link>
+      <pubDate>Sun, 15 Feb 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/upgrade_virtual_guest/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+require_once &#39;./SoftLayer/XmlrpcClient.class.php&#39;;
+
+$apiUsername = &#39;&#39;;
+$apiKey = &#39;&#39;;
+
+$client = SoftLayer_XmlrpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $apiUsername, $apiKey);
+
+//The price of the item you want to upgrade to
+$price1 = new \stdClass();
+$price1-&amp;gt;id = 1641;
+
+//The virtual guest you want to upgrade
+$guest = new \stdClass();
+$guest-&amp;gt;id = 7444860;
+
+$priceClient = SoftLayer_XmlrpcClient::getClient(&#39;SoftLayer_Product_Package&#39;, 46, $apiUsername, $apiKey);
+$objectMask = new SoftLayer_ObjectMask();
+$objectMask-&amp;gt;description;
+$objectMask-&amp;gt;capacity;
+$objectMask-&amp;gt;prices-&amp;gt;id;
+$objectMask-&amp;gt;categories-&amp;gt;id;
+
+$priceClient-&amp;gt;setObjectMask($objectMask);
+$items = $priceClient-&amp;gt;getObject();
+//Shows you what prices are available to select from
+print_r($items);
+
+$upgrade = new \stdClass();
+$upgrade-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;quot;;
+$upgrade-&amp;gt;prices = array($price1);
+$upgrade-&amp;gt;properties = new \stdClass();
+$upgrade-&amp;gt;properties-&amp;gt;maintenanceWindow;
+$upgrade-&amp;gt;properties-&amp;gt;maintenanceWindow-&amp;gt;name = &amp;quot;MAINTENANCE_WINDOW&amp;quot;;
+$upgrade-&amp;gt;properties-&amp;gt;maintenanceWindow-&amp;gt;value = &amp;quot;now&amp;quot;;
+$upgrade-&amp;gt;virtualGuests = array($guest);
+print_r($upgrade);
+
+//change to placeOrder($upgrade) to actually make it happen
+$response = $client-&amp;gt;verifyOrder($upgrade);
+print_r($response);
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create a virtual server from an existing image template</title>
+      <link>https://softlayer.github.io/python/create_server_from_template/</link>
+      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/create_server_from_template/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer.API
+
+from pprint import pprint as pp
+
+apiUsername = &#39;&#39;
+apiKey = &#39;&#39;
+templateId = 
+
+client = SoftLayer.API.Client(&#39;SoftLayer_Product_Order&#39;, None, apiUsername, apiKey)
+
+order = {
+    &#39;complexType&#39;: &#39;SoftLayer_Container_Product_Order_Virtual_Guest&#39;,
+    &#39;quantity&#39;: 1,
+    &#39;virtualGuests&#39;: [
+        {&#39;hostname&#39;: &#39;test&#39;, &#39;domain&#39;: &#39;example.com&#39;}
+    ],
+    &#39;location&#39;: 168642,  # San Jose 1
+    &#39;packageId&#39;: 46,  # CCI Package
+    &#39;prices&#39;: [
+        {&#39;id&#39;: 1640},  # 1 x 2.0 GHz Core
+        {&#39;id&#39;: 1644},  # 1 GB RAM
+        {&#39;id&#39;:  905},  # Reboot / Remote Console
+        {&#39;id&#39;:  272},  # 10 Mbps Public &amp;amp; Private Networks
+        {&#39;id&#39;:  613},  # 1000 GB Bandwidth
+        {&#39;id&#39;:   21},  # 1 IP Address
+        {&#39;id&#39;: 2202},  # 25 GB (SAN)
+        {&#39;id&#39;: 1684},  # CentOS 5 - Minimal Install (32 bit)
+        {&#39;id&#39;:   55},  # Host Ping Monitoring
+        {&#39;id&#39;:   57},  # Email and Ticket Notifications
+        {&#39;id&#39;:   58},  # Automated Notification Response
+        {&#39;id&#39;:  420},  # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
+        {&#39;id&#39;:  418},  # Nessus Vulnerability Assessment &amp;amp; Reporting
+    ],
+    &#39;imageTemplateId&#39;: templateId
+}
+
+result = client.verifyOrder(order)
+pp(result)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
