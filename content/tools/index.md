@@ -1,6 +1,6 @@
 ---
 title: "Tools"
-description: "Select a tool to see examples"
+description: "These are external tools which intergrate with SoftLyaer. Please select one below to see details"
 date: "2015-09-16"
 tags:
     - "tools"
