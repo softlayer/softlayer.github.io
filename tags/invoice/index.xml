@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Invoice on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/tags/invoice/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Sun, 24 May 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Get top level billing items for all owned accounts</title>
+      <link>https://softlayer.github.io/php/get_invoice_top_level_items/</link>
+      <pubDate>Sun, 24 May 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/get_invoice_top_level_items/</guid>
+      <description>&lt;p&gt;With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the -&amp;gt;allOwnedAccounts bits&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+require_once &#39;./SoftLayer/SoapClient.class.php&#39;;
+
+
+/**
+* This class structure is mostly used so this can be run as a script.
+* Most of the print statements use fancy bash color codes to make things pretty
+*/
+class topBillingItems
+{
+
+    function __construct() {
+        $this-&amp;gt;apiUsername = &#39;&#39;;
+        $this-&amp;gt;apiKey = &#39;&#39;;
+        $this-&amp;gt;startDate = new DateTime(&#39;2015-02-12T00:00:00-06:00&#39;);
+        $this-&amp;gt;endDate = new DateTime(&#39;2015-03-12T00:00:00-06:00&#39;);
+    }
+
+    /*!
+    * Will get all the brands on an account, THEN all of those brand&#39;s accounts,
+    * Then all of THEIR brands, then all of THEIR accounts. Then, go through each
+    * of the final tier accounts, and get all the invoices, then all the billing items.
+    *
+    */
+    function main() {
+
+        //The First Object Mask. Used to get all the front line brands, which will have the
+        //accounts that are actually buying things
+        $objectMask = new SoftLayer_ObjectMask();
+        $objectMask-&amp;gt;ownedBrands-&amp;gt;allOwnedAccounts-&amp;gt;ownedBrands;
+
+        $client = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+        $client-&amp;gt;setObjectMask($objectMask);
+
+        $response = $client-&amp;gt;getObject();
+
+        //Start off with the main brand
+        foreach ($response-&amp;gt;ownedBrands as $brand) {
+            print &amp;quot;BRAND=\e[31m&amp;quot; . $brand-&amp;gt;keyName .  &amp;quot; ::&amp;quot; . $brand-&amp;gt;id . &amp;quot;\e[0m=\n&amp;quot;;
+
+            //Go into each of the top brands accounts
+            foreach ($brand-&amp;gt;allOwnedAccounts as $account) {
+                print &amp;quot;==\e[32m&amp;quot; . $account-&amp;gt;companyName .&amp;quot;\e[0m\n&amp;quot;;
+
+                //Go into each of those accounts brands...
+                foreach ($account-&amp;gt;ownedBrands as $brand1) {
+                    print &amp;quot;====\e[33m&amp;quot; . $brand1-&amp;gt;name .&amp;quot; ::&amp;quot; . $brand1-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
+                    $brandInvoice = $this-&amp;gt;getAllBrandAccounts($brand1-&amp;gt;id);
+
+                    //Go through each of the accounts on the brand
+                    foreach ($brandInvoice as $brandAccount) {
+
+                        //This is recursive and a very large data structure.
+                        //we unset it here so it doesn&#39;t get in the way later
+                        unset($brandAccount-&amp;gt;brand);
+                        $this-&amp;gt;workAccount($brandAccount);
+
+                    } //END foreach $brandInvoice
+                } //END foreach $account-&amp;gt;ownedBrands
+            } //END foreach $brand-&amp;gt;allOwnedAccounts
+        } //END foreach $response-&amp;gt;ownedBrands
+    }//END MAIN
+
+    function getAllBrandAccounts($brandId) {
+
+        //This filters out all invoices that are not in our date range.
+        //all based on the invoices createDate
+        $filter = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;operation = &#39;betweenDate&#39;;
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options = array();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0] = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;name = &#39;startDate&#39;;
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;value = array($this-&amp;gt;startDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1] = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;name = &#39;endDate&#39;;
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;value = array($this-&amp;gt;endDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
+
+        //Mask for the front line brands, used to get all their accounts, and their invoices
+        $brandMask = new SoftLayer_ObjectMask();
+        $brandMask-&amp;gt;allOwnedAccounts-&amp;gt;invoices;
+
+        //From that brand, get all the brand&#39;s owned accounts, with their invoices from the current month
+        $brandClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Brand&#39;, $brandId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+        $brandClient-&amp;gt;setObjectMask($brandMask);
+        $brandClient-&amp;gt;setObjectFilter($filter);
+        return $brandClient-&amp;gt;getAllOwnedAccounts();
+
+    }
+
+    function workAccount($account) {
+
+        print &amp;quot;=====\e[94m&amp;quot; . $account-&amp;gt;companyName .&amp;quot; ::&amp;quot; . $account-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
+        //Used to get all the actual line items from an invoice
+        $invoiceMask = new SoftLayer_ObjectMask();
+        $invoiceMask-&amp;gt;items;
+        $invoiceMask-&amp;gt;invoiceTotalAmount;
+        //Go through each of the accounts monthly invoices
+        foreach ($account-&amp;gt;invoices as $invoice) {
+            print &amp;quot;Created: &amp;quot; . $invoice-&amp;gt;createDate . &amp;quot; TYPE: &amp;quot; . $invoice-&amp;gt;typeCode .&amp;quot;\n&amp;quot;;
+
+            //Here we get the actual invoice and all the billing items inside of it
+            $bClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Billing_Invoice&#39;, $invoice-&amp;gt;id , $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+            $bClient-&amp;gt;setObjectMask($invoiceMask);
+            $bt = $bClient-&amp;gt;getObject();
+            print &amp;quot;====\e[42;90m&amp;quot; . $bt-&amp;gt;invoiceTotalAmount .&amp;quot;\e[0m\n&amp;quot;;
+
+            //Go through each item on the invoice and print out its decription + fee.
+            //There are a few other fields that could be billable, but these are the main ones.
+            foreach ($bt-&amp;gt;items as $lineItem) {
+                unset($lineItem-&amp;gt;invoice);
+                $fee = $lineItem-&amp;gt;recurringAfterTaxAmount + $lineItem-&amp;gt;oneTimeAfterTaxAmount;
+                print &amp;quot;====\e[35m&amp;quot; . $lineItem-&amp;gt;description . &amp;quot; =&amp;gt; &amp;quot; . $fee . &amp;quot;$ \e[0m\n&amp;quot;;
+            }
+
+        }//end invoice
+    }
+}
+
+$main = new Example();
+$main-&amp;gt;main();
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Get Invoices</title>
+      <link>https://softlayer.github.io/php/get_invoice/</link>
+      <pubDate>Sun, 22 Feb 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/get_invoice/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+require_once &#39;./SoftLayer/SoapClient.class.php&#39;;
+ 
+$apiUser = &#39;&#39;;
+$key = &#39;&#39;;
+
+//The date does need to be in this specific format
+$startDate = new DateTime(&#39;2014-11-01T13:05:25-06:00&#39;);
+$endDate = new DateTime(&#39;2014-12-01T09:53:51-06:00&#39;);
+ 
+$accountClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $apiUser, $key);
+
+$filter = new stdClass();
+$filter-&amp;gt;invoices = new stdClass();
+// $filter-&amp;gt;invoices-&amp;gt;accountId = new stdClass();
+// $filter-&amp;gt;invoices-&amp;gt;accountId-&amp;gt;operation = &#39;= 391780&#39;;
+$filter-&amp;gt;invoices-&amp;gt;createDate = new stdClass();
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;operation = &#39;betweenDate&#39;;
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options = array();
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0] = new stdClass();
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;name = &#39;startDate&#39;;
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;value = array($startDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1] = new stdClass();
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;name = &#39;endDate&#39;;
+$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;value = array($endDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
+
+$objectMask = new SoftLayer_ObjectMask();
+$objectMask-&amp;gt;invoices; 
+ 
+$accountClient-&amp;gt;setObjectFilter($filter);
+$accountClient-&amp;gt;setObjectMask($objectMask);
+
+$invoices = $accountClient-&amp;gt;getObject();
+
+print_r($invoices);
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
