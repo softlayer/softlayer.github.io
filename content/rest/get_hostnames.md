@@ -1,6 +1,6 @@
 ---
-title: "Basic Rest Examples 3"
-description: "A collection of some of the ways to interact with the REST service. Uses a slightly different objectMask style."
+title: "Get hostnames"
+description: "Calls SoftLayer_Account::getObject with an objectMask to pull in all the hostnames for both hardware and virtual servers. Uses the . and ; format for object Masks."
 date: "2015-09-30"
 classes: 
     - "SoftLayer_Account"

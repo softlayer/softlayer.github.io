@@ -1,6 +1,6 @@
 ---
-title: "Basic Rest Examples 2"
-description: "A collection of some of the ways to interact with the REST service"
+title: "GetHardware with network components"
+description: "Calls SoftLayer_Account::getHardware() with an objectMask to get some information about the networkComponents"
 date: "2015-09-30"
 classes: 
     - "SoftLayer_Account"

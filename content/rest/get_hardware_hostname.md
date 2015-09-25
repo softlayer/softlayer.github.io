@@ -1,6 +1,6 @@
 ---
-title: "Basic Rest Examples"
-description: "A collection of some of the ways to interact with the REST service"
+title: "Get Hardware hostnames"
+description: "Calls SoftLayer_Account::getObect() to retrieve some basic information about an account, and uses an objectMask to retrieve the hostname of all hardware on the account"
 date: "2015-09-30"
 classes: 
     - "SoftLayer_Account"
