@@ -6,6 +6,7 @@ classes:
     - "SoftLayer_Account"
 tags:
     - "objectMask"
+    - "hardware"
 ---
 
 Operation: `GET`
@@ -16,7 +17,10 @@ URL: `SoftLayer_Account/getHardware`
 
 Parameters `objectMask=mask[id,fullyQualifiedDomainName,networkComponents[name,networkHardware[hostname],uplinkComponent[name,status]]]`
 
-Example CURL: `curl -u username:api_key -G --data "objectMask=mask[id,fullyQualifiedDomainName,networkComponents[name,networkHardware[hostname],uplinkComponent[name,status]]]"  "https://api.softlayer.com/rest/v3/SoftLayer_Account/getHardware"`
+Example CURL: 
+```
+$ curl -u username:api_key -G --data "objectMask=mask[id,fullyQualifiedDomainName,networkComponents[name,networkHardware[hostname],uplinkComponent[name,status]]]"  "https://api.softlayer.com/rest/v3/SoftLayer_Account/getHardware"
+```
 
 Example Response:
 ```json
