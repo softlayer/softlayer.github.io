@@ -5,17 +5,20 @@ date: "2015-02-15"
 classes: ["SoftLayer_Virtual_Guest"]
 tags:
   - "vsi"
+  - "objectMask"
 ---
 
 Operation: `GET`
 
 URL: `SoftLayer_Virtual_Guest/{server_id}`
 
-Example CURL: `curl --user userid:api_key
+Example CURL: 
+```
+curl --user userid:api_key
 "https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest/
-7743084.json?objectMask=domain;fullyQualifiedDomainName;hostname;id;primaryBack
-endIpAddress;primaryIpAddress;status.keyName"`
-
+7743084.json?objectMask=mask[domain,fullyQualifiedDomainName,hostname,id,primaryBack
+endIpAddress,primaryIpAddress,status.keyName]"
+```
 
 Example Response:
 ```json

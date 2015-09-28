@@ -12,9 +12,11 @@ Operation: `DELETE`
 
 URL: `SoftLayer_Virtual_Guest/{server_id}`
 
-Example CURL: `curl --user userid:api_key curl -X DELETE
-https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest/123456`
-
+Example CURL: 
+```
+$ curl --user userid:api_key curl -X DELETE
+https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest/123456
+```
 
 Example Response:
 ```

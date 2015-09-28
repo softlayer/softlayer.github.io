@@ -11,9 +11,12 @@ Operation: `GET`
 
 Method: [`SoftLayer_Account::getObject()`](http://sldn.softlayer.com/reference/services/SoftLayer_Account/getObject)
 
-URL: `SoftLayer_Account/getObject?objectMask=hardware.hostname;hourlyVirtualGuests.hostname;hourlyVirtualGuests.domain"`
+URL: `SoftLayer_Account/getObject?objectMask=mask[hardware.hostname,hourlyVirtualGuests[hostname,domain]]"`
 
-Example CURL: ` curl -u username:api_key "https://api.softlayer.com/rest/v3/SoftLayer_Account/getObject?objectMask=hardware.hostname;hourlyVirtualGuests.hostname;hourlyVirtualGuests.domain"`
+Example CURL: 
+```
+$ curl -u username:api_key "https://api.softlayer.com/rest/v3/SoftLayer_Account/getObject?objectMask=mask[hardware.hostname,hourlyVirtualGuests[hostname,domain]]"
+```
 
 Example Response:
 ```json
