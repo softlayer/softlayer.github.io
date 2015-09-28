@@ -6,6 +6,7 @@ classes: ["SoftLayer_Virtual_Guest"]
 tags:
   - "vsi"
   - "create"
+  - "objectMask"
 ---
 
 Operation: `POST`
@@ -15,7 +16,7 @@ URL: `SoftLayer_Virtual_Guest.json?objectMask=id`
 Example CURL: 
 ```
 curl -X POST --data @vs_create.json --user userid:api_key
-https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest.json?objectMask=id
+https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest.json?objectMask=mask.id
 ```
 
 

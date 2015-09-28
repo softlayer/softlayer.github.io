@@ -6,6 +6,7 @@ classes:
     - "SoftLayer_Account"
 tags:
     - "objectMask"
+    - "hardware"
 ---
 
 Operation: `GET`
