@@ -6,6 +6,7 @@ classes: ["SoftLayer_Virtual_Guest"]
 tags:
     - "objectMask"
     - "getObject"
+    - "deprecated"
 ---
 ```php
 <?php

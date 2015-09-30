@@ -8,6 +8,7 @@ tags:
     - "invoice"
     - "objectMask"
     - "objectFilter"
+    - "deprecated"
 ---
 
 

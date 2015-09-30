@@ -6,8 +6,9 @@ description: "
 date: "2014-09-01"
 classes: ["SoftLayer_Monitoring_Agent", "SoftLayer_Hardware_Server"]
 tags:
-  - "monitoring"
-  - "metrics"
+    - "monitoring"
+    - "metrics"
+    - "deprecated"
 ---
 We will call the SoftLayer API to retrieve the monitoring agents,
  configuration template, and configuration values for a server instance.
