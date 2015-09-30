@@ -31,7 +31,7 @@ Input JSON:
             "location" :449494,
             "quantity" : 1,
             "hardware": [{
-                "hostname": "Citrix",
+                "hostname": "TEST",
                 "domain": "test1"
             }],
             "prices": [
