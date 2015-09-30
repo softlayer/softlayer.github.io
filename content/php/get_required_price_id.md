@@ -5,8 +5,9 @@ category"
 date: "2014-09-01"
 classes: ["SoftLayer_Product_Package"]
 tags:
-  - "ordering"
-  - "categories"
+    - "ordering"
+    - "categories"
+    - "deprecated"
 ---
 ```php
 <?php

@@ -8,6 +8,7 @@ tags:
     - "objectFilter"
     - "objectMask"
     - "SOAP"
+    - "deprecated"
 ---
 
 ```php

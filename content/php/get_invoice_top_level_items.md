@@ -9,6 +9,7 @@ tags:
     - "objectMask"
     - "invoice"
     - "brand"
+    - "deprecated"
 ---
 With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the ->allOwnedAccounts bits
 

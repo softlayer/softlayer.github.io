@@ -7,6 +7,7 @@ tags:
     - "ordering"
     - "upgrade"
     - "virtual_guest"
+    - "deprecated"
 ---
 
 ```php

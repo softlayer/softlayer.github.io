@@ -7,6 +7,7 @@ tags:
     - "ordering"
     - "vyatta"
     - "placeOrder"
+    - "deprecated"
 ---
 
 ```php
