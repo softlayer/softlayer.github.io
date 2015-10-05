@@ -2,21 +2,6 @@
 title: "Ordering with placeOrder"
 description: "Example on how to call verifyOrder / placeOrder via REST. Replace the veryifyOrder call with placeOrder when you are actually ready to order the server
 
-The Price Ids Explained
-+ Single Processor Quad Core Xeon 1270 - 3.40GHz (Sandy Bridge) - 1 x 8MB cache w/HT  {'id': 13739},
-+ 32 GB DDR3 1333  {'id': 13748},
-+ 1TB sataII  {'id': 1267},
-+ 2000 GB Bandwidth  {'id': 342},
-+ 1 Gbps Dual public uplink  {'id': 21141},
-+ automated notification response  {'id': 58},
-+ Non-Raid Disk Controller  {'id': 876},
-+ email and ticket notification  {'id': 57},
-+ host ping monitoring  {'id': 55},
-+ single primary ip  {'id': 21},
-+ remote managements  {'id': 906},
-+ vpn management  {'id': 420},
-+ vulnerability   {'id': 418},
-+ Ubuntu 14.04 64bit  {'id': 37620}
 "
 date: "2015-09-30"
 classes: ["SoftLayer_Product_Order"]
@@ -71,6 +56,33 @@ Input JSON:
     ]
 }
 ```
+
+
+#### The Price Ids Explained
+
+Use [getItemPrices](http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItemPrices) to find the IDs and Items you need
+
+---
+
+Item | id
+----- | -----
+Single Processor Quad Core Xeon 1270 - 3.40GHz (Sandy Bridge) - 1 x 8MB cache w/HT  |  {'id': 13739},
+32 GB DDR3 1333 |   {'id': 13748},
+1TB sataII | {'id': 1267},
+2000 GB Bandwidth | {'id': 342},
+1 Gbps Dual public uplink | {'id': 21141},
+automated notification response  | {'id': 58},
+Non-Raid Disk Controller | {'id': 876},
+email and ticket notification  | {'id': 57},
+host ping monitoring  | {'id': 55},
+single primary ip  | {'id': 21},
+remote managements |  {'id': 906},
+vpn management  | {'id': 420},
+vulnerability  | {'id': 418},
+Ubuntu 14.04 64bit | {'id': 37620}
+
+---
+
 
 Example Response:
 ```json
