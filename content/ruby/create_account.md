@@ -11,7 +11,9 @@ tags:
 require 'softlayer_api'
 require 'pp'
 
-client = SoftLayer::Client.default_client = SoftLayer::Client.new
+# Credentials to the API are read from a configuration file by default.
+# See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44
+client = SoftLayer::Client.new
 
 account_service = client['Account']
 brand_service = client['Brand']
