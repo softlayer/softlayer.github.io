@@ -1,7 +1,7 @@
 ---
 title: "Set user permissions"
 description: "Adds the TICKET_ADD permission to a user"
-date: "2015-10-4"
+date: "2015-10-04"
 classes:
     - "SoftLayer_User_Customer"
 tags:
