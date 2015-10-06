@@ -35,8 +35,8 @@ In addition to the prerequisites above, you will also require the *vagrant-softl
 ```
 
 + Create the SoftLayer 'box' that includes the metadata file and install into Vagrant:
-    'tar cvzf softlayer.box metadata.json'
-    'vagrant box add --name softlayer softlayer.box'
+    `tar cvzf softlayer.box metadata.json` ; 
+    `vagrant box add --name softlayer softlayer.box`
 
 + Create a vagrant file with the softlayer provider settings included:
 ```ruby

@@ -2,7 +2,7 @@
 title: "Get Hardware hostnames"
 description: "Calls SoftLayer_Account::getObect() to retrieve some basic information about an account, and uses an objectMask to retrieve the hostname of all hardware on the account"
 date: "2015-09-30"
-classes: 
+classes:
     - "SoftLayer_Account"
 tags:
     - "objectMask"
@@ -15,7 +15,7 @@ URL: `SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]
 
 Example CURL:
 ```
-$ curl -u -g username:api_key "https://api.softlayer.com/rest/v3/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]"
+$ curl -u username:api_key "https://api.softlayer.com/rest/v3/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]"
 ```
 
 Example Response:
@@ -38,4 +38,3 @@ Example Response:
     ]
 }
 ```
-
