@@ -19,7 +19,7 @@ SoftLayer::Client.default_client = SoftLayer::Client.new
 
 order_template = {
     hostname: 'test',
-    domain: 'example.com', # change me
+    domain: 'example.com',
     datacenter: 'hou02',
     cores: 2, # 2 x 2.0 GHz Cores
     memory: 4, # 4GB RAM
