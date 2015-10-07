@@ -25,7 +25,7 @@ order_template = {
     memory: 4, # 4GB RAM
     private_network_only: false,
     dedicated_host_only: false,
-    #os_reference_code: CENTOS_6_64, # CentOS 6.latest minimal (64 bit)
+    #os_reference_code: 'CENTOS_6_64', # CentOS 6.latest minimal (64 bit)
     image_template: SoftLayer::ImageTemplate.template_with_global_id(IMAGE_ID),
     use_local_disk: false, # Use a SAN disk
     hourly: true # Charge me for hourly use, rather than monthly.
