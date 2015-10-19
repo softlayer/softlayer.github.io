@@ -7,12 +7,15 @@ classes: ["SoftLayer_Product_Package"]
 tags:
     - "ordering"
     - "categories"
-    - "deprecated"
 ---
 ```php
 <?php
 
-require_once('softlayer-api-php-client/SoftLayer/SoapClient.class.php');
+/* follow the installation instructions to get SoftLayer API PHP Client working: https://github.com/softlayer/softlayer-api-php-client#installation */
+require_once __DIR__.'/vendor/autoload.php';
+
+use SoftLayer\Common\ObjectMask;
+use SoftLayer\SoapClient;
 
 /**
  * Set your SoftLayer API username and key.
@@ -22,9 +25,9 @@ $apiKey = '';
 $packageId = 46;
 
 
-$client = Softlayer_SoapClient::getClient('SoftLayer_Product_Package', $packageId, $apiUsername, $apiKey);
+$client = \SoftLayer\SoapClient::getClient('SoftLayer_Product_Package', $packageId, $apiUsername, $apiKey);
 try {
-    $mask = new SoftLayer_ObjectMask();
+    $mask = new SoftLayer\Common\ObjectMask();
     $mask->configuration->itemCategory;
     $client->setObjectMask($mask);
     $configs = $client->getConfiguration();
@@ -36,7 +39,7 @@ try {
         }
     }
     $categories = array();
-    $mask = new SoftLayer_ObjectMask();
+    $mask = new SoftLayer\Common\ObjectMask();
     $mask->itemPrices->categories;
     $client->setObjectMask($mask);
     $prices = $client->getItemPrices();
@@ -60,4 +63,6 @@ try {
 } catch ( Exception $e) {
     die( $e->getMessage());
 }
+
+?>
 ```
