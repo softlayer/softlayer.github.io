@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Python on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/python/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Wed, 16 Sep 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Set user permissions</title>
+      <link>https://softlayer.github.io/python/set_permission/</link>
+      <pubDate>Wed, 16 Sep 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/set_permission/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+import pprint
+
+class setPermissions():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    def main(self):
+
+        pp = pprint.PrettyPrinter(indent=4)
+        # the user ID we want to change
+        template_user_id = 350000
+
+        # This is just so we can see what permissions we have already
+        permissions = self.client[&#39;User_Customer&#39;].getPermissions(id=template_user_id)
+        pp.pprint(permissions)
+
+        # Adds in a new permissions
+        setperm = {&#39;keyName&#39;: &amp;quot;TICKET_ADD&amp;quot;}
+        users = self.client[&#39;User_Customer&#39;].addPortalPermission(setperm, id=template_user_id)
+        pp.pprint(users)
+
+        # Make sure it actually worked
+        permissions = self.client[&#39;User_Customer&#39;].getPermissions(id=template_user_id)
+        pp.pprint(permissions)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = setPermissions()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>List Packages</title>
+      <link>https://softlayer.github.io/python/list_packages/</link>
+      <pubDate>Fri, 28 Aug 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/list_packages/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+      
+    def main(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        Gets ALL packages, and prints their name and price descriptions
+        &amp;quot;&amp;quot;&amp;quot;
+        mask = &amp;quot;mask[hourlyBillingAvailableFlag]&amp;quot;
+        result = self.client[&#39;Product_Package&#39;].getAllObjects();
+        for product in result:
+            print str(product[&#39;id&#39;]) + &amp;quot; - &amp;quot; + product[&#39;name&#39;]
+        for prices in result[&#39;itemPrices&#39;]:
+            print str(prices[&#39;id&#39;]) + &amp;quot; - &amp;quot; + prices[&#39;item&#39;][&#39;description&#39;]
+
+        # result has a LOT of stuff in it, only print it out if you are ready
+        # pp.pprint(result)
+
+    def getPackage(self, package_id=0):
+        &amp;quot;&amp;quot;&amp;quot;
+        Gets a specific package and prints out some useful information
+        &amp;quot;&amp;quot;&amp;quot;
+        mask = &amp;quot;mask[items[prices]]&amp;quot;
+
+        # Not all packages are available in all locations, you can check that with getLocations()
+        # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
+        # pp(locations)
+
+        result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=package_id)
+        # result has a LOT of output
+        # pp(result)
+        for item in result[&#39;items&#39;]:
+            print str(item[&#39;id&#39;]) + &amp;quot; - &amp;quot; + item[&#39;description&#39;] + &amp;quot; --- &amp;quot; + item[&#39;keyName&#39;]
+            for prices in item[&#39;prices&#39;]:
+                print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;]) + &amp;quot; - locationGroupId: &amp;quot; + str(prices[&#39;locationGroupId&#39;]) 
+
+        # Will only get the server items for this package
+        # serverItems = self.client[&#39;Product_Package&#39;].getActiveServerItems(id=package_id)
+        # print &amp;quot;SERVER ITEMS&amp;quot;
+        # pp(serverItems)
+
+        # Will only get the RAM items for the package
+        # ramItems = self.client[&#39;Product_Package&#39;].getActiveRamItems(id=package_id)
+        # print &amp;quot;RAM ITEMS&amp;quot;
+        # pp(ramItems)
+
+     
+    
+    def getAllLocations(self):
+        mask = &amp;quot;mask[id,locations[id,name]]&amp;quot;
+        result = self.client[&#39;SoftLayer_Location_Group_Pricing&#39;].getAllObjects(mask=mask);
+        pp(result)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+    main.getPackage(126)
+    main.getAllLocations()  
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create a new virtual server with all options</title>
+      <link>https://softlayer.github.io/python/create_vsi_options/</link>
+      <pubDate>Sat, 01 Aug 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/create_vsi_options/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&#39;&#39;&#39;
+An example of how to create a VSI from the SL python library
+&#39;&#39;&#39;
+from __future__ import print_function
+import SoftLayer
+from SoftLayer.managers.vs import VSManager
+
+def create_vsi():
+    #Create a client to the SoftLayer_Account API service.
+    #Note: currently set without the user ID and API key since
+    #it will by default use the values set in the CLI
+    #to use other values use SoftLayer.Client(sl_username, sl_api_key)
+    client = SoftLayer.Client()
+    vsi_mgr = VSManager(client)
+
+    # uncomment to display create options
+    # print(vsi_mgr.get_create_options())
+
+    # common values
+    datacenter = &#39;sjc01&#39; # the data center code
+    domain = &#39;example.com&#39; # the domain name suffix for the host
+    os_code = &#39;CENTOS_6_64&#39; # the operating system code
+    local_disk = True # local disk or SAN
+    hourly = True # hourly or monthly billing
+    dedicated = False # multi-tenant or single tenant
+    private_vlan = &#39;825831&#39; # VLAN for the server see VLAN list above
+    nic_speed = 1000 # speed of network device
+    disks = [100] # size of the disks
+    private = True # private networking only or include public internet networking as well
+    ssh_keys = [227113, 229467] # the IDs of the ssh keys to load on the server - use slcli sshkey list
+
+    # server properties
+    hostname = &#39;myhost&#39;
+    cpus = 4
+    memory = 8192
+    tags = &#39;owner:bob,project:poc,type:docker&#39;
+
+    # code that can verify the create operation without actually doing it
+    # template = vsi_mgr.verify_create_instance(hostname=hostname, domain=domain,
+    #                                 cpus=cpus, memory=memory, datacenter=datacenter,
+    #                                 os_code=os_code, local_disk=local_disk,
+    #                                 hourly=hourly, dedicated=dedicated,
+    #                                 private_vlan=private_vlan, disks=disks,
+    #                                 nic_speed=nic_speed, private=private,
+    #                                 ssh_keys=ssh_keys, tags=tags)
+    # print(template)
+
+    result = vsi_mgr.create_instance(hostname=hostname, domain=domain,
+                                     cpus=cpus, memory=memory, datacenter=datacenter,
+                                     os_code=os_code, local_disk=local_disk,
+                                     hourly=hourly, dedicated=dedicated,
+                                     private_vlan=private_vlan, disks=disks,
+                                     nic_speed=nic_speed, private=private,
+                                     ssh_keys=ssh_keys, tags=tags)
+    print(result)
+
+if __name__ == &#39;__main__&#39;:
+    create_vsi()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find active VMs by creator</title>
+      <link>https://softlayer.github.io/python/find_my_vms/</link>
+      <pubDate>Tue, 23 Jun 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/find_my_vms/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&#39;&#39;&#39;
+Code example of how to list virtual instances from a SoftLayer account
+You can call the script from the command and provide the user ID you
+want to check. The script expects that you have the SoftLayer CLI
+installed and have it configured with the credentials you&#39;d like
+to use with SoftLayer.
+
+You can run the script with the user ID you&#39;d like to check under
+the account you have configured:
+find_my_active_vms userid
+
+The output of the script is in a csv format with tabs as the
+column separator.
+&#39;&#39;&#39;
+from __future__ import print_function
+import sys
+import SoftLayer
+
+
+def list_my_vms(creator_id=None):
+    &amp;quot;&amp;quot;&amp;quot;
+    Get the list of active VMs based on the creator ID
+
+    Keyword arguments:
+    creator_id -- the SoftLayer ID of the VM&#39;s creator (default: None)
+    &amp;quot;&amp;quot;&amp;quot;
+
+    # create a client to the SoftLayer_Account API service.
+    client = SoftLayer.Client()
+
+    # number of results that we expect at a time
+    chunk = 200
+    mask = &amp;quot;id,fullyQualifiedDomainName,primaryIpAddress,createDate,billingItem[orderItem[description, order[userRecord[username], id]]]&amp;quot;
+
+    # get the data from the SoftLayer APIs
+    vms = client.iter_call(&amp;quot;Account&amp;quot;, &amp;quot;getVirtualGuests&amp;quot;, chunk=chunk, mask=mask)
+    if creator_id is None:
+        # if the creator wasn&#39;t provided use the
+        # user provided to the API call as the creator
+        creator_id = client.auth.username
+
+    # add table header
+    print(&#39;VM ID&#39;, &#39;\t&#39;, &#39;Host&#39;, &#39;\t&#39;, &#39;Public IP&#39;, &#39;\t&#39;, &#39;Create Date&#39;)
+    for vsi in vms:
+        # navigate to the creator property under the VMs billing item
+        if &#39;billingItem&#39; in vsi.keys():
+            billing_item = vsi[&#39;billingItem&#39;]
+            if &#39;orderItem&#39; in billing_item.keys():
+                vm_creator_userid = billing_item[&#39;orderItem&#39;][&#39;order&#39;][&#39;userRecord&#39;][&#39;username&#39;]
+                if creator_id == vm_creator_userid:
+                    print(str(vsi[&#39;id&#39;]), &#39;\t&#39;,
+                          vsi[&#39;fullyQualifiedDomainName&#39;], &#39;\t&#39;,
+                          vsi.get(&#39;primaryIpAddress&#39;, &#39;N/A&#39;), &#39;\t&#39;, vsi[&#39;createDate&#39;])
+
+if __name__ == &#39;__main__&#39;:
+    if len(sys.argv) == 1:
+        list_my_vms()
+    else:
+        list_my_vms(sys.argv[1])
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Server Bandwidth</title>
+      <link>https://softlayer.github.io/python/get_bandwidth_data/</link>
+      <pubDate>Mon, 15 Jun 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/get_bandwidth_data/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+import pprint
+
+class example():
+
+    def __init__(self):
+        user = &#39;&#39;
+        key = &#39;&#39;
+        self.client = SoftLayer.Client(username = user, api_key = key)
+
+    def main(self):
+        pp = pprint.PrettyPrinter(indent=2)
+        theMask = &amp;quot;mask[inboundPrivateBandwidthUsage,inboundPublicBandwidthUsage,outboundPrivateBandwidthUsage,outboundPublicBandwidthUsage]&amp;quot;
+        result = self.client[&#39;SoftLayer_Account&#39;].getHardware()
+        print &amp;quot;server_name,public_in,public_out,private_in,private_out&amp;quot;
+        
+        for server in result:
+            #getHardware() only returns SoftLayer_Hardware, which doesn&#39;t have the private bw usage metrics, for some reason.
+            # So we just use SoftLayer_Hardware_Server here, which has more detailed information
+            serverInfo = self.client[&#39;SoftLayer_Hardware_Server&#39;].getObject(id=server[&#39;id&#39;],mask=theMask)
+
+            # use .get() to avoid exceptions
+            pubin = serverInfo.get(&#39;inboundPublicBandwidthUsage&#39;, &#39;--&#39;)
+            pubout = serverInfo.get(&#39;outboundPublicBandwidthUsage&#39;, &#39;--&#39;)
+            privin =serverInfo.get(&#39;inboundPrivateBandwidthUsage&#39;, &#39;--&#39;)
+            privout = serverInfo.get(&#39;outboundPrivateBandwidthUsage&#39;, &#39;--&#39;)
+
+            print(serverInfo[&#39;fullyQualifiedDomainName&#39;] + &amp;quot;,&amp;quot;),
+            print(pubin + &amp;quot;,&amp;quot;),
+            print(pubout + &amp;quot;,&amp;quot;),
+            print(privin + &amp;quot;,&amp;quot;),
+            print(privout)
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Password Auth</title>
+      <link>https://softlayer.github.io/python/token_auth/</link>
+      <pubDate>Tue, 09 Jun 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/token_auth/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+client = SoftLayer.Client()
+client.authenticate_with_password(&amp;quot;username&amp;quot;, &amp;quot;password&amp;quot;)
+print client.call(&#39;Account&#39;, &#39;getCurrentUser&#39;, mask=&#39;id,apiAuthenticationKeys&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Change Passwords</title>
+      <link>https://softlayer.github.io/python/change_multi_pass/</link>
+      <pubDate>Sat, 30 May 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/change_multi_pass/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+import pprint
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+        self.prefix = &amp;quot;PREFIX&amp;quot;
+        self.password= &amp;quot;qweASDzxc!23&amp;quot;
+
+    def main(self):
+        pp = pprint.PrettyPrinter(indent=4)
+        users = self.get_target_users(prefix=self.prefix)
+        for user in users:
+            print &amp;quot;Changing password for: &amp;quot; + str(user[&#39;id&#39;]) + &amp;quot; &amp;quot; + user[&#39;username&#39;]
+            result = self.client[&#39;User_Customer&#39;].updatePassword(self.password, id=user[&#39;id&#39;])
+        # pp.pprint(result)
+
+    def get_target_users(self, prefix):
+        _filter = {
+            &#39;users&#39;: {
+                &#39;username&#39;: {
+                    &#39;operation&#39;: &#39;*= %s&#39; % (prefix)
+                }
+            }
+        }
+
+        _mask = &amp;quot;mask[id,username]&amp;quot;
+
+        _users = self.client[&#39;Account&#39;].getUsers(filter=_filter, mask=_mask)
+        return _users
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Set a server&#39;s metadata</title>
+      <link>https://softlayer.github.io/python/set_user_metadata/</link>
+      <pubDate>Mon, 23 Mar 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/set_user_metadata/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+import pprint
+
+server = 132672 
+
+api_username = &#39;&#39;
+api_key = &#39;&#39;
+pp = pprint.PrettyPrinter(indent=4)
+client = SoftLayer.Client(username=api_username,api_key=api_key)
+
+mask = &amp;quot;mask[attributes]&amp;quot;
+
+# Sets the metadata for this server to tttttt
+result1 = client[&#39;SoftLayer_Hardware_Server&#39;].setUserMetadata({&#39;value&#39;: &#39;tttttt&#39;},id=server)
+pp.pprint(result1)
+
+result2 = client[&#39;SoftLayer_Hardware_Server&#39;].getObject(mask=mask,id=server)
+
+pp.pprint(result2)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>List Instances</title>
+      <link>https://softlayer.github.io/python/list_instances/</link>
+      <pubDate>Thu, 01 Jan 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/list_instances/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+import pprint
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.VSManager(self.client)
+
+    def main(self):
+        &amp;quot;&amp;quot;&amp;quot;
+
+        &amp;quot;&amp;quot;&amp;quot;
+        pp = pprint.PrettyPrinter(indent=4)
+        result =  self.mgr.list_instances()
+        pp.pprint(result)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create a virtual server from an existing image template</title>
+      <link>https://softlayer.github.io/python/create_server_from_template/</link>
+      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/create_server_from_template/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer.API
+
+from pprint import pprint as pp
+
+apiUsername = &#39;&#39;
+apiKey = &#39;&#39;
+templateId = 
+
+client = SoftLayer.API.Client(&#39;SoftLayer_Product_Order&#39;, None, apiUsername, apiKey)
+
+order = {
+    &#39;complexType&#39;: &#39;SoftLayer_Container_Product_Order_Virtual_Guest&#39;,
+    &#39;quantity&#39;: 1,
+    &#39;virtualGuests&#39;: [
+        {&#39;hostname&#39;: &#39;test&#39;, &#39;domain&#39;: &#39;example.com&#39;}
+    ],
+    &#39;location&#39;: 168642,  # San Jose 1
+    &#39;packageId&#39;: 46,  # CCI Package
+    &#39;prices&#39;: [
+        {&#39;id&#39;: 1640},  # 1 x 2.0 GHz Core
+        {&#39;id&#39;: 1644},  # 1 GB RAM
+        {&#39;id&#39;:  905},  # Reboot / Remote Console
+        {&#39;id&#39;:  272},  # 10 Mbps Public &amp;amp; Private Networks
+        {&#39;id&#39;:  613},  # 1000 GB Bandwidth
+        {&#39;id&#39;:   21},  # 1 IP Address
+        {&#39;id&#39;: 2202},  # 25 GB (SAN)
+        {&#39;id&#39;: 1684},  # CentOS 5 - Minimal Install (32 bit)
+        {&#39;id&#39;:   55},  # Host Ping Monitoring
+        {&#39;id&#39;:   57},  # Email and Ticket Notifications
+        {&#39;id&#39;:   58},  # Automated Notification Response
+        {&#39;id&#39;:  420},  # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
+        {&#39;id&#39;:  418},  # Nessus Vulnerability Assessment &amp;amp; Reporting
+    ],
+    &#39;imageTemplateId&#39;: templateId
+}
+
+result = client.verifyOrder(order)
+pp(result)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create child SoftLayer Account</title>
+      <link>https://softlayer.github.io/python/create_account/</link>
+      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/create_account/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+from pprint import pprint as pp
+import json
+import SoftLayer.API
+
+# DIST MASTER ACCOUNT API INFORMATION (NOT SUB-BRAND)
+username = &amp;quot;CHANGE_ME&amp;quot; #change me
+apiKey = &amp;quot;CHANGE_ME&amp;quot; #change me
+
+# Brand ID of the Sub-brand to create the account under, NOT the top level distributor brand.
+# Very important to set this correctly, as it determines the location of the account
+# Will currently be a five digit number (the ID of of the parent brand, not the parent account)
+brandId = 0 #change me
+
+companyname = &amp;quot;&amp;quot; #change me
+firstname = &amp;quot;&amp;quot; #change me
+lastname = &amp;quot;&amp;quot; #change me
+address = &amp;quot;&amp;quot; #change me
+city = &amp;quot;&amp;quot; #change me
+state = &amp;quot;&amp;quot; #change me
+country = &amp;quot;&amp;quot; #change me -- two letter ISO code
+zipcode = &amp;quot;&amp;quot; #change me
+phone = &amp;quot;&amp;quot; #change me
+email = &amp;quot;&amp;quot; #change me
+
+cust_account = {
+ &amp;quot;brandId&amp;quot;: brandId,
+ &amp;quot;companyName&amp;quot;: companyname,
+ &amp;quot;firstName&amp;quot;: firstname,
+ &amp;quot;lastName&amp;quot;: lastname,
+ &amp;quot;address1&amp;quot;: address,
+ &amp;quot;postalCode&amp;quot;: zipcode,
+ &amp;quot;city&amp;quot;: city,
+ &amp;quot;state&amp;quot;: state,
+ &amp;quot;country&amp;quot;: country,
+ &amp;quot;officePhone&amp;quot;: phone,
+ &amp;quot;email&amp;quot;: email,
+ &amp;quot;lateFeeProtectionFlag&amp;quot;: True,
+ &amp;quot;claimedTaxExemptTxFlag&amp;quot;: False,
+ &amp;quot;allowedPptpVpnQuantity&amp;quot;: 1,
+ &amp;quot;isReseller&amp;quot;: 0,
+ &amp;quot;accountStatusId&amp;quot;: 1001 # 1001 = Active Account
+}
+
+print(&amp;quot;\n&amp;quot;)
+pp(cust_account)
+print(&amp;quot;\n&amp;quot;)
+null = raw_input(&amp;quot;Press Enter to create this brand in production... This cannot be undone.&amp;quot;)
+print(&amp;quot;\n&amp;quot;)
+
+client = SoftLayer.Client(
+   username= username,
+   api_key = apiKey,
+   )
+
+try:
+   result = client[&#39;Brand&#39;].createCustomerAccount(cust_account)
+   print ()
+   print (&amp;quot;Result = &amp;quot;, json.dumps(result, indent=2))
+except SoftLayer.SoftLayerAPIError as e:
+   print(&amp;quot;Error: %s, %s&amp;quot; % (e.faultCode, e.faultString))
+   exit()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Get IPMI info for BMS</title>
+      <link>https://softlayer.github.io/python/get_ipmi/</link>
+      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/get_ipmi/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+from SoftLayer import utils
+import sys
+import pprint
+import logging
+ 
+apiUsername = &#39;&#39;
+apiKey = &#39;&#39;
+  	 
+pp = pprint.PrettyPrinter(indent=4)
+client = SoftLayer.Client(username=apiUsername,api_key=apiKey)
+	  
+mask = &amp;quot;mask[networkManagementIpAddress,remoteManagementAccounts[username,password]]&amp;quot;
+		 
+result = client[&#39;SoftLayer_Account&#39;].getHardware(
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Required price IDs for package</title>
+      <link>https://softlayer.github.io/python/get_required_price_id/</link>
+      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/get_required_price_id/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+
+apiUsername = &#39;&#39;
+apiKey = &#39;&#39;
+package = 46
+
+client = SoftLayer.Client(username=apiUsername, api_key=apiKey)
+categoryObjectMask = &amp;quot;mask[isRequired, itemCategory[id, name]]&amp;quot;
+
+configurations = client[&#39;Product_Package&#39;].getConfiguration(
+    id=package, mask=categoryObjectMask)
+
+pricesObjectMask = &amp;quot;mask[id;item.description;categories.id]&amp;quot;
+
+prices = client[&#39;Product_Package&#39;].getItemPrices(
+    id=package, mask=pricesObjectMask)
+
+headerFormat = &#39;%s - %s:&#39;
+priceFormat = &#39;    %s -- %s&#39;
+for configuration in configurations:
+    if (not configuration[&#39;isRequired&#39;]):
+        continue
+    print headerFormat % (configuration[&#39;itemCategory&#39;][&#39;name&#39;],
+                          configuration[&#39;itemCategory&#39;][&#39;id&#39;])
+    for price in prices:
+        if (&#39;categories&#39; not in price):
+            continue
+        if any((category.get(&#39;id&#39;) == configuration[&#39;itemCategory&#39;][&#39;id&#39;]
+                for category in price[&#39;categories&#39;])):
+            print priceFormat % (price[&#39;id&#39;], price[&#39;item&#39;][&#39;description&#39;])
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Place quote order</title>
+      <link>https://softlayer.github.io/python/order_quote/</link>
+      <pubDate>Wed, 12 Feb 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/order_quote/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer.API
+from pprint import pprint as pp
+ 
+api_username = &#39;&#39;
+api_key = &#39;&#39;
+quote_id = 1234
+
+client = SoftLayer.Client(
+    username=api_username,
+    api_key=api_key,
+)
+
+def getOrderContainer(quote_id):
+    container = client[&#39;Billing_Order_Quote&#39;].getRecalculatedOrderContainer( \
+        id=quote_id)
+    return container[&#39;orderContainers&#39;][0]
+ 
+ 
+container = getOrderContainer(quote_id)
+order = {}
+order[&#39;complexType&#39;] = &#39;Container_Product_Order_Virtual_Guest&#39;
+order[&#39;hardware&#39;] = [{&#39;hostname&#39;: &#39;quotetest&#39;, &#39;domain&#39;: &#39;example.com&#39;}]
+order[&#39;quanity&#39;] = 1
+result = client[&#39;Billing_Order_Quote&#39;].placeOrder(order, id=quote_id)
+
+pp(result)
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

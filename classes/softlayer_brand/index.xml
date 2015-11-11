@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Softlayer_brand on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/classes/softlayer_brand/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Sun, 24 May 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Get top level billing items for all owned accounts</title>
+      <link>https://softlayer.github.io/php/get_invoice_top_level_items/</link>
+      <pubDate>Sun, 24 May 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/get_invoice_top_level_items/</guid>
+      <description>&lt;p&gt;With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the -&amp;gt;allOwnedAccounts bits&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+require_once &#39;./SoftLayer/SoapClient.class.php&#39;;
+
+
+/**
+* This class structure is mostly used so this can be run as a script.
+* Most of the print statements use fancy bash color codes to make things pretty
+*/
+class topBillingItems
+{
+
+    function __construct() {
+        $this-&amp;gt;apiUsername = &#39;&#39;;
+        $this-&amp;gt;apiKey = &#39;&#39;;
+        $this-&amp;gt;startDate = new DateTime(&#39;2015-02-12T00:00:00-06:00&#39;);
+        $this-&amp;gt;endDate = new DateTime(&#39;2015-03-12T00:00:00-06:00&#39;);
+    }
+
+    /*!
+    * Will get all the brands on an account, THEN all of those brand&#39;s accounts,
+    * Then all of THEIR brands, then all of THEIR accounts. Then, go through each
+    * of the final tier accounts, and get all the invoices, then all the billing items.
+    *
+    */
+    function main() {
+
+        //The First Object Mask. Used to get all the front line brands, which will have the
+        //accounts that are actually buying things
+        $objectMask = new SoftLayer_ObjectMask();
+        $objectMask-&amp;gt;ownedBrands-&amp;gt;allOwnedAccounts-&amp;gt;ownedBrands;
+
+        $client = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+        $client-&amp;gt;setObjectMask($objectMask);
+
+        $response = $client-&amp;gt;getObject();
+
+        //Start off with the main brand
+        foreach ($response-&amp;gt;ownedBrands as $brand) {
+            print &amp;quot;BRAND=\e[31m&amp;quot; . $brand-&amp;gt;keyName .  &amp;quot; ::&amp;quot; . $brand-&amp;gt;id . &amp;quot;\e[0m=\n&amp;quot;;
+
+            //Go into each of the top brands accounts
+            foreach ($brand-&amp;gt;allOwnedAccounts as $account) {
+                print &amp;quot;==\e[32m&amp;quot; . $account-&amp;gt;companyName .&amp;quot;\e[0m\n&amp;quot;;
+
+                //Go into each of those accounts brands...
+                foreach ($account-&amp;gt;ownedBrands as $brand1) {
+                    print &amp;quot;====\e[33m&amp;quot; . $brand1-&amp;gt;name .&amp;quot; ::&amp;quot; . $brand1-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
+                    $brandInvoice = $this-&amp;gt;getAllBrandAccounts($brand1-&amp;gt;id);
+
+                    //Go through each of the accounts on the brand
+                    foreach ($brandInvoice as $brandAccount) {
+
+                        //This is recursive and a very large data structure.
+                        //we unset it here so it doesn&#39;t get in the way later
+                        unset($brandAccount-&amp;gt;brand);
+                        $this-&amp;gt;workAccount($brandAccount);
+
+                    } //END foreach $brandInvoice
+                } //END foreach $account-&amp;gt;ownedBrands
+            } //END foreach $brand-&amp;gt;allOwnedAccounts
+        } //END foreach $response-&amp;gt;ownedBrands
+    }//END MAIN
+
+    function getAllBrandAccounts($brandId) {
+
+        //This filters out all invoices that are not in our date range.
+        //all based on the invoices createDate
+        $filter = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;operation = &#39;betweenDate&#39;;
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options = array();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0] = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;name = &#39;startDate&#39;;
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;value = array($this-&amp;gt;startDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1] = new stdClass();
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;name = &#39;endDate&#39;;
+        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;value = array($this-&amp;gt;endDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
+
+        //Mask for the front line brands, used to get all their accounts, and their invoices
+        $brandMask = new SoftLayer_ObjectMask();
+        $brandMask-&amp;gt;allOwnedAccounts-&amp;gt;invoices;
+
+        //From that brand, get all the brand&#39;s owned accounts, with their invoices from the current month
+        $brandClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Brand&#39;, $brandId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+        $brandClient-&amp;gt;setObjectMask($brandMask);
+        $brandClient-&amp;gt;setObjectFilter($filter);
+        return $brandClient-&amp;gt;getAllOwnedAccounts();
+
+    }
+
+    function workAccount($account) {
+
+        print &amp;quot;=====\e[94m&amp;quot; . $account-&amp;gt;companyName .&amp;quot; ::&amp;quot; . $account-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
+        //Used to get all the actual line items from an invoice
+        $invoiceMask = new SoftLayer_ObjectMask();
+        $invoiceMask-&amp;gt;items;
+        $invoiceMask-&amp;gt;invoiceTotalAmount;
+        //Go through each of the accounts monthly invoices
+        foreach ($account-&amp;gt;invoices as $invoice) {
+            print &amp;quot;Created: &amp;quot; . $invoice-&amp;gt;createDate . &amp;quot; TYPE: &amp;quot; . $invoice-&amp;gt;typeCode .&amp;quot;\n&amp;quot;;
+
+            //Here we get the actual invoice and all the billing items inside of it
+            $bClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Billing_Invoice&#39;, $invoice-&amp;gt;id , $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+            $bClient-&amp;gt;setObjectMask($invoiceMask);
+            $bt = $bClient-&amp;gt;getObject();
+            print &amp;quot;====\e[42;90m&amp;quot; . $bt-&amp;gt;invoiceTotalAmount .&amp;quot;\e[0m\n&amp;quot;;
+
+            //Go through each item on the invoice and print out its decription + fee.
+            //There are a few other fields that could be billable, but these are the main ones.
+            foreach ($bt-&amp;gt;items as $lineItem) {
+                unset($lineItem-&amp;gt;invoice);
+                $fee = $lineItem-&amp;gt;recurringAfterTaxAmount + $lineItem-&amp;gt;oneTimeAfterTaxAmount;
+                print &amp;quot;====\e[35m&amp;quot; . $lineItem-&amp;gt;description . &amp;quot; =&amp;gt; &amp;quot; . $fee . &amp;quot;$ \e[0m\n&amp;quot;;
+            }
+
+        }//end invoice
+    }
+}
+
+$main = new Example();
+$main-&amp;gt;main();
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create child SoftLayer Account</title>
+      <link>https://softlayer.github.io/python/create_account/</link>
+      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/create_account/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+from pprint import pprint as pp
+import json
+import SoftLayer.API
+
+# DIST MASTER ACCOUNT API INFORMATION (NOT SUB-BRAND)
+username = &amp;quot;CHANGE_ME&amp;quot; #change me
+apiKey = &amp;quot;CHANGE_ME&amp;quot; #change me
+
+# Brand ID of the Sub-brand to create the account under, NOT the top level distributor brand.
+# Very important to set this correctly, as it determines the location of the account
+# Will currently be a five digit number (the ID of of the parent brand, not the parent account)
+brandId = 0 #change me
+
+companyname = &amp;quot;&amp;quot; #change me
+firstname = &amp;quot;&amp;quot; #change me
+lastname = &amp;quot;&amp;quot; #change me
+address = &amp;quot;&amp;quot; #change me
+city = &amp;quot;&amp;quot; #change me
+state = &amp;quot;&amp;quot; #change me
+country = &amp;quot;&amp;quot; #change me -- two letter ISO code
+zipcode = &amp;quot;&amp;quot; #change me
+phone = &amp;quot;&amp;quot; #change me
+email = &amp;quot;&amp;quot; #change me
+
+cust_account = {
+ &amp;quot;brandId&amp;quot;: brandId,
+ &amp;quot;companyName&amp;quot;: companyname,
+ &amp;quot;firstName&amp;quot;: firstname,
+ &amp;quot;lastName&amp;quot;: lastname,
+ &amp;quot;address1&amp;quot;: address,
+ &amp;quot;postalCode&amp;quot;: zipcode,
+ &amp;quot;city&amp;quot;: city,
+ &amp;quot;state&amp;quot;: state,
+ &amp;quot;country&amp;quot;: country,
+ &amp;quot;officePhone&amp;quot;: phone,
+ &amp;quot;email&amp;quot;: email,
+ &amp;quot;lateFeeProtectionFlag&amp;quot;: True,
+ &amp;quot;claimedTaxExemptTxFlag&amp;quot;: False,
+ &amp;quot;allowedPptpVpnQuantity&amp;quot;: 1,
+ &amp;quot;isReseller&amp;quot;: 0,
+ &amp;quot;accountStatusId&amp;quot;: 1001 # 1001 = Active Account
+}
+
+print(&amp;quot;\n&amp;quot;)
+pp(cust_account)
+print(&amp;quot;\n&amp;quot;)
+null = raw_input(&amp;quot;Press Enter to create this brand in production... This cannot be undone.&amp;quot;)
+print(&amp;quot;\n&amp;quot;)
+
+client = SoftLayer.Client(
+   username= username,
+   api_key = apiKey,
+   )
+
+try:
+   result = client[&#39;Brand&#39;].createCustomerAccount(cust_account)
+   print ()
+   print (&amp;quot;Result = &amp;quot;, json.dumps(result, indent=2))
+except SoftLayer.SoftLayerAPIError as e:
+   print(&amp;quot;Error: %s, %s&amp;quot; % (e.faultCode, e.faultString))
+   exit()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create child SoftLayer Account</title>
+      <link>https://softlayer.github.io/ruby/create_account/</link>
+      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/create_account/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
+require &#39;pp&#39;
+
+# Credentials to the API are read from a configuration file by default.
+# See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44
+client = SoftLayer::Client.new
+
+account_service = client[&#39;Account&#39;]
+brand_service = client[&#39;Brand&#39;]
+
+brand = account_service.getBrand
+
+cust_account = {
+  brandId: brand[&#39;id&#39;].to_i, # change me
+  allowedPptpVpnQuantity: 1,
+  claimedTaxExemptTxFlag: false,
+  companyName: &#39;&#39;, # change me
+  isReseller: 0,
+  lateFeeProtectionFlag: true,
+  firstName: &#39;&#39;, # change me
+  lastName: &#39;&#39;, # change me
+  email: &#39;&#39;, # change me
+  officePhone: &#39;&#39;, # change me
+  address1: &#39;&#39;, # change me
+  city: &#39;&#39;, # change me
+  state: &#39;&#39;, # change me
+  postalCode: &#39;&#39;, # change me
+  country: &#39;&#39; # change me
+}
+
+puts &#39;&#39;
+pp cust_account
+puts &#39;&#39;
+
+begin
+  result = brand_service.createCustomerAccount(cust_account)
+  puts &#39;Result: &#39;
+  pp result
+rescue Exception =&amp;gt; e
+  puts &amp;quot;Error: #{e}&amp;quot;
+end
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
