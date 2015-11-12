@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
+    <meta name="author" content="SoftLayer Evangelism Team">
+
+    <title>Order Server with security software - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/php/orderBareMetal/">
+    
+    <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/custom.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/highlight/monokai_sublime.css" rel="stylesheet">
+    <script src="https://softlayer.github.io/js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <link rel="shortcut icon" href="https://softlayer.github.io/img/favicon.ico" type="image/x-icon" />
+
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-68025308-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+</head>
+
+<body>
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle Navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="https://softlayer.github.io/">SoftLayer API Examples</a>
+            </div>
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav">
+                    
+                        <li><a href="https://softlayer.github.io/perl/">perl</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/php/">php</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/python/">python</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/release_notes/">release notes</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/rest/">rest</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/ruby/">ruby</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/tools/">tools</a></li>
+                    
+
+                    
+                </ul>
+                <div id="custom-search-input" class="pull-right">
+                  <form class="navbar-form" role="search" method="get" action="http://www.bing.com/">
+                    <div class="input-group col-md-12">
+                      <input type="text" class="form-control input-md" placeholder="Search" name="q" id="srch-term">
+                      <input type="hidden" name="q1" value="site:softlayer.github.io" />
+                      <div class="input-group-btn">
+                        <button class="btn btn-info" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-9">
+            <div class="well well-sm" style="word-wrap: break-word;">
+                <h3>Order Server with security software<br> <small>An example of how to include add-on software to a server order</small></h3>
+                <hr>
+                
+                <pre><code class="language-php">&lt;?php
+
+require_once './vendor/autoload.php';
+
+class Example
+{
+    function __construct() {
+        $this-&gt;apiUsername = '';
+        $this-&gt;apiKey = '';
+    }
+
+    function getAllPackages() {
+        $packageClient = \SoftLayer\SoapClient::getClient('SoftLayer_Product_Package', null, $this-&gt;apiUsername, $this-&gt;apiKey );
+        $packages = $packageClient-&gt;getAllObjects();
+
+        print &quot;ID -&gt; Name \n&quot;;
+        foreach($packages as $package) {
+            print $package-&gt;id . &quot; -&gt; &quot; . $package-&gt;name . &quot;\n&quot;;
+        }
+    }
+
+
+    function getPackageById($id=0, $onlyShow=0, $showPrices = 1) {
+        $packageClient = \SoftLayer\SoapClient::getClient('SoftLayer_Product_Package', $id, $this-&gt;apiUsername, $this-&gt;apiKey );
+        $package = $packageClient-&gt;getItems();
+        print &quot;ID, KeyName, Description \n&quot;;
+        foreach ($package as $item) {
+            if ($onlyShow == 0 || $onlyShow == $item-&gt;id) {
+                print $item-&gt;id . &quot; , &quot; . $item-&gt;keyName . &quot; , &quot; . $item-&gt;description . &quot;\n&quot; ;
+                if ($showPrices) {
+                    print_r($item-&gt;prices); 
+                }
+            }
+        }
+    }
+
+    function getActiveRamItems($packageId = 0) {
+        $client = \SoftLayer\XmlRpcClient::getClient('SoftLayer_Product_Package', $packageId, $this-&gt;apiUsername, $this-&gt;apiKey );
+        $items = $client-&gt;getActiveRamItems();
+        print_r($items);
+    }
+
+    function getActiveServerItems($packageId = 0) {
+        $client = \SoftLayer\XmlRpcClient::getClient('SoftLayer_Product_Package', $packageId, $this-&gt;apiUsername, $this-&gt;apiKey );
+        $items = $client-&gt;getActiveServerItems();
+        print_r($items);
+    }
+
+
+
+    function placeOrder() {
+
+        $client = \SoftLayer\XmlRpcClient::getClient('SoftLayer_Product_Order', null, $this-&gt;apiUsername, $this-&gt;apiKey );
+        $order = new stdClass();
+        $container = new stdClass();
+
+        $priceArray = array(
+            49485, //INTEL_XEON_2650_2_00
+            36253, //OS_WINDOWS_2012_R2_FULL_DC_64_BIT_2         
+            49405, //RAM_16_GB
+            876, //DISK_CONTROLLER_NONRAID
+            49759, //HARD_DRIVE_1_00_TB_SATA_2
+            49759, //HARD_DRIVE_1_00_TB_SATA_2
+            274, //1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS
+            50261, //BANDWIDTH_20000_GB
+            21, //1_IP_ADDRESS
+            906, //REBOOT_KVM_OVER_IP
+            420, //UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT
+            56, //MONITORING_HOST_PING_AND_TCP_SERVICE
+            57, //NOTIFICATION_EMAIL_AND_TICKET
+            58, // response, AUTOMATED_NOTIFICATION
+            418, //NESSUS_VULNERABILITY_ASSESSMENT_REPORTING
+            413, //MCAFEE_HOST_INTRUSION_PROTECTION_WREPORTING
+            594, //MCAFEE_VIRUSSCAN_ANTIVIRUS_WINDOWS                    
+        );
+        $container-&gt;prices = array();
+        foreach ($priceArray as $item) {
+            $priceId = new stdClass();
+            $priceId-&gt;id = $item;
+            $container-&gt;prices[] = $priceId;
+        }
+
+        $container-&gt;complexType = &quot;SoftLayer_Container_Product_Order_Hardware_Server&quot;;
+        $container-&gt;packageId = 273;
+        $container-&gt;quantity = 1;
+        $container-&gt;location = 448994;  //DAL05
+        $container-&gt;serverCount = 1;
+
+        $hardware = new stdClass();
+        $hardware-&gt;domain = &quot;test.com&quot;;
+        $hardware-&gt;hostname = &quot;thisIsTest&quot;;
+        $container-&gt;hardware = $hardware;
+
+        $order-&gt;orderContainers = array();
+        $order-&gt;orderContainers[0] = $container;
+        print_r($order);
+        $result = $client-&gt;verifyOrder($order);
+        print_r($result);
+    }
+}
+
+
+$example = new Example();
+// $example-&gt;getAllPackages();
+
+// Your package needs to have both activeRamItems and activeServerItems to be orderable.
+// $example-&gt;getActiveRamItems(273);
+// $example-&gt;getActiveServerItems(273);
+
+//All price ids are from this function
+// $example-&gt;getPackageById(273,0,1);
+
+$example-&gt;placeOrder();    
+
+</code></pre>
+
+            </div>
+        </div>
+
+        
+        <div class="col-md-3">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <h4>November 11, 2015<br>
+                </h4>
+                <hr>
+                <strong>Classes</strong>
+                <ul class="list-unstyled">
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_product_order">SoftLayer_Product_Order</a></li>
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_product_package">SoftLayer_Product_Package</a></li>
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_container_product_order_hardware_server">SoftLayer_Container_Product_Order_Hardware_Server</a></li>
+                
+                </ul>
+                <hr>
+                <strong>Tags <span class="fa fa-tags"/></strong><br>
+                <a class="label label-default" href="https://softlayer.github.io/tags/ordering">ordering</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/server">server</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/mc-afee">mc-afee</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/security">security</a>
+                 
+                <hr>
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20php%20-%20Order%20Server%20with%20security%20software&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fphp%2forderBareMetal%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+                    
+                
+            </div>
+            <div class="panel panel-default">
+    <div class="panel-heading" style="padding: 2px 15px;">
+        <h4>More Documentation</h4>
+    </div>
+    <div class="panel-body">
+        <a href="http://sldn.softlayer.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
+        <a href="https://github.com/softlayer/softlayer-java"><i class="fa fa-github"></i> softlayer-java<br></a>
+        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fa fa-github"></i> softlayer-perl<br></a>
+        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fa fa-github"></i> softlayer-php<br></a>
+        <a href="https://github.com/softlayer/softlayer-python"><i class="fa fa-github"></i> softlayer-python<br></a>
+        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fa fa-github"></i> softlayer-ruby<br></a>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading text-center" style="padding: 2px 15px;">
+      <a href="http://www.facebook.com/Softlayer"><i class="fa fa-facebook-square" alt="facebook"></i> </a>
+      <a href="http://www.twitter.com/SoftLayer"><i class="fa fa-twitter" alt="twitter"></i> </a>
+      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fa fa-linkedin-square"></i> </a>
+      <a href="https://github.com/softlayer"><i class="fa fa-github" alt="github"></i> </a>
+      <a href="irc://irc.freenode.net/softlayer"><i class="fa fa-comment" alt="irc"></i> </a>
+    </div>
+</div>
+
+        </div>
+    </div>
+        <footer>
+            <div class="row">
+                <hr>
+                <div class="col-sm-12">
+                    <p>&copy; SoftLayer 2015<br>
+                    Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
+                </div>
+            </div>
+        </footer>
+</div>
+
+    <script src="https://softlayer.github.io/js/jquery.js"></script>
+    <script src="https://softlayer.github.io/js/bootstrap.js"></script>
+</body>
+</html>
+
