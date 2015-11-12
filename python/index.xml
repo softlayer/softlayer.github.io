@@ -6,7 +6,139 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 16 Sep 2015 00:00:00 UTC</updated>
+    <updated>Wed, 11 Nov 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Order an SSL Certificate</title>
+      <link>https://softlayer.github.io/python/orderSSLCert/</link>
+      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/orderSSLCert/</guid>
+      <description>
+
+&lt;h4 id=&#34;generating-a-csr:a798909b54a41db7cd3faf021a46bea5&#34;&gt;Generating a CSR&lt;/h4&gt;
+
+&lt;p&gt;You will need a csr to make this request, it should be on your local file system.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;openssl genrsa -out domain.key 2048
+openssl req -new -sha256 -key domain.key -out domain.csr
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code&gt;import SoftLayer
+import pprint
+import logging
+
+class example():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    def main(self):
+        logger = logging.getLogger()
+        logger.addHandler(logging.StreamHandler())
+        logger.setLevel(3)
+        pp = pprint.PrettyPrinter(indent=4)
+        filename = &#39;./domain.csr&#39;
+
+        cert = self.file_get_contents(filename)
+        cert64 = base64.b64encode(cert)
+        addressInfo =  {
+                    &amp;quot;addressLine1&amp;quot; : &amp;quot;1234 fleet street&amp;quot;,
+                    &amp;quot;city&amp;quot; : &amp;quot;Houston&amp;quot;,
+                    &amp;quot;countryCode&amp;quot; : &amp;quot;US&amp;quot;,
+                    &amp;quot;postalCode&amp;quot; : &amp;quot;77090&amp;quot;,
+                    &amp;quot;state&amp;quot; : &amp;quot;TX&amp;quot;
+                }
+        contactInfo = {
+                &amp;quot;address&amp;quot;: addressInfo,
+                &amp;quot;emailAddress&amp;quot;: &amp;quot;chgallo@lablayer.info&amp;quot;,
+                &amp;quot;firstName&amp;quot;: &amp;quot;Christopher&amp;quot;,
+                &amp;quot;lastName&amp;quot;: &amp;quot;Gallo&amp;quot;,
+                &amp;quot;organizationName&amp;quot;: &amp;quot;SoftLayer&amp;quot;,
+                &amp;quot;phoneNumber&amp;quot;: &amp;quot;281-123-4567&amp;quot;,
+                &amp;quot;title&amp;quot;: &amp;quot;Dev&amp;quot;
+            }
+        sslContainer= {&#39;orderContainers&#39;: [
+        {
+            &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Security_Certificate&amp;quot;,
+            &amp;quot;packageId&amp;quot;:0,
+            &amp;quot;quantity&amp;quot;:1,
+            &amp;quot;serverCount&amp;quot;:1,
+            &amp;quot;certificateSigningRequest&amp;quot;: cert,
+            &amp;quot;serverType&amp;quot;: &amp;quot;apacheopenssl&amp;quot;,
+            # Needs to be a VERY specific email @ the domain you are registering
+            # admin / administrator / hostmaster / root / webmaster / mailmaster
+            &amp;quot;orderApproverEmailAddress&amp;quot;: &amp;quot;admin@lablayer.info&amp;quot;,
+            &amp;quot;technicalContact&amp;quot;: contactInfo,
+            &amp;quot;administrativeContact&amp;quot;: contactInfo,
+            &amp;quot;billingContact&amp;quot;: contactInfo,
+            &amp;quot;organizationInformation&amp;quot;: {
+                &amp;quot;address&amp;quot; :addressInfo,
+                &amp;quot;organizationName&amp;quot; : &amp;quot;SoftLayer&amp;quot;,
+                &amp;quot;phoneNumber&amp;quot;: &amp;quot;281-123-4567&amp;quot;
+            },
+            &amp;quot;prices&amp;quot;: [
+                #SSL_CERTIFICATE_RAPIDSSL_1_YEAR
+                {&#39;id&#39;:1836}
+            ]
+        }
+        ]
+        }
+
+        pp.pprint(sslContainer)
+
+        result = self.client[&#39;SoftLayer_Product_Order&#39;].verifyOrder(sslContainer)
+        pp.pprint(result)
+
+    def file_get_contents(self,filename):
+        with open(filename) as f:
+            return f.read()
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>getCustomGraphData</title>
+      <link>https://softlayer.github.io/python/tracking_objects/</link>
+      <pubDate>Sun, 11 Oct 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/tracking_objects/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    def main(self):
+
+        client = SoftLayer.Client()
+        result = client[&#39;SoftLayer_Metric_Tracking_Object&#39;].getBandwidthData(&#39;2015-10-01&#39;,&#39;2015-11-31&#39;,&#39;public&#39;,600,id=10413573)
+        result = client[&#39;SoftLayer_Metric_Tracking_Object&#39;].getSummaryData(&#39;2015-11-01&#39;,&#39;2015-11-02&#39;,[{&#39;keyName&#39;:&#39;PUBLICIN&#39;,&#39;summaryType&#39;:&#39;counter&#39;,&#39;name&#39;:&#39;vif_1_rx&#39;}],600,id=10413573)
+        args = {
+            &#39;startDateTime&#39; : &#39;2015-11-01&#39;,
+            &#39;endDateTime&#39;:&#39;2015-11-02&#39;,
+            &#39;metrics&#39;: [{&#39;keyName&#39;:&#39;PUBLICIN&#39;,&#39;summaryType&#39;:&#39;counter&#39;,&#39;name&#39;:&#39;vif_1_rx&#39;}],
+            &#39;interval&#39;:600,
+            &#39;returnImage&#39;: False
+        }
+        result = client[&#39;SoftLayer_Metric_Tracking_Object&#39;].getCustomGraphData(args,id=10413573)
+        pp(result)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Set user permissions</title>
@@ -612,43 +744,6 @@ for configuration in configurations:
         if any((category.get(&#39;id&#39;) == configuration[&#39;itemCategory&#39;][&#39;id&#39;]
                 for category in price[&#39;categories&#39;])):
             print priceFormat % (price[&#39;id&#39;], price[&#39;item&#39;][&#39;description&#39;])
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Place quote order</title>
-      <link>https://softlayer.github.io/python/order_quote/</link>
-      <pubDate>Wed, 12 Feb 2014 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/order_quote/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer.API
-from pprint import pprint as pp
- 
-api_username = &#39;&#39;
-api_key = &#39;&#39;
-quote_id = 1234
-
-client = SoftLayer.Client(
-    username=api_username,
-    api_key=api_key,
-)
-
-def getOrderContainer(quote_id):
-    container = client[&#39;Billing_Order_Quote&#39;].getRecalculatedOrderContainer( \
-        id=quote_id)
-    return container[&#39;orderContainers&#39;][0]
- 
- 
-container = getOrderContainer(quote_id)
-order = {}
-order[&#39;complexType&#39;] = &#39;Container_Product_Order_Virtual_Guest&#39;
-order[&#39;hardware&#39;] = [{&#39;hostname&#39;: &#39;quotetest&#39;, &#39;domain&#39;: &#39;example.com&#39;}]
-order[&#39;quanity&#39;] = 1
-result = client[&#39;Billing_Order_Quote&#39;].placeOrder(order, id=quote_id)
-
-pp(result)
-
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>

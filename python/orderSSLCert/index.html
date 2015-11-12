@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer Evangelism Team">
 
-    <title>SoftLayer API Examples - https://softlayer.github.io/</title>
-    <link rel="canonical" href="https://softlayer.github.io/">
+    <title>Order an SSL Certificate - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/python/orderSSLCert/">
     
     <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
     <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
@@ -20,7 +20,7 @@
     <link rel="shortcut icon" href="https://softlayer.github.io/img/favicon.ico" type="image/x-icon" />
 
 
-    <link href="https://softlayer.github.io/index.xml" rel="alternate" type="application/rss+xml" title="SoftLayer API Examples" />
+    
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -80,117 +80,137 @@
         </div>
     </nav>
 
-
-    <div class="container">
+<div class="container">
     <div class="row">
         <div class="col-md-9">
-        <h1>Release Notes</h1>
-        
-            <div class="well well-sm example col-md-12">
-    <h4>
-        <a href="https://softlayer.github.io/release_notes/20151110/"> November 10, 2015</a>
-        <br>
-    </h4>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
+            <div class="well well-sm" style="word-wrap: break-word;">
+                <h3>Order an SSL Certificate<br> <small>Explains how to get the information requried to order an SSL Certificate</small></h3>
+                <hr>
+                
                 
 
-<h4 id="portal:3d4758b232e1a60f1a7e0b43b65df4c4">Portal</h4>
+<h4 id="generating-a-csr:a798909b54a41db7cd3faf021a46bea5">Generating a CSR</h4>
 
-<ul>
-<li>Improved the error message on the Catalyst self-enrollment page when user enters invalid credit card information.</li>
-<li>&lsquo;NEW&rsquo; Invoices will now properly display the last 4 digits of the credit card.</li>
-</ul>
+<p>You will need a csr to make this request, it should be on your local file system.</p>
 
-<h4 id="api:3d4758b232e1a60f1a7e0b43b65df4c4">API</h4>
+<pre><code class="language-bash">openssl genrsa -out domain.key 2048
+openssl req -new -sha256 -key domain.key -out domain.csr
+</code></pre>
 
-<ul>
-<li>Fix issue in which objectFilter values for (SoftLayer_Network_Subnet)[<a href="http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet</a>] addressSpace and subnetType were being ignored.</li>
-<li>Fixed an issue that When a SSL certificate is being activated on a load balancer which is already active, the load balancer sends a response which was being improperly handled as an error.</li>
-</ul>
- 
+<pre><code>import SoftLayer
+import pprint
+import logging
+
+class example():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    def main(self):
+        logger = logging.getLogger()
+        logger.addHandler(logging.StreamHandler())
+        logger.setLevel(3)
+        pp = pprint.PrettyPrinter(indent=4)
+        filename = './domain.csr'
+
+        cert = self.file_get_contents(filename)
+        cert64 = base64.b64encode(cert)
+        addressInfo =  {
+                    &quot;addressLine1&quot; : &quot;1234 fleet street&quot;,
+                    &quot;city&quot; : &quot;Houston&quot;,
+                    &quot;countryCode&quot; : &quot;US&quot;,
+                    &quot;postalCode&quot; : &quot;77090&quot;,
+                    &quot;state&quot; : &quot;TX&quot;
+                }
+        contactInfo = {
+                &quot;address&quot;: addressInfo,
+                &quot;emailAddress&quot;: &quot;chgallo@lablayer.info&quot;,
+                &quot;firstName&quot;: &quot;Christopher&quot;,
+                &quot;lastName&quot;: &quot;Gallo&quot;,
+                &quot;organizationName&quot;: &quot;SoftLayer&quot;,
+                &quot;phoneNumber&quot;: &quot;281-123-4567&quot;,
+                &quot;title&quot;: &quot;Dev&quot;
+            }
+        sslContainer= {'orderContainers': [
+        {
+            &quot;complexType&quot;: &quot;SoftLayer_Container_Product_Order_Security_Certificate&quot;,
+            &quot;packageId&quot;:0,
+            &quot;quantity&quot;:1,
+            &quot;serverCount&quot;:1,
+            &quot;certificateSigningRequest&quot;: cert,
+            &quot;serverType&quot;: &quot;apacheopenssl&quot;,
+            # Needs to be a VERY specific email @ the domain you are registering
+            # admin / administrator / hostmaster / root / webmaster / mailmaster
+            &quot;orderApproverEmailAddress&quot;: &quot;admin@lablayer.info&quot;,
+            &quot;technicalContact&quot;: contactInfo,
+            &quot;administrativeContact&quot;: contactInfo,
+            &quot;billingContact&quot;: contactInfo,
+            &quot;organizationInformation&quot;: {
+                &quot;address&quot; :addressInfo,
+                &quot;organizationName&quot; : &quot;SoftLayer&quot;,
+                &quot;phoneNumber&quot;: &quot;281-123-4567&quot;
+            },
+            &quot;prices&quot;: [
+                #SSL_CERTIFICATE_RAPIDSSL_1_YEAR
+                {'id':1836}
+            ]
+        }
+        ]
+        }
+
+        pp.pprint(sslContainer)
+
+        result = self.client['SoftLayer_Product_Order'].verifyOrder(sslContainer)
+        pp.pprint(result)
+
+    def file_get_contents(self,filename):
+        with open(filename) as f:
+            return f.read()
+
+if __name__ == &quot;__main__&quot;:
+    main = example()
+    main.main()
+
+</code></pre>
+
             </div>
         </div>
-    </div>
-</div>
-
-
-
 
         
-            <div class="well well-sm example col-md-12">
-    <h4>
-        <a href="https://softlayer.github.io/release_notes/20151105/"> November 5, 2015</a>
-        <br>
-    </h4>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
+        <div class="col-md-3">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <h4>November 11, 2015<br>
+                </h4>
+                <hr>
+                <strong>Classes</strong>
+                <ul class="list-unstyled">
                 
-
-<h4 id="portal:845cada06249b6bb50535ffaf81f4cd3">Portal</h4>
-
-<ul>
-<li>Next and Pending invoices are cached once requested, greatly reducing the time it takes to download the invoice again.</li>
-</ul>
-
-<h4 id="api:845cada06249b6bb50535ffaf81f4cd3">API</h4>
-
-<ul>
-<li>Fixes an issue where tokens were not being properly replaced in the subject field for ticket watch notification emails</li>
-</ul>
- 
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-        
-            <div class="well well-sm example col-md-12">
-    <h4>
-        <a href="https://softlayer.github.io/release_notes/20151103/"> November 3, 2015</a>
-        <br>
-    </h4>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
+                    <li><a href="https://softlayer.github.io/classes/softlayer_product_order">SoftLayer_Product_Order</a></li>
                 
-
-<h4 id="portal:b64c673fc1931ce32de387f3ae6d8b69">Portal</h4>
-
-<ul>
-<li>Changed the region sort order on order forms to be more friendly.</li>
-<li>Removed forum auto-login link.</li>
-<li>Restrict the length of first name field for credit cards to match those enforced by account first name field (30 characters)</li>
-</ul>
-
-<h4 id="api:b64c673fc1931ce32de387f3ae6d8b69">API</h4>
-
-<ul>
-<li>Improved Virtual Guest provisioning times by parallelizing some provisioning transactions.</li>
-<li>Fixed an error preventing some Fast Provision Servers from getting past the SEND_SOFTWARE_INSTALL transaction.</li>
-<li>Failed post install scripts on unsupported OSes will now include a message that the OS is unsupported.</li>
-<li>Corrects an issue in which network monitoring of a primary IP address from a trunked VLAN of the network component was no longer allowed.</li>
-</ul>
- 
+                    <li><a href="https://softlayer.github.io/classes/softlayer_product_package">SoftLayer_Product_Package</a></li>
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_container_product_order_security_certificate">SoftLayer_Container_Product_Order_Security_Certificate</a></li>
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_security_certificate_request_servertype">SoftLayer_Security_Certificate_Request_ServerType</a></li>
+                
+                </ul>
+                <hr>
+                <strong>Tags <span class="fa fa-tags"/></strong><br>
+                <a class="label label-default" href="https://softlayer.github.io/tags/ordering">ordering</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/ssl">ssl</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/placeorder">placeOrder</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/debugging">debugging</a>
+                 
+                <hr>
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Order%20an%20SSL%20Certificate&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2forderSSLCert%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+                    
+                
             </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-        
-        </div>
-
-            
-            <div class="col-md-3">
-                <div class="panel panel-default">
+            <div class="panel panel-default">
     <div class="panel-heading" style="padding: 2px 15px;">
         <h4>More Documentation</h4>
     </div>
@@ -214,7 +234,7 @@
     </div>
 </div>
 
-            </div>
+        </div>
     </div>
         <footer>
             <div class="row">
@@ -231,3 +251,4 @@
     <script src="https://softlayer.github.io/js/bootstrap.js"></script>
 </body>
 </html>
+

@@ -6,7 +6,153 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 08 Jul 2015 00:00:00 UTC</updated>
+    <updated>Wed, 11 Nov 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Order an SSL Certificate</title>
+      <link>https://softlayer.github.io/php/orderSSLCert/</link>
+      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/orderSSLCert/</guid>
+      <description>
+
+&lt;h4 id=&#34;generating-a-csr:a798909b54a41db7cd3faf021a46bea5&#34;&gt;Generating a CSR&lt;/h4&gt;
+
+&lt;p&gt;You will need a csr to make this request, it should be on your local file system.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;openssl genrsa -out domain.key 2048
+openssl req -new -sha256 -key domain.key -out domain.csr
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+require_once &#39;./vendor/autoload.php&#39;;
+class Example
+{
+    function __construct() {
+        $this-&amp;gt;apiUsername = &#39;&#39;;
+        $this-&amp;gt;apiKey = &#39;&#39;;
+    }
+
+    /*
+    * Package 0 is the &amp;quot;Everything else&amp;quot; pacakge, which contains SSL certain. But if you didn&#39;t remember that
+    * this function will get you that information
+    */
+    function getAllPackages() {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $packages = $packageClient-&amp;gt;getAllObjects();
+
+        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
+        foreach($packages as $package) {
+            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
+        }
+    }
+
+    /*
+    * Each package has a lot of items, so this function will show you all of those along with their prices. 
+    * Search through it for the proper SSL item you want to order, and take note of its price
+    */
+    function getPackageById($id=0, $onlyShow=0) {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $package = $packageClient-&amp;gt;getItems();
+        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
+        foreach ($package as $item) {
+            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
+                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
+                print_r($item-&amp;gt;prices); 
+            }
+        }
+    }
+
+
+    /*
+    * Change verifyOrder to placeOrder when you are actually ready to make a certificate 
+    */
+    function placeOrder($csrFilename=&#39;./domain.csr&#39;) {
+
+        $csr = file_get_contents($csrFilename);
+        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $order = new stdClass();
+
+        $addressInfo = new stdClass();
+        $addressInfo-&amp;gt;address = new stdClass();
+        $addressInfo-&amp;gt;address-&amp;gt;addressLine1 = &amp;quot;1234 fleet street&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;city = &amp;quot;Houston&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;countryCode = &amp;quot;US&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;postalCode =  &amp;quot;77002&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;state = &amp;quot;TX&amp;quot;;
+        $addressInfo-&amp;gt;emailAddress =&amp;quot;chgallo@lablayer.info&amp;quot;;
+        $addressInfo-&amp;gt;firstName = &amp;quot;Christopher&amp;quot;;
+        $addressInfo-&amp;gt;lastName = &amp;quot;Gallo&amp;quot;;
+        $addressInfo-&amp;gt;organizationName = &amp;quot;SoftLayer&amp;quot;;
+        $addressInfo-&amp;gt;phoneNumber = &amp;quot;281-123-4567&amp;quot;;
+        $addressInfo-&amp;gt;title = &amp;quot;Dev&amp;quot;; 
+
+        $price = new stdClass();
+        $price-&amp;gt;id = 1836;
+
+        $container = new stdClass();
+        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Security_Certificate&amp;quot;;
+        $container-&amp;gt;packageId = 0;
+        $container-&amp;gt;quantity = 1;
+        $container-&amp;gt;serverCount = 1;
+        $container-&amp;gt;serverType = &#39;apacheapachessl&#39;;
+        $container-&amp;gt;prices = array($price);
+        $container-&amp;gt;certificateSigningRequest = $csr;
+
+        $container-&amp;gt;technicalContact = $addressInfo;
+        $container-&amp;gt;administrativeContact = $addressInfo;
+        $container-&amp;gt;organizationInformation = $addressInfo;
+        $container-&amp;gt;billingContact = $addressInfo;
+        # Needs to be a VERY specific email @ the domain you are registering
+        # admin / administrator / hostmaster / root / webmaster / mailmaster
+        $container-&amp;gt;orderApproverEmailAddress = &amp;quot;admin@lablayer.info&amp;quot;;  
+
+        $order-&amp;gt;orderContainers = array();
+        $order-&amp;gt;orderContainers[0] = $container;
+        // print_r($order);
+        $result = $client-&amp;gt;verifyOrder($order);
+        print_r($result);
+    }
+
+    /*
+    * This info is required for the serverType property. 
+    */
+    function getServerTypes() {
+        // http://sldn.softlayer.com/reference/services/SoftLayer_Security_Certificate_Request_ServerType
+        $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Security_Certificate_Request_ServerType&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $types = $client-&amp;gt;getAllObjects();
+        print_r($types);
+    }
+
+}
+
+
+$example = new Example();
+// Figure out which package has the SSL certs
+$example-&amp;gt;getAllPackages();
+
+// Package 0, item 964 is the ssl cert we want to see the prices for.
+$example-&amp;gt;getPackageById(0, 964 );
+
+// 964 , SSL_CERTIFICATE_RAPIDSSL_1_YEAR , RapidSSL - 1 year
+// [id] =&amp;gt; 1836
+// [setupFee] =&amp;gt; 19
+
+$example-&amp;gt;getServerTypes();
+/*
+[1] =&amp;gt; stdClass Object
+    (
+        [description] =&amp;gt; Apache + ApacheSSL
+        [id] =&amp;gt; 2
+        [name] =&amp;gt; apacheapachessl
+        [value] =&amp;gt; 22
+    )
+*/
+$example-&amp;gt;placeOrder();    
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Get tickets using an objectFilter</title>

@@ -6,7 +6,271 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 05 Nov 2015 00:00:00 UTC</updated>
+    <updated>Wed, 11 Nov 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Order an SSL Certificate</title>
+      <link>https://softlayer.github.io/php/orderSSLCert/</link>
+      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/orderSSLCert/</guid>
+      <description>
+
+&lt;h4 id=&#34;generating-a-csr:a798909b54a41db7cd3faf021a46bea5&#34;&gt;Generating a CSR&lt;/h4&gt;
+
+&lt;p&gt;You will need a csr to make this request, it should be on your local file system.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;openssl genrsa -out domain.key 2048
+openssl req -new -sha256 -key domain.key -out domain.csr
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+require_once &#39;./vendor/autoload.php&#39;;
+class Example
+{
+    function __construct() {
+        $this-&amp;gt;apiUsername = &#39;&#39;;
+        $this-&amp;gt;apiKey = &#39;&#39;;
+    }
+
+    /*
+    * Package 0 is the &amp;quot;Everything else&amp;quot; pacakge, which contains SSL certain. But if you didn&#39;t remember that
+    * this function will get you that information
+    */
+    function getAllPackages() {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $packages = $packageClient-&amp;gt;getAllObjects();
+
+        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
+        foreach($packages as $package) {
+            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
+        }
+    }
+
+    /*
+    * Each package has a lot of items, so this function will show you all of those along with their prices. 
+    * Search through it for the proper SSL item you want to order, and take note of its price
+    */
+    function getPackageById($id=0, $onlyShow=0) {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $package = $packageClient-&amp;gt;getItems();
+        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
+        foreach ($package as $item) {
+            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
+                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
+                print_r($item-&amp;gt;prices); 
+            }
+        }
+    }
+
+
+    /*
+    * Change verifyOrder to placeOrder when you are actually ready to make a certificate 
+    */
+    function placeOrder($csrFilename=&#39;./domain.csr&#39;) {
+
+        $csr = file_get_contents($csrFilename);
+        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $order = new stdClass();
+
+        $addressInfo = new stdClass();
+        $addressInfo-&amp;gt;address = new stdClass();
+        $addressInfo-&amp;gt;address-&amp;gt;addressLine1 = &amp;quot;1234 fleet street&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;city = &amp;quot;Houston&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;countryCode = &amp;quot;US&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;postalCode =  &amp;quot;77002&amp;quot;;
+        $addressInfo-&amp;gt;address-&amp;gt;state = &amp;quot;TX&amp;quot;;
+        $addressInfo-&amp;gt;emailAddress =&amp;quot;chgallo@lablayer.info&amp;quot;;
+        $addressInfo-&amp;gt;firstName = &amp;quot;Christopher&amp;quot;;
+        $addressInfo-&amp;gt;lastName = &amp;quot;Gallo&amp;quot;;
+        $addressInfo-&amp;gt;organizationName = &amp;quot;SoftLayer&amp;quot;;
+        $addressInfo-&amp;gt;phoneNumber = &amp;quot;281-123-4567&amp;quot;;
+        $addressInfo-&amp;gt;title = &amp;quot;Dev&amp;quot;; 
+
+        $price = new stdClass();
+        $price-&amp;gt;id = 1836;
+
+        $container = new stdClass();
+        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Security_Certificate&amp;quot;;
+        $container-&amp;gt;packageId = 0;
+        $container-&amp;gt;quantity = 1;
+        $container-&amp;gt;serverCount = 1;
+        $container-&amp;gt;serverType = &#39;apacheapachessl&#39;;
+        $container-&amp;gt;prices = array($price);
+        $container-&amp;gt;certificateSigningRequest = $csr;
+
+        $container-&amp;gt;technicalContact = $addressInfo;
+        $container-&amp;gt;administrativeContact = $addressInfo;
+        $container-&amp;gt;organizationInformation = $addressInfo;
+        $container-&amp;gt;billingContact = $addressInfo;
+        # Needs to be a VERY specific email @ the domain you are registering
+        # admin / administrator / hostmaster / root / webmaster / mailmaster
+        $container-&amp;gt;orderApproverEmailAddress = &amp;quot;admin@lablayer.info&amp;quot;;  
+
+        $order-&amp;gt;orderContainers = array();
+        $order-&amp;gt;orderContainers[0] = $container;
+        // print_r($order);
+        $result = $client-&amp;gt;verifyOrder($order);
+        print_r($result);
+    }
+
+    /*
+    * This info is required for the serverType property. 
+    */
+    function getServerTypes() {
+        // http://sldn.softlayer.com/reference/services/SoftLayer_Security_Certificate_Request_ServerType
+        $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Security_Certificate_Request_ServerType&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $types = $client-&amp;gt;getAllObjects();
+        print_r($types);
+    }
+
+}
+
+
+$example = new Example();
+// Figure out which package has the SSL certs
+$example-&amp;gt;getAllPackages();
+
+// Package 0, item 964 is the ssl cert we want to see the prices for.
+$example-&amp;gt;getPackageById(0, 964 );
+
+// 964 , SSL_CERTIFICATE_RAPIDSSL_1_YEAR , RapidSSL - 1 year
+// [id] =&amp;gt; 1836
+// [setupFee] =&amp;gt; 19
+
+$example-&amp;gt;getServerTypes();
+/*
+[1] =&amp;gt; stdClass Object
+    (
+        [description] =&amp;gt; Apache + ApacheSSL
+        [id] =&amp;gt; 2
+        [name] =&amp;gt; apacheapachessl
+        [value] =&amp;gt; 22
+    )
+*/
+$example-&amp;gt;placeOrder();    
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Order an SSL Certificate</title>
+      <link>https://softlayer.github.io/python/orderSSLCert/</link>
+      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/orderSSLCert/</guid>
+      <description>
+
+&lt;h4 id=&#34;generating-a-csr:a798909b54a41db7cd3faf021a46bea5&#34;&gt;Generating a CSR&lt;/h4&gt;
+
+&lt;p&gt;You will need a csr to make this request, it should be on your local file system.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;openssl genrsa -out domain.key 2048
+openssl req -new -sha256 -key domain.key -out domain.csr
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code&gt;import SoftLayer
+import pprint
+import logging
+
+class example():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    def main(self):
+        logger = logging.getLogger()
+        logger.addHandler(logging.StreamHandler())
+        logger.setLevel(3)
+        pp = pprint.PrettyPrinter(indent=4)
+        filename = &#39;./domain.csr&#39;
+
+        cert = self.file_get_contents(filename)
+        cert64 = base64.b64encode(cert)
+        addressInfo =  {
+                    &amp;quot;addressLine1&amp;quot; : &amp;quot;1234 fleet street&amp;quot;,
+                    &amp;quot;city&amp;quot; : &amp;quot;Houston&amp;quot;,
+                    &amp;quot;countryCode&amp;quot; : &amp;quot;US&amp;quot;,
+                    &amp;quot;postalCode&amp;quot; : &amp;quot;77090&amp;quot;,
+                    &amp;quot;state&amp;quot; : &amp;quot;TX&amp;quot;
+                }
+        contactInfo = {
+                &amp;quot;address&amp;quot;: addressInfo,
+                &amp;quot;emailAddress&amp;quot;: &amp;quot;chgallo@lablayer.info&amp;quot;,
+                &amp;quot;firstName&amp;quot;: &amp;quot;Christopher&amp;quot;,
+                &amp;quot;lastName&amp;quot;: &amp;quot;Gallo&amp;quot;,
+                &amp;quot;organizationName&amp;quot;: &amp;quot;SoftLayer&amp;quot;,
+                &amp;quot;phoneNumber&amp;quot;: &amp;quot;281-123-4567&amp;quot;,
+                &amp;quot;title&amp;quot;: &amp;quot;Dev&amp;quot;
+            }
+        sslContainer= {&#39;orderContainers&#39;: [
+        {
+            &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Security_Certificate&amp;quot;,
+            &amp;quot;packageId&amp;quot;:0,
+            &amp;quot;quantity&amp;quot;:1,
+            &amp;quot;serverCount&amp;quot;:1,
+            &amp;quot;certificateSigningRequest&amp;quot;: cert,
+            &amp;quot;serverType&amp;quot;: &amp;quot;apacheopenssl&amp;quot;,
+            # Needs to be a VERY specific email @ the domain you are registering
+            # admin / administrator / hostmaster / root / webmaster / mailmaster
+            &amp;quot;orderApproverEmailAddress&amp;quot;: &amp;quot;admin@lablayer.info&amp;quot;,
+            &amp;quot;technicalContact&amp;quot;: contactInfo,
+            &amp;quot;administrativeContact&amp;quot;: contactInfo,
+            &amp;quot;billingContact&amp;quot;: contactInfo,
+            &amp;quot;organizationInformation&amp;quot;: {
+                &amp;quot;address&amp;quot; :addressInfo,
+                &amp;quot;organizationName&amp;quot; : &amp;quot;SoftLayer&amp;quot;,
+                &amp;quot;phoneNumber&amp;quot;: &amp;quot;281-123-4567&amp;quot;
+            },
+            &amp;quot;prices&amp;quot;: [
+                #SSL_CERTIFICATE_RAPIDSSL_1_YEAR
+                {&#39;id&#39;:1836}
+            ]
+        }
+        ]
+        }
+
+        pp.pprint(sslContainer)
+
+        result = self.client[&#39;SoftLayer_Product_Order&#39;].verifyOrder(sslContainer)
+        pp.pprint(result)
+
+    def file_get_contents(self,filename):
+        with open(filename) as f:
+            return f.read()
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Release notes: November 10, 2015</title>
+      <link>https://softlayer.github.io/release_notes/20151110/</link>
+      <pubDate>Tue, 10 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/release_notes/20151110/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal:3d4758b232e1a60f1a7e0b43b65df4c4&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Improved the error message on the Catalyst self-enrollment page when user enters invalid credit card information.&lt;/li&gt;
+&lt;li&gt;&amp;lsquo;NEW&amp;rsquo; Invoices will now properly display the last 4 digits of the credit card.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;api:3d4758b232e1a60f1a7e0b43b65df4c4&#34;&gt;API&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Fix issue in which objectFilter values for (SoftLayer_Network_Subnet)[&lt;a href=&#34;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet&#34;&gt;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet&lt;/a&gt;] addressSpace and subnetType were being ignored.&lt;/li&gt;
+&lt;li&gt;Fixed an issue that When a SSL certificate is being activated on a load balancer which is already active, the load balancer sends a response which was being improperly handled as an error.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: November 5, 2015</title>
@@ -287,6 +551,44 @@ pp client[&#39;Location_Group_Pricing&#39;].object_mask(mask).getAllObjects
     </item>
     
     <item>
+      <title>getCustomGraphData</title>
+      <link>https://softlayer.github.io/python/tracking_objects/</link>
+      <pubDate>Sun, 11 Oct 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/tracking_objects/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    def main(self):
+
+        client = SoftLayer.Client()
+        result = client[&#39;SoftLayer_Metric_Tracking_Object&#39;].getBandwidthData(&#39;2015-10-01&#39;,&#39;2015-11-31&#39;,&#39;public&#39;,600,id=10413573)
+        result = client[&#39;SoftLayer_Metric_Tracking_Object&#39;].getSummaryData(&#39;2015-11-01&#39;,&#39;2015-11-02&#39;,[{&#39;keyName&#39;:&#39;PUBLICIN&#39;,&#39;summaryType&#39;:&#39;counter&#39;,&#39;name&#39;:&#39;vif_1_rx&#39;}],600,id=10413573)
+        args = {
+            &#39;startDateTime&#39; : &#39;2015-11-01&#39;,
+            &#39;endDateTime&#39;:&#39;2015-11-02&#39;,
+            &#39;metrics&#39;: [{&#39;keyName&#39;:&#39;PUBLICIN&#39;,&#39;summaryType&#39;:&#39;counter&#39;,&#39;name&#39;:&#39;vif_1_rx&#39;}],
+            &#39;interval&#39;:600,
+            &#39;returnImage&#39;: False
+        }
+        result = client[&#39;SoftLayer_Metric_Tracking_Object&#39;].getCustomGraphData(args,id=10413573)
+        pp(result)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Determining SoftLayer Device Owners</title>
       <link>https://softlayer.github.io/ruby/determining_device_owners/</link>
       <pubDate>Fri, 09 Oct 2015 00:00:00 UTC</pubDate>
@@ -354,127 +656,6 @@ end
 &lt;li&gt;Adds &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest_Block_Device_Template_Group/getPublicCustomerOwnedImages&#34;&gt;getPublicCustomerOwnedImages&lt;/a&gt; to the SoftLayer_Virtual_Guest_Block_Device_Template_Group service&lt;/li&gt;
 &lt;li&gt;Fixed a bug when adding new configuration value for a Nimsoft Monitoring Robot causing a failing transaction.&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Create a virtual server from an existing image template</title>
-      <link>https://softlayer.github.io/ruby/create_server_from_template/</link>
-      <pubDate>Wed, 07 Oct 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/create_server_from_template/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-IMAGE_ID = &#39;foobar&#39; # change me. Image template global ID.
-
-# Credentials to the API are read from a configuration file by default.
-# See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44
-SoftLayer::Client.default_client = SoftLayer::Client.new
-
-order_template = {
-    hostname: &#39;test&#39;,
-    domain: &#39;example.com&#39;,
-    datacenter: &#39;hou02&#39;,
-    cores: 2, # 2 x 2.0 GHz Cores
-    memory: 4, # 4GB RAM
-    private_network_only: false,
-    dedicated_host_only: false,
-    #os_reference_code: &#39;CENTOS_6_64&#39;, # CentOS 6.latest minimal (64 bit)
-    image_template: SoftLayer::ImageTemplate.template_with_global_id(IMAGE_ID),
-    use_local_disk: false, # Use a SAN disk
-    hourly: true # Charge me for hourly use, rather than monthly.
-}
-
-# Set order template in our order instance,
-# Otherwise, you can skip using an order template hash, and just
-# set values directly in the order instance like `order.cores = 2`.
-order = SoftLayer::VirtualServerOrder.new
-order_template.keys.each do |k|
-    order.send(&amp;quot;#{k}=&amp;quot;, order_template[k])
-end
-
-pp order.verify
-# Uncomment to place the order.
-# server = order.place_order!
-# pp server
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>List Instances</title>
-      <link>https://softlayer.github.io/ruby/list_instances/</link>
-      <pubDate>Tue, 06 Oct 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/list_instances/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-# Credentials to the API are read from a configuration file by default.
-# See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44
-SoftLayer::Client.default_client = SoftLayer::Client.new
-
-pp SoftLayer::VirtualServers.find_servers
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: October 05, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151005/</link>
-      <pubDate>Mon, 05 Oct 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151005/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:9a8ecc206e830478b9786d1179227256&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;New IBM cloud theme&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:9a8ecc206e830478b9786d1179227256&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Decreased monitoring robot provisioning time&lt;/li&gt;
-&lt;li&gt;Improved SAML authentication logs&lt;/li&gt;
-&lt;li&gt;Corrects a bug where the replications schedule may not be returned for all Endurance Storage volumes.&lt;/li&gt;
-&lt;li&gt;Improved &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getLastOperatingSystemReload&#34;&gt;SoftLayer_Hardware_Server::lastOperatingSystemReload()&lt;/a&gt; request performance&lt;/li&gt;
-&lt;li&gt;Adds the ability to order hardware security modules via the API.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Set user permissions</title>
-      <link>https://softlayer.github.io/ruby/set_permission/</link>
-      <pubDate>Sun, 04 Oct 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/set_permission/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-# Credentials to the SoftLayer API are grabbed from the config file by default.
-# See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44
-client = SoftLayer::Client.new
-user_service = client[&#39;User_Customer&#39;]
-
-# List the user permissions
-USER_ID = 172536 # Change me. User id of user to inspect.
-pp user_service.object_with_id(USER_ID).getPermissions
-
-# add permission
-new_permission = { keyName: &#39;TICKET_ADD&#39; }
-result = user_service.object_with_id(USER_ID).addPortalPermission(new_permission)
-unless result
-  puts &#39;Failed to add permission&#39;
-  exit 1
-end
-
-# list user permissions again
-pp user_service.object_with_id(USER_ID).getPermissions
-&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     
