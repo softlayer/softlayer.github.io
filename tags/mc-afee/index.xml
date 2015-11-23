@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Mc Afee on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/tags/mc-afee/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Wed, 11 Nov 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Order Server with security software</title>
+      <link>https://softlayer.github.io/php/orderBareMetal/</link>
+      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/orderBareMetal/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+require_once &#39;./vendor/autoload.php&#39;;
+
+class Example
+{
+    function __construct() {
+        $this-&amp;gt;apiUsername = &#39;&#39;;
+        $this-&amp;gt;apiKey = &#39;&#39;;
+    }
+
+    function getAllPackages() {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $packages = $packageClient-&amp;gt;getAllObjects();
+
+        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
+        foreach($packages as $package) {
+            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
+        }
+    }
+
+
+    function getPackageById($id=0, $onlyShow=0, $showPrices = 1) {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $package = $packageClient-&amp;gt;getItems();
+        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
+        foreach ($package as $item) {
+            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
+                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
+                if ($showPrices) {
+                    print_r($item-&amp;gt;prices); 
+                }
+            }
+        }
+    }
+
+    function getActiveRamItems($packageId = 0) {
+        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Package&#39;, $packageId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $items = $client-&amp;gt;getActiveRamItems();
+        print_r($items);
+    }
+
+    function getActiveServerItems($packageId = 0) {
+        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Package&#39;, $packageId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $items = $client-&amp;gt;getActiveServerItems();
+        print_r($items);
+    }
+
+
+
+    function placeOrder() {
+
+        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $order = new stdClass();
+        $container = new stdClass();
+
+        $priceArray = array(
+            49485, //INTEL_XEON_2650_2_00
+            36253, //OS_WINDOWS_2012_R2_FULL_DC_64_BIT_2         
+            49405, //RAM_16_GB
+            876, //DISK_CONTROLLER_NONRAID
+            49759, //HARD_DRIVE_1_00_TB_SATA_2
+            49759, //HARD_DRIVE_1_00_TB_SATA_2
+            274, //1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS
+            50261, //BANDWIDTH_20000_GB
+            21, //1_IP_ADDRESS
+            906, //REBOOT_KVM_OVER_IP
+            420, //UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT
+            56, //MONITORING_HOST_PING_AND_TCP_SERVICE
+            57, //NOTIFICATION_EMAIL_AND_TICKET
+            58, // response, AUTOMATED_NOTIFICATION
+            418, //NESSUS_VULNERABILITY_ASSESSMENT_REPORTING
+            413, //MCAFEE_HOST_INTRUSION_PROTECTION_WREPORTING
+            594, //MCAFEE_VIRUSSCAN_ANTIVIRUS_WINDOWS                    
+        );
+        $container-&amp;gt;prices = array();
+        foreach ($priceArray as $item) {
+            $priceId = new stdClass();
+            $priceId-&amp;gt;id = $item;
+            $container-&amp;gt;prices[] = $priceId;
+        }
+
+        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Hardware_Server&amp;quot;;
+        $container-&amp;gt;packageId = 273;
+        $container-&amp;gt;quantity = 1;
+        $container-&amp;gt;location = 448994;  //DAL05
+        $container-&amp;gt;serverCount = 1;
+
+        $hardware = new stdClass();
+        $hardware-&amp;gt;domain = &amp;quot;test.com&amp;quot;;
+        $hardware-&amp;gt;hostname = &amp;quot;thisIsTest&amp;quot;;
+        $container-&amp;gt;hardware = $hardware;
+
+        $order-&amp;gt;orderContainers = array();
+        $order-&amp;gt;orderContainers[0] = $container;
+        print_r($order);
+        $result = $client-&amp;gt;verifyOrder($order);
+        print_r($result);
+    }
+}
+
+
+$example = new Example();
+// $example-&amp;gt;getAllPackages();
+
+// Your package needs to have both activeRamItems and activeServerItems to be orderable.
+// $example-&amp;gt;getActiveRamItems(273);
+// $example-&amp;gt;getActiveServerItems(273);
+
+//All price ids are from this function
+// $example-&amp;gt;getPackageById(273,0,1);
+
+$example-&amp;gt;placeOrder();    
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
