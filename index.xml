@@ -6,7 +6,85 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 07 Dec 2015 00:00:00 UTC</updated>
+    <updated>Fri, 11 Dec 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Edit IP address note</title>
+      <link>https://softlayer.github.io/python/edit_ip_note/</link>
+      <pubDate>Fri, 11 Dec 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/edit_ip_note/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+
+class example():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    def getSubnets(self):
+        subnets = self.client[&#39;SoftLayer_Account&#39;].getSubnets()
+        for subnet in subnets:
+            print(&amp;quot;%s - %s/%s - %s&amp;quot; % 
+                (   subnet[&#39;id&#39;],
+                    subnet[&#39;gateway&#39;],
+                    subnet[&#39;cidr&#39;],
+                    subnet[&#39;networkVlanId&#39;]
+                )
+            )
+
+    def getIpInSubnet(self, subnet_id):
+        mask = &amp;quot;mask[virtualGuest,hardware]&amp;quot;
+        subnet = self.client[&#39;SoftLayer_Network_Subnet&#39;]
+        ips = subnet.getIpAddresses(id=subnet_id,mask=mask)
+        for ip in ips:
+            status = &amp;quot;Free&amp;quot;
+            if ip[&#39;subnet&#39;][&#39;subnetType&#39;] == &amp;quot;PRIMARY&amp;quot;:
+                status = &amp;quot;Reserved&amp;quot;
+            elif ip[&#39;isNetwork&#39;]:
+                status = &amp;quot;Network Ip&amp;quot;
+            elif ip[&#39;isGateway&#39;]:
+                status = &amp;quot;Gateway Ip&amp;quot;
+            try: 
+                status = ip[&#39;virtualGuest&#39;][&#39;fullyQualifiedDomainName&#39;]
+            except KeyError:
+                pass
+            try:
+                status = ip[&#39;hardware&#39;][&#39;fullyQualifiedDomainName&#39;]
+            except KeyError:
+                pass
+
+            try:
+                note = ip[&#39;note&#39;]
+            except KeyError:
+                note = &amp;quot;none&amp;quot;
+            print(&amp;quot;%s: %s - %s - %s&amp;quot; % (ip[&#39;id&#39;],ip[&#39;ipAddress&#39;],status, note))
+
+    def editNote(self, ip_id, note):
+        &amp;quot;&amp;quot;&amp;quot;
+            With editObject on SoftLayer_Network_Subnet_IpAddress you can only 
+            edit the note, everything else will get ignored silently.
+        &amp;quot;&amp;quot;&amp;quot;
+        ip = {
+            &#39;id&#39;: ip_id,
+            &#39;note&#39;: note,
+        }
+        self.client[&#39;SoftLayer_Network_Subnet_IpAddress&#39;].editObject(ip,id=ip_id)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    # CHANGE ME
+    subnet_ip = 1234
+    # CHANGE ME
+    ip_id = 4567
+    main = example()
+    # List all subnets, find the ID of the one you want to work with
+    main.getSubnets()
+    # List all the IPs and their notes, find the id of the one you want to edit
+    main.getIpInSubnet(subnet_ip)
+    # Edit the note
+    main.editNote(ip_id,&amp;quot;Hello World22&amp;quot;)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: December 07, 2015</title>
@@ -304,6 +382,141 @@ $example-&amp;gt;placeOrder();
     </item>
     
     <item>
+      <title>Order Firewall and Security Appliances</title>
+      <link>https://softlayer.github.io/php/orderFirewalls/</link>
+      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/orderFirewalls/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+require_once &#39;./vendor/autoload.php&#39;;
+
+class Example
+{
+    function __construct() {
+        $this-&amp;gt;apiUsername = &#39;&#39;;
+        $this-&amp;gt;apiKey = &#39;&#39;;
+    }
+
+    function getAllPackages() {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $packages = $packageClient-&amp;gt;getAllObjects();
+        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
+        foreach($packages as $package) {
+            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
+        }
+    }
+
+
+    function getPackageById($id=0, $onlyShow=0, $showPrices=1) {
+        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $package = $packageClient-&amp;gt;getItems();
+        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
+        foreach ($package as $item) {
+            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
+                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
+                if($showPrices) {
+                    print_r($item-&amp;gt;prices); 
+                }
+            }
+        }
+    }
+
+    function placeOrderHardwareFirewall() {
+        // http://sldn.softlayer.com/blog/phil/Getting-Started-Firewalls
+        // The speed of the firewall needs to match speed of the server
+       
+        // 3896 , HARDWARE_FIREWALL_HIGH_AVAILABILITY , Hardware Firewall (High Availability)
+        // 297 , 1000MBPS_HARDWARE_FIREWALL , 1000Mbps Hardware Firewall
+        // 298 , 100MBPS_HARDWARE_FIREWALL , 100Mbps Hardware Firewall
+        // 1296 , 2000MBPS_HARDWARE_FIREWALL , 2000Mbps Hardware Firewall
+        // 4550 , 20MBPS_HARDWARE_FIREWALL , 20Mbps Hardware Firewall
+        // 299 , 10MBPS_HARDWARE_FIREWALL , 10Mbps Hardware Firewall
+        // 1329 , HARDWARE_FIREWALL_DEDICATED , Hardware Firewall (Dedicated)
+        // 4551 , 200MBPS_HARDWARE_FIREWALL , 200Mbps Hardware Firewall
+        // $example-&amp;gt;getPackageById(0, 297 );
+        // Generic Location Price
+        // (
+        //  [id] =&amp;gt; 408
+        //  [itemId] =&amp;gt; 297
+        //  [locationGroupId] =&amp;gt;
+        //  [oneTimeFee] =&amp;gt; 0
+        //  [recurringFee] =&amp;gt; 199
+        //  [setupFee] =&amp;gt; 0
+        // )
+        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $order = new stdClass();
+
+        $price = new stdClass();
+        $price-&amp;gt;id = 408;
+
+        // http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Protection_Firewall/
+        $container = new stdClass();
+        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Network_Protection_Firewall&amp;quot;;
+        $container-&amp;gt;packageId = 0;
+        $container-&amp;gt;quantity = 1;
+        $container-&amp;gt;prices = array($price);
+        $container-&amp;gt;hardware = array();
+
+        // Put your serverId here
+        $serverToFirewall = new stdClass();
+        $serverToFirewall-&amp;gt;id = 12345;
+        $container-&amp;gt;hardware[0] = $serverToFirewall;
+
+        $order-&amp;gt;orderContainers = array();
+        $order-&amp;gt;orderContainers[0] = $container;
+        $result = $client-&amp;gt;verifyOrder($order);
+        print_r($result);
+    }
+
+
+    function placeOrderFortigateAppliance() {
+        // The speed of the firewall needs to match speed of the server
+        // $example-&amp;gt;getPackageById(0, 4337 );
+        // 4337 , FORTIGATE_SECURITY_APPLIANCE , FortiGate Security Appliance
+        // 4338 , FORTIGATE_SECURITY_APPLIANCE_HIGH_AVAILABILITY , FortiGate Security Appliance (High Availability)
+        // Generic Location Price
+        // [id] =&amp;gt; 21514
+        // [itemId] =&amp;gt; 4337
+        // [locationGroupId] =&amp;gt;
+        // [recurringFee] =&amp;gt; 999
+        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
+        $order = new stdClass();
+
+        $price = new stdClass();
+        $price-&amp;gt;id = 21514;
+
+        // http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Protection_Firewall_Dedicated/
+        $container = new stdClass();
+        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Network_Protection_Firewall_Dedicated&amp;quot;;
+        $container-&amp;gt;packageId = 0;
+        $container-&amp;gt;quantity = 1;
+        $container-&amp;gt;prices = array($price);
+        $container-&amp;gt;hardware = array();
+        // Put the vlan id that you want to protect here
+        $container-&amp;gt;vlanId = 12345;
+
+        $order-&amp;gt;orderContainers = array();
+        $order-&amp;gt;orderContainers[0] = $container;
+        $result = $client-&amp;gt;verifyOrder($order);
+        print_r($result);
+    }
+
+}
+
+
+$example = new Example();
+// $example-&amp;gt;getAllPackages();
+// $example-&amp;gt;getPackageById(0, 297 );
+// $example-&amp;gt;placeOrderHardwareFirewall();
+// $example-&amp;gt;getPackageById(0, 4337 );
+// $example-&amp;gt;placeOrderFortigateAppliance();    
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Order an SSL Certificate</title>
       <link>https://softlayer.github.io/php/orderSSLCert/</link>
       <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
@@ -445,141 +658,6 @@ $example-&amp;gt;getServerTypes();
     )
 */
 $example-&amp;gt;placeOrder();    
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order Firewall and Security Appliances</title>
-      <link>https://softlayer.github.io/php/orderFirewalls/</link>
-      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/orderFirewalls/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-require_once &#39;./vendor/autoload.php&#39;;
-
-class Example
-{
-    function __construct() {
-        $this-&amp;gt;apiUsername = &#39;&#39;;
-        $this-&amp;gt;apiKey = &#39;&#39;;
-    }
-
-    function getAllPackages() {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $packages = $packageClient-&amp;gt;getAllObjects();
-        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
-        foreach($packages as $package) {
-            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
-        }
-    }
-
-
-    function getPackageById($id=0, $onlyShow=0, $showPrices=1) {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $package = $packageClient-&amp;gt;getItems();
-        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
-        foreach ($package as $item) {
-            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
-                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
-                if($showPrices) {
-                    print_r($item-&amp;gt;prices); 
-                }
-            }
-        }
-    }
-
-    function placeOrderHardwareFirewall() {
-        // http://sldn.softlayer.com/blog/phil/Getting-Started-Firewalls
-        // The speed of the firewall needs to match speed of the server
-       
-        // 3896 , HARDWARE_FIREWALL_HIGH_AVAILABILITY , Hardware Firewall (High Availability)
-        // 297 , 1000MBPS_HARDWARE_FIREWALL , 1000Mbps Hardware Firewall
-        // 298 , 100MBPS_HARDWARE_FIREWALL , 100Mbps Hardware Firewall
-        // 1296 , 2000MBPS_HARDWARE_FIREWALL , 2000Mbps Hardware Firewall
-        // 4550 , 20MBPS_HARDWARE_FIREWALL , 20Mbps Hardware Firewall
-        // 299 , 10MBPS_HARDWARE_FIREWALL , 10Mbps Hardware Firewall
-        // 1329 , HARDWARE_FIREWALL_DEDICATED , Hardware Firewall (Dedicated)
-        // 4551 , 200MBPS_HARDWARE_FIREWALL , 200Mbps Hardware Firewall
-        // $example-&amp;gt;getPackageById(0, 297 );
-        // Generic Location Price
-        // (
-        //  [id] =&amp;gt; 408
-        //  [itemId] =&amp;gt; 297
-        //  [locationGroupId] =&amp;gt;
-        //  [oneTimeFee] =&amp;gt; 0
-        //  [recurringFee] =&amp;gt; 199
-        //  [setupFee] =&amp;gt; 0
-        // )
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $order = new stdClass();
-
-        $price = new stdClass();
-        $price-&amp;gt;id = 408;
-
-        // http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Protection_Firewall/
-        $container = new stdClass();
-        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Network_Protection_Firewall&amp;quot;;
-        $container-&amp;gt;packageId = 0;
-        $container-&amp;gt;quantity = 1;
-        $container-&amp;gt;prices = array($price);
-        $container-&amp;gt;hardware = array();
-
-        // Put your serverId here
-        $serverToFirewall = new stdClass();
-        $serverToFirewall-&amp;gt;id = 12345;
-        $container-&amp;gt;hardware[0] = $serverToFirewall;
-
-        $order-&amp;gt;orderContainers = array();
-        $order-&amp;gt;orderContainers[0] = $container;
-        $result = $client-&amp;gt;verifyOrder($order);
-        print_r($result);
-    }
-
-
-    function placeOrderFortigateAppliance() {
-        // The speed of the firewall needs to match speed of the server
-        // $example-&amp;gt;getPackageById(0, 4337 );
-        // 4337 , FORTIGATE_SECURITY_APPLIANCE , FortiGate Security Appliance
-        // 4338 , FORTIGATE_SECURITY_APPLIANCE_HIGH_AVAILABILITY , FortiGate Security Appliance (High Availability)
-        // Generic Location Price
-        // [id] =&amp;gt; 21514
-        // [itemId] =&amp;gt; 4337
-        // [locationGroupId] =&amp;gt;
-        // [recurringFee] =&amp;gt; 999
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $order = new stdClass();
-
-        $price = new stdClass();
-        $price-&amp;gt;id = 21514;
-
-        // http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Protection_Firewall_Dedicated/
-        $container = new stdClass();
-        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Network_Protection_Firewall_Dedicated&amp;quot;;
-        $container-&amp;gt;packageId = 0;
-        $container-&amp;gt;quantity = 1;
-        $container-&amp;gt;prices = array($price);
-        $container-&amp;gt;hardware = array();
-        // Put the vlan id that you want to protect here
-        $container-&amp;gt;vlanId = 12345;
-
-        $order-&amp;gt;orderContainers = array();
-        $order-&amp;gt;orderContainers[0] = $container;
-        $result = $client-&amp;gt;verifyOrder($order);
-        print_r($result);
-    }
-
-}
-
-
-$example = new Example();
-// $example-&amp;gt;getAllPackages();
-// $example-&amp;gt;getPackageById(0, 297 );
-// $example-&amp;gt;placeOrderHardwareFirewall();
-// $example-&amp;gt;getPackageById(0, 4337 );
-// $example-&amp;gt;placeOrderFortigateAppliance();    
-
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
@@ -768,30 +846,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
 &lt;li&gt;Fixed an error preventing some Fast Provision Servers from getting past the SEND_SOFTWARE_INSTALL transaction.&lt;/li&gt;
 &lt;li&gt;Failed post install scripts on unsupported OSes will now include a message that the OS is unsupported.&lt;/li&gt;
 &lt;li&gt;Corrects an issue in which network monitoring of a primary IP address from a trunked VLAN of the network component was no longer allowed.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: October 29, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151029/</link>
-      <pubDate>Thu, 29 Oct 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151029/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:1fd057a593da5f2e0628632558a917de&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Improved device list performance for customers with NetScaler MPX devices&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:1fd057a593da5f2e0628632558a917de&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;New accounts will have outbound port 25 blocked by default. More information &lt;a href=&#34;http://knowledgelayer.softlayer.com/content/outbound-email-port-25&#34;&gt;here&lt;/a&gt;, &lt;a href=&#34;http://knowledgelayer.softlayer.com/learning/softlayer-e-mail-delivery-service-overview&#34;&gt;here&lt;/a&gt; and &lt;a href=&#34;http://blog.softlayer.com/2015/ongoing-actions-eliminate-spam-hosting&#34;&gt;here&lt;/a&gt;. This effects any new accounts created through the web sign-up process, and &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Brand/createCustomerAccount&#34;&gt;SoftLayer_Brand::createCustomerAccount&lt;/a&gt;.&lt;/li&gt;
-&lt;li&gt;Added &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getTransactionHistory&#34;&gt;SoftLayer_Hardware_Server::getTransactionHistory&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Improved backend performance for block and file storage provisioning.&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
