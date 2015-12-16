@@ -87,16 +87,10 @@
                 <h3>Get top level billing items for all owned accounts<br> <small>Get invoice details for all sub-account in a given date range</small></h3>
                 <hr>
                 
-                    <div class="alert alert-info alert-dismissable" style="margin-top:25px;margin-bottom:5px;">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                        <strong>Hey, listen!</strong><br>
-                        This example contains deprecated methods or syntax and needs to be updated. Please use caution when using.
-                    </div>
-                
                 <p>With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the -&gt;allOwnedAccounts bits</p>
 
 <pre><code class="language-php">&lt;?php
-require_once './SoftLayer/SoapClient.class.php';
+require_once __DIR__.'/vendor/autoload.php';
 
 
 /**
@@ -109,8 +103,8 @@ class topBillingItems
     function __construct() {
         $this-&gt;apiUsername = '';
         $this-&gt;apiKey = '';
-        $this-&gt;startDate = new DateTime('2015-02-12T00:00:00-06:00');
-        $this-&gt;endDate = new DateTime('2015-03-12T00:00:00-06:00');
+        $this-&gt;startDate = new DateTime('2015-02-12T00:00:00', new DateTimeZone('CST'));
+        $this-&gt;endDate = new DateTime('2015-03-12T00:00:00', new DateTimeZone('CST'));
     }
 
     /*!
@@ -123,10 +117,10 @@ class topBillingItems
 
         //The First Object Mask. Used to get all the front line brands, which will have the
         //accounts that are actually buying things
-        $objectMask = new SoftLayer_ObjectMask();
+        $objectMask = new \SoftLayer\Common\ObjectMask();
         $objectMask-&gt;ownedBrands-&gt;allOwnedAccounts-&gt;ownedBrands;
 
-        $client = SoftLayer_SoapClient::getClient('SoftLayer_Account', null, $this-&gt;apiUsername, $this-&gt;apiKey);
+        $client = \SoftLayer\SoapClient::getClient('SoftLayer_Account', null, $this-&gt;apiUsername, $this-&gt;apiKey);
         $client-&gt;setObjectMask($objectMask);
 
         $response = $client-&gt;getObject();
@@ -176,11 +170,11 @@ class topBillingItems
         $filter-&gt;allOwnedAccounts-&gt;invoices-&gt;createDate-&gt;options[1]-&gt;value = array($this-&gt;endDate-&gt;format('m/d/Y H:i:s'));
 
         //Mask for the front line brands, used to get all their accounts, and their invoices
-        $brandMask = new SoftLayer_ObjectMask();
+        $brandMask = new \SoftLayer\Common\ObjectMask();
         $brandMask-&gt;allOwnedAccounts-&gt;invoices;
 
         //From that brand, get all the brand's owned accounts, with their invoices from the current month
-        $brandClient = SoftLayer_SoapClient::getClient('SoftLayer_Brand', $brandId, $this-&gt;apiUsername, $this-&gt;apiKey);
+        $brandClient = \SoftLayer\SoapClient::getClient('SoftLayer_Brand', $brandId, $this-&gt;apiUsername, $this-&gt;apiKey);
         $brandClient-&gt;setObjectMask($brandMask);
         $brandClient-&gt;setObjectFilter($filter);
         return $brandClient-&gt;getAllOwnedAccounts();
@@ -191,7 +185,7 @@ class topBillingItems
 
         print &quot;=====\e[94m&quot; . $account-&gt;companyName .&quot; ::&quot; . $account-&gt;id . &quot;\e[0m\n&quot;;
         //Used to get all the actual line items from an invoice
-        $invoiceMask = new SoftLayer_ObjectMask();
+        $invoiceMask = new \SoftLayer\Common\ObjectMask();
         $invoiceMask-&gt;items;
         $invoiceMask-&gt;invoiceTotalAmount;
         //Go through each of the accounts monthly invoices
@@ -199,7 +193,7 @@ class topBillingItems
             print &quot;Created: &quot; . $invoice-&gt;createDate . &quot; TYPE: &quot; . $invoice-&gt;typeCode .&quot;\n&quot;;
 
             //Here we get the actual invoice and all the billing items inside of it
-            $bClient = SoftLayer_SoapClient::getClient('SoftLayer_Billing_Invoice', $invoice-&gt;id , $this-&gt;apiUsername, $this-&gt;apiKey);
+            $bClient = \SoftLayer\SoapClient::getClient('SoftLayer_Billing_Invoice', $invoice-&gt;id , $this-&gt;apiUsername, $this-&gt;apiKey);
             $bClient-&gt;setObjectMask($invoiceMask);
             $bt = $bClient-&gt;getObject();
             print &quot;====\e[42;90m&quot; . $bt-&gt;invoiceTotalAmount .&quot;\e[0m\n&quot;;
@@ -216,8 +210,10 @@ class topBillingItems
     }
 }
 
-$main = new Example();
+$main = new topBillingItems();
 $main-&gt;main();
+
+?&gt;
 </code></pre>
 
             </div>
@@ -246,7 +242,6 @@ $main-&gt;main();
                  <a class="label label-default" href="https://softlayer.github.io/tags/objectmask">objectMask</a>
                  <a class="label label-default" href="https://softlayer.github.io/tags/invoice">invoice</a>
                  <a class="label label-default" href="https://softlayer.github.io/tags/brand">brand</a>
-                 <a class="label label-default" href="https://softlayer.github.io/tags/deprecated">deprecated</a>
                  
                 <hr>
                 <strong>Feedback? <span class="fa fa-comment"/></strong>

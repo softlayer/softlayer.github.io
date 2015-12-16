@@ -17,7 +17,7 @@
       <description>&lt;p&gt;With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the -&amp;gt;allOwnedAccounts bits&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-require_once &#39;./SoftLayer/SoapClient.class.php&#39;;
+require_once __DIR__.&#39;/vendor/autoload.php&#39;;
 
 
 /**
@@ -30,8 +30,8 @@ class topBillingItems
     function __construct() {
         $this-&amp;gt;apiUsername = &#39;&#39;;
         $this-&amp;gt;apiKey = &#39;&#39;;
-        $this-&amp;gt;startDate = new DateTime(&#39;2015-02-12T00:00:00-06:00&#39;);
-        $this-&amp;gt;endDate = new DateTime(&#39;2015-03-12T00:00:00-06:00&#39;);
+        $this-&amp;gt;startDate = new DateTime(&#39;2015-02-12T00:00:00&#39;, new DateTimeZone(&#39;CST&#39;));
+        $this-&amp;gt;endDate = new DateTime(&#39;2015-03-12T00:00:00&#39;, new DateTimeZone(&#39;CST&#39;));
     }
 
     /*!
@@ -44,10 +44,10 @@ class topBillingItems
 
         //The First Object Mask. Used to get all the front line brands, which will have the
         //accounts that are actually buying things
-        $objectMask = new SoftLayer_ObjectMask();
+        $objectMask = new \SoftLayer\Common\ObjectMask();
         $objectMask-&amp;gt;ownedBrands-&amp;gt;allOwnedAccounts-&amp;gt;ownedBrands;
 
-        $client = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+        $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
         $client-&amp;gt;setObjectMask($objectMask);
 
         $response = $client-&amp;gt;getObject();
@@ -97,11 +97,11 @@ class topBillingItems
         $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;value = array($this-&amp;gt;endDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
 
         //Mask for the front line brands, used to get all their accounts, and their invoices
-        $brandMask = new SoftLayer_ObjectMask();
+        $brandMask = new \SoftLayer\Common\ObjectMask();
         $brandMask-&amp;gt;allOwnedAccounts-&amp;gt;invoices;
 
         //From that brand, get all the brand&#39;s owned accounts, with their invoices from the current month
-        $brandClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Brand&#39;, $brandId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+        $brandClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Brand&#39;, $brandId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
         $brandClient-&amp;gt;setObjectMask($brandMask);
         $brandClient-&amp;gt;setObjectFilter($filter);
         return $brandClient-&amp;gt;getAllOwnedAccounts();
@@ -112,7 +112,7 @@ class topBillingItems
 
         print &amp;quot;=====\e[94m&amp;quot; . $account-&amp;gt;companyName .&amp;quot; ::&amp;quot; . $account-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
         //Used to get all the actual line items from an invoice
-        $invoiceMask = new SoftLayer_ObjectMask();
+        $invoiceMask = new \SoftLayer\Common\ObjectMask();
         $invoiceMask-&amp;gt;items;
         $invoiceMask-&amp;gt;invoiceTotalAmount;
         //Go through each of the accounts monthly invoices
@@ -120,7 +120,7 @@ class topBillingItems
             print &amp;quot;Created: &amp;quot; . $invoice-&amp;gt;createDate . &amp;quot; TYPE: &amp;quot; . $invoice-&amp;gt;typeCode .&amp;quot;\n&amp;quot;;
 
             //Here we get the actual invoice and all the billing items inside of it
-            $bClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Billing_Invoice&#39;, $invoice-&amp;gt;id , $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
+            $bClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Billing_Invoice&#39;, $invoice-&amp;gt;id , $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
             $bClient-&amp;gt;setObjectMask($invoiceMask);
             $bt = $bClient-&amp;gt;getObject();
             print &amp;quot;====\e[42;90m&amp;quot; . $bt-&amp;gt;invoiceTotalAmount .&amp;quot;\e[0m\n&amp;quot;;
@@ -137,8 +137,10 @@ class topBillingItems
     }
 }
 
-$main = new Example();
+$main = new topBillingItems();
 $main-&amp;gt;main();
+
+?&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
