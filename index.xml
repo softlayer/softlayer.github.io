@@ -6,7 +6,973 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 28 Dec 2015 00:00:00 UTC</updated>
+    <updated>Fri, 08 Jan 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Managing SSH Key Pairs with fog-softlayer</title>
+      <link>https://softlayer.github.io/fog/keypairs/</link>
+      <pubDate>Fri, 08 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/keypairs/</guid>
+      <description>
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-compute-service:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Create a connection to SoftLayer Compute Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;fog/softlayer&#39;
+@sl = Fog::Compute[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;key-pair-basics:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pair Basics&lt;/h3&gt;
+
+&lt;p&gt;Create&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp1 = @sl.key_pairs.create(:label =&amp;gt; &#39;my-new-key&#39;, :key =&amp;gt; &#39;ssh-rsa AAAAxbU2lx...&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+kp2 = @sl.key_pairs.new
+kp2.label = &#39;my-new-new-key&#39;
+kp2.key = &#39;ssh-rsa AAAAxbU2lx...&#39;
+kp2.save
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# By id:
+kp = @sl.key_pairs.get(123456)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+# By label:
+kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Destroy&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+kp.destroy
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;key-pairs-with-servers:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pairs with Servers&lt;/h3&gt;
+
+&lt;p&gt;Create a server with one or more key pairs&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;the_first_key = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+the_second_key = @sl.key_pairs.by_label(&#39;my-other-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+opts = {
+		:flavor_id =&amp;gt; &#39;m1.small&#39;,
+		:os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+		:datacenter =&amp;gt; &#39;hkg02&#39;,
+		:name =&amp;gt; &#39;cphrmky&#39;,
+		:key_pairs =&amp;gt; [ the_first_key, the_second_key ]
+}
+@sl.servers.create(opts)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Look at the key pairs on a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;server = @sl.servers.get(12345)
+server.key_pairs
+# =&amp;gt; [ &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+# &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;]
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Interact with SoftLayer Object Storage</title>
+      <link>https://softlayer.github.io/fog/storage/</link>
+      <pubDate>Fri, 08 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/storage/</guid>
+      <description>
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-object-storage:5fe4e2fe3590b5bd8669d1961910a370&#34;&gt;Create a connection to SoftLayer Object Storage&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;fog/softlayer&#39;
+@sl = Fog::Storage[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;use-the-models:5fe4e2fe3590b5bd8669d1961910a370&#34;&gt;Use the Models&lt;/h4&gt;
+
+&lt;p&gt;List directories/containers.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dirs = @sl.directories
+dirs.size # the number of directories      
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create a directory/container.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;@sl.directories.create(:key =&amp;gt; &#39;a-container&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a directory/container&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories.get(&#39;a-container&#39;)
+dir.key  # =&amp;gt; &#39;a-container&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create a new file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories.get(&#39;a-container&#39;)
+# Pass a string.
+dir.files.create(:key =&amp;gt; &#39;data.txt&#39;, :body =&amp;gt; &#39;The quick brown fox jumps over the lazy dog.&#39;)
+# From a file.
+dir.files.create(:key =&amp;gt; &#39;file-data.txt&#39;, :body =&amp;gt; File.open(&#39;/path/to/file-data.txt&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Retrieve an existing file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories.get(&#39;a-container&#39;)
+file = dir.files.get(&#39;data.txt&#39;)
+file.body # =&amp;gt; &#39;The quick brown fox jumps over the lazy dog.&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Copy a file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;file  = @sl.directories.get(&#39;a-container&#39;).files.get(&#39;data.txt&#39;)
+copy = file.copy(&#39;a-container&#39;, &#39;copy-of-data.txt&#39;)
+copy.body # =&amp;gt; &#39;The quick brown fox jumps over the lazy dog.&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;List the files in a directory/container&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;@sl.directories.get(&#39;a-container&#39;).files
+# =&amp;gt; [
+#    &amp;lt;Fog::Storage::Softlayer::File
+#  key=&amp;quot;a-container/data.txt&amp;quot;,
+#  content_length=43,
+#  content_type=&amp;quot;text/plain&amp;quot;,
+#  content_disposition=nil,
+#  etag=&amp;quot;a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1&amp;quot;,
+#  last_modified=1970-00-00 00:00:00 -0000,
+#  access_control_allow_origin=nil,
+#  origin=nil
+# ...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a signed [temporary] url for a file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;### NOTE
+## Be sure you have set a meta_temp_url_key for your account at least once before
+## @sl.post_set_meta_temp_url_key(&#39;someSortaSecretStuffHere&#39;)
+### /NOTE
+
+file = @sl.directories.get(&#39;a-container&#39;).files.get(&#39;data.txt&#39;)
+file.url(Time.now + 300) # url expires in 5 minutes
+# =&amp;gt; &amp;quot;https://dal05.objectstorage.softlayer.net:443/v1/AUTH_1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a1a/a-container/data.txt?temp_url_sig=1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a&amp;amp;temp_url_expires=1401901023&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Delete files/objects from a directory/container.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories(&#39;a-container&#39;)
+dir.files.get(&#39;data.txt&#39;).destroy
+dir.files.get(&#39;file-data.txt&#39;).destroy
+dir.files.get(&#39;copy-of-data.txt&#39;).destroy
+# Must destroy all files/objects before destroying container.
+dir.destroy
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Managing DNS with fog-softlayer</title>
+      <link>https://softlayer.github.io/fog/dns/</link>
+      <pubDate>Thu, 07 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/dns/</guid>
+      <description>
+
+&lt;h3 id=&#34;prerequisites:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;p&gt;These examples all assume you have installed the &lt;a href=&#34;https://github.com/fog/fog-softlayer&#34;&gt;fog-softlayer&lt;/a&gt; gem and that you have created a ~/.fog file, which contains the following:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;default:
+  softlayer_username: &amp;lt;YOUR USERNAME&amp;gt;
+  softlayer_api_key: &amp;lt;YOUR API KEY&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-dns-service:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Create a connection to SoftLayer DNS Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	require &#39;fog/softlayer&#39;
+	@sl = Fog::DNS[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;create-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Create Operations&lt;/h3&gt;
+
+&lt;p&gt;Create Domain&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.create(&#39;yourdomain.com&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create Record&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  record = {
+    &#39;value&#39; =&amp;gt; &#39;127.0.0.1&#39;,
+    &#39;host&#39; =&amp;gt; &#39;@&#39;,
+    &#39;type&#39; =&amp;gt; &#39;a&#39;
+  }
+  @domain.create_record(record)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;read-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Read Operations&lt;/h3&gt;
+
+&lt;p&gt;List all domains&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domains = @sl.domains.all
+  @domain = @domains.first
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get specific domain by id&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get specific domain by name&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get_by_name(&#39;yourdomain.com&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get Domains Records&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.records
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get specific record by id&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.records.get(456789012)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;or using the service:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @sl.records.get(456789012)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;update-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Update Operations&lt;/h3&gt;
+
+&lt;p&gt;After this point we consider you have a Fog::DNS::Softlayer::Domain on @domain variable&lt;/p&gt;
+
+&lt;p&gt;Update Record Entry&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain.records
+  @domain.records[3].value = &amp;quot;192.168.0.3&amp;quot;
+  @domain.records[3].save
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;destroy-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Destroy Operations&lt;/h3&gt;
+
+&lt;p&gt;After this point we consider you have a Fog::DNS::Softlayer::Domain on @domain variable&lt;/p&gt;
+
+&lt;p&gt;Destroy Domain&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.destroy
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Destroy Record&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.records.last.destroy
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Managing VSI&#39;s and Bare Metal servers  with fog-softlayer</title>
+      <link>https://softlayer.github.io/fog/compute/</link>
+      <pubDate>Thu, 07 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/compute/</guid>
+      <description>
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-compute-service:dcd0bbf0b89f9e25c080385385922e68&#34;&gt;Create a connection to SoftLayer Compute Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	require &#39;fog/softlayer&#39;
+	@sl = Fog::Compute[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;use-the-models:dcd0bbf0b89f9e25c080385385922e68&#34;&gt;Use the Models&lt;/h3&gt;
+
+&lt;p&gt;List all servers&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   @sl.servers # list all servers
+   @sl.servers.size # get a count of all servers
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s details&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   server = @sl.servers.get(&amp;lt;server id&amp;gt;)
+   server.name # =&amp;gt; &#39;hostname.example.com&#39;
+   server.created_at # =&amp;gt; DateTime the server was created
+   server.state # =&amp;gt; &#39;Running&#39;, &#39;Stopped&#39;, &#39;Terminated&#39;, etc.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s details using ip address&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   server = @sl.servers.get_by_ip(&amp;lt;server ip&amp;gt;)
+   server.name # =&amp;gt; &#39;hostname.example.com&#39;
+   server.created_at # =&amp;gt; DateTime the server was created
+   server.state # =&amp;gt; &#39;Running&#39;, &#39;Stopped&#39;, &#39;Terminated&#39;, etc.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all servers tagged with certain tags.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	prod_fe_servers = @sl.servers.tagged_with([&#39;production&#39;, &#39;frontend&#39;])
+	# =&amp;gt; [ &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,]		
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s public/frontend VLAN&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	server = @sl.servers.get(12345)
+	server.vlan
+	# =&amp;gt; &amp;lt;Fog::Network::Softlayer::Network
+    #	id=123456,
+	#   name=&#39;frontend-staging-vlan&#39;,
+	#   modify_date=&amp;quot;2014-02-22T12:42:31-06:00&amp;quot;,
+	#   note=nil,
+	#   tags=[&#39;sparkle&#39;, &#39;motion&#39;],
+	#   type=&amp;quot;STANDARD&amp;quot;,
+	#   datacenter=    &amp;lt;Fog::Network::Softlayer::Datacenter
+	#     id=168642,
+	#     long_name=&amp;quot;San Jose 1&amp;quot;,
+	#     name=&amp;quot;sjc01&amp;quot;
+	#   &amp;gt;,
+	#   network_space=&amp;quot;PUBLIC&amp;quot;,
+	#   router={&amp;quot;hostname&amp;quot;=&amp;gt;&amp;quot;fcr01a.sjc01&amp;quot;, &amp;quot;id&amp;quot;=&amp;gt;82412, &amp;quot;datacenter&amp;quot;=&amp;gt;{&amp;quot;id&amp;quot;=&amp;gt;168642, &amp;quot;longName&amp;quot;=&amp;gt;&amp;quot;San Jose 1&amp;quot;, &amp;quot;name&amp;quot;=&amp;gt;&amp;quot;sjc01&amp;quot;}}
+  	# &amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s private/backend VLAN&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	server = @sl.servers.get(12345)
+	server.private_vlan
+	# =&amp;gt;  &amp;lt;Fog::Network::Softlayer::Network
+	#    id=123456,
+	#    name=&#39;backend-staging-vlan&#39;,
+	#    modify_date=&amp;quot;2014-02-22T12:42:33-06:00&amp;quot;,
+	#    note=nil,
+	#    tags=[],
+	#    type=&amp;quot;STANDARD&amp;quot;,
+	#    datacenter=    &amp;lt;Fog::Network::Softlayer::Datacenter
+	#	    id=168642,
+	#    	long_name=&amp;quot;San Jose 1&amp;quot;,
+	#    	name=&amp;quot;sjc01&amp;quot;
+	#   &amp;gt;,
+	#   network_space=&amp;quot;PRIVATE&amp;quot;,
+    #	router={&amp;quot;hostname&amp;quot;=&amp;gt;&amp;quot;bcr01a.sjc01&amp;quot;, &amp;quot;id&amp;quot;=&amp;gt;82461, &amp;quot;datacenter&amp;quot;=&amp;gt;{&amp;quot;id&amp;quot;=&amp;gt;168642, &amp;quot;longName&amp;quot;=&amp;gt;&amp;quot;San Jose 1&amp;quot;, &amp;quot;name&amp;quot;=&amp;gt;&amp;quot;sjc01&amp;quot;}}
+  	# &amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s tags&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		server = @sl.servers.get(12345)
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Add tags to a server&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		server = @sl.servers.get(12345)
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;]
+		server.add_tags([&#39;sparkle&#39;, &#39;motion&#39;]
+		# =&amp;gt; true
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;, &#39;sparkle&#39;, &#39;motion&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Delete tags from a server&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		server = @sl.servers.get(12345)
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;, &#39;sparkle&#39;, &#39;motion&#39;]
+		server.delete_tags([&#39;sparkle&#39;, &#39;motion&#39;]
+		# =&amp;gt; true
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a new VM with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.small&amp;quot;,
+     	:image_id =&amp;gt; &amp;quot;23f7f05f-3657-4330-8772-329ed2e816bc&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;
+     }
+     new_server = @sl.servers.create(opts)
+     new_server.id # =&amp;gt; 1337
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a new Bare Metal instance with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.medium&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test1&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+     @sl.servers.create(opts)
+     new_server.id # =&amp;gt; 1338
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a new VM without flavor.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   	opts = {
+     	:cpu =&amp;gt; 2,
+     	:ram =&amp;gt; 2048,     	
+     	:disk =&amp;gt; [{&#39;device&#39; =&amp;gt; 0, &#39;diskImage&#39; =&amp;gt; {&#39;capacity&#39; =&amp;gt; 100 } }],
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;     
+     }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Bare Metal Instance without a flavor&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   opts = {
+     	:cpu =&amp;gt; 8,
+     	:ram =&amp;gt; 16348,     	
+     	:disk =&amp;gt; {&#39;capacity&#39; =&amp;gt; 500 },
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create a server with one or more key pairs (also see &lt;a href=&#34;https://github.com/fog/fog-softlayer/blob/master/examples/key_pairs.md&#34;&gt;key_pairs examples on Github&lt;/a&gt; )&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	the_first_key = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+	the_second_key = @sl.key_pairs.by_label(&#39;my-other-new-key&#39;)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+	opts = {
+		:flavor_id =&amp;gt; &#39;m1.small&#39;,
+		:os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+		:datacenter =&amp;gt; &#39;hkg02&#39;,
+		:name =&amp;gt; &#39;cphrmky&#39;,
+		:key_pairs =&amp;gt; [ the_first_key, the_second_key ]
+	}
+	@sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Delete a VM or Bare Metal instance.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   	  @sl.servers.get(&amp;lt;server id&amp;gt;).destroy
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server (works the same for VM and Bare Metal) into a specific VLAN&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	# I want to launch another server to hold docker containers into my existing staging VLANs
+	# I&#39;ll start by getting a staging server so I can use its vlans as a reference.
+	staging_server = @sl.servers.tagged_with([&#39;staging&#39;, &#39;docker&#39;]).first # =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+
+	opts = {
+	  :flavor_id =&amp;gt; &#39;m1.large&#39;,
+	  :image_id =&amp;gt; &#39;23f7f05f-3657-4330-8772-329ed2e816bc&#39;,  # Ubuntu Docker Image
+	  :domain =&amp;gt; &#39;staging.example.com&#39;,
+	  :datacenter =&amp;gt; &#39;ams01&#39;, # This needs to be the same datacenter as the target VLAN of course.
+	  :name =&amp;gt; &#39;additional-docker-host&#39;,
+	  :vlan =&amp;gt; staging.server.vlan, # Passing in a &amp;lt;Fog::Network::Softlayer::Network&amp;gt; object.
+	  :private_vlan =&amp;gt; staging.server.private_vlan.id, # Passing in an Integer (the id of a network/vlan) works too.
+	}
+
+	new_staging_server = @sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server with only a private network.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	opts = {
+	  :flavor_id =&amp;gt; &#39;m1.large&#39;,
+	  :os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+	  :domain =&amp;gt; &#39;example.com&#39;,
+	  :datacenter =&amp;gt; &#39;ams01&#39;,
+	  :name =&amp;gt; &#39;private-eye&#39;,
+	  :private_network_only =&amp;gt; true
+	}
+
+	private_vm = @sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server with 1Gbps network components.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	opts = {
+	  :flavor_id =&amp;gt; &#39;m1.large&#39;,
+	  :os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+	  :domain =&amp;gt; &#39;example.com&#39;,
+	  :datacenter =&amp;gt; &#39;wdc01&#39;,
+	  :name =&amp;gt; &#39;speedy-tubes&#39;,
+	  :network_components =&amp;gt; [ {:speed =&amp;gt; 1000 } ],
+	}
+
+	private_vm = @sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server with user metadata.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+      :flavor_id =&amp;gt; &amp;quot;m1.small&amp;quot;,
+      :image_id =&amp;gt; &amp;quot;23f7f05f-3657-4330-8772-329ed2e816bc&amp;quot;,
+      :name =&amp;gt; &amp;quot;test&amp;quot;,
+      :datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+      :user_data =&amp;gt; &amp;quot;my-custom-user-metadata&amp;quot;
+     }
+
+     new_server = @sl.servers.create(opts)
+     new_server.user_data # =&amp;gt; &amp;quot;my-custom-user-metadata&amp;quot;
+     new_server.user_data = &amp;quot;new-user-metadata&amp;quot;
+     new_server.user_data # =&amp;gt; &amp;quot;new-user-metadata&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Start, Stop, and Reboot a existing server (works the same for VMs and Bare Metal).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		srvr = @sl.servers.get(123456)
+		srvr.ready? # true
+
+		srvr.reboot # true
+
+		srvr.stop # true
+		srvr.ready? # false
+		srvr.state # &amp;quot;Halted&amp;quot;
+
+		srvr.start # true
+		srvr.ready # true
+		srvr.state # &amp;quot;Running&amp;quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all options to create a bare metal.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   @sl.servers.get_bm_create_options
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all options to create a VM.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   @sl.servers.get_vm_create_options
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all active tickets of a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    server = @sl.servers.get(123456)
+    server.get_active_tickets
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all users of a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    server = @sl.servers.get(123456)
+    server.get_users
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all upgrade options of a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    server = @sl.servers.get(123456)
+    server.get_upgrade_options
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Update a virtual guest server.
+Hash keys are the categories and the hash values are the capacity. You can retrieve them from upgrade options.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    new_attributes = {
+      :guest_core =&amp;gt; 2,
+      :ram =&amp;gt; 1, # this value is in GBs
+      :port_speed =&amp;gt; 100, # this value is in MPBSs
+      :time =&amp;gt; Time.now + 5.minutes # if you don&#39;t specify, time will be equal to now
+    }
+
+    server = @sl.servers.get(123456)
+    server.update(new_attributes)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Update a bare metal server.
+Hash keys are the categories and the hash values are the capacity. You can retrieve them from upgrade options.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    new_attributes = {
+      :ram =&amp;gt; 4, # this value is in GBs
+      :port_speed =&amp;gt; 100, # this value is in MPBSs
+      :maintenance_window =&amp;gt; 1111 # should see examples/network &amp;quot;Get a datacenter maintenance windows.&amp;quot;
+    }
+
+    server = @sl.servers.get(123456)
+    server.update(new_attributes)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for VM with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.small&amp;quot;,
+     	:image_id =&amp;gt; &amp;quot;23f7f05f-3657-4330-8772-329ed2e816bc&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for Bare Metal instance with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.medium&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test1&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for VM without flavor.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   	opts = {
+     	:cpu =&amp;gt; 2,
+     	:ram =&amp;gt; 2048,
+     	:disk =&amp;gt; [{&#39;device&#39; =&amp;gt; 0, &#39;diskImage&#39; =&amp;gt; {&#39;capacity&#39; =&amp;gt; 100 } }],
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for Bare Metal Instance without a flavor&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   opts = {
+     	:cpu =&amp;gt; 8,
+     	:ram =&amp;gt; 16348,
+     	:disk =&amp;gt; {&#39;capacity&#39; =&amp;gt; 500 },
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Cancel item</title>
+      <link>https://softlayer.github.io/perl/cancelitem/</link>
+      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/perl/cancelitem/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;#!/usr/bin/perl
+use lib &amp;quot;/path/to/softlayer-api-perl-client/&amp;quot;;
+use SoftLayer::API::SOAP;
+use Data::Dumper;
+
+my $api_username = &amp;quot;a&amp;quot;;
+my $api_key = &amp;quot;x&amp;quot;;
+
+#Canel service
+# https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;BILLING_ID&amp;gt;/cancelService
+my $billing_id = $result-&amp;gt;result-&amp;gt;{&#39;id&#39;};
+my $billing_client = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Billing_Item&#39;, $billing_id, $api_username, $api_key);
+$result = $billing_client-&amp;gt;cancelService();
+print Dumper($result-&amp;gt;result);
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Associate a Billing ID with the service or item it corresponds to in the SoftLayer catalog</title>
+      <link>https://softlayer.github.io/perl/getassociatedid/</link>
+      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/perl/getassociatedid/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;# https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/1234321/getAssociatedBillingItem
+my $objectMask = {
+   &#39;id&#39; =&amp;gt;&#39;&#39;
+};
+$billing_client-&amp;gt;setObjectMask($objectMask);
+$result = $billing_client-&amp;gt;getAssociatedParent();
+print Dumper($result-&amp;gt;result);
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Retrieve the month to date cost of an hourly VSI</title>
+      <link>https://softlayer.github.io/perl/monthtodatecost/</link>
+      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/perl/monthtodatecost/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;#!/usr/bin/perl
+use lib &amp;quot;/path/to/softlayer-api-perl-client/&amp;quot;;
+use SoftLayer::API::SOAP;
+use Data::Dumper;
+
+my $api_username = &amp;quot;x&amp;quot;;
+my $api_key = &amp;quot;a&amp;quot;;
+my $client = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Account&#39;, undef, $api_username, $api_key);
+
+# SoftLayer_Virtual_Guest/&amp;lt;VSI_ID&amp;gt;/getBillingItem?objectMask=mask\[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge\]&amp;quot;
+# CHANGE ME to the id of the virtual guest you want to check
+my $virtual_guest_id = 12345678;
+my $virtual_guest = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Virtual_Guest&#39;, $virtual_guest_id, $api_username, $api_key);
+my $objectMask = {
+    &#39;createDate&#39; =&amp;gt; &#39;&#39;,
+    &#39;hoursUsed&#39; =&amp;gt; &#39;&#39;,
+    &#39;hourlyRecurringFee&#39; =&amp;gt; &#39;&#39;,
+    &#39;currentHourlyCharge&#39; =&amp;gt; &#39;&#39;
+};
+
+$result = $virtual_guest-&amp;gt;getBillingItem();
+my $cost;
+$cost = $result-&amp;gt;result-&amp;gt;{&#39;hoursUsed&#39;} * $result-&amp;gt;result-&amp;gt;{&#39;hourlyRecurringFee&#39;};
+print $result-&amp;gt;result-&amp;gt;{&#39;hoursUsed&#39;} . &amp;quot; hours @ &amp;quot; . $result-&amp;gt;result-&amp;gt;{&#39;hourlyRecurringFee&#39;} . &amp;quot;\$/hour = &amp;quot; . $cost . &amp;quot; \$\n&amp;quot;;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Response:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;1 hours @ .045$/hour = 0.045 $
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Retrieve the amount of your next invoice</title>
+      <link>https://softlayer.github.io/perl/nextbilling/</link>
+      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/perl/nextbilling/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;use lib &amp;quot;./softlayer-api-perl-client/&amp;quot;;
+use SoftLayer::API::SOAP;
+use Data::Dumper;
+
+my $api_username = &amp;quot;x&amp;quot;;
+my $api_key = &amp;quot;a&amp;quot;;
+my $client = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Account&#39;, undef, $api_username, $api_key);
+
+
+my $result;
+$result = $client-&amp;gt;getNextInvoiceTotalAmount();
+print &amp;quot;Next Invoice Total: &amp;quot; . $result-&amp;gt;result . &amp;quot;\$\n&amp;quot; ;
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Release notes: January 4, 2016</title>
+      <link>https://softlayer.github.io/release_notes/20160104/</link>
+      <pubDate>Mon, 04 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/release_notes/20160104/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal:0128d356c5f709b6c9a0101268244a1e&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Fixed an issue with OS reloads failing due to outdated packages.&lt;/li&gt;
+&lt;li&gt;Fixed an issue on the order page where an invalid method name was being referenced, causing no results to return.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;api:0128d356c5f709b6c9a0101268244a1e&#34;&gt;API&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Updated &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Category/getSubnetCategories&#34;&gt;getSubnetCategories&lt;/a&gt; to properly retrieve all subnet categories.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Cancel an item or service</title>
+      <link>https://softlayer.github.io/rest/cancel_service/</link>
+      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/rest/cancel_service/</guid>
+      <description>
+
+&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;&lt;code&gt;SoftLayer_Billing_Item::cancelService()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;URL: SoftLayer_Billing_Item/cancelService&lt;/p&gt;
+
+&lt;p&gt;Example CURL:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id/cancelService
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Response:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;true
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;note:d22459ce58257bd3859fe8f589564967&#34;&gt;Note&lt;/h3&gt;
+
+&lt;p&gt;If you are wanting to use the REST API to cancel a Bare Metal server you cannot use the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;cancelService&lt;/a&gt; call but rather you will need to utilize the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem&#34;&gt;cancelItem&lt;/a&gt; call. This call and provide a cancellation reason.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find provisioned product from a billing item</title>
+      <link>https://softlayer.github.io/rest/find_product_from_billing/</link>
+      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/rest/find_product_from_billing/</guid>
+      <description>&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/getAssociatedParent&#34;&gt;&lt;code&gt;SoftLayer_Billing_Item::getAssociatedParent()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;URL: SoftLayer_Billing_Item/getAssociatedParent&lt;/p&gt;
+
+&lt;p&gt;Example CURL:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id&amp;gt;/getAssociatedParent?objectMask=mask\[categoryCode,id,description\]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Response:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;[
+    {
+        &amp;quot;categoryCode&amp;quot;: &amp;quot;storage_service_enterprise&amp;quot;,
+        &amp;quot;description&amp;quot;: &amp;quot;Endurance Storage&amp;quot;,
+        &amp;quot;id&amp;quot;: 1234321
+    }
+]
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find a billing item from a provisioned product?</title>
+      <link>https://softlayer.github.io/rest/get_billing_id/</link>
+      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/rest/get_billing_id/</guid>
+      <description>&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/getBillingItem&#34;&gt;&lt;code&gt;SoftLayer_Network_Storage::getBillingItem()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;URL: SoftLayer_Network_Storage/getBillingItem&lt;/p&gt;
+
+&lt;p&gt;To find a billing item of a provisioned product you would use the &lt;code&gt;getBillingItem&lt;/code&gt; call on the specific resource you are trying to locate. In the following example we are looking for the Billing Item of an Endurance Storage volume with an ID of 1234567.&lt;/p&gt;
+
+&lt;p&gt;Example CURL:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Network_Storage/1234567/getBillingItem
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Response:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;allowCancellationFlag&amp;quot;: 1,
+    &amp;quot;cancellationDate&amp;quot;: null,
+    &amp;quot;categoryCode&amp;quot;: &amp;quot;storage_service_enterprise&amp;quot;,
+    &amp;quot;createDate&amp;quot;: &amp;quot;2015-11-17T12:14:14-06:00&amp;quot;,
+    &amp;quot;cycleStartDate&amp;quot;: &amp;quot;2015-12-04T00:07:24-06:00&amp;quot;,
+    &amp;quot;description&amp;quot;: &amp;quot;Endurance Storage&amp;quot;,
+    &amp;quot;id&amp;quot;: &amp;quot;87654321&amp;quot;,
+    &amp;quot;laborFee&amp;quot;: &amp;quot;0&amp;quot;,
+    &amp;quot;laborFeeTaxRate&amp;quot;: &amp;quot;0&amp;quot;,
+    &amp;quot;lastBillDate&amp;quot;: &amp;quot;2015-12-04T00:07:24-06:00&amp;quot;,
+    &amp;quot;modifyDate&amp;quot;: &amp;quot;2015-12-04T00:07:24-06:00&amp;quot;,
+    &amp;quot;nextBillDate&amp;quot;: &amp;quot;2016-01-04T00:00:00-06:00&amp;quot;,
+    &amp;quot;oneTimeFee&amp;quot;: &amp;quot;0&amp;quot;,
+    &amp;quot;oneTimeFeeTaxRate&amp;quot;: &amp;quot;0&amp;quot;,
+    &amp;quot;orderItemId&amp;quot;: 99999999,
+    &amp;quot;parentId&amp;quot;: null,
+    &amp;quot;recurringFee&amp;quot;: &amp;quot;0&amp;quot;,
+    &amp;quot;recurringFeeTaxRate&amp;quot;: &amp;quot;0&amp;quot;,
+    &amp;quot;recurringMonths&amp;quot;: 1,
+    &amp;quot;serviceProviderId&amp;quot;: 1,
+    &amp;quot;setupFee&amp;quot;: &amp;quot;0&amp;quot;,
+    &amp;quot;setupFeeTaxRate&amp;quot;: &amp;quot;0&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Month-to-date cost of a Virtual_Guest</title>
+      <link>https://softlayer.github.io/rest/hourlycost_date/</link>
+      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/rest/hourlycost_date/</guid>
+      <description>&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getBillingItem&#34;&gt;&lt;code&gt;SoftLayer_Virtual_Guest::getBillingItem()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;URL: SoftLayer_Virtual_Guest/&lt;virtual_guest_id&gt;/getBillingItem?objectMask=mask[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge]&lt;/p&gt;
+
+&lt;p&gt;Example CURL:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest/&amp;lt;virtual_guest_id&amp;gt;/getBillingItem?objectMask=mask[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Response:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+    &amp;quot;createDate&amp;quot;: &amp;quot;2015-12-30T09:26:32-06:00&amp;quot;,
+    &amp;quot;currentHourlyCharge&amp;quot;: &amp;quot;.18&amp;quot;,
+    &amp;quot;hourlyRecurringFee&amp;quot;: &amp;quot;.09&amp;quot;,
+    &amp;quot;hoursUsed&amp;quot;: &amp;quot;2&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Determining your next bill</title>
+      <link>https://softlayer.github.io/rest/next_bill/</link>
+      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/rest/next_bill/</guid>
+      <description>&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTotalAmount&#34;&gt;&lt;code&gt;SoftLayer_Account::getNextInvoiceTotalAmount()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;URL: SoftLayer_Account/getNextInvoiceTotalAmount&lt;/p&gt;
+
+&lt;p&gt;Example CURL:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Account/getNextInvoiceTotalAmount
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Response:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;250.26
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: December 28, 2015</title>
@@ -34,861 +1000,6 @@
 &lt;ul&gt;
 &lt;li&gt;None&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: December 21, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151221/</link>
-      <pubDate>Mon, 21 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151221/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:d58d30b554ea9e7cf820237195e7418b&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Introduced the Account Defined Networking option on customer order forms. The Customer Defined Network product is currently in beta and not available on all SoftLayer accounts.&lt;/li&gt;
-&lt;li&gt;Replaced the old SOC2 report with the new one for period November 1, 2014 through October 31, 2015.&lt;/li&gt;
-&lt;li&gt;Fixed an issue that was causing Notifications to show an empty list of impacted devices.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:d58d30b554ea9e7cf820237195e7418b&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;The SoftLayer_Account_MasterServiceAgreement::getPdf() method is deprecated. It is recommended to replace its use with the new &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Account_MasterServiceAgreement/getFile&#34;&gt;SoftLayer_Account_MasterServiceAgreement::getFile&lt;/a&gt; method.&lt;/li&gt;
-&lt;li&gt;Published the API for services and concepts introduced by Customer Defined Networks to SLDN. The Customer Defined Network product is currently in beta and not available on all SoftLayer accounts.
-
-&lt;ul&gt;
-&lt;li&gt;SoftLayer_Container_Product_Order_Network&lt;/li&gt;
-&lt;li&gt;added service for SoftLayer_Container_Product_Order_Network&lt;/li&gt;
-&lt;li&gt;added property for SoftLayer_Container_Product_Order_Network::network&lt;/li&gt;
-&lt;li&gt;added property for SoftLayer_Container_Product_Order_Network::publicVlans&lt;/li&gt;
-&lt;li&gt;added property for SoftLayer_Container_Product_Order_Network::subnets&lt;/li&gt;
-&lt;li&gt;SoftLayer_Container_Product_Order_Network_Subnet&lt;/li&gt;
-&lt;li&gt;added property for SoftLayer_Container_Product_Order_Network_Subnet::routerHostname&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Product_Order&#34;&gt;SoftLayer_Product_Order&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Product_Order::getNetworks&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Network&#34;&gt;SoftLayer_Network&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;added service for SoftLayer_Network&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network::createObject&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network::createSubnet&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network::deleteObject&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network::deleteSubnet&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network::editObject&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network::getAllObjects&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network::getObject&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Network_Pod&#34;&gt;SoftLayer_Network_Pod&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;added service for SoftLayer_Network_Pod&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network_Pod::getAllObjects&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network_Pod::getCapabilities&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network_Pod::getObject&lt;/li&gt;
-&lt;li&gt;added method for SoftLayer_Network_Pod::listCapabilities&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet&#34;&gt;SoftLayer_Network_Subnet&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;added property for SoftLayer_Network_Subnet::podName&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan&#34;&gt;SoftLayer_Network_Vlan&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;added property for SoftLayer_Network_Vlan::network&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: December 14, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151214/</link>
-      <pubDate>Mon, 14 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151214/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:ffee61728ce88db3c36c3f8f13a55eca&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed bug that prevented setting minimum member number to zero on Netscalers when using purchased vlans.&lt;/li&gt;
-&lt;li&gt;Fixed an issue with Netscaler license renewal notifications pointing to an invalid URL.&lt;/li&gt;
-&lt;li&gt;Added localization for support policy documents.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:ffee61728ce88db3c36c3f8f13a55eca&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend:ffee61728ce88db3c36c3f8f13a55eca&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an issue with hardware testing being skipped on provisions.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Edit IP address note</title>
-      <link>https://softlayer.github.io/python/edit_ip_note/</link>
-      <pubDate>Fri, 11 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/edit_ip_note/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-
-class example():
-
-    def __init__(self):
-        self.client = SoftLayer.Client()
-
-    def getSubnets(self):
-        subnets = self.client[&#39;SoftLayer_Account&#39;].getSubnets()
-        for subnet in subnets:
-            print(&amp;quot;%s - %s/%s - %s&amp;quot; % 
-                (   subnet[&#39;id&#39;],
-                    subnet[&#39;gateway&#39;],
-                    subnet[&#39;cidr&#39;],
-                    subnet[&#39;networkVlanId&#39;]
-                )
-            )
-
-    def getIpInSubnet(self, subnet_id):
-        mask = &amp;quot;mask[virtualGuest,hardware]&amp;quot;
-        subnet = self.client[&#39;SoftLayer_Network_Subnet&#39;]
-        ips = subnet.getIpAddresses(id=subnet_id,mask=mask)
-        for ip in ips:
-            status = &amp;quot;Free&amp;quot;
-            if ip[&#39;subnet&#39;][&#39;subnetType&#39;] == &amp;quot;PRIMARY&amp;quot;:
-                status = &amp;quot;Reserved&amp;quot;
-            elif ip[&#39;isNetwork&#39;]:
-                status = &amp;quot;Network Ip&amp;quot;
-            elif ip[&#39;isGateway&#39;]:
-                status = &amp;quot;Gateway Ip&amp;quot;
-            try: 
-                status = ip[&#39;virtualGuest&#39;][&#39;fullyQualifiedDomainName&#39;]
-            except KeyError:
-                pass
-            try:
-                status = ip[&#39;hardware&#39;][&#39;fullyQualifiedDomainName&#39;]
-            except KeyError:
-                pass
-
-            try:
-                note = ip[&#39;note&#39;]
-            except KeyError:
-                note = &amp;quot;none&amp;quot;
-            print(&amp;quot;%s: %s - %s - %s&amp;quot; % (ip[&#39;id&#39;],ip[&#39;ipAddress&#39;],status, note))
-
-    def editNote(self, ip_id, note):
-        &amp;quot;&amp;quot;&amp;quot;
-            With editObject on SoftLayer_Network_Subnet_IpAddress you can only 
-            edit the note, everything else will get ignored silently.
-        &amp;quot;&amp;quot;&amp;quot;
-        ip = {
-            &#39;id&#39;: ip_id,
-            &#39;note&#39;: note,
-        }
-        self.client[&#39;SoftLayer_Network_Subnet_IpAddress&#39;].editObject(ip,id=ip_id)
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    # CHANGE ME
-    subnet_ip = 1234
-    # CHANGE ME
-    ip_id = 4567
-    main = example()
-    # List all subnets, find the ID of the one you want to work with
-    main.getSubnets()
-    # List all the IPs and their notes, find the id of the one you want to edit
-    main.getIpInSubnet(subnet_ip)
-    # Edit the note
-    main.editNote(ip_id,&amp;quot;Hello World22&amp;quot;)
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: December 07, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151207/</link>
-      <pubDate>Mon, 07 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151207/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:9ae8dbc95ee3cd3c1e00f78baf4b7866&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an error that would occasionally prevent the &amp;ldquo;Reconfigure KVM Console&amp;rdquo; link from properly reconfiguring the KVM console.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:9ae8dbc95ee3cd3c1e00f78baf4b7866&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend:9ae8dbc95ee3cd3c1e00f78baf4b7866&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;SMTP Inbound traffic from the public internet is now blocked for new accounts by default. This does not effect backend networks.&lt;/li&gt;
-&lt;li&gt;Reverse PTRs for new domain records will be ip4.static.sl-reverse.com and ip6.static.sl-reverse.com&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: December 02, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151202/</link>
-      <pubDate>Wed, 02 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151202/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:27079d48b301568f842ea9c33a1c0177&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed the &lt;a href=&#34;http://knowledgelayer.softlayer.com&#34;&gt;knowledgelayer&lt;/a&gt; link in tickets about XenServer licensing.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:27079d48b301568f842ea9c33a1c0177&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Added allow and remove methods for controlling SoftLayer_Network_Storage access to a host.
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/allowAccessFromHost&#34;&gt;SoftLayer_Network_Storage::allowAccessFromHost()&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/removeAccessFromHost&#34;&gt;SoftLayer_Network_Storage::removeAccessFromHost()&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/allowAccessFromHostList&#34;&gt;SoftLayer_Network_Storage::allowAccessFromHostList()&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/removeAccessFromHostList&#34;&gt;SoftLayer_Network_Storage::removeAccessFromHostList()&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;Added &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_Lockdown_Request/cancelRequest&#34;&gt;SoftLayer_Account_Lockdown_Request::cancelRequest()&lt;/a&gt; which allows a lockdown request to be canceled.&lt;/li&gt;
-&lt;li&gt;Fixed an issue preventing Virtual Guests from being upgradeable when they had an operating system no longer sold.&lt;/li&gt;
-&lt;li&gt;Submitting multiple &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_Lockdown_Request/disconnectCompute&#34;&gt;SoftLayer_Account_Lockdown_Request::disconnectCompute&lt;/a&gt; will now result in an exception to all requests after the first, until the compute instance is reconnected.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: November 30, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151130/</link>
-      <pubDate>Mon, 30 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151130/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:133c53611c1cf30c691585f39ee3ea1c&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Added an error message when trying to order from a datacenter your account does not have access to.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:133c53611c1cf30c691585f39ee3ea1c&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an issue that was causing migration failures of local disk VSI&amp;rsquo;s to SAN disk VSI&amp;rsquo;s when a metadata disk was attached.&lt;/li&gt;
-&lt;li&gt;Fixed an issue that was causing the preset.totalMinimumHourlyFee to be rounded to the nearest integer when using Hardware.getCreateObjectOptions on hourly bare metal servers.&lt;/li&gt;
-&lt;li&gt;Users must now have permission to access a Hardware or VSI to be able to request an upgrade.&lt;/li&gt;
-&lt;li&gt;Fixed an issue where large sized metadata/userdata was causing timeouts during the provisioning process.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: November 23, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151123/</link>
-      <pubDate>Mon, 23 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151123/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:1528ad0a8735daa9921d5f0faacb8cd0&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;h4 id=&#34;api:1528ad0a8735daa9921d5f0faacb8cd0&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an issue where newly provisioned Netscalers were being assigned licenses with near-term license expiration dates.&lt;br /&gt;&lt;/li&gt;
-&lt;li&gt;Fixed an issue that was preventing reloads from occurring on instances that did not have a backend network component on eth0.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: November 18, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151118/</link>
-      <pubDate>Wed, 18 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151118/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:5a7a670d47f2bc4335bd88e5483455a0&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Adds support for viewing and accepting 3rd party terms of service during the ordering process.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:5a7a670d47f2bc4335bd88e5483455a0&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an error preventing the storage for virtual guests that have been live migrated to be migrated as well.&lt;/li&gt;
-&lt;li&gt;Renamed SoftLayer_Account_Lockdown_Request::disableCompute() to &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_Lockdown_Request/disableLockedAccount&#34;&gt;SoftLayer_Account_Lockdown_Request::disableLockedAccount&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Password Auth</title>
-      <link>https://softlayer.github.io/ruby/token_auth/</link>
-      <pubDate>Sun, 15 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/token_auth/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39; # Requires softlayer_api &amp;gt;= 3.2
-
-# Create a client
-client = SoftLayer::Client.with_password(
-    username: &#39;change me&#39;, password: &#39;change me&#39;)
-
-# Test our client
-puts client[&#39;Account&#39;].object_mask(&#39;mask[id, apiAuthenticationKeys]&#39;).
-    getCurrentUser
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: November 12, 2015</title>
-      <link>https://softlayer.github.io/release_notes/20151112/</link>
-      <pubDate>Thu, 12 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20151112/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:5be65696d772711b343cd722f52ae762&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Updates the invoice pdf document&amp;rsquo;s VAT summary page to provide more precise tax information.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:5be65696d772711b343cd722f52ae762&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_DNS_Domain&#34;&gt;SoftLayer_DNS_Domain&lt;/a&gt; returning malformed SOAP data when creating any type of DNS record.&lt;/li&gt;
-&lt;li&gt;Networking configuration transactions during provisioning and reloads now run in parallel, improving provisioning speeds.&lt;/li&gt;
-&lt;li&gt;Created a new API method that allows approved brands to retrieve lock information on an account locked by that brand. &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_Lockdown_Request/getAccountHistory&#34;&gt;SoftLayer_Account_Lockdown_Request::getAccountHistory&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order Server with security software</title>
-      <link>https://softlayer.github.io/php/orderBareMetal/</link>
-      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/orderBareMetal/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-require_once &#39;./vendor/autoload.php&#39;;
-
-class Example
-{
-    function __construct() {
-        $this-&amp;gt;apiUsername = &#39;&#39;;
-        $this-&amp;gt;apiKey = &#39;&#39;;
-    }
-
-    function getAllPackages() {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $packages = $packageClient-&amp;gt;getAllObjects();
-
-        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
-        foreach($packages as $package) {
-            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
-        }
-    }
-
-
-    function getPackageById($id=0, $onlyShow=0, $showPrices = 1) {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $package = $packageClient-&amp;gt;getItems();
-        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
-        foreach ($package as $item) {
-            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
-                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
-                if ($showPrices) {
-                    print_r($item-&amp;gt;prices); 
-                }
-            }
-        }
-    }
-
-    function getActiveRamItems($packageId = 0) {
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Package&#39;, $packageId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $items = $client-&amp;gt;getActiveRamItems();
-        print_r($items);
-    }
-
-    function getActiveServerItems($packageId = 0) {
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Package&#39;, $packageId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $items = $client-&amp;gt;getActiveServerItems();
-        print_r($items);
-    }
-
-
-
-    function placeOrder() {
-
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $order = new stdClass();
-        $container = new stdClass();
-
-        $priceArray = array(
-            49485, //INTEL_XEON_2650_2_00
-            36253, //OS_WINDOWS_2012_R2_FULL_DC_64_BIT_2         
-            49405, //RAM_16_GB
-            876, //DISK_CONTROLLER_NONRAID
-            49759, //HARD_DRIVE_1_00_TB_SATA_2
-            49759, //HARD_DRIVE_1_00_TB_SATA_2
-            274, //1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS
-            50261, //BANDWIDTH_20000_GB
-            21, //1_IP_ADDRESS
-            906, //REBOOT_KVM_OVER_IP
-            420, //UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT
-            56, //MONITORING_HOST_PING_AND_TCP_SERVICE
-            57, //NOTIFICATION_EMAIL_AND_TICKET
-            58, // response, AUTOMATED_NOTIFICATION
-            418, //NESSUS_VULNERABILITY_ASSESSMENT_REPORTING
-            413, //MCAFEE_HOST_INTRUSION_PROTECTION_WREPORTING
-            594, //MCAFEE_VIRUSSCAN_ANTIVIRUS_WINDOWS                    
-        );
-        $container-&amp;gt;prices = array();
-        foreach ($priceArray as $item) {
-            $priceId = new stdClass();
-            $priceId-&amp;gt;id = $item;
-            $container-&amp;gt;prices[] = $priceId;
-        }
-
-        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Hardware_Server&amp;quot;;
-        $container-&amp;gt;packageId = 273;
-        $container-&amp;gt;quantity = 1;
-        $container-&amp;gt;location = 448994;  //DAL05
-        $container-&amp;gt;serverCount = 1;
-
-        $hardware = new stdClass();
-        $hardware-&amp;gt;domain = &amp;quot;test.com&amp;quot;;
-        $hardware-&amp;gt;hostname = &amp;quot;thisIsTest&amp;quot;;
-        $container-&amp;gt;hardware = $hardware;
-
-        $order-&amp;gt;orderContainers = array();
-        $order-&amp;gt;orderContainers[0] = $container;
-        print_r($order);
-        $result = $client-&amp;gt;verifyOrder($order);
-        print_r($result);
-    }
-}
-
-
-$example = new Example();
-// $example-&amp;gt;getAllPackages();
-
-// Your package needs to have both activeRamItems and activeServerItems to be orderable.
-// $example-&amp;gt;getActiveRamItems(273);
-// $example-&amp;gt;getActiveServerItems(273);
-
-//All price ids are from this function
-// $example-&amp;gt;getPackageById(273,0,1);
-
-$example-&amp;gt;placeOrder();    
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order Firewall and Security Appliances</title>
-      <link>https://softlayer.github.io/php/orderFirewalls/</link>
-      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/orderFirewalls/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-require_once &#39;./vendor/autoload.php&#39;;
-
-class Example
-{
-    function __construct() {
-        $this-&amp;gt;apiUsername = &#39;&#39;;
-        $this-&amp;gt;apiKey = &#39;&#39;;
-    }
-
-    function getAllPackages() {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $packages = $packageClient-&amp;gt;getAllObjects();
-        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
-        foreach($packages as $package) {
-            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
-        }
-    }
-
-
-    function getPackageById($id=0, $onlyShow=0, $showPrices=1) {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $package = $packageClient-&amp;gt;getItems();
-        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
-        foreach ($package as $item) {
-            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
-                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
-                if($showPrices) {
-                    print_r($item-&amp;gt;prices); 
-                }
-            }
-        }
-    }
-
-    function placeOrderHardwareFirewall() {
-        // http://sldn.softlayer.com/blog/phil/Getting-Started-Firewalls
-        // The speed of the firewall needs to match speed of the server
-       
-        // 3896 , HARDWARE_FIREWALL_HIGH_AVAILABILITY , Hardware Firewall (High Availability)
-        // 297 , 1000MBPS_HARDWARE_FIREWALL , 1000Mbps Hardware Firewall
-        // 298 , 100MBPS_HARDWARE_FIREWALL , 100Mbps Hardware Firewall
-        // 1296 , 2000MBPS_HARDWARE_FIREWALL , 2000Mbps Hardware Firewall
-        // 4550 , 20MBPS_HARDWARE_FIREWALL , 20Mbps Hardware Firewall
-        // 299 , 10MBPS_HARDWARE_FIREWALL , 10Mbps Hardware Firewall
-        // 1329 , HARDWARE_FIREWALL_DEDICATED , Hardware Firewall (Dedicated)
-        // 4551 , 200MBPS_HARDWARE_FIREWALL , 200Mbps Hardware Firewall
-        // $example-&amp;gt;getPackageById(0, 297 );
-        // Generic Location Price
-        // (
-        //  [id] =&amp;gt; 408
-        //  [itemId] =&amp;gt; 297
-        //  [locationGroupId] =&amp;gt;
-        //  [oneTimeFee] =&amp;gt; 0
-        //  [recurringFee] =&amp;gt; 199
-        //  [setupFee] =&amp;gt; 0
-        // )
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $order = new stdClass();
-
-        $price = new stdClass();
-        $price-&amp;gt;id = 408;
-
-        // http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Protection_Firewall/
-        $container = new stdClass();
-        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Network_Protection_Firewall&amp;quot;;
-        $container-&amp;gt;packageId = 0;
-        $container-&amp;gt;quantity = 1;
-        $container-&amp;gt;prices = array($price);
-        $container-&amp;gt;hardware = array();
-
-        // Put your serverId here
-        $serverToFirewall = new stdClass();
-        $serverToFirewall-&amp;gt;id = 12345;
-        $container-&amp;gt;hardware[0] = $serverToFirewall;
-
-        $order-&amp;gt;orderContainers = array();
-        $order-&amp;gt;orderContainers[0] = $container;
-        $result = $client-&amp;gt;verifyOrder($order);
-        print_r($result);
-    }
-
-
-    function placeOrderFortigateAppliance() {
-        // The speed of the firewall needs to match speed of the server
-        // $example-&amp;gt;getPackageById(0, 4337 );
-        // 4337 , FORTIGATE_SECURITY_APPLIANCE , FortiGate Security Appliance
-        // 4338 , FORTIGATE_SECURITY_APPLIANCE_HIGH_AVAILABILITY , FortiGate Security Appliance (High Availability)
-        // Generic Location Price
-        // [id] =&amp;gt; 21514
-        // [itemId] =&amp;gt; 4337
-        // [locationGroupId] =&amp;gt;
-        // [recurringFee] =&amp;gt; 999
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $order = new stdClass();
-
-        $price = new stdClass();
-        $price-&amp;gt;id = 21514;
-
-        // http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Protection_Firewall_Dedicated/
-        $container = new stdClass();
-        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Network_Protection_Firewall_Dedicated&amp;quot;;
-        $container-&amp;gt;packageId = 0;
-        $container-&amp;gt;quantity = 1;
-        $container-&amp;gt;prices = array($price);
-        $container-&amp;gt;hardware = array();
-        // Put the vlan id that you want to protect here
-        $container-&amp;gt;vlanId = 12345;
-
-        $order-&amp;gt;orderContainers = array();
-        $order-&amp;gt;orderContainers[0] = $container;
-        $result = $client-&amp;gt;verifyOrder($order);
-        print_r($result);
-    }
-
-}
-
-
-$example = new Example();
-// $example-&amp;gt;getAllPackages();
-// $example-&amp;gt;getPackageById(0, 297 );
-// $example-&amp;gt;placeOrderHardwareFirewall();
-// $example-&amp;gt;getPackageById(0, 4337 );
-// $example-&amp;gt;placeOrderFortigateAppliance();    
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order an SSL Certificate</title>
-      <link>https://softlayer.github.io/php/orderSSLCert/</link>
-      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/orderSSLCert/</guid>
-      <description>
-
-&lt;h4 id=&#34;generating-a-csr:a798909b54a41db7cd3faf021a46bea5&#34;&gt;Generating a CSR&lt;/h4&gt;
-
-&lt;p&gt;You will need a csr to make this request, it should be on your local file system.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;openssl genrsa -out domain.key 2048
-openssl req -new -sha256 -key domain.key -out domain.csr
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-require_once &#39;./vendor/autoload.php&#39;;
-class Example
-{
-    function __construct() {
-        $this-&amp;gt;apiUsername = &#39;&#39;;
-        $this-&amp;gt;apiKey = &#39;&#39;;
-    }
-
-    /*
-    * Package 0 is the &amp;quot;Everything else&amp;quot; pacakge, which contains SSL certain. But if you didn&#39;t remember that
-    * this function will get you that information
-    */
-    function getAllPackages() {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $packages = $packageClient-&amp;gt;getAllObjects();
-
-        print &amp;quot;ID -&amp;gt; Name \n&amp;quot;;
-        foreach($packages as $package) {
-            print $package-&amp;gt;id . &amp;quot; -&amp;gt; &amp;quot; . $package-&amp;gt;name . &amp;quot;\n&amp;quot;;
-        }
-    }
-
-    /*
-    * Each package has a lot of items, so this function will show you all of those along with their prices. 
-    * Search through it for the proper SSL item you want to order, and take note of its price
-    */
-    function getPackageById($id=0, $onlyShow=0) {
-        $packageClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $id, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $package = $packageClient-&amp;gt;getItems();
-        print &amp;quot;ID, KeyName, Description \n&amp;quot;;
-        foreach ($package as $item) {
-            if ($onlyShow == 0 || $onlyShow == $item-&amp;gt;id) {
-                print $item-&amp;gt;id . &amp;quot; , &amp;quot; . $item-&amp;gt;keyName . &amp;quot; , &amp;quot; . $item-&amp;gt;description . &amp;quot;\n&amp;quot; ;
-                print_r($item-&amp;gt;prices); 
-            }
-        }
-    }
-
-
-    /*
-    * Change verifyOrder to placeOrder when you are actually ready to make a certificate 
-    */
-    function placeOrder($csrFilename=&#39;./domain.csr&#39;) {
-
-        $csr = file_get_contents($csrFilename);
-        $client = \SoftLayer\XmlRpcClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $order = new stdClass();
-
-        $addressInfo = new stdClass();
-        $addressInfo-&amp;gt;address = new stdClass();
-        $addressInfo-&amp;gt;address-&amp;gt;addressLine1 = &amp;quot;1234 fleet street&amp;quot;;
-        $addressInfo-&amp;gt;address-&amp;gt;city = &amp;quot;Houston&amp;quot;;
-        $addressInfo-&amp;gt;address-&amp;gt;countryCode = &amp;quot;US&amp;quot;;
-        $addressInfo-&amp;gt;address-&amp;gt;postalCode =  &amp;quot;77002&amp;quot;;
-        $addressInfo-&amp;gt;address-&amp;gt;state = &amp;quot;TX&amp;quot;;
-        $addressInfo-&amp;gt;emailAddress =&amp;quot;chgallo@lablayer.info&amp;quot;;
-        $addressInfo-&amp;gt;firstName = &amp;quot;Christopher&amp;quot;;
-        $addressInfo-&amp;gt;lastName = &amp;quot;Gallo&amp;quot;;
-        $addressInfo-&amp;gt;organizationName = &amp;quot;SoftLayer&amp;quot;;
-        $addressInfo-&amp;gt;phoneNumber = &amp;quot;281-123-4567&amp;quot;;
-        $addressInfo-&amp;gt;title = &amp;quot;Dev&amp;quot;; 
-
-        $price = new stdClass();
-        $price-&amp;gt;id = 1836;
-
-        $container = new stdClass();
-        $container-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Security_Certificate&amp;quot;;
-        $container-&amp;gt;packageId = 0;
-        $container-&amp;gt;quantity = 1;
-        $container-&amp;gt;serverCount = 1;
-        $container-&amp;gt;serverType = &#39;apacheapachessl&#39;;
-        $container-&amp;gt;prices = array($price);
-        $container-&amp;gt;certificateSigningRequest = $csr;
-
-        $container-&amp;gt;technicalContact = $addressInfo;
-        $container-&amp;gt;administrativeContact = $addressInfo;
-        $container-&amp;gt;organizationInformation = $addressInfo;
-        $container-&amp;gt;billingContact = $addressInfo;
-        # Needs to be a VERY specific email @ the domain you are registering
-        # admin / administrator / hostmaster / root / webmaster / mailmaster
-        $container-&amp;gt;orderApproverEmailAddress = &amp;quot;admin@lablayer.info&amp;quot;;  
-
-        $order-&amp;gt;orderContainers = array();
-        $order-&amp;gt;orderContainers[0] = $container;
-        // print_r($order);
-        $result = $client-&amp;gt;verifyOrder($order);
-        print_r($result);
-    }
-
-    /*
-    * This info is required for the serverType property. 
-    */
-    function getServerTypes() {
-        // http://sldn.softlayer.com/reference/services/SoftLayer_Security_Certificate_Request_ServerType
-        $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Security_Certificate_Request_ServerType&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey );
-        $types = $client-&amp;gt;getAllObjects();
-        print_r($types);
-    }
-
-}
-
-
-$example = new Example();
-// Figure out which package has the SSL certs
-$example-&amp;gt;getAllPackages();
-
-// Package 0, item 964 is the ssl cert we want to see the prices for.
-$example-&amp;gt;getPackageById(0, 964 );
-
-// 964 , SSL_CERTIFICATE_RAPIDSSL_1_YEAR , RapidSSL - 1 year
-// [id] =&amp;gt; 1836
-// [setupFee] =&amp;gt; 19
-
-$example-&amp;gt;getServerTypes();
-/*
-[1] =&amp;gt; stdClass Object
-    (
-        [description] =&amp;gt; Apache + ApacheSSL
-        [id] =&amp;gt; 2
-        [name] =&amp;gt; apacheapachessl
-        [value] =&amp;gt; 22
-    )
-*/
-$example-&amp;gt;placeOrder();    
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order an SSL Certificate</title>
-      <link>https://softlayer.github.io/python/orderSSLCert/</link>
-      <pubDate>Wed, 11 Nov 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/orderSSLCert/</guid>
-      <description>
-
-&lt;h4 id=&#34;generating-a-csr:a798909b54a41db7cd3faf021a46bea5&#34;&gt;Generating a CSR&lt;/h4&gt;
-
-&lt;p&gt;You will need a csr to make this request, it should be on your local file system.&lt;/p&gt;
-
-&lt;p&gt;The contents of the CSR &lt;em&gt;MATTER&lt;/em&gt;, they need to match the information for what you are ordering.
-+ orderApproverEmailAddress must match the Email Address of the CSR
-+ The CSR Common name must be set and must be a part of the orderApproverEmailAddress&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;$ openssl genrsa -out domain.key 2048
-$ openssl req -new -sha256 -key domain.key -out domain.csr
-You are about to be asked to enter information that will be incorporated
-into your certificate request.
-What you are about to enter is what is called a Distinguished Name or a DN.
-There are quite a few fields but you can leave some blank
-For some fields there will be a default value,
-If you enter &#39;.&#39;, the field will be left blank.
------
-Country Name (2 letter code) [AU]:US
-State or Province Name (full name) [Some-State]:TX
-Locality Name (eg, city) []:Houston
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:SoftLayer
-Organizational Unit Name (eg, section) []:
-Common Name (e.g. server FQDN or YOUR name) []:lablayer.info
-Email Address []:admin@lablayer.info
-
-Please enter the following &#39;extra&#39; attributes
-to be sent with your certificate request
-A challenge password []:
-An optional company name []:
-
-$
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code&gt;import SoftLayer
-import pprint
-import logging
-
-class example():
-
-    def __init__(self):
-        self.client = SoftLayer.Client()
-
-    def main(self):
-        pp = pprint.PrettyPrinter(indent=4)
-        filename = &#39;./domain.csr&#39;
-
-        cert = self.file_get_contents(filename)
-        addressInfo =  {
-                    &amp;quot;addressLine1&amp;quot; : &amp;quot;1234 fleet street&amp;quot;,
-                    &amp;quot;city&amp;quot; : &amp;quot;Houston&amp;quot;,
-                    &amp;quot;countryCode&amp;quot; : &amp;quot;US&amp;quot;,
-                    &amp;quot;postalCode&amp;quot; : &amp;quot;77090&amp;quot;,
-                    &amp;quot;state&amp;quot; : &amp;quot;TX&amp;quot;
-                }
-        contactInfo = {
-                &amp;quot;address&amp;quot;: addressInfo,
-                &amp;quot;emailAddress&amp;quot;: &amp;quot;chgallo@lablayer.info&amp;quot;,
-                &amp;quot;firstName&amp;quot;: &amp;quot;Christopher&amp;quot;,
-                &amp;quot;lastName&amp;quot;: &amp;quot;Gallo&amp;quot;,
-                &amp;quot;organizationName&amp;quot;: &amp;quot;SoftLayer&amp;quot;,
-                &amp;quot;phoneNumber&amp;quot;: &amp;quot;281-123-4567&amp;quot;,
-                &amp;quot;title&amp;quot;: &amp;quot;Dev&amp;quot;
-            }
-        sslContainer= {&#39;orderContainers&#39;: [
-        {
-            &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Security_Certificate&amp;quot;,
-            &amp;quot;packageId&amp;quot;:0,
-            &amp;quot;quantity&amp;quot;:1,
-            &amp;quot;serverCount&amp;quot;:1,
-            &amp;quot;certificateSigningRequest&amp;quot;: cert,
-            &amp;quot;serverType&amp;quot;: &amp;quot;apacheopenssl&amp;quot;,
-            # Needs to be a VERY specific email @ the domain you are registering
-            # admin / administrator / hostmaster / root / webmaster / mailmaster
-            &amp;quot;orderApproverEmailAddress&amp;quot;: &amp;quot;admin@lablayer.info&amp;quot;,
-            &amp;quot;technicalContact&amp;quot;: contactInfo,
-            &amp;quot;administrativeContact&amp;quot;: contactInfo,
-            &amp;quot;billingContact&amp;quot;: contactInfo,
-            &amp;quot;organizationInformation&amp;quot;: {
-                &amp;quot;address&amp;quot; :addressInfo,
-                &amp;quot;organizationName&amp;quot; : &amp;quot;SoftLayer&amp;quot;,
-                &amp;quot;phoneNumber&amp;quot;: &amp;quot;281-123-4567&amp;quot;
-            },
-            &amp;quot;prices&amp;quot;: [
-                #SSL_CERTIFICATE_RAPIDSSL_1_YEAR
-                {&#39;id&#39;:1836}
-            ]
-        }
-        ]
-        }
-
-        pp.pprint(sslContainer)
-
-        result = self.client[&#39;SoftLayer_Product_Order&#39;].verifyOrder(sslContainer)
-        pp.pprint(result)
-
-    def file_get_contents(self,filename):
-        with open(filename) as f:
-            return f.read()
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = example()
-    main.main()
-
-&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     

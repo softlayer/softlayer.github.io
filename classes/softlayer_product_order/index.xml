@@ -6,7 +6,153 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 11 Nov 2015 00:00:00 UTC</updated>
+    <updated>Thu, 12 Nov 2015 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Place block storage (performance ISCSI) order</title>
+      <link>https://softlayer.github.io/python/place_order_block_storage_performance_iscsi/</link>
+      <pubDate>Thu, 12 Nov 2015 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/place_order_block_storage_performance_iscsi/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+Order a block storage (performance ISCSI).
+
+Important manual pages:
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItems
+http://sldn.softlayer.com/reference/services/SoftLayer_Location
+http://sldn.softlayer.com/reference/services/SoftLayer_Location/getDatacenters
+http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_Iscsi_OS_Type
+http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_Iscsi_OS_Type/getAllObjects
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Location
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_Enterprise
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+http://sldn.softlayer.com/blog/cmporter/Location-based-Pricing-and-You
+http://sldn.softlayer.com/blog/bpotter/Going-Further-SoftLayer-API-Python-Client-Part-3
+http://sldn.softlayer.com/article/Object-Filters
+http://sldn.softlayer.com/article/Python
+http://sldn.softlayer.com/article/Object-Masks
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+import json
+
+# Values &amp;quot;AMS01&amp;quot;, &amp;quot;AMS03&amp;quot;, &amp;quot;CHE01&amp;quot;, &amp;quot;DAL05&amp;quot;, &amp;quot;DAL06&amp;quot; &amp;quot;FRA02&amp;quot;, &amp;quot;HKG02&amp;quot;, &amp;quot;LON02&amp;quot;, etc.
+location = &amp;quot;AMS01&amp;quot;
+
+# Values &amp;quot;20&amp;quot;, &amp;quot;40&amp;quot;, &amp;quot;80&amp;quot;, &amp;quot;100&amp;quot;, etc.
+storageSize = &amp;quot;40&amp;quot;
+
+# Values between &amp;quot;100&amp;quot; and &amp;quot;6000&amp;quot; by intervals of 100.
+iops = &amp;quot;100&amp;quot;
+
+# Values &amp;quot;Hyper-V&amp;quot;, &amp;quot;Linux&amp;quot;, &amp;quot;VMWare&amp;quot;, &amp;quot;Windows 2008+&amp;quot;, &amp;quot;Windows GPT&amp;quot;, &amp;quot;Windows 2003&amp;quot;, &amp;quot;Xen&amp;quot;
+os = &amp;quot;Linux&amp;quot;
+
+PACKAGE_ID = 222
+
+client = SoftLayer.Client()
+productOrderService = client[&#39;SoftLayer_Product_Order&#39;]
+packageService = client[&#39;SoftLayer_Product_Package&#39;]
+locationService = client[&#39;SoftLayer_Location&#39;]
+osService = client[&#39;SoftLayer_Network_Storage_Iscsi_OS_Type&#39;]
+
+objectFilterDatacenter = {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: location.lower()}}
+objectFilterStorageNfs = {&amp;quot;items&amp;quot;: {&amp;quot;categories&amp;quot;: {&amp;quot;categoryCode&amp;quot;: {&amp;quot;operation&amp;quot;: &amp;quot;performance_storage_iscsi&amp;quot;}}}}
+objectFilterOsType = {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: os}}
+
+try:
+    # Getting the datacenter.
+    datacenter = locationService.getDatacenters(filter=objectFilterDatacenter)
+    # Getting the performance storage NFS prices.
+    itemsStorageNfs = packageService.getItems(id=PACKAGE_ID, filter=objectFilterStorageNfs)
+    # Getting the storage space prices
+    objectFilter = {
+        &amp;quot;itemPrices&amp;quot;: {
+            &amp;quot;item&amp;quot;: {
+                &amp;quot;capacity&amp;quot;: {
+                    &amp;quot;operation&amp;quot;: storageSize
+                }
+            },
+            &amp;quot;categories&amp;quot;: {
+                &amp;quot;categoryCode&amp;quot;: {
+                    &amp;quot;operation&amp;quot;: &amp;quot;performance_storage_space&amp;quot;
+                }
+            },
+            &amp;quot;locationGroupId&amp;quot;: {
+                &amp;quot;operation&amp;quot;: &amp;quot;is null&amp;quot;
+            }
+        }
+    }
+    pricesStorageSpace = packageService.getItemPrices(id=PACKAGE_ID, filter=objectFilter)
+    # If the prices list is empty that means that the storage space value is invalid.
+    if len(pricesStorageSpace) == 0:
+        raise ValueError(&#39;The storage space value: &#39; + storageSize + &#39; GB, is not valid.&#39;)
+    # Getting the IOPS prices
+    objectFilter = {
+        &amp;quot;itemPrices&amp;quot;: {
+            &amp;quot;item&amp;quot;: {
+                &amp;quot;capacity&amp;quot;: {
+                    &amp;quot;operation&amp;quot;: iops
+                }
+            },
+            &amp;quot;attributes&amp;quot;: {
+                &amp;quot;value&amp;quot;: {
+                    &amp;quot;operation&amp;quot;: storageSize
+                }
+            },
+            &amp;quot;categories&amp;quot;: {
+                &amp;quot;categoryCode&amp;quot;: {
+                    &amp;quot;operation&amp;quot;: &amp;quot;performance_storage_iops&amp;quot;
+                }
+            },
+            &amp;quot;locationGroupId&amp;quot;: {
+                &amp;quot;operation&amp;quot;: &amp;quot;is null&amp;quot;
+            }
+        }
+    }
+    pricesIops = packageService.getItemPrices(id=PACKAGE_ID, filter=objectFilter)
+    # If the prices list is empty that means that the IOPS value is invalid for the configured storage space.
+    if len(pricesIops) == 0:
+        raise ValueError(&#39;The IOPS value: &#39; + iops + &#39;, is not valid for the storage space: &#39; + storageSize + &#39; GB.&#39;)
+    # Getting the OS.
+    os = osService.getAllObjects(filter=objectFilterOsType)
+    # Building the order template.
+    orderData = {
+        &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&amp;quot;,
+        &amp;quot;packageId&amp;quot;: PACKAGE_ID,
+        &amp;quot;location&amp;quot;: datacenter[0][&#39;id&#39;],
+        &amp;quot;quantity&amp;quot;: 1,
+        &amp;quot;prices&amp;quot;: [
+            {
+                &amp;quot;id&amp;quot;: itemsStorageNfs[0][&#39;prices&#39;][0][&#39;id&#39;]
+            },
+            {
+                &amp;quot;id&amp;quot;: pricesStorageSpace[0][&#39;id&#39;]
+            },
+            {
+                &amp;quot;id&amp;quot;: pricesIops[0][&#39;id&#39;]
+            }
+        ],
+        &amp;quot;osFormatType&amp;quot;: os[0]
+    }
+    # verifyOrder() will check your order for errors. Replace this with a call to
+    # placeOrder() when you&#39;re ready to order. Both calls return a receipt object
+    # that you can use for your records.
+    response = productOrderService.verifyOrder(orderData)
+    print(json.dumps(response, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to place the order. faultCode=%s, faultString=%s&amp;quot; % (e.faultCode, e.faultString))
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Order Firewall and Security Appliances</title>

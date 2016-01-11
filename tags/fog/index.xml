@@ -1,0 +1,690 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Fog on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/tags/fog/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Fri, 08 Jan 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Interact with SoftLayer Object Storage</title>
+      <link>https://softlayer.github.io/fog/storage/</link>
+      <pubDate>Fri, 08 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/storage/</guid>
+      <description>
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-object-storage:5fe4e2fe3590b5bd8669d1961910a370&#34;&gt;Create a connection to SoftLayer Object Storage&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;fog/softlayer&#39;
+@sl = Fog::Storage[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;use-the-models:5fe4e2fe3590b5bd8669d1961910a370&#34;&gt;Use the Models&lt;/h4&gt;
+
+&lt;p&gt;List directories/containers.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dirs = @sl.directories
+dirs.size # the number of directories      
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create a directory/container.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;@sl.directories.create(:key =&amp;gt; &#39;a-container&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a directory/container&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories.get(&#39;a-container&#39;)
+dir.key  # =&amp;gt; &#39;a-container&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create a new file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories.get(&#39;a-container&#39;)
+# Pass a string.
+dir.files.create(:key =&amp;gt; &#39;data.txt&#39;, :body =&amp;gt; &#39;The quick brown fox jumps over the lazy dog.&#39;)
+# From a file.
+dir.files.create(:key =&amp;gt; &#39;file-data.txt&#39;, :body =&amp;gt; File.open(&#39;/path/to/file-data.txt&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Retrieve an existing file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories.get(&#39;a-container&#39;)
+file = dir.files.get(&#39;data.txt&#39;)
+file.body # =&amp;gt; &#39;The quick brown fox jumps over the lazy dog.&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Copy a file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;file  = @sl.directories.get(&#39;a-container&#39;).files.get(&#39;data.txt&#39;)
+copy = file.copy(&#39;a-container&#39;, &#39;copy-of-data.txt&#39;)
+copy.body # =&amp;gt; &#39;The quick brown fox jumps over the lazy dog.&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;List the files in a directory/container&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;@sl.directories.get(&#39;a-container&#39;).files
+# =&amp;gt; [
+#    &amp;lt;Fog::Storage::Softlayer::File
+#  key=&amp;quot;a-container/data.txt&amp;quot;,
+#  content_length=43,
+#  content_type=&amp;quot;text/plain&amp;quot;,
+#  content_disposition=nil,
+#  etag=&amp;quot;a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1&amp;quot;,
+#  last_modified=1970-00-00 00:00:00 -0000,
+#  access_control_allow_origin=nil,
+#  origin=nil
+# ...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a signed [temporary] url for a file/object&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;### NOTE
+## Be sure you have set a meta_temp_url_key for your account at least once before
+## @sl.post_set_meta_temp_url_key(&#39;someSortaSecretStuffHere&#39;)
+### /NOTE
+
+file = @sl.directories.get(&#39;a-container&#39;).files.get(&#39;data.txt&#39;)
+file.url(Time.now + 300) # url expires in 5 minutes
+# =&amp;gt; &amp;quot;https://dal05.objectstorage.softlayer.net:443/v1/AUTH_1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a1a/a-container/data.txt?temp_url_sig=1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a&amp;amp;temp_url_expires=1401901023&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Delete files/objects from a directory/container.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;dir = @sl.directories(&#39;a-container&#39;)
+dir.files.get(&#39;data.txt&#39;).destroy
+dir.files.get(&#39;file-data.txt&#39;).destroy
+dir.files.get(&#39;copy-of-data.txt&#39;).destroy
+# Must destroy all files/objects before destroying container.
+dir.destroy
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Managing SSH Key Pairs with fog-softlayer</title>
+      <link>https://softlayer.github.io/fog/keypairs/</link>
+      <pubDate>Fri, 08 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/keypairs/</guid>
+      <description>
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-compute-service:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Create a connection to SoftLayer Compute Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;fog/softlayer&#39;
+@sl = Fog::Compute[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;key-pair-basics:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pair Basics&lt;/h3&gt;
+
+&lt;p&gt;Create&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp1 = @sl.key_pairs.create(:label =&amp;gt; &#39;my-new-key&#39;, :key =&amp;gt; &#39;ssh-rsa AAAAxbU2lx...&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+kp2 = @sl.key_pairs.new
+kp2.label = &#39;my-new-new-key&#39;
+kp2.key = &#39;ssh-rsa AAAAxbU2lx...&#39;
+kp2.save
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# By id:
+kp = @sl.key_pairs.get(123456)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+# By label:
+kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Destroy&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+kp.destroy
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;key-pairs-with-servers:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pairs with Servers&lt;/h3&gt;
+
+&lt;p&gt;Create a server with one or more key pairs&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;the_first_key = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+the_second_key = @sl.key_pairs.by_label(&#39;my-other-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+opts = {
+		:flavor_id =&amp;gt; &#39;m1.small&#39;,
+		:os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+		:datacenter =&amp;gt; &#39;hkg02&#39;,
+		:name =&amp;gt; &#39;cphrmky&#39;,
+		:key_pairs =&amp;gt; [ the_first_key, the_second_key ]
+}
+@sl.servers.create(opts)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Look at the key pairs on a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;server = @sl.servers.get(12345)
+server.key_pairs
+# =&amp;gt; [ &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+# &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;]
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Managing DNS with fog-softlayer</title>
+      <link>https://softlayer.github.io/fog/dns/</link>
+      <pubDate>Thu, 07 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/dns/</guid>
+      <description>
+
+&lt;h3 id=&#34;prerequisites:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;p&gt;These examples all assume you have installed the &lt;a href=&#34;https://github.com/fog/fog-softlayer&#34;&gt;fog-softlayer&lt;/a&gt; gem and that you have created a ~/.fog file, which contains the following:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;default:
+  softlayer_username: &amp;lt;YOUR USERNAME&amp;gt;
+  softlayer_api_key: &amp;lt;YOUR API KEY&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-dns-service:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Create a connection to SoftLayer DNS Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	require &#39;fog/softlayer&#39;
+	@sl = Fog::DNS[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;create-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Create Operations&lt;/h3&gt;
+
+&lt;p&gt;Create Domain&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.create(&#39;yourdomain.com&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create Record&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  record = {
+    &#39;value&#39; =&amp;gt; &#39;127.0.0.1&#39;,
+    &#39;host&#39; =&amp;gt; &#39;@&#39;,
+    &#39;type&#39; =&amp;gt; &#39;a&#39;
+  }
+  @domain.create_record(record)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;read-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Read Operations&lt;/h3&gt;
+
+&lt;p&gt;List all domains&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domains = @sl.domains.all
+  @domain = @domains.first
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get specific domain by id&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get specific domain by name&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get_by_name(&#39;yourdomain.com&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get Domains Records&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.records
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get specific record by id&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.records.get(456789012)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;or using the service:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @sl.records.get(456789012)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;update-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Update Operations&lt;/h3&gt;
+
+&lt;p&gt;After this point we consider you have a Fog::DNS::Softlayer::Domain on @domain variable&lt;/p&gt;
+
+&lt;p&gt;Update Record Entry&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain.records
+  @domain.records[3].value = &amp;quot;192.168.0.3&amp;quot;
+  @domain.records[3].save
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;destroy-operations:6e7dd3694e5ed10a9037172d7216b08a&#34;&gt;Destroy Operations&lt;/h3&gt;
+
+&lt;p&gt;After this point we consider you have a Fog::DNS::Softlayer::Domain on @domain variable&lt;/p&gt;
+
+&lt;p&gt;Destroy Domain&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.destroy
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Destroy Record&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;  @domain = @sl.domains.get(123456)
+  @domain.records.last.destroy
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Managing VSI&#39;s and Bare Metal servers  with fog-softlayer</title>
+      <link>https://softlayer.github.io/fog/compute/</link>
+      <pubDate>Thu, 07 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/compute/</guid>
+      <description>
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-compute-service:dcd0bbf0b89f9e25c080385385922e68&#34;&gt;Create a connection to SoftLayer Compute Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	require &#39;fog/softlayer&#39;
+	@sl = Fog::Compute[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;use-the-models:dcd0bbf0b89f9e25c080385385922e68&#34;&gt;Use the Models&lt;/h3&gt;
+
+&lt;p&gt;List all servers&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   @sl.servers # list all servers
+   @sl.servers.size # get a count of all servers
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s details&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   server = @sl.servers.get(&amp;lt;server id&amp;gt;)
+   server.name # =&amp;gt; &#39;hostname.example.com&#39;
+   server.created_at # =&amp;gt; DateTime the server was created
+   server.state # =&amp;gt; &#39;Running&#39;, &#39;Stopped&#39;, &#39;Terminated&#39;, etc.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s details using ip address&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   server = @sl.servers.get_by_ip(&amp;lt;server ip&amp;gt;)
+   server.name # =&amp;gt; &#39;hostname.example.com&#39;
+   server.created_at # =&amp;gt; DateTime the server was created
+   server.state # =&amp;gt; &#39;Running&#39;, &#39;Stopped&#39;, &#39;Terminated&#39;, etc.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all servers tagged with certain tags.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	prod_fe_servers = @sl.servers.tagged_with([&#39;production&#39;, &#39;frontend&#39;])
+	# =&amp;gt; [ &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+	#	&amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,]		
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s public/frontend VLAN&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	server = @sl.servers.get(12345)
+	server.vlan
+	# =&amp;gt; &amp;lt;Fog::Network::Softlayer::Network
+    #	id=123456,
+	#   name=&#39;frontend-staging-vlan&#39;,
+	#   modify_date=&amp;quot;2014-02-22T12:42:31-06:00&amp;quot;,
+	#   note=nil,
+	#   tags=[&#39;sparkle&#39;, &#39;motion&#39;],
+	#   type=&amp;quot;STANDARD&amp;quot;,
+	#   datacenter=    &amp;lt;Fog::Network::Softlayer::Datacenter
+	#     id=168642,
+	#     long_name=&amp;quot;San Jose 1&amp;quot;,
+	#     name=&amp;quot;sjc01&amp;quot;
+	#   &amp;gt;,
+	#   network_space=&amp;quot;PUBLIC&amp;quot;,
+	#   router={&amp;quot;hostname&amp;quot;=&amp;gt;&amp;quot;fcr01a.sjc01&amp;quot;, &amp;quot;id&amp;quot;=&amp;gt;82412, &amp;quot;datacenter&amp;quot;=&amp;gt;{&amp;quot;id&amp;quot;=&amp;gt;168642, &amp;quot;longName&amp;quot;=&amp;gt;&amp;quot;San Jose 1&amp;quot;, &amp;quot;name&amp;quot;=&amp;gt;&amp;quot;sjc01&amp;quot;}}
+  	# &amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s private/backend VLAN&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	server = @sl.servers.get(12345)
+	server.private_vlan
+	# =&amp;gt;  &amp;lt;Fog::Network::Softlayer::Network
+	#    id=123456,
+	#    name=&#39;backend-staging-vlan&#39;,
+	#    modify_date=&amp;quot;2014-02-22T12:42:33-06:00&amp;quot;,
+	#    note=nil,
+	#    tags=[],
+	#    type=&amp;quot;STANDARD&amp;quot;,
+	#    datacenter=    &amp;lt;Fog::Network::Softlayer::Datacenter
+	#	    id=168642,
+	#    	long_name=&amp;quot;San Jose 1&amp;quot;,
+	#    	name=&amp;quot;sjc01&amp;quot;
+	#   &amp;gt;,
+	#   network_space=&amp;quot;PRIVATE&amp;quot;,
+    #	router={&amp;quot;hostname&amp;quot;=&amp;gt;&amp;quot;bcr01a.sjc01&amp;quot;, &amp;quot;id&amp;quot;=&amp;gt;82461, &amp;quot;datacenter&amp;quot;=&amp;gt;{&amp;quot;id&amp;quot;=&amp;gt;168642, &amp;quot;longName&amp;quot;=&amp;gt;&amp;quot;San Jose 1&amp;quot;, &amp;quot;name&amp;quot;=&amp;gt;&amp;quot;sjc01&amp;quot;}}
+  	# &amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get a server&amp;rsquo;s tags&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		server = @sl.servers.get(12345)
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Add tags to a server&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		server = @sl.servers.get(12345)
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;]
+		server.add_tags([&#39;sparkle&#39;, &#39;motion&#39;]
+		# =&amp;gt; true
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;, &#39;sparkle&#39;, &#39;motion&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Delete tags from a server&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		server = @sl.servers.get(12345)
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;, &#39;sparkle&#39;, &#39;motion&#39;]
+		server.delete_tags([&#39;sparkle&#39;, &#39;motion&#39;]
+		# =&amp;gt; true
+		server.tags
+		# =&amp;gt; [&#39;production&#39;, &#39;frontend&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a new VM with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.small&amp;quot;,
+     	:image_id =&amp;gt; &amp;quot;23f7f05f-3657-4330-8772-329ed2e816bc&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;
+     }
+     new_server = @sl.servers.create(opts)
+     new_server.id # =&amp;gt; 1337
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a new Bare Metal instance with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.medium&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test1&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+     @sl.servers.create(opts)
+     new_server.id # =&amp;gt; 1338
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a new VM without flavor.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   	opts = {
+     	:cpu =&amp;gt; 2,
+     	:ram =&amp;gt; 2048,     	
+     	:disk =&amp;gt; [{&#39;device&#39; =&amp;gt; 0, &#39;diskImage&#39; =&amp;gt; {&#39;capacity&#39; =&amp;gt; 100 } }],
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;     
+     }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Bare Metal Instance without a flavor&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   opts = {
+     	:cpu =&amp;gt; 8,
+     	:ram =&amp;gt; 16348,     	
+     	:disk =&amp;gt; {&#39;capacity&#39; =&amp;gt; 500 },
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Create a server with one or more key pairs (also see &lt;a href=&#34;https://github.com/fog/fog-softlayer/blob/master/examples/key_pairs.md&#34;&gt;key_pairs examples on Github&lt;/a&gt; )&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	the_first_key = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+	the_second_key = @sl.key_pairs.by_label(&#39;my-other-new-key&#39;)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+	opts = {
+		:flavor_id =&amp;gt; &#39;m1.small&#39;,
+		:os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+		:datacenter =&amp;gt; &#39;hkg02&#39;,
+		:name =&amp;gt; &#39;cphrmky&#39;,
+		:key_pairs =&amp;gt; [ the_first_key, the_second_key ]
+	}
+	@sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Delete a VM or Bare Metal instance.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   	  @sl.servers.get(&amp;lt;server id&amp;gt;).destroy
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server (works the same for VM and Bare Metal) into a specific VLAN&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	# I want to launch another server to hold docker containers into my existing staging VLANs
+	# I&#39;ll start by getting a staging server so I can use its vlans as a reference.
+	staging_server = @sl.servers.tagged_with([&#39;staging&#39;, &#39;docker&#39;]).first # =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+
+	opts = {
+	  :flavor_id =&amp;gt; &#39;m1.large&#39;,
+	  :image_id =&amp;gt; &#39;23f7f05f-3657-4330-8772-329ed2e816bc&#39;,  # Ubuntu Docker Image
+	  :domain =&amp;gt; &#39;staging.example.com&#39;,
+	  :datacenter =&amp;gt; &#39;ams01&#39;, # This needs to be the same datacenter as the target VLAN of course.
+	  :name =&amp;gt; &#39;additional-docker-host&#39;,
+	  :vlan =&amp;gt; staging.server.vlan, # Passing in a &amp;lt;Fog::Network::Softlayer::Network&amp;gt; object.
+	  :private_vlan =&amp;gt; staging.server.private_vlan.id, # Passing in an Integer (the id of a network/vlan) works too.
+	}
+
+	new_staging_server = @sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server with only a private network.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	opts = {
+	  :flavor_id =&amp;gt; &#39;m1.large&#39;,
+	  :os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+	  :domain =&amp;gt; &#39;example.com&#39;,
+	  :datacenter =&amp;gt; &#39;ams01&#39;,
+	  :name =&amp;gt; &#39;private-eye&#39;,
+	  :private_network_only =&amp;gt; true
+	}
+
+	private_vm = @sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server with 1Gbps network components.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;	opts = {
+	  :flavor_id =&amp;gt; &#39;m1.large&#39;,
+	  :os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+	  :domain =&amp;gt; &#39;example.com&#39;,
+	  :datacenter =&amp;gt; &#39;wdc01&#39;,
+	  :name =&amp;gt; &#39;speedy-tubes&#39;,
+	  :network_components =&amp;gt; [ {:speed =&amp;gt; 1000 } ],
+	}
+
+	private_vm = @sl.servers.create(opts)
+	# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Provision a Server with user metadata.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+      :flavor_id =&amp;gt; &amp;quot;m1.small&amp;quot;,
+      :image_id =&amp;gt; &amp;quot;23f7f05f-3657-4330-8772-329ed2e816bc&amp;quot;,
+      :name =&amp;gt; &amp;quot;test&amp;quot;,
+      :datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+      :user_data =&amp;gt; &amp;quot;my-custom-user-metadata&amp;quot;
+     }
+
+     new_server = @sl.servers.create(opts)
+     new_server.user_data # =&amp;gt; &amp;quot;my-custom-user-metadata&amp;quot;
+     new_server.user_data = &amp;quot;new-user-metadata&amp;quot;
+     new_server.user_data # =&amp;gt; &amp;quot;new-user-metadata&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Start, Stop, and Reboot a existing server (works the same for VMs and Bare Metal).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;		srvr = @sl.servers.get(123456)
+		srvr.ready? # true
+
+		srvr.reboot # true
+
+		srvr.stop # true
+		srvr.ready? # false
+		srvr.state # &amp;quot;Halted&amp;quot;
+
+		srvr.start # true
+		srvr.ready # true
+		srvr.state # &amp;quot;Running&amp;quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all options to create a bare metal.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   @sl.servers.get_bm_create_options
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all options to create a VM.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   @sl.servers.get_vm_create_options
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all active tickets of a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    server = @sl.servers.get(123456)
+    server.get_active_tickets
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all users of a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    server = @sl.servers.get(123456)
+    server.get_users
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get all upgrade options of a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    server = @sl.servers.get(123456)
+    server.get_upgrade_options
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Update a virtual guest server.
+Hash keys are the categories and the hash values are the capacity. You can retrieve them from upgrade options.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    new_attributes = {
+      :guest_core =&amp;gt; 2,
+      :ram =&amp;gt; 1, # this value is in GBs
+      :port_speed =&amp;gt; 100, # this value is in MPBSs
+      :time =&amp;gt; Time.now + 5.minutes # if you don&#39;t specify, time will be equal to now
+    }
+
+    server = @sl.servers.get(123456)
+    server.update(new_attributes)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Update a bare metal server.
+Hash keys are the categories and the hash values are the capacity. You can retrieve them from upgrade options.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;    new_attributes = {
+      :ram =&amp;gt; 4, # this value is in GBs
+      :port_speed =&amp;gt; 100, # this value is in MPBSs
+      :maintenance_window =&amp;gt; 1111 # should see examples/network &amp;quot;Get a datacenter maintenance windows.&amp;quot;
+    }
+
+    server = @sl.servers.get(123456)
+    server.update(new_attributes)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for VM with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.small&amp;quot;,
+     	:image_id =&amp;gt; &amp;quot;23f7f05f-3657-4330-8772-329ed2e816bc&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for Bare Metal instance with flavor (simple).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;     opts = {
+     	:flavor_id =&amp;gt; &amp;quot;m1.medium&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test1&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for VM without flavor.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   	opts = {
+     	:cpu =&amp;gt; 2,
+     	:ram =&amp;gt; 2048,
+     	:disk =&amp;gt; [{&#39;device&#39; =&amp;gt; 0, &#39;diskImage&#39; =&amp;gt; {&#39;capacity&#39; =&amp;gt; 100 } }],
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Generate an order template for Bare Metal Instance without a flavor&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;   opts = {
+     	:cpu =&amp;gt; 8,
+     	:ram =&amp;gt; 16348,
+     	:disk =&amp;gt; {&#39;capacity&#39; =&amp;gt; 500 },
+     	:ephemeral_storage =&amp;gt; true,
+     	:domain =&amp;gt; &amp;quot;not-my-default.com&amp;quot;,
+     	:name =&amp;gt; &amp;quot;hostname&amp;quot;,
+     	:os_code =&amp;gt; &amp;quot;UBUNTU_LATEST&amp;quot;,
+     	:name =&amp;gt; &amp;quot;test2&amp;quot;,
+     	:datacenter =&amp;gt; &amp;quot;ams01&amp;quot;,
+     	:bare_metal =&amp;gt; true
+     }
+     new_server = @sl.servers.new(opts)
+     new_server.generate_order_template
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
