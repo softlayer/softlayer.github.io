@@ -143,6 +143,7 @@ if __name__ == &amp;quot;__main__&amp;quot;:
 from pprint import pprint as pp
  
 quote_id = 12345
+
 client = SoftLayer.Client()
 
 def getOrderContainer(quote_id):
@@ -150,16 +151,19 @@ def getOrderContainer(quote_id):
     return container[&#39;orderContainers&#39;][0]
  
 def getQuotes():
-    quotes = client[&#39;SoftLayer_Account&#39;].getQuotes()
+    quotes = client[&#39;SoftLayer_Account&#39;].getActiveQuotes()
     pp(quotes)
 
 getQuotes()
+guests = {&#39;hostname&#39;: &#39;quotetest&#39;, &#39;domain&#39;: &#39;example.com&#39;}
 container = getOrderContainer(quote_id)
-order = {}
-order[&#39;complexType&#39;] = &#39;Container_Product_Order_Virtual_Guest&#39;
-order[&#39;hardware&#39;] = [{&#39;hostname&#39;: &#39;quotetest&#39;, &#39;domain&#39;: &#39;example.com&#39;}]
-order[&#39;quanity&#39;] = 1
-result = client[&#39;Billing_Order_Quote&#39;].verifyOrder(order, id=quote_id)
+container[&#39;quantity&#39;] = 1
+container[&#39;virtualGuests&#39;] = []
+# You will need to add a hostname and domain entry for each server on the order
+# if quantity was 5, you would need to add 5 guests here
+container[&#39;virtualGuests&#39;].append(guests)
+container[&#39;presetId&#39;] = None
+result = client[&#39;Product_Order&#39;].verifyOrder(container)
 
 pp(result)
 
