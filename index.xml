@@ -6,7 +6,145 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 28 Jan 2016 00:00:00 UTC</updated>
+    <updated>Mon, 01 Feb 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Release notes: February 1, 2016</title>
+      <link>https://softlayer.github.io/release_notes/20160201/</link>
+      <pubDate>Mon, 01 Feb 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/release_notes/20160201/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal:d28a490ace8738fb1cca6353e9a62ed3&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Resolved an issue that was preventing the portal from properly enabling Private VLAN spanning.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;api:d28a490ace8738fb1cca6353e9a62ed3&#34;&gt;API&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Exposed &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer/getAllowedHardwareIds&#34;&gt;getAllowedHardwareIds&lt;/a&gt; and &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer/getAllowedVirtualGuestIds&#34;&gt;getAllowedVirtualGuestIds&lt;/a&gt; to the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer&#34;&gt;SoftLayer_User_Customer&lt;/a&gt; service. This helps with API timeout issues on accounts with a large amount of Bare Metal Servers and or Virtual Guests.&lt;/li&gt;
+&lt;li&gt;Resolved an issue where calling &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest_Block_Device_Template_Group/denySharingAccess&#34;&gt;denySharingAccess&lt;/a&gt; would cause an image template to go in to an inconsistent state.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;backend:d28a490ace8738fb1cca6353e9a62ed3&#34;&gt;Backend&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Added the ability to specify userdata to &lt;a href=&#34;http://www.softlayer.com/info/hourly-bare-metal-servers&#34;&gt;Hourly Bare Metal Servers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;For dedicated firewalls, the private network bandwidth has been increased from 1.25 GB to unlimited. For shared firewalls, the private network bandwidth has been increased from 1.25GB to 10GB.&lt;/li&gt;
+&lt;li&gt;Enabled the automatic migration of local disk VSIs on disabled hosts on VSI power off or reboot.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find a billing item from a provisioned product</title>
+      <link>https://softlayer.github.io/ruby/billingfromproduct/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/billingfromproduct/</guid>
+      <description>&lt;p&gt;In the following example we are looking for the Billing Item of an Endurance Storage volume with an ID of 1234567.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# add your network storage id, it can be found by doing this call: http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNasNetworkStorage
+network_storage_id = 1234567
+#
+item = client[:Network_Storage].object_mask(&amp;quot;mask[billingItem[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge]]&amp;quot;).object_with_id(network_storage_id).getObject
+pp item[&#39;billingItem&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Cancel an item or service</title>
+      <link>https://softlayer.github.io/ruby/cancelservice/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/cancelservice/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39; # Requires softlayer_api &amp;gt;= 3.2
+require &#39;pp&#39; # used to display results
+
+# Create a client
+client = SoftLayer::Client.new
+
+# add your servers&#39; id, can be found with the following script: https://softlayer.github.io/ruby/list_instances/
+id_of_virtual_server_to_cancel = FILL_IN_YOUR_SERVERS_ID
+begin
+   # Substitute :Virtual_Guest for :Hardware_Server if you want to cancel a bare metal server
+   item = client[:Virtual_Guest].object_mask(&amp;quot;mask[billingItem[id]]&amp;quot;).object_with_id(id_of_virtual_server_to_cancel).getObject
+   rescue XMLRPC::FaultException # error will be triggered if item doesn&#39;t exist
+   item = false
+end
+#
+# # Then invoke [cancelService](http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService) or [cancelItem](http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem)
+if item and item[&#39;billingItem&#39;] and client[:Billing_Item].object_with_id(item[&#39;billingItem&#39;][&#39;id&#39;]).cancelService()
+   puts &amp;quot;Cancelled service of #{id_of_virtual_server_to_cancel}&amp;quot;
+ else
+   puts &amp;quot;#{id_of_virtual_server_to_cancel} Doesn&#39;t exist or is already cancelled&amp;quot;
+ end
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Calculating month-to-date cost of a Virtual_Guest</title>
+      <link>https://softlayer.github.io/ruby/monthtodate/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/monthtodate/</guid>
+      <description>
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39; # Requires softlayer_api &amp;gt;= 3.2
+require &#39;pp&#39; # used to display results
+
+# Create a client
+client = SoftLayer::Client.new
+
+# add your server id, can be found with the following script: https://softlayer.github.io/ruby/list_instances/
+virtual_server_id = 12345678
+item = client[:Virtual_Guest].object_mask(&amp;quot;mask[billingItem[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge]]&amp;quot;).object_with_id(virtual_server_id).getObject
+puts &amp;quot;Billing Item for Virtual Server:&amp;quot;
+pp item[&#39;billingItem&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;example-output:a8ec6ac9c09d88a94b1b5bf10393284e&#34;&gt;Example Output&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Billing Item for Virtual Server:
+{&amp;quot;createDate&amp;quot;=&amp;gt;&amp;quot;2016-01-29T12:23:43-06:00&amp;quot;,
+ &amp;quot;currentHourlyCharge&amp;quot;=&amp;gt;&amp;quot;.023&amp;quot;,
+ &amp;quot;hourlyRecurringFee&amp;quot;=&amp;gt;&amp;quot;.023&amp;quot;,
+ &amp;quot;hoursUsed&amp;quot;=&amp;gt;&amp;quot;1&amp;quot;}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Determining your next bill</title>
+      <link>https://softlayer.github.io/ruby/nextinvoice/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/nextinvoice/</guid>
+      <description>
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# SoftLayer library will look to see if these global variables are set when making a connection
+# more information here: https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L58
+
+require &#39;softlayer_api&#39;
+require &#39;pp&#39;
+
+client = SoftLayer::Client.new
+
+total_amount = client[&#39;Account&#39;].getNextInvoiceTotalAmount
+puts &amp;quot;Next invoice total amount: #{total_amount}&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;example-output:5b3b7b946e37497a1fd07dfb3f249be6&#34;&gt;Example Output&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Next invoice total amount: 250.26
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Reload with SSH keys</title>
@@ -218,6 +356,81 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     </item>
     
     <item>
+      <title>Managing SSH Key Pairs with fog-softlayer</title>
+      <link>https://softlayer.github.io/fog/keypairs/</link>
+      <pubDate>Fri, 08 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/fog/keypairs/</guid>
+      <description>
+
+&lt;h3 id=&#34;create-a-connection-to-softlayer-compute-service:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Create a connection to SoftLayer Compute Service&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;fog/softlayer&#39;
+@sl = Fog::Compute[:softlayer]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;key-pair-basics:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pair Basics&lt;/h3&gt;
+
+&lt;p&gt;Create&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp1 = @sl.key_pairs.create(:label =&amp;gt; &#39;my-new-key&#39;, :key =&amp;gt; &#39;ssh-rsa AAAAxbU2lx...&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+kp2 = @sl.key_pairs.new
+kp2.label = &#39;my-new-new-key&#39;
+kp2.key = &#39;ssh-rsa AAAAxbU2lx...&#39;
+kp2.save
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# By id:
+kp = @sl.key_pairs.get(123456)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+# By label:
+kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Destroy&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+kp.destroy
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;key-pairs-with-servers:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pairs with Servers&lt;/h3&gt;
+
+&lt;p&gt;Create a server with one or more key pairs&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;the_first_key = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+the_second_key = @sl.key_pairs.by_label(&#39;my-other-new-key&#39;)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
+
+opts = {
+		:flavor_id =&amp;gt; &#39;m1.small&#39;,
+		:os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
+		:datacenter =&amp;gt; &#39;hkg02&#39;,
+		:name =&amp;gt; &#39;cphrmky&#39;,
+		:key_pairs =&amp;gt; [ the_first_key, the_second_key ]
+}
+@sl.servers.create(opts)
+# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Look at the key pairs on a server.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;server = @sl.servers.get(12345)
+server.key_pairs
+# =&amp;gt; [ &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
+# &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;]
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Interact with SoftLayer Object Storage</title>
       <link>https://softlayer.github.io/fog/storage/</link>
       <pubDate>Fri, 08 Jan 2016 00:00:00 UTC</pubDate>
@@ -309,81 +522,6 @@ dir.files.get(&#39;file-data.txt&#39;).destroy
 dir.files.get(&#39;copy-of-data.txt&#39;).destroy
 # Must destroy all files/objects before destroying container.
 dir.destroy
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Managing SSH Key Pairs with fog-softlayer</title>
-      <link>https://softlayer.github.io/fog/keypairs/</link>
-      <pubDate>Fri, 08 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/fog/keypairs/</guid>
-      <description>
-
-&lt;h3 id=&#34;create-a-connection-to-softlayer-compute-service:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Create a connection to SoftLayer Compute Service&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;fog/softlayer&#39;
-@sl = Fog::Compute[:softlayer]
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;key-pair-basics:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pair Basics&lt;/h3&gt;
-
-&lt;p&gt;Create&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp1 = @sl.key_pairs.create(:label =&amp;gt; &#39;my-new-key&#39;, :key =&amp;gt; &#39;ssh-rsa AAAAxbU2lx...&#39;)
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
-kp2 = @sl.key_pairs.new
-kp2.label = &#39;my-new-new-key&#39;
-kp2.key = &#39;ssh-rsa AAAAxbU2lx...&#39;
-kp2.save
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Get&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# By id:
-kp = @sl.key_pairs.get(123456)
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
-
-# By label:
-kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Destroy&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;kp = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
-kp.destroy
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;key-pairs-with-servers:4ae51d631ca1e9c4a46ff3036585b000&#34;&gt;Key Pairs with Servers&lt;/h3&gt;
-
-&lt;p&gt;Create a server with one or more key pairs&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;the_first_key = @sl.key_pairs.by_label(&#39;my-new-key&#39;)
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
-the_second_key = @sl.key_pairs.by_label(&#39;my-other-new-key&#39;)
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::KeyPair&amp;gt;
-
-opts = {
-		:flavor_id =&amp;gt; &#39;m1.small&#39;,
-		:os_code =&amp;gt; &#39;UBUNTU_LATEST&#39;,
-		:datacenter =&amp;gt; &#39;hkg02&#39;,
-		:name =&amp;gt; &#39;cphrmky&#39;,
-		:key_pairs =&amp;gt; [ the_first_key, the_second_key ]
-}
-@sl.servers.create(opts)
-# =&amp;gt; &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Look at the key pairs on a server.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;server = @sl.servers.get(12345)
-server.key_pairs
-# =&amp;gt; [ &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;,
-# &amp;lt;Fog::Compute::Softlayer::Server&amp;gt;]
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
@@ -896,24 +1034,6 @@ Hash keys are the categories and the hash values are the capacity. You can retri
     </item>
     
     <item>
-      <title>Associate a Billing ID with the service or item it corresponds to in the SoftLayer catalog</title>
-      <link>https://softlayer.github.io/perl/getassociatedid/</link>
-      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/perl/getassociatedid/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;# https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/1234321/getAssociatedBillingItem
-my $objectMask = {
-   &#39;id&#39; =&amp;gt;&#39;&#39;
-};
-$billing_client-&amp;gt;setObjectMask($objectMask);
-$result = $billing_client-&amp;gt;getAssociatedParent();
-print Dumper($result-&amp;gt;result);
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
       <title>Cancel item</title>
       <link>https://softlayer.github.io/perl/cancelitem/</link>
       <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
@@ -938,146 +1058,19 @@ print Dumper($result-&amp;gt;result);
     </item>
     
     <item>
-      <title>Retrieve the amount of your next invoice</title>
-      <link>https://softlayer.github.io/perl/nextbilling/</link>
+      <title>Associate a Billing ID with the service or item it corresponds to in the SoftLayer catalog</title>
+      <link>https://softlayer.github.io/perl/getassociatedid/</link>
       <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/perl/nextbilling/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;use lib &amp;quot;./softlayer-api-perl-client/&amp;quot;;
-use SoftLayer::API::SOAP;
-use Data::Dumper;
-
-my $api_username = &amp;quot;x&amp;quot;;
-my $api_key = &amp;quot;a&amp;quot;;
-my $client = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Account&#39;, undef, $api_username, $api_key);
-
-
-my $result;
-$result = $client-&amp;gt;getNextInvoiceTotalAmount();
-print &amp;quot;Next Invoice Total: &amp;quot; . $result-&amp;gt;result . &amp;quot;\$\n&amp;quot; ;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Retrieve the month to date cost of an hourly VSI</title>
-      <link>https://softlayer.github.io/perl/monthtodatecost/</link>
-      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/perl/monthtodatecost/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;#!/usr/bin/perl
-use lib &amp;quot;/path/to/softlayer-api-perl-client/&amp;quot;;
-use SoftLayer::API::SOAP;
-use Data::Dumper;
-
-my $api_username = &amp;quot;x&amp;quot;;
-my $api_key = &amp;quot;a&amp;quot;;
-my $client = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Account&#39;, undef, $api_username, $api_key);
-
-# SoftLayer_Virtual_Guest/&amp;lt;VSI_ID&amp;gt;/getBillingItem?objectMask=mask\[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge\]&amp;quot;
-# CHANGE ME to the id of the virtual guest you want to check
-my $virtual_guest_id = 12345678;
-my $virtual_guest = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Virtual_Guest&#39;, $virtual_guest_id, $api_username, $api_key);
+      <guid>https://softlayer.github.io/perl/getassociatedid/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;# https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/1234321/getAssociatedBillingItem
 my $objectMask = {
-    &#39;createDate&#39; =&amp;gt; &#39;&#39;,
-    &#39;hoursUsed&#39; =&amp;gt; &#39;&#39;,
-    &#39;hourlyRecurringFee&#39; =&amp;gt; &#39;&#39;,
-    &#39;currentHourlyCharge&#39; =&amp;gt; &#39;&#39;
+   &#39;id&#39; =&amp;gt;&#39;&#39;
 };
+$billing_client-&amp;gt;setObjectMask($objectMask);
+$result = $billing_client-&amp;gt;getAssociatedParent();
+print Dumper($result-&amp;gt;result);
 
-$result = $virtual_guest-&amp;gt;getBillingItem();
-my $cost;
-$cost = $result-&amp;gt;result-&amp;gt;{&#39;hoursUsed&#39;} * $result-&amp;gt;result-&amp;gt;{&#39;hourlyRecurringFee&#39;};
-print $result-&amp;gt;result-&amp;gt;{&#39;hoursUsed&#39;} . &amp;quot; hours @ &amp;quot; . $result-&amp;gt;result-&amp;gt;{&#39;hourlyRecurringFee&#39;} . &amp;quot;\$/hour = &amp;quot; . $cost . &amp;quot; \$\n&amp;quot;;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Response:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;1 hours @ .045$/hour = 0.045 $
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: January 4, 2016</title>
-      <link>https://softlayer.github.io/release_notes/20160104/</link>
-      <pubDate>Mon, 04 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20160104/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:0128d356c5f709b6c9a0101268244a1e&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an issue with OS Reloads failing due to outdated packages.&lt;/li&gt;
-&lt;li&gt;Fixed an issue on the order page where an invalid method name was being referenced, causing no results to return.&lt;/li&gt;
-&lt;li&gt;Added ClickAndBuy as a payment authorization type for ordering.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:0128d356c5f709b6c9a0101268244a1e&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Updated &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Category/getSubnetCategories&#34;&gt;getSubnetCategories&lt;/a&gt; to properly retrieve all subnet categories.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Cancel an item or service</title>
-      <link>https://softlayer.github.io/rest/cancel_service/</link>
-      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/rest/cancel_service/</guid>
-      <description>
-
-&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;&lt;code&gt;SoftLayer_Billing_Item::cancelService()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;URL: SoftLayer_Billing_Item/cancelService&lt;/p&gt;
-
-&lt;p&gt;Example CURL:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id/cancelService
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Response:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;true
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;note:d22459ce58257bd3859fe8f589564967&#34;&gt;Note&lt;/h3&gt;
-
-&lt;p&gt;If you are wanting to use the REST API to cancel a Bare Metal server you cannot use the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;cancelService&lt;/a&gt; call but rather you will need to utilize the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem&#34;&gt;cancelItem&lt;/a&gt; call. This call and provide a cancellation reason.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Find provisioned product from a billing item</title>
-      <link>https://softlayer.github.io/rest/find_product_from_billing/</link>
-      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/rest/find_product_from_billing/</guid>
-      <description>&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/getAssociatedParent&#34;&gt;&lt;code&gt;SoftLayer_Billing_Item::getAssociatedParent()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;URL: SoftLayer_Billing_Item/getAssociatedParent&lt;/p&gt;
-
-&lt;p&gt;Example CURL:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id&amp;gt;/getAssociatedParent?objectMask=mask\[categoryCode,id,description\]
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Response:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;[
-    {
-        &amp;quot;categoryCode&amp;quot;: &amp;quot;storage_service_enterprise&amp;quot;,
-        &amp;quot;description&amp;quot;: &amp;quot;Endurance Storage&amp;quot;,
-        &amp;quot;id&amp;quot;: 1234321
-    }
-]
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>

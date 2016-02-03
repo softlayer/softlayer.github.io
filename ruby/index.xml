@@ -6,7 +6,114 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Sun, 15 Nov 2015 00:00:00 UTC</updated>
+    <updated>Fri, 29 Jan 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Calculating month-to-date cost of a Virtual_Guest</title>
+      <link>https://softlayer.github.io/ruby/monthtodate/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/monthtodate/</guid>
+      <description>
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39; # Requires softlayer_api &amp;gt;= 3.2
+require &#39;pp&#39; # used to display results
+
+# Create a client
+client = SoftLayer::Client.new
+
+# add your server id, can be found with the following script: https://softlayer.github.io/ruby/list_instances/
+virtual_server_id = 12345678
+item = client[:Virtual_Guest].object_mask(&amp;quot;mask[billingItem[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge]]&amp;quot;).object_with_id(virtual_server_id).getObject
+puts &amp;quot;Billing Item for Virtual Server:&amp;quot;
+pp item[&#39;billingItem&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;example-output:a8ec6ac9c09d88a94b1b5bf10393284e&#34;&gt;Example Output&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Billing Item for Virtual Server:
+{&amp;quot;createDate&amp;quot;=&amp;gt;&amp;quot;2016-01-29T12:23:43-06:00&amp;quot;,
+ &amp;quot;currentHourlyCharge&amp;quot;=&amp;gt;&amp;quot;.023&amp;quot;,
+ &amp;quot;hourlyRecurringFee&amp;quot;=&amp;gt;&amp;quot;.023&amp;quot;,
+ &amp;quot;hoursUsed&amp;quot;=&amp;gt;&amp;quot;1&amp;quot;}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Cancel an item or service</title>
+      <link>https://softlayer.github.io/ruby/cancelservice/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/cancelservice/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39; # Requires softlayer_api &amp;gt;= 3.2
+require &#39;pp&#39; # used to display results
+
+# Create a client
+client = SoftLayer::Client.new
+
+# add your servers&#39; id, can be found with the following script: https://softlayer.github.io/ruby/list_instances/
+id_of_virtual_server_to_cancel = FILL_IN_YOUR_SERVERS_ID
+begin
+   # Substitute :Virtual_Guest for :Hardware_Server if you want to cancel a bare metal server
+   item = client[:Virtual_Guest].object_mask(&amp;quot;mask[billingItem[id]]&amp;quot;).object_with_id(id_of_virtual_server_to_cancel).getObject
+   rescue XMLRPC::FaultException # error will be triggered if item doesn&#39;t exist
+   item = false
+end
+#
+# # Then invoke [cancelService](http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService) or [cancelItem](http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem)
+if item and item[&#39;billingItem&#39;] and client[:Billing_Item].object_with_id(item[&#39;billingItem&#39;][&#39;id&#39;]).cancelService()
+   puts &amp;quot;Cancelled service of #{id_of_virtual_server_to_cancel}&amp;quot;
+ else
+   puts &amp;quot;#{id_of_virtual_server_to_cancel} Doesn&#39;t exist or is already cancelled&amp;quot;
+ end
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Determining your next bill</title>
+      <link>https://softlayer.github.io/ruby/nextinvoice/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/nextinvoice/</guid>
+      <description>
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# SoftLayer library will look to see if these global variables are set when making a connection
+# more information here: https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L58
+
+require &#39;softlayer_api&#39;
+require &#39;pp&#39;
+
+client = SoftLayer::Client.new
+
+total_amount = client[&#39;Account&#39;].getNextInvoiceTotalAmount
+puts &amp;quot;Next invoice total amount: #{total_amount}&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;example-output:5b3b7b946e37497a1fd07dfb3f249be6&#34;&gt;Example Output&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Next invoice total amount: 250.26
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find a billing item from a provisioned product</title>
+      <link>https://softlayer.github.io/ruby/billingfromproduct/</link>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/billingfromproduct/</guid>
+      <description>&lt;p&gt;In the following example we are looking for the Billing Item of an Endurance Storage volume with an ID of 1234567.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# add your network storage id, it can be found by doing this call: http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNasNetworkStorage
+network_storage_id = 1234567
+#
+item = client[:Network_Storage].object_mask(&amp;quot;mask[billingItem[createDate,hoursUsed,hourlyRecurringFee,currentHourlyCharge]]&amp;quot;).object_with_id(network_storage_id).getObject
+pp item[&#39;billingItem&#39;]
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Password Auth</title>
