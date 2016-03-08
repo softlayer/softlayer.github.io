@@ -6,7 +6,72 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 11 Nov 2015 00:00:00 UTC</updated>
+    <updated>Mon, 07 Mar 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Backup and Restore firewall rules</title>
+      <link>https://softlayer.github.io/python/manage_firewall_rules/</link>
+      <pubDate>Mon, 07 Mar 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/manage_firewall_rules/</guid>
+      <description>&lt;p&gt;restoreRules here will clobber any existing rules on the firewall, so be careful with that.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+import SoftLayer
+from SoftLayer.CLI import firewall
+from pprint import pprint as pp
+import json
+from argparse import ArgumentParser
+
+class ruleSaver():
+
+    def __init__(self, path, fw):
+        self.client = SoftLayer.Client()
+        self.fw = SoftLayer.FirewallManager(self.client)
+        self.path = path
+        self.fw_type, self.fw_id = firewall.parse_id(fw)
+
+    def saveRules(self):
+        if self.fw_type == &#39;vlan&#39;:
+            rules = self.fw.get_dedicated_fwl_rules(self.fw_id)
+        else:  
+            rules = self.fw.get_standard_fwl_rules(self.fw_id)
+        with open(self.path, &#39;w&#39;) as f:
+            json.dump(rules,f)
+        print(&amp;quot;Done saving rules to %s&amp;quot; % self.path)
+
+    def restoreRules(self):
+        with open(self.path, &#39;r&#39;) as f:
+            rules = json.load(f)
+        if self.fw_type == &#39;vlan&#39;:
+            result = self.fw.edit_dedicated_fwl_rules(self.fw_id,rules)
+        else:  
+            result = self.fw.edit_standard_fwl_rules(self.fw_id,rules)
+        return result
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    
+    parser = ArgumentParser(description=&#39;Backup/Restore firewall rules&#39;)
+    parser.add_argument(&#39;-f&#39;, nargs=1, type=str, required=True, metavar=&amp;quot;[/path/to/file]&amp;quot;, dest=&amp;quot;path&amp;quot;,
+        help=&amp;quot;File to save to / restore from&amp;quot;)
+    parser.add_argument(&#39;-i&#39;, nargs=1, type=str, required=True, metavar=&amp;quot;[type:id]&amp;quot;, dest=&amp;quot;fw&amp;quot;,
+        help=&amp;quot;Firewall ID, same format as &#39;slcli firewall list&#39;. vlan:1234, vs:1234, sever:1234&amp;quot;)
+    parser.add_argument(&#39;-a&#39;, nargs=1, type=str, required=True, metavar=&amp;quot;[save|restore]&amp;quot;, dest=&amp;quot;action&amp;quot;,
+        help=&amp;quot;save to file, or restore from file. restore completely overwrites any existing rules&amp;quot;)
+
+    args = parser.parse_args()
+    main = ruleSaver(args.path[0],args.fw[0])
+    action = args.action[0]
+
+    if action == &#39;restore&#39;:
+        result = main.restoreRules()
+        pp(result)
+    else:
+        main.saveRules()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Order Firewall and Security Appliances</title>

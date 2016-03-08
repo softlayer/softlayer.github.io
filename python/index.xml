@@ -6,7 +6,72 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 03 Mar 2016 00:00:00 UTC</updated>
+    <updated>Mon, 07 Mar 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Backup and Restore firewall rules</title>
+      <link>https://softlayer.github.io/python/manage_firewall_rules/</link>
+      <pubDate>Mon, 07 Mar 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/manage_firewall_rules/</guid>
+      <description>&lt;p&gt;restoreRules here will clobber any existing rules on the firewall, so be careful with that.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+import SoftLayer
+from SoftLayer.CLI import firewall
+from pprint import pprint as pp
+import json
+from argparse import ArgumentParser
+
+class ruleSaver():
+
+    def __init__(self, path, fw):
+        self.client = SoftLayer.Client()
+        self.fw = SoftLayer.FirewallManager(self.client)
+        self.path = path
+        self.fw_type, self.fw_id = firewall.parse_id(fw)
+
+    def saveRules(self):
+        if self.fw_type == &#39;vlan&#39;:
+            rules = self.fw.get_dedicated_fwl_rules(self.fw_id)
+        else:  
+            rules = self.fw.get_standard_fwl_rules(self.fw_id)
+        with open(self.path, &#39;w&#39;) as f:
+            json.dump(rules,f)
+        print(&amp;quot;Done saving rules to %s&amp;quot; % self.path)
+
+    def restoreRules(self):
+        with open(self.path, &#39;r&#39;) as f:
+            rules = json.load(f)
+        if self.fw_type == &#39;vlan&#39;:
+            result = self.fw.edit_dedicated_fwl_rules(self.fw_id,rules)
+        else:  
+            result = self.fw.edit_standard_fwl_rules(self.fw_id,rules)
+        return result
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    
+    parser = ArgumentParser(description=&#39;Backup/Restore firewall rules&#39;)
+    parser.add_argument(&#39;-f&#39;, nargs=1, type=str, required=True, metavar=&amp;quot;[/path/to/file]&amp;quot;, dest=&amp;quot;path&amp;quot;,
+        help=&amp;quot;File to save to / restore from&amp;quot;)
+    parser.add_argument(&#39;-i&#39;, nargs=1, type=str, required=True, metavar=&amp;quot;[type:id]&amp;quot;, dest=&amp;quot;fw&amp;quot;,
+        help=&amp;quot;Firewall ID, same format as &#39;slcli firewall list&#39;. vlan:1234, vs:1234, sever:1234&amp;quot;)
+    parser.add_argument(&#39;-a&#39;, nargs=1, type=str, required=True, metavar=&amp;quot;[save|restore]&amp;quot;, dest=&amp;quot;action&amp;quot;,
+        help=&amp;quot;save to file, or restore from file. restore completely overwrites any existing rules&amp;quot;)
+
+    args = parser.parse_args()
+    main = ruleSaver(args.path[0],args.fw[0])
+    action = args.action[0]
+
+    if action == &#39;restore&#39;:
+        result = main.restoreRules()
+        pp(result)
+    else:
+        main.saveRules()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Attach and Detach a Block Device to a Virtual_Guest</title>
@@ -887,53 +952,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     main = example()
     main.main()
 
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>getCustomGraphData</title>
-      <link>https://softlayer.github.io/python/tracking_objects/</link>
-      <pubDate>Sun, 11 Oct 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/tracking_objects/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-from pprint import pprint as pp
-
-class example():
-
-    def __init__(self):
-        self.client = SoftLayer.Client()
-
-    def main(self, tracking_id):
-
-        tracking_service = self.client[&#39;SoftLayer_Metric_Tracking_Object&#39;]
-        bw_result = tracking_service.getBandwidthData(&#39;2015-10-01&#39;, &#39;2015-11-31&#39;, &#39;public&#39;, 600, id=tracking_id)
-        object_type = [{&#39;keyName&#39;:&#39;PUBLICIN&#39;,&#39;summaryType&#39;:&#39;counter&#39;,&#39;name&#39;:&#39;vif_1_rx&#39;}]
-        summary_result = tracking_service.getSummaryData(&#39;2015-11-01&#39;,&#39;2015-11-02&#39;, object_type, 600, id=tracking_id)
-        args = {
-            &#39;startDateTime&#39; : &#39;2015-11-01&#39;,
-            &#39;endDateTime&#39;:&#39;2015-11-02&#39;,
-            &#39;metrics&#39;: [{&#39;keyName&#39;:&#39;PUBLICIN&#39;,&#39;summaryType&#39;:&#39;counter&#39;,&#39;name&#39;:&#39;vif_1_rx&#39;}],
-            &#39;interval&#39;:600,
-            &#39;returnImage&#39;: False
-        }
-        custom_result = tracking_service.getCustomGraphData(args,id=tracking_id)
-        pp(custom_result)
-
-    # For use with a virtual Guest, just change
-    # SoftLayer_Hardware_Server here with SoftLayer_Virtual_Guest
-    def getTrackingId(self, server_id):
-        tracking_id = self.client[&#39;SoftLayer_Hardware_Server&#39;].getMetricTrackingObjectId(id=server_id)
-        return tracking_id
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = example()
-    # CHANGE THIS
-    my_server_id = 12345
-    tracking_id = main.getTrackingId(my_server_id)
-    main.main(tracking_id)
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
