@@ -6,7 +6,172 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 07 Mar 2016 00:00:00 UTC</updated>
+    <updated>Tue, 22 Mar 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Upgrade Hardware and Virtual Servers</title>
+      <link>https://softlayer.github.io/python/upgrade_examples/</link>
+      <pubDate>Tue, 22 Mar 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/upgrade_examples/</guid>
+      <description>&lt;pre&gt;&lt;code&gt;import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+        self.client = SoftLayer.Client()
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Prints out what can be upgraded on a server by category.
+    &amp;quot;&amp;quot;&amp;quot;
+    def getUpgradeItemPrices(self, hardware_id, service=&#39;SoftLayer_Hardware_Server&#39;):
+        result = self.client[service].getUpgradeItemPrices(id=hardware_id)
+        last_id = 0
+        for item in result:
+            now_id = item[&#39;categories&#39;][0][&#39;id&#39;]
+            if now_id != last_id:
+                print(&amp;quot;%s (%s)&amp;quot; % (item[&#39;categories&#39;][0][&#39;name&#39;], item[&#39;categories&#39;][0][&#39;id&#39;]))
+            last_id = now_id
+            print(&amp;quot;\t %s (%s)&amp;quot; % (item[&#39;item&#39;][&#39;description&#39;], item[&#39;id&#39;]))
+
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Get the available maintenance windows that exist for a server.
+    &amp;quot;now&amp;quot; is still always an option
+    &amp;quot;&amp;quot;&amp;quot;
+    def getUpgradeTimes(self, hardware_id, beginDate, endDate):
+        # getLocation doesn&#39;t return an id that is useful for getMaintenanceWindows
+        # Needs to be the datacenter ID, not the location id...
+        _mask = &amp;quot;mask[datacenter]&amp;quot;
+        server = self.client[&#39;SoftLayer_Hardware_Server&#39;].getObject(id=hardware_id,mask=_mask)
+        pp(server)
+        location_id = server[&#39;datacenter&#39;][&#39;id&#39;]
+        provision_service = self.client[&#39;SoftLayer_Provisioning_Maintenance_Window&#39;]
+        windows = provision_service.getMaintenanceWindows(beginDate, endDate, location_id, 1)
+        pp(windows)
+
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Upgrades the network speed 1Gbps (price id = 274)
+    MAINTENANCE_WINDOW requires both the time, AND the id of the maintenance window. Virtual Server upgrades do not require the ID, just bare metal.
+    &amp;quot;&amp;quot;&amp;quot;
+    def upgradeServer(self, hardware_id, place_order=False):
+        product_client = self.client[&#39;SoftLayer_Product_Order&#39;]
+        upgrade = {
+            &#39;complexType&#39; : &#39;SoftLayer_Container_Product_Order_Hardware_Server_Upgrade&#39;,
+            &#39;hardware&#39; : [{&#39;id&#39; : hardware_id}],
+            &#39;properties&#39; : [
+                {
+                    &#39;name&#39; : &#39;MAINTENANCE_WINDOW&#39;, 
+                    &#39;value&#39; : &#39;2016-03-30T00:00:00-06:00&#39;
+                },
+                {
+                    &#39;name&#39; : &#39;MAINTENANCE_WINDOW_ID&#39;, 
+                    &#39;value&#39; : 7
+                }
+            ],
+            &#39;prices&#39;: [{&#39;id&#39; : 274}]
+        }
+        pp(upgrade)
+        print(&amp;quot;Verifying Order....&amp;quot;)
+        result = product_client.verifyOrder(upgrade)
+        pp(result)
+        if place_order:
+            print(&amp;quot;PLACING ORDER....&amp;quot;)
+            place_result = product_client.placeOrder(upgrade)
+            pp(place_result)
+
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Adds a 10G disk (price id = 2255) to the second (id=82) and third (id=92)
+    disk slots on the VSI. The price for both is the same, you just need to specify
+    the propery category for each disk.
+    &amp;quot;&amp;quot;&amp;quot;
+    def upgradeVSI(self, vsi_id, place_order=False):
+        product_client = self.client[&#39;SoftLayer_Product_Order&#39;]
+        upgrade = {
+            &#39;complexType&#39; : &#39;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#39;,
+            &#39;virtualGuests&#39; : [{&#39;id&#39; : vsi_id}],
+            &#39;properties&#39; : [
+                {
+                    &#39;name&#39; : &#39;MAINTENANCE_WINDOW&#39;, 
+                    &#39;value&#39; : &#39;2016-03-23 16:00:00&#39;
+                }
+            ],
+            &#39;prices&#39;: [
+                {
+                    &#39;categories&#39; : [{&#39;id&#39; : 82}],
+                    &#39;id&#39; : 2255
+                },
+                {
+                    &#39;categories&#39; : [{&#39;id&#39; : 92}],
+                    &#39;id&#39; : 2255
+                }
+            ]
+        }
+        pp(upgrade)
+        print(&amp;quot;Verifying Order....&amp;quot;)
+        result = product_client.verifyOrder(upgrade)
+        pp(result)
+        if place_order:
+            print(&amp;quot;PLACING ORDER....&amp;quot;)
+            place_result = product_client.placeOrder(upgrade)
+            pp(place_result)
+
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Gets some information about any current upgrade requests for a server
+    &amp;quot;&amp;quot;&amp;quot;
+    def getUpgradeInfo(self, hardware_id, service=&#39;SoftLayer_Hardware_Server&#39;):
+        result = self.client[service].getUpgradeRequest(id=hardware_id)
+        pp(result)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    server_id = 662657
+    # main.getUpgradeItemPrices(server_id)
+    # main.getUpgradeTimes(server_id, &#39;2016-03-30 00:00:00&#39;, &#39;2016-03-31 20:00:00&#39;)
+    # main.upgradeServer(server_id, True)
+    vsi_id = 13106845
+    # main.getUpgradeItemPrices(vsi_id,&#39;SoftLayer_Virtual_Guest&#39;)
+    # main.upgradeVSI(vsi_id, True)
+    main.getUpgradeInfo(vsi_id,&#39;SoftLayer_Virtual_Guest&#39; )
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Release notes: March 21, 2016</title>
+      <link>https://softlayer.github.io/release_notes/20160321/</link>
+      <pubDate>Mon, 21 Mar 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/release_notes/20160321/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal:a6d5e165e9b57a94b0d014e7e5e7a64d&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Added the ability to create primary storage groups larger than 2TB when ordering.&lt;/li&gt;
+&lt;li&gt;Resolved an issue that was preventing customers with Legacy (The Planet) subnets from viewing them in the customer portal.&lt;/li&gt;
+&lt;li&gt;Fixed an issue with a very small subset of accounts which was causing the order forms not to load properly.&lt;/li&gt;
+&lt;li&gt;Resolved an issue that was preventing customers from ordering static subnets routed to a Netscaler VPX.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;api:a6d5e165e9b57a94b0d014e7e5e7a64d&#34;&gt;API&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_MasterServiceAgreement/getPdf&#34;&gt;SoftLayer_Account_MasterServiceAgreement::getPdf&lt;/a&gt; is being deprecated. Please use &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_MasterServiceAgreement/getFile&#34;&gt;SoftLayer_Account_MasterServiceAgreement::getFile&lt;/a&gt; going forward.&lt;/li&gt;
+&lt;li&gt;Deprecated createDate and modifyDate on &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_Regional_Registry_Detail_Type&#34;&gt;SoftLayer_Account_Regional_Registry_Detail_Type&lt;/a&gt; and &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account_Regional_Registry_Detail_Property_Type&#34;&gt;SoftLayer_Account_Regional_Registry_Detail_Property_Type&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;backend:a6d5e165e9b57a94b0d014e7e5e7a64d&#34;&gt;Backend&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Resolved an issue with VSI cancellations that were stalling due to the presence of duplicate category codes.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Backup and Restore firewall rules</title>
@@ -654,48 +819,6 @@ new_ticket = {
        &#39;assignedUserId&#39;: currentUser[&#39;id&#39;]
 }
 created_ticket = client[&#39;Ticket&#39;].createStandardTicket(new_ticket, &amp;quot;Content of the ticket goes here&amp;quot;)
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Cancel an item or service</title>
-      <link>https://softlayer.github.io/python/cancel_service/</link>
-      <pubDate>Mon, 08 Feb 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/cancel_service/</guid>
-      <description>&lt;p&gt;In the following example we are retrieving the Billing Item of a Virtual Guest with the ID of 12345678 and passing that ID to &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;cancelService&lt;/a&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-from pprint import pprint as pp
-
-client = SoftLayer.Client()
-mask = &amp;quot;mask[id]&amp;quot;
-billingId = client[&#39;SoftLayer_Virtual_Guest&#39;].getBillingItem(mask=mask,id=12345678)
-cancelItem = client[&#39;SoftLayer_Billing_Item&#39;].cancelService(id = billingId[&#39;id&#39;])
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Find a billing item from a provisioned product</title>
-      <link>https://softlayer.github.io/python/getbillingitem/</link>
-      <pubDate>Mon, 08 Feb 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/getbillingitem/</guid>
-      <description>&lt;p&gt;In the following example we are looking for the Billing Item of an Virtual Guest with an ID of 1234567.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-from pprint import pprint as pp
-
-client = SoftLayer.Client()
-mask = &amp;quot;mask[id]&amp;quot;
-billingId = client[&#39;SoftLayer_Virtual_Guest&#39;].getBillingItem(mask=mask,id=1234567)
-pp(billingId)
 
 &lt;/code&gt;&lt;/pre&gt;
 </description>
