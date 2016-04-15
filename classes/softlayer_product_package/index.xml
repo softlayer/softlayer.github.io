@@ -6,7 +6,122 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 11 Nov 2015 00:00:00 UTC</updated>
+    <updated>Tue, 12 Apr 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Find Location specific pricing for a package</title>
+      <link>https://softlayer.github.io/python/location_based_pricing/</link>
+      <pubDate>Tue, 12 Apr 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/location_based_pricing/</guid>
+      <description>&lt;p&gt;With the introduction to Location-based Pricing, we updated our pricing model to represent the costs in each data center more clearly. Instead of adding premiums to a base server price, we have priced servers and services in each data center with their own location-based &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price&#34;&gt;SoftLayer_Product_Item_Price&lt;/a&gt; objects via the API. In the following example we will query for the Dallas 6 data center, and then filter our item (Local Load Balancer) and prices to include only the location-based pricing for the specific data center we&amp;rsquo;re in —or we can filter for the standard price if a location-based price doesn&amp;rsquo;t exist.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+import json
+
+package_id = 194
+datacenter = &#39;dal06&#39;
+
+client = SoftLayer.Client()
+
+location_object_filter = {
+    &#39;name&#39;: {&#39;operation&#39;: datacenter}
+}
+
+location_object_mask = &amp;quot;priceGroups&amp;quot;
+
+location = client[&amp;quot;SoftLayer_Location_Datacenter&amp;quot;].getDatacenters(filter=location_object_filter, mask=location_object_mask)
+
+if len(location) == 0:
+    # error handling
+    exit()
+
+# lookup location group ids
+location_group_ids = []
+for location_group in location[0][&amp;quot;priceGroups&amp;quot;]:
+    location_group_ids.append(location_group[&amp;quot;id&amp;quot;])
+
+object_filter_standard = {
+    &#39;items&#39;: {
+        &amp;quot;prices&amp;quot;: {
+            &amp;quot;locationGroupId&amp;quot;: {
+                &amp;quot;operation&amp;quot;: &amp;quot;is null&amp;quot;
+            }
+        }
+    }
+}
+
+standard_items = client[&amp;quot;SoftLayer_Product_Package&amp;quot;].getItems(id=package_id, filter=object_filter_standard)
+
+object_filter_location = {
+    &#39;items&#39;: {
+        &amp;quot;prices&amp;quot;: {
+            &amp;quot;locationGroupId&amp;quot;: {
+                &amp;quot;operation&amp;quot;: &amp;quot;in&amp;quot;,
+                &amp;quot;options&amp;quot;: [
+                    {
+                        &amp;quot;name&amp;quot;: &amp;quot;data&amp;quot;,
+                        &amp;quot;value&amp;quot;: location_group_ids
+                    }
+                ]
+            }
+        }
+    }
+}
+
+location_items = client[&amp;quot;SoftLayer_Product_Package&amp;quot;].getItems(id=package_id, filter=object_filter_location)
+
+# let&#39;s key by item id
+items = {}
+
+for standard_item in standard_items:
+    for location_item in location_items:
+        if location_item[&amp;quot;id&amp;quot;] == standard_item[&amp;quot;id&amp;quot;]:
+            items[location_item[&amp;quot;id&amp;quot;]] = location_item
+            break
+
+    if standard_item[&amp;quot;id&amp;quot;] not in items:
+        items[standard_item[&amp;quot;id&amp;quot;]] = standard_item
+
+
+print(json.dumps(items, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find standard location pricing for a package</title>
+      <link>https://softlayer.github.io/python/standard_pricing/</link>
+      <pubDate>Tue, 12 Apr 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/standard_pricing/</guid>
+      <description>&lt;p&gt;With the introduction to Location-based Pricing, we updated our pricing model to represent the costs in each data center more clearly. Instead of adding premiums to a base server price, we have priced servers and services in each data center with their own location-based &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price&#34;&gt;SoftLayer_Product_Item_Price&lt;/a&gt; objects via the API. The following example shows how to get the Standard priceItemId for a package regardless of the location.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+import json
+
+object_filter = {
+    &#39;items&#39;: {
+        &#39;prices&#39;: {
+            &#39;locationGroupId&#39;: {
+                &#39;operation&#39;: &#39;is null&#39;
+            }
+        }
+    }
+}
+
+client = SoftLayer.Client()
+items = client[&amp;quot;SoftLayer_Product_Package&amp;quot;].getItems(id=194, filter=object_filter)
+
+print(json.dumps(items, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Order Firewall and Security Appliances</title>

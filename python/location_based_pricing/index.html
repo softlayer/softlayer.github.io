@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>Softlayer_product_package - https://softlayer.github.io/</title>
-    <link rel="canonical" href="https://softlayer.github.io/classes/softlayer_product_package/">
+    <title>Find Location specific pricing for a package - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/python/location_based_pricing/">
     
     <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
     <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
@@ -22,7 +22,7 @@
 	<link rel="stylesheet" type="text/css"
 						href="//fonts.googleapis.com/css?family=Lato" />
 
-    <link href="https://softlayer.github.io/classes/softlayer_product_package/index.xml" rel="alternate" type="application/rss+xml" title="SoftLayer API Examples" />
+    
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -87,88 +87,118 @@
 
 <div class="container">
     <div class="row">
-        <div class="col-md-9">
-            <div class="well well-sm">
-                <strong>Items with tag <code>softlayer_product_package</code></strong>
-                <ul class="list-unstyled">
-                    
-                        <h3>php</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/orderFirewalls/">Order Firewall and Security Appliances</a>
-                            <div class="meta">An example of how to order a hardware firewall and a FortiGate security appliance</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/orderBareMetal/">Order Server with security software</a>
-                            <div class="meta">An example of how to include add-on software to a server order</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/orderSSLCert/">Order an SSL Certificate</a>
-                            <div class="meta">Explains how to get the information requried to order an SSL Certificate</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/upgrade_virtual_guest/">Upgrade virtual guest</a>
-                            <div class="meta">Upgrades a virtual guest immediately.</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/get_required_price_id/">Required price IDs for package</a>
-                            <div class="meta">For any package retrieve a list of options organized by required category</div>
-                            </li>
-                            
-                        </ul>
-                    
-                        <h3>python</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/location_based_pricing/">Find Location specific pricing for a package</a>
-                            <div class="meta">Use an object filter and object mask to return the Location Based pricing information for a SoftLayer package.</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/standard_pricing/">Find standard location pricing for a package</a>
-                            <div class="meta">Use an object filter to only return the Standard Location pricing for a SoftLayer package. This is a priceItemId that is standard accross all SoftLayer Datacenters</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/orderSSLCert/">Order an SSL Certificate</a>
-                            <div class="meta">Explains how to get the information requried to order an SSL Certificate</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/list_packages/">List Packages</a>
-                            <div class="meta">A handy script with a few examples on how to interact with packages</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/get_required_price_id/">Required price IDs for package</a>
-                            <div class="meta">For any package retrieve a list of options organized by required category</div>
-                            </li>
-                            
-                        </ul>
-                    
-                        <h3>ruby</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/ruby/list_packages/">List Packages</a>
-                            <div class="meta">A handy script with a few examples on how to interact with packages</div>
-                            </li>
-                            
-                        </ul>
-                    
-                </ul>
+		<div class="col-md-9">
+            <div class="well well-sm release-note" style="word-wrap: break-word;">
+				<h3>Find Location specific pricing for a package<br> <small>Use an object filter and object mask to return the Location Based pricing information for a SoftLayer package.</small></h3>
+				
+                
+				
+                <p>With the introduction to Location-based Pricing, we updated our pricing model to represent the costs in each data center more clearly. Instead of adding premiums to a base server price, we have priced servers and services in each data center with their own location-based <a href="http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price">SoftLayer_Product_Item_Price</a> objects via the API. In the following example we will query for the Dallas 6 data center, and then filter our item (Local Load Balancer) and prices to include only the location-based pricing for the specific data center we&rsquo;re in —or we can filter for the standard price if a location-based price doesn&rsquo;t exist.</p>
+
+<pre><code class="language-python">
+import SoftLayer
+import json
+
+package_id = 194
+datacenter = 'dal06'
+
+client = SoftLayer.Client()
+
+location_object_filter = {
+    'name': {'operation': datacenter}
+}
+
+location_object_mask = &quot;priceGroups&quot;
+
+location = client[&quot;SoftLayer_Location_Datacenter&quot;].getDatacenters(filter=location_object_filter, mask=location_object_mask)
+
+if len(location) == 0:
+    # error handling
+    exit()
+
+# lookup location group ids
+location_group_ids = []
+for location_group in location[0][&quot;priceGroups&quot;]:
+    location_group_ids.append(location_group[&quot;id&quot;])
+
+object_filter_standard = {
+    'items': {
+        &quot;prices&quot;: {
+            &quot;locationGroupId&quot;: {
+                &quot;operation&quot;: &quot;is null&quot;
+            }
+        }
+    }
+}
+
+standard_items = client[&quot;SoftLayer_Product_Package&quot;].getItems(id=package_id, filter=object_filter_standard)
+
+object_filter_location = {
+    'items': {
+        &quot;prices&quot;: {
+            &quot;locationGroupId&quot;: {
+                &quot;operation&quot;: &quot;in&quot;,
+                &quot;options&quot;: [
+                    {
+                        &quot;name&quot;: &quot;data&quot;,
+                        &quot;value&quot;: location_group_ids
+                    }
+                ]
+            }
+        }
+    }
+}
+
+location_items = client[&quot;SoftLayer_Product_Package&quot;].getItems(id=package_id, filter=object_filter_location)
+
+# let's key by item id
+items = {}
+
+for standard_item in standard_items:
+    for location_item in location_items:
+        if location_item[&quot;id&quot;] == standard_item[&quot;id&quot;]:
+            items[location_item[&quot;id&quot;]] = location_item
+            break
+
+    if standard_item[&quot;id&quot;] not in items:
+        items[standard_item[&quot;id&quot;]] = standard_item
+
+
+print(json.dumps(items, sort_keys=True, indent=2, separators=(',', ': ')))
+
+
+</code></pre>
+
             </div>
         </div>
-
         
         <div class="col-md-3">
-        
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <h4>April 12, 2016<br>
+                </h4>
+                <hr>
+                <strong>Classes</strong>
+                <ul class="list-unstyled">
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_product_package">SoftLayer_Product_Package</a></li>
+                
+                </ul>
+                <hr>
+                <strong>Tags <span class="fa fa-tags"/></strong><br>
+                <a class="label label-default" href="https://softlayer.github.io/tags/objectfilter">objectFilter</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/objectmask">objectMask</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/pricing">pricing</a>
+                 
+                <hr>
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Find%20Location%20specific%20pricing%20for%20a%20package&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2flocation_based_pricing%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+                    
+                
+            </div>
+            
 <div class="panel panel-default">
     <div class="panel-heading" style="padding: 2px 15px;">
         <h4>More Documentation</h4>
@@ -210,3 +240,5 @@
     <script src="https://softlayer.github.io/js/bootstrap.js"></script>
 </body>
 </html>
+
+
