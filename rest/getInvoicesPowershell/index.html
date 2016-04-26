@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>SoftLayer API Examples - https://softlayer.github.io/</title>
-    <link rel="canonical" href="https://softlayer.github.io/">
+    <title>Get Invoice for PowerShell - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/rest/getInvoicesPowershell/">
     
     <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
     <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
@@ -22,7 +22,7 @@
 	<link rel="stylesheet" type="text/css"
 						href="//fonts.googleapis.com/css?family=Lato" />
 
-    <link href="https://softlayer.github.io/index.xml" rel="alternate" type="application/rss+xml" title="SoftLayer API Examples" />
+    
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -85,174 +85,125 @@
         </div>
     </nav>
 
-
-
-
-    <div class="container">
+<div class="container">
     <div class="row">
-        <h1>Release Notes</h1>
 		<div class="col-md-9">
-			
-				<div class="well well-sm release-note example col-md-12">
-    <h3>
-        <a href="https://softlayer.github.io/release_notes/20150910/"> September 10, 2015</a>
-        <br>
-    </h3>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
+            <div class="well well-sm release-note" style="word-wrap: break-word;">
+				<h3>Get Invoice for PowerShell<br> <small>Retrieves the PDF and Excel current invoices with a powershell script</small></h3>
+				
                 
+				
+                <p>This powershell script will get the filename for the PDF and Excel invoices and save them locally. Requires <a href="http://social.technet.microsoft.com/wiki/contents/articles/21016.how-to-install-windows-powershell-4-0.aspx">PowerShell Version 4</a> for the Invoke-WebRequest and ConvertFrom-Json functions.</p>
 
-<h4 id="portal:0b8f48ee9f865f591b08d2fce7b8150f">Portal</h4>
+<pre><code class="language-ps1"># Start SL script
+$MyScriptName = &quot;_Call_SL_Rest&quot;
+$HomeDir = pwd
+$date4file = get-date -uformat &quot;%Y-%m-%d_%H%M%S&quot;
+$log = &quot;$HomeDir\&quot;+$date4file+$MyScriptName+&quot;.log&quot;
+$BaseURL = &quot;https://api.softlayer.com/rest/v3&quot;
+Add-Content $log &quot;$(Get-Date -format s) : Start&quot;
 
-<ul>
-<li>Properly display an error when setting a tag of greater than 128 characters.</li>
-</ul>
+$SLUser = &quot;SLUSERNAME&quot;
+$SLapikey =  &quot;APIKEY&quot;
 
-<h4 id="api:0b8f48ee9f865f591b08d2fce7b8150f">API</h4>
+$LoginPair = &quot;$($SLUser):$($SLapikey)&quot;
+$encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($LoginPair))
+$basicAuthValue = &quot;Basic $encodedCreds&quot;
+$Headers = @{
+    Authorization = $basicAuthValue
+}
 
-<ul>
-<li>Fixed an issue with monitoring email subscriber changes not taking immediate effect.</li>
-<li>Fix a regression in which the Account.privateSubnets and Account.publicSubnets properties were not able to be filtered.</li>
-<li>Performance/Endurance storage provisioning improvements</li>
-<li>Improved provisioning time of monitoring robots</li>
-</ul>
- 
+$GSTURL=&quot;$($BaseURL)/SoftLayer_Account/getObject&quot;
+#$GSTURL=&quot;$($BaseURL)/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]&quot;
+Add-Content $log &quot;$(Get-Date -format s) : Authenticate as User $($SLUser) at URL $($GSTURL)&quot;
+$GSTRequest = Invoke-WebRequest $GSTURL  -Headers $Headers -SessionVariable slsession
+#Write-host $GSTRequest.content
+$GSTanswerConv = ConvertFrom-Json $($GSTRequest.content)
+Add-Content $log &quot;$(Get-Date -format s) : Account Info: $($GSTanswerConv | select companyName , country , id)&quot;
+
+#########################
+function CallURL($URL) {   
+ Add-Content $log &quot;$(Get-Date -format s) : Call URL $($URL)&quot;
+$Request = Invoke-WebRequest $URL  -WebSession $slsession 
+$answerConv = ConvertFrom-Json $($Request.content)
+ return $answerConv
+ }
+#########################
+$URLcall=&quot;$($BaseURL)/SoftLayer_Account/getLatestRecurringInvoice&quot;
+$Callanswer = CallURL($URLcall)
+
+Add-Content $log &quot;$(Get-Date -format s) : Invoice Info: $($Callanswer | select companyName , id,typeCode, modifyDate , createDate)&quot;
+
+$LastIvoiceID = $Callanswer.id
+
+$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getPdfDetailedFilename&quot;
+$Callanswer = CallURL($URLcall)
+Add-Content $log &quot;$(Get-Date -format s) : Invoice FileName: $($Callanswer)&quot;
+
+$PdfDetailedFilename = $Callanswer
+$FileDest = &quot;$HomeDir\$PdfDetailedFilename&quot;
+
+$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getPdfDetailed&quot;
+$Callanswer = CallURL($URLcall)
+$FileData = $Callanswer
+
+$bytes=[System.Convert]::FromBase64String($FileData)
+$decoded=[System.Text.Encoding]::Default.GetString($bytes)
+[Byte[]]$bytes_FileData=[System.Text.Encoding]::Default.GetBytes($decoded)
+set-content -encoding byte -Path $FileDest -value $bytes_FileData
+$PdfFile = $FileDest
+
+$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getXlsFilename&quot;
+$Callanswer = CallURL($URLcall)
+Add-Content $log &quot;$(Get-Date -format s) : Invoice FileName: $($Callanswer)&quot;
+
+$XlsFilename = $Callanswer
+$FileDest = &quot;$HomeDir\$XlsFilename&quot;
+
+
+$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getExcel&quot;
+$Callanswer = CallURL($URLcall)
+$FileData = $Callanswer
+
+$bytes=[System.Convert]::FromBase64String($FileData)
+$decoded=[System.Text.Encoding]::Default.GetString($bytes)
+[Byte[]]$bytes_FileData=[System.Text.Encoding]::Default.GetBytes($decoded)
+set-content -encoding byte -Path $FileDest -value $bytes_FileData
+$XlsFile = $FileDest
+
+Add-Content $log &quot;$(Get-Date -format s) : End&quot;
+#End
+</code></pre>
+
             </div>
         </div>
-    </div>
-</div>
-
-
-
-
-			
-				<div class="well well-sm release-note example col-md-12">
-    <h3>
-        <a href="https://softlayer.github.io/release_notes/20150902/"> September 2, 2015</a>
-        <br>
-    </h3>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
+        
+        <div class="col-md-3">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <h4>April 25, 2016<br>
+                </h4>
+                <hr>
+                <strong>Classes</strong>
+                <ul class="list-unstyled">
                 
-
-<h4 id="portal:be77e81a5b14ed91114c2eb6d08092fd">Portal</h4>
-
-<ul>
-<li>Correct Display Inconsistencies for Flexible Credit Participants</li>
-</ul>
-
-<h4 id="api:be77e81a5b14ed91114c2eb6d08092fd">API</h4>
-
-<ul>
-<li>Improve performance of hardware and virtual guest callbacks</li>
-<li>Upgrades the interface with the APNIC registrar to support their new session based authentication system, allowing for proper modification of rwhois entires.</li>
-</ul>
- 
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-			
-				<div class="well well-sm release-note example col-md-12">
-    <h3>
-        <a href="https://softlayer.github.io/release_notes/20150829/"> August 29, 2015</a>
-        <br>
-    </h3>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
+                    <li><a href="https://softlayer.github.io/classes/softlayer_billing_invoice">SoftLayer_Billing_Invoice</a></li>
                 
-
-<h4 id="portal:59bda6c3bc94fc228a4ba2b9552296e4">Portal</h4>
-
-<ul>
-<li>Fixes a bug preventing editing of storage groups for quotes and orders.</li>
-<li>Fixed input validation on forward zone creation to allow for long gTLDs</li>
-</ul>
-
-<h4 id="api:59bda6c3bc94fc228a4ba2b9552296e4">API</h4>
-
-<ul>
-<li>Improved punycode validation for domain names.</li>
-</ul>
- 
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-			
-				<div class="well well-sm release-note example col-md-12">
-    <h3>
-        <a href="https://softlayer.github.io/release_notes/20150826/"> August 26, 2015</a>
-        <br>
-    </h3>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
+                </ul>
+                <hr>
+                <strong>Tags <span class="fa fa-tags"/></strong><br>
+                <a class="label label-default" href="https://softlayer.github.io/tags/invoice">invoice</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/powershell">powershell</a>
+                 
+                <hr>
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20rest%20-%20Get%20Invoice%20for%20PowerShell&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2frest%2fgetInvoicesPowershell%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+                    
                 
-
-<h4 id="api:bb107a1977ce3a7053e0e8a6d364dbbe">API</h4>
-
-<ul>
-<li>Prevents grouped network components from being disconnected</li>
-<li>Added a lastResponseDate to the ticket object.  This lastResponseDate represents the last time a customer facing response was added to the ticket.  This is exposed sldn.</li>
-</ul>
- 
             </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-			
-				<div class="well well-sm release-note example col-md-12">
-    <h3>
-        <a href="https://softlayer.github.io/release_notes/20150824/"> August 24, 2015</a>
-        <br>
-    </h3>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
-                
-
-<h4 id="portal:8a595bff20de6eeea0f9675b3be9df70">Portal</h4>
-
-<ul>
-<li>Deleted virtual guests should no longer show up in the portal</li>
-</ul>
-
-<h4 id="api:8a595bff20de6eeea0f9675b3be9df70">API</h4>
-
-<ul>
-<li>Improve the current workflow for processing nimsoft robots on the landing hub.  This should have a significant impact in terms of reducing landing hub related escalations and transaction failures.</li>
-</ul>
- 
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-			
-		</div>
-
-		
-		<div class="col-md-3">
-			
+            
 <div class="panel panel-default">
     <div class="panel-heading" style="padding: 2px 15px;">
         <h4>More Documentation</h4>
@@ -277,71 +228,9 @@
     </div>
 </div>
 
-		</div>
+        </div>
     </div>
-	<div class="row">
-
-		<div class="col-md-9 center-block">
-			
-    
-    <ul class="pagination">
-        
-        <li>
-            <a href="https://softlayer.github.io/" aria-label="First"><span aria-hidden="true">&laquo;&laquo;</span></a>
-        </li>
-        
-        <li
-        >
-        <a href="https://softlayer.github.io/page/9/" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
-        </li>
-        
-        <li
-        ><a href="https://softlayer.github.io/">1</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/2/">2</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/3/">3</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/4/">4</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/5/">5</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/6/">6</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/7/">7</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/8/">8</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/9/">9</a></li>
-        
-        <li
-        class="active"><a href="https://softlayer.github.io/page/10/">10</a></li>
-        
-        <li
-        ><a href="https://softlayer.github.io/page/11/">11</a></li>
-        
-        <li
-        >
-        <a href="https://softlayer.github.io/page/11/" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>
-        </li>
-        
-        <li>
-            <a href="https://softlayer.github.io/page/11/" aria-label="Last"><span aria-hidden="true">&raquo;&raquo;</span></a>
-        </li>
-        
-    </ul>
-    
-		</div>
-	</div>
-	        <footer>
+        <footer>
             <div class="row">
                 <hr>
                 <div class="col-sm-12">
@@ -356,3 +245,5 @@
     <script src="https://softlayer.github.io/js/bootstrap.js"></script>
 </body>
 </html>
+
+
