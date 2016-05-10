@@ -93,28 +93,68 @@
 				
                 
 				
-                <p>Attaching a currently detached block device.</p>
+                <p>Attaching a currently detached portable block device to a given guest. The disk image will need to be migrated to the host the guest is on, so make sure to check if that host has enough disk space (with checkHostDiskAvailability) before attaching. This is only required for guests with local storage guests. SAN based guests don&rsquo;t need that step.</p>
 
-<pre><code class="language-python">
-import SoftLayer
+<p>Running this on a disk that is already attached will move the disk to the new guest.</p>
+
+<pre><code>import SoftLayer
 from pprint import pprint as pp
-client = SoftLayer.Client()
 
-vsi_id = '11111111'
-disk_id = '8888888'
-attach = client['SoftLayer_Virtual_Guest'].attachDiskImage(disk_id,id=vsi_id)
-</code></pre>
+class example():
 
-<p>Detaching a currently attached block device.</p>
+    def __init__(self):
 
-<pre><code class="language-python">
-import SoftLayer
-from pprint import pprint as pp
-client = SoftLayer.Client()
+        self.client = SoftLayer.Client()
 
-vsi_id = '11111111'
-disk_id = '8888888'
-attach = client['SoftLayer_Virtual_Guest'].detachDiskImage(disk_id,id=vsi_id)
+    def main(self, image_id, guest_id):
+        my_image = self.getMyImage(image_id)
+        size = my_image.get(&quot;capacity&quot;, 100)
+        &quot;&quot;&quot;
+        SAN based guests will throw the following exception:
+        SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Public): This guest is SAN-based, and does not require host migration for disk attachment.
+        &quot;&quot;&quot;
+        available = self.client['SoftLayer_Virtual_Guest'].checkHostDiskAvailability(size,id=guest_id)
+        # This should be True. False means the host doesn't have enough disk space to attach
+        pp(available)
+
+        attach = self.client['SoftLayer_Virtual_Guest'].attachDiskImage(image_id, id=guest_id)
+        print(&quot;Attaching storage&quot;)
+        pp(attach)
+
+    def getImages(self):
+
+        mask = &quot;mask[type,blockDevices[guest]]&quot;
+        images = self.client['SoftLayer_Account'].getPortableStorageVolumes(mask=mask)
+
+        for image in images:
+            desc = image.get('description', &quot;---&quot;)
+            capacity = image.get('capacity', &quot;0&quot;)
+            print(&quot;%s - %s (%s) - %s &quot; % 
+                (image['id'], image['type']['keyName'], capacity ,desc)
+            )
+            for disk in image['blockDevices']:
+                try:
+                    hostname = disk['guest']['fullyQualifiedDomainName']
+                except KeyError:
+                    hostname = &quot;None&quot;
+                print(&quot;\t%s&quot; % hostname)
+
+    def getMyImage(self,imageId):
+        mask = &quot;mask[blockDevices[guest],sourceDiskImage,type]&quot;
+        image = self.client['SoftLayer_Virtual_Disk_Image'].getObject(mask=mask,id=imageId)
+        pp(image)
+        return image
+
+
+if __name__ == &quot;__main__&quot;:
+    image_id = 12345
+    guest_id = 67890
+    main = example()
+    main.getImages()
+    main.main(image_id, guest_id)
+    # The new guest will only show up on the image once the migration transaction is completed
+    main.getMyImage(image_id)
+
 </code></pre>
 
             </div>
@@ -135,6 +175,8 @@ attach = client['SoftLayer_Virtual_Guest'].detachDiskImage(disk_id,id=vsi_id)
                 <strong>Tags <span class="fa fa-tags"/></strong><br>
                 <a class="label label-default" href="https://softlayer.github.io/tags/attachdiskimage">attachDiskImage</a>
                  <a class="label label-default" href="https://softlayer.github.io/tags/detachdiskimage">detachDiskImage</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/getportablestoragevolumes">getPortableStorageVolumes</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/checkhostdiskavailability">checkHostDiskAvailability</a>
                  
                 <hr>
                 <strong>Feedback? <span class="fa fa-comment"/></strong>

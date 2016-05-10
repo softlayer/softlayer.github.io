@@ -546,28 +546,68 @@ if __name__ == &amp;quot;__main__&amp;quot;:
       <pubDate>Thu, 03 Mar 2016 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
       <guid>https://softlayer.github.io/python/attach_disk/</guid>
-      <description>&lt;p&gt;Attaching a currently detached block device.&lt;/p&gt;
+      <description>&lt;p&gt;Attaching a currently detached portable block device to a given guest. The disk image will need to be migrated to the host the guest is on, so make sure to check if that host has enough disk space (with checkHostDiskAvailability) before attaching. This is only required for guests with local storage guests. SAN based guests don&amp;rsquo;t need that step.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
+&lt;p&gt;Running this on a disk that is already attached will move the disk to the new guest.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;import SoftLayer
 from pprint import pprint as pp
-client = SoftLayer.Client()
 
-vsi_id = &#39;11111111&#39;
-disk_id = &#39;8888888&#39;
-attach = client[&#39;SoftLayer_Virtual_Guest&#39;].attachDiskImage(disk_id,id=vsi_id)
-&lt;/code&gt;&lt;/pre&gt;
+class example():
 
-&lt;p&gt;Detaching a currently attached block device.&lt;/p&gt;
+    def __init__(self):
 
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-from pprint import pprint as pp
-client = SoftLayer.Client()
+        self.client = SoftLayer.Client()
 
-vsi_id = &#39;11111111&#39;
-disk_id = &#39;8888888&#39;
-attach = client[&#39;SoftLayer_Virtual_Guest&#39;].detachDiskImage(disk_id,id=vsi_id)
+    def main(self, image_id, guest_id):
+        my_image = self.getMyImage(image_id)
+        size = my_image.get(&amp;quot;capacity&amp;quot;, 100)
+        &amp;quot;&amp;quot;&amp;quot;
+        SAN based guests will throw the following exception:
+        SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Public): This guest is SAN-based, and does not require host migration for disk attachment.
+        &amp;quot;&amp;quot;&amp;quot;
+        available = self.client[&#39;SoftLayer_Virtual_Guest&#39;].checkHostDiskAvailability(size,id=guest_id)
+        # This should be True. False means the host doesn&#39;t have enough disk space to attach
+        pp(available)
+
+        attach = self.client[&#39;SoftLayer_Virtual_Guest&#39;].attachDiskImage(image_id, id=guest_id)
+        print(&amp;quot;Attaching storage&amp;quot;)
+        pp(attach)
+
+    def getImages(self):
+
+        mask = &amp;quot;mask[type,blockDevices[guest]]&amp;quot;
+        images = self.client[&#39;SoftLayer_Account&#39;].getPortableStorageVolumes(mask=mask)
+
+        for image in images:
+            desc = image.get(&#39;description&#39;, &amp;quot;---&amp;quot;)
+            capacity = image.get(&#39;capacity&#39;, &amp;quot;0&amp;quot;)
+            print(&amp;quot;%s - %s (%s) - %s &amp;quot; % 
+                (image[&#39;id&#39;], image[&#39;type&#39;][&#39;keyName&#39;], capacity ,desc)
+            )
+            for disk in image[&#39;blockDevices&#39;]:
+                try:
+                    hostname = disk[&#39;guest&#39;][&#39;fullyQualifiedDomainName&#39;]
+                except KeyError:
+                    hostname = &amp;quot;None&amp;quot;
+                print(&amp;quot;\t%s&amp;quot; % hostname)
+
+    def getMyImage(self,imageId):
+        mask = &amp;quot;mask[blockDevices[guest],sourceDiskImage,type]&amp;quot;
+        image = self.client[&#39;SoftLayer_Virtual_Disk_Image&#39;].getObject(mask=mask,id=imageId)
+        pp(image)
+        return image
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    image_id = 12345
+    guest_id = 67890
+    main = example()
+    main.getImages()
+    main.main(image_id, guest_id)
+    # The new guest will only show up on the image once the migration transaction is completed
+    main.getMyImage(image_id)
+
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
