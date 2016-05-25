@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>Placeorder - https://softlayer.github.io/</title>
-    <link rel="canonical" href="https://softlayer.github.io/tags/placeorder/">
+    <title>Order a Local Load Balancer - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/ruby/orderLB/">
     
     <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
     <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
@@ -22,7 +22,7 @@
 	<link rel="stylesheet" type="text/css"
 						href="//fonts.googleapis.com/css?family=Lato" />
 
-    <link href="https://softlayer.github.io/tags/placeorder/index.xml" rel="alternate" type="application/rss+xml" title="SoftLayer API Examples" />
+    
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -87,89 +87,92 @@
 
 <div class="container">
     <div class="row">
-        <div class="col-md-9">
-            <div class="well well-sm">
-                <strong>Items with tag <code>placeorder</code></strong>
-                <ul class="list-unstyled">
-                    
-                        <h3>php</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/orderFirewalls/">Order Firewall and Security Appliances</a>
-                            <div class="meta">An example of how to order a hardware firewall and a FortiGate security appliance</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/orderSSLCert/">Order an SSL Certificate</a>
-                            <div class="meta">Explains how to get the information requried to order an SSL Certificate</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/php/order_vyatta/">Order a vyatta server with placeOrder</a>
-                            <div class="meta">Orders a vyatta server. The priceIds may be invalid now, please double check them before running.</div>
-                            </li>
-                            
-                        </ul>
-                    
-                        <h3>python</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/createBWpool/">Create a new Bandwidth Pool</a>
-                            <div class="meta">Creating a new Bandwidth pool. This allows you to optimize your bandwidth usage by _pooling_ all of the bandwidth together for servers in a the Pool.</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/createLBpython/">Order a Local Load Balancer</a>
-                            <div class="meta">Order a local load balancer using SoftLayer_Product_Item_Price objects</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/upgrade_examples/">Upgrade Hardware and Virtual Servers</a>
-                            <div class="meta">A few examples on how to find upgrade prices, actually do the upgrade with a maintenance window, and verify everything.</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/orderSSLCert/">Order an SSL Certificate</a>
-                            <div class="meta">Explains how to get the information requried to order an SSL Certificate</div>
-                            </li>
-                            
-                        </ul>
-                    
-                        <h3>rest</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/rest/orderLB/">Order a Local Load Balancer</a>
-                            <div class="meta">Use verifyOrder and placeOrder to order a new Local Load Balancer</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/rest/place_order/">Ordering with placeOrder</a>
-                            <div class="meta">Example on how to call verifyOrder / placeOrder via REST. Replace the veryifyOrder call with placeOrder when you are actually ready to order the server
-</div>
-                            </li>
-                            
-                        </ul>
-                    
-                        <h3>ruby</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/ruby/orderLB/">Order a Local Load Balancer</a>
-                            <div class="meta">Order a local load balancer using SoftLayer_Product_Item_Price objects</div>
-                            </li>
-                            
-                        </ul>
-                    
-                </ul>
+		<div class="col-md-9">
+            <div class="well well-sm release-note" style="word-wrap: break-word;">
+				<h3>Order a Local Load Balancer<br> <small>Order a local load balancer using SoftLayer_Product_Item_Price objects</small></h3>
+				
+                
+				
+                <pre><code class="language-ruby">
+require 'rubygems'
+require 'softlayer_api'
+
+location = 'DALLAS06'
+
+# The id of the SoftLayer_Product_Package you wish to order.
+# In this case it is a Local Load Balancer.
+packageId = 194
+
+# Build a skeleton SoftLayer_Product_Item_Price objects. These objects contain
+# much more than ids, but SoftLayer's ordering system only needs the price's id
+# to know what you want to order.
+
+# Every item in SoftLayer's product catalog is assigned an id. Use these ids
+# to tell the SoftLayer API which options you want in your new server. Use
+# the getActivePackages() method in the SoftLayer_Account API service to get
+# a list of available item and price options per available package.
+prices = [
+   {'id' =&gt; 2078}  # Shared Load Balancer w/ 500 VIP Connections
+]
+
+# Build a skeleton SoftLayer_Container_Product_Order object
+# containing the order you wish to place.
+orderTemplate = {
+   'location' =&gt; location,
+   'packageId' =&gt; packageId,
+   'prices' =&gt; prices
+}
+
+softlayer_client = SoftLayer::Client.new(:timeout =&gt; 120)
+
+# Declare the API client to use the SoftLayer_Product_Order API service
+client = softlayer_client.service_named('Product_Order')
+
+
+begin
+ # verifyOrder() will check your order for errors. Replace this with a call to
+ # placeOrder() when you're ready to order. Both calls return a receipt object
+ # that you can use for your records.
+ #
+ # Once your order is placed it'll go through SoftLayer's provisioning process.
+
+ receipt = client.verifyOrder(orderTemplate)
+ puts receipt
+rescue Exception =&gt; exception
+ puts &quot;There is an error in the order: #{exception}&quot;
+end
+
+</code></pre>
+
             </div>
         </div>
-
         
         <div class="col-md-3">
-        
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <h4>May 18, 2016<br>
+                </h4>
+                <hr>
+                <strong>Classes</strong>
+                <ul class="list-unstyled">
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_product_order">SoftLayer_Product_Order</a></li>
+                
+                </ul>
+                <hr>
+                <strong>Tags <span class="fa fa-tags"/></strong><br>
+                <a class="label label-default" href="https://softlayer.github.io/tags/placeorder">placeOrder</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/verifyorder">verifyOrder</a>
+                 
+                <hr>
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20ruby%20-%20Order%20a%20Local%20Load%20Balancer&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fruby%2forderLB%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+                    
+                
+            </div>
+            
 <div class="panel panel-default">
     <div class="panel-heading" style="padding: 2px 15px;">
         <h4>More Documentation</h4>
@@ -211,3 +214,5 @@
     <script src="https://softlayer.github.io/js/bootstrap.js"></script>
 </body>
 </html>
+
+
