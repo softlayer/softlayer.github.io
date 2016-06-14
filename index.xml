@@ -6,7 +6,35 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 06 Jun 2016 00:00:00 UTC</updated>
+    <updated>Mon, 13 Jun 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Release notes: June 13, 2016</title>
+      <link>https://softlayer.github.io/release_notes/20160613/</link>
+      <pubDate>Mon, 13 Jun 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/release_notes/20160613/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal:28e4eb7f361e92b26ee7724a3aa0fbeb&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;None&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;api:28e4eb7f361e92b26ee7724a3aa0fbeb&#34;&gt;API&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;None&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;backend:28e4eb7f361e92b26ee7724a3aa0fbeb&#34;&gt;Backend&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Resolved an issue that was preventing a server with Evault Storage from undergoing an Operating System reload.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: June 6, 2016</title>
@@ -598,96 +626,6 @@ pp(adjustpool)
 &lt;ul&gt;
 &lt;li&gt;Resolved an issue that was causing host migrations to fail if a Virtual Guest was powered off.&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Get Invoice for PowerShell</title>
-      <link>https://softlayer.github.io/rest/getInvoicesPowershell/</link>
-      <pubDate>Mon, 25 Apr 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/rest/getInvoicesPowershell/</guid>
-      <description>&lt;p&gt;This powershell script will get the filename for the PDF and Excel invoices and save them locally. Requires &lt;a href=&#34;http://social.technet.microsoft.com/wiki/contents/articles/21016.how-to-install-windows-powershell-4-0.aspx&#34;&gt;PowerShell Version 4&lt;/a&gt; for the Invoke-WebRequest and ConvertFrom-Json functions.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ps1&#34;&gt;# Start SL script
-$MyScriptName = &amp;quot;_Call_SL_Rest&amp;quot;
-$HomeDir = pwd
-$date4file = get-date -uformat &amp;quot;%Y-%m-%d_%H%M%S&amp;quot;
-$log = &amp;quot;$HomeDir\&amp;quot;+$date4file+$MyScriptName+&amp;quot;.log&amp;quot;
-$BaseURL = &amp;quot;https://api.softlayer.com/rest/v3&amp;quot;
-Add-Content $log &amp;quot;$(Get-Date -format s) : Start&amp;quot;
-
-$SLUser = &amp;quot;SLUSERNAME&amp;quot;
-$SLapikey =  &amp;quot;APIKEY&amp;quot;
-
-$LoginPair = &amp;quot;$($SLUser):$($SLapikey)&amp;quot;
-$encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($LoginPair))
-$basicAuthValue = &amp;quot;Basic $encodedCreds&amp;quot;
-$Headers = @{
-    Authorization = $basicAuthValue
-}
-
-$GSTURL=&amp;quot;$($BaseURL)/SoftLayer_Account/getObject&amp;quot;
-#$GSTURL=&amp;quot;$($BaseURL)/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]&amp;quot;
-Add-Content $log &amp;quot;$(Get-Date -format s) : Authenticate as User $($SLUser) at URL $($GSTURL)&amp;quot;
-$GSTRequest = Invoke-WebRequest $GSTURL  -Headers $Headers -SessionVariable slsession
-#Write-host $GSTRequest.content
-$GSTanswerConv = ConvertFrom-Json $($GSTRequest.content)
-Add-Content $log &amp;quot;$(Get-Date -format s) : Account Info: $($GSTanswerConv | select companyName , country , id)&amp;quot;
-
-#########################
-function CallURL($URL) {   
- Add-Content $log &amp;quot;$(Get-Date -format s) : Call URL $($URL)&amp;quot;
-$Request = Invoke-WebRequest $URL  -WebSession $slsession 
-$answerConv = ConvertFrom-Json $($Request.content)
- return $answerConv
- }
-#########################
-$URLcall=&amp;quot;$($BaseURL)/SoftLayer_Account/getLatestRecurringInvoice&amp;quot;
-$Callanswer = CallURL($URLcall)
-
-Add-Content $log &amp;quot;$(Get-Date -format s) : Invoice Info: $($Callanswer | select companyName , id,typeCode, modifyDate , createDate)&amp;quot;
-
-$LastIvoiceID = $Callanswer.id
-
-$URLcall=&amp;quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getPdfDetailedFilename&amp;quot;
-$Callanswer = CallURL($URLcall)
-Add-Content $log &amp;quot;$(Get-Date -format s) : Invoice FileName: $($Callanswer)&amp;quot;
-
-$PdfDetailedFilename = $Callanswer
-$FileDest = &amp;quot;$HomeDir\$PdfDetailedFilename&amp;quot;
-
-$URLcall=&amp;quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getPdfDetailed&amp;quot;
-$Callanswer = CallURL($URLcall)
-$FileData = $Callanswer
-
-$bytes=[System.Convert]::FromBase64String($FileData)
-$decoded=[System.Text.Encoding]::Default.GetString($bytes)
-[Byte[]]$bytes_FileData=[System.Text.Encoding]::Default.GetBytes($decoded)
-set-content -encoding byte -Path $FileDest -value $bytes_FileData
-$PdfFile = $FileDest
-
-$URLcall=&amp;quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getXlsFilename&amp;quot;
-$Callanswer = CallURL($URLcall)
-Add-Content $log &amp;quot;$(Get-Date -format s) : Invoice FileName: $($Callanswer)&amp;quot;
-
-$XlsFilename = $Callanswer
-$FileDest = &amp;quot;$HomeDir\$XlsFilename&amp;quot;
-
-
-$URLcall=&amp;quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getExcel&amp;quot;
-$Callanswer = CallURL($URLcall)
-$FileData = $Callanswer
-
-$bytes=[System.Convert]::FromBase64String($FileData)
-$decoded=[System.Text.Encoding]::Default.GetString($bytes)
-[Byte[]]$bytes_FileData=[System.Text.Encoding]::Default.GetBytes($decoded)
-set-content -encoding byte -Path $FileDest -value $bytes_FileData
-$XlsFile = $FileDest
-
-Add-Content $log &amp;quot;$(Get-Date -format s) : End&amp;quot;
-#End
-&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     
