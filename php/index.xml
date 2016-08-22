@@ -6,7 +6,120 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 15 Aug 2016 00:00:00 UTC</updated>
+    <updated>Mon, 22 Aug 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Attach and Detach a Block Device to a Virtual_Guest</title>
+      <link>https://softlayer.github.io/php/attach_detach/</link>
+      <pubDate>Mon, 22 Aug 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/attach_detach/</guid>
+      <description>&lt;p&gt;Attaching a currently detached portable block device to a given guest. The disk image will need to be migrated to the host the guest is on, so make sure to check if that host has enough disk space (with checkHostDiskAvailability) before attaching. This is only required for guests with local storage guests. SAN based guests don&amp;rsquo;t need that step.&lt;/p&gt;
+
+&lt;p&gt;Running this on a disk that is already attached will move the disk to the new guest.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+/* You can use the getenv() module to pull your exported Username
+and API key to keep from having to store them in your files */
+
+require_once &#39;./vendor/autoload.php&#39;;
+$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
+$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
+$guest_id = 22983449;
+$storage_id = 20309395;
+
+
+try {
+  $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Virtual_Guest&#39;, $guest_id, $apiUsername, $apiKey);
+  $response = $client-&amp;gt;attachDiskImage($storage_id);
+
+  print_r($response);
+
+ } catch(Exception $e) {
+     echo &#39;Cannot compute. Error is: &#39; . $e-&amp;gt;getMessage();
+}
+
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To detach the disk simply change &lt;code&gt;$client-&amp;gt;attachDiskImage($storage_id)&lt;/code&gt; to &lt;code&gt;$client-&amp;gt;detachDiskImage($storage_id)&lt;/code&gt;.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Find standard location pricing for a package</title>
+      <link>https://softlayer.github.io/php/getStandardPricing/</link>
+      <pubDate>Mon, 22 Aug 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/getStandardPricing/</guid>
+      <description>&lt;p&gt;With the introduction to Location-based Pricing, we updated our pricing model to represent the costs in each data center more clearly. Instead of adding premiums to a base server price, we have priced servers and services in each data center with their own location-based &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price&#34;&gt;SoftLayer_Product_Item_Price&lt;/a&gt; objects via the API. The following example shows how to get the Standard priceItemId for a package regardless of the location.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+require_once &#39;./vendor/autoload.php&#39;;
+$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
+$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
+$packageId = 194;
+
+
+try {
+  $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, $packageId, $apiUsername, $apiKey);
+  $filter = new stdClass();
+  $filter-&amp;gt;items = new stdClass();
+  $filter-&amp;gt;items-&amp;gt;prices = new stdClass();
+  $filter-&amp;gt;items-&amp;gt;prices-&amp;gt;locationGroupId = new stdClass();
+  $filter-&amp;gt;items-&amp;gt;prices-&amp;gt;locationGroupId-&amp;gt;operation = &#39;is null&#39;;
+  $client-&amp;gt;setObjectFilter($filter);
+
+  $standardPricing = $client-&amp;gt;getItems();
+  print_r($standardPricing);
+}  catch (\Exception $e) {
+    die(&#39;Cannot compute. Error is: &#39; . $e-&amp;gt;getMessage());
+}
+?&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Get IPMI info for Bare Metal Server</title>
+      <link>https://softlayer.github.io/php/get_ipmi/</link>
+      <pubDate>Mon, 22 Aug 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/get_ipmi/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+require_once &#39;./vendor/autoload.php&#39;;
+$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
+$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
+
+$server_id = 882187;
+
+try {
+  $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Account&#39;, $server_id, $apiUsername, $apiKey);
+  $objectMask = new \SoftLayer\Common\ObjectMask();
+  $objectMask-&amp;gt;networkManagementIpAddress;
+  $objectMask-&amp;gt;remoteManagementAccounts-&amp;gt;username;
+  $objectMask-&amp;gt;remoteManagementAccounts-&amp;gt;password;
+  $objectMask-&amp;gt;id;
+  $objectMask-&amp;gt;fullyQualifiedDomainName;
+  $client-&amp;gt;setObjectMask($objectMask);
+  $response = $client-&amp;gt;getHardware($objectMask);
+
+  print_r($response);
+
+ } catch(Exception $e) {
+     echo &#39;Cannot compute. Error is: &#39; . $e-&amp;gt;getMessage();
+}
+
+?&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Create a new Bandwidth Pool</title>
@@ -130,6 +243,99 @@ try {
  } catch(Exception $e) {
      echo &#39;Unable to get Storage credentials: &#39; . $e-&amp;gt;getMessage();
 }
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Adding/Removing Servers in a Bandwidth Pool</title>
+      <link>https://softlayer.github.io/php/add_remove_from_pool/</link>
+      <pubDate>Thu, 28 Apr 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/add_remove_from_pool/</guid>
+      <description>&lt;p&gt;The following script allows you to add and remove servers in an existing bandwidth pool. The script requires empty arrays when not specifying a Bare Metal or Virtual Guest Id.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+/* You can use the getenv() module to pull your exported Username
+and API key to keep from having to store them in your files */
+
+require_once &#39;./vendor/autoload.php&#39;;
+$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
+$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
+$pool_id = 316749;
+
+$template = new stdClass();
+$template-&amp;gt;hardwareToAdd = array();
+$template-&amp;gt;hardwareToRemove  = array();
+$vm = new stdClass();
+$vm-&amp;gt;id =22983449;
+$template -&amp;gt; cloudsToAdd[] = $vm;
+$template -&amp;gt; cloudsToRemove = array();
+
+try {
+  $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Network_Bandwidth_Version1_Allotment&#39;, $pool_id, $apiUsername, $apiKey);
+  $response = $client-&amp;gt;requestVdrContentUpdates($template);
+
+  print_r($response);
+
+ } catch(Exception $e) {
+     echo &#39;Cannot compute. Error is: &#39; . $e-&amp;gt;getMessage();
+}
+
+?&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Creating a support ticket</title>
+      <link>https://softlayer.github.io/php/create_ticket/</link>
+      <pubDate>Tue, 09 Feb 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/php/create_ticket/</guid>
+      <description>&lt;p&gt;Standard support tickets&amp;rsquo; titles must be selected from a pre-determined list of ticket subjects, defined in the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Ticket_Subject&#34;&gt;SoftLayer_Ticket_Subject&lt;/a&gt; service. The following example will output all of the Ticket Subjects:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+/* You can use the getenv() module to pull your exported Username
+and API key to keep from having to store them in your files */
+
+require_once &#39;./vendor/autoload.php&#39;;
+$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
+$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
+
+$client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Ticket_Subject&#39;, null, $apiUsername, $apiKey);
+$subjects = $client-&amp;gt;getAllObjects();
+
+print_r($subjects);
+?&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Once you have the Ticket Subject ID you can pass it to &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Ticket/createStandardTicket&#34;&gt;createStandardTicket&lt;/a&gt;. In the following example we are opening a ticket under the subject Hardware Firewall Question (ID 1121).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+
+/* You can use the getenv() module to pull your exported Username
+and API key to keep from having to store them in your files */
+
+require_once &#39;./vendor/autoload.php&#39;;
+$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
+$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
+
+$template = new stdClass();
+$template-&amp;gt;subjectId = 1121;
+$template-&amp;gt;assignedUserId = 123456;
+
+$content = &amp;quot;Content of the ticket goes here&amp;quot;;
+
+$created_ticket = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Ticket&#39;, null, $apiUsername, $apiKey);
+$response = $created_ticket-&amp;gt;createStandardTicket($template, $content);
+
+print_r($response);
+
 ?&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 </description>
@@ -687,346 +893,6 @@ print_r($updates);
 
 //prints out some SOAP debugging
 print_r($ticketClient-&amp;gt;__getLastRequest());
-
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order a vyatta server with placeOrder</title>
-      <link>https://softlayer.github.io/php/order_vyatta/</link>
-      <pubDate>Wed, 08 Jul 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/order_vyatta/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-require_once &#39;./vendor/autoload.php&#39;;
-$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
-$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
-
-$client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $apiUser, $key);
-$template = new stdClass();
-$template_extra = new stdClass();
-$template-&amp;gt;packageId = 174;
-$template-&amp;gt;location  = 224092;
-$template-&amp;gt;quantity  = 1;
-$template_extra-&amp;gt;os = 21;  //vyatta
-$template_extra-&amp;gt;hostname = &#39;foo-vga-small&#39;;
-$template_extra-&amp;gt;domain = &#39;softlayer-singapore-test.com&#39;;
-
-//These might be invalid now, please double check on ordering
-$template_extra-&amp;gt;price_id = array(13739, // Single Quad Xeon 1270 3.4G 8M
-                                   21010, // 4G
-                                   878, // Raid
-                                   //31693, // Raid 1
-                                   1267, // 500G
-                                   274, // 1GbE
-                                   342, // 20T
-                                   // 21, // 1IP
-                                   56, // Ping/TCP Mon
-                                   57, // Notification
-                                   );
-
-$my_template = new stdClass();
-
- for ($cnt = 0; $cnt &amp;lt; $template-&amp;gt;quantity; $cnt++) {
-    $domain = new stdClass();
-    $domain-&amp;gt;hostname = &amp;quot;$template_extra-&amp;gt;hostname-$cnt&amp;quot;;
-    $domain-&amp;gt;domain = $template_extra-&amp;gt;domain;
-    $template-&amp;gt;hardware[] = $domain;
-  }
-if (empty($template-&amp;gt;imageTemplateGlobalIdentifier))
-{
-    $template_extra-&amp;gt;price_id[] = $template_extra-&amp;gt;os;
-}
-
-foreach ($template_extra-&amp;gt;price_id as $id) {
-    $price = new stdClass();
-    $price-&amp;gt;id = $id;
-    $template-&amp;gt;prices[] = $price;
-}
-$my_template-&amp;gt;orderContainers = array();
-$my_template-&amp;gt;orderContainers[0]-&amp;gt;prices = $template-&amp;gt;prices;
-$my_template-&amp;gt;orderContainers[0]-&amp;gt;hardware = $template-&amp;gt;hardware;
-$my_template-&amp;gt;orderContainers[0]-&amp;gt;quantity = $template-&amp;gt;quantity;
-$my_template-&amp;gt;orderContainers[0]-&amp;gt;location = $template-&amp;gt;location;
-$my_template-&amp;gt;orderContainers[0]-&amp;gt;packageId = $template-&amp;gt;packageId;
-
-print_r($my_template);
-$result = $client-&amp;gt;verifyOrder($my_template);
-print_r($result);
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Get top level billing items for all owned accounts</title>
-      <link>https://softlayer.github.io/php/get_invoice_top_level_items/</link>
-      <pubDate>Sun, 24 May 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/get_invoice_top_level_items/</guid>
-      <description>&lt;p&gt;With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the -&amp;gt;allOwnedAccounts bits&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-require_once __DIR__.&#39;/vendor/autoload.php&#39;;
-
-
-/**
-* This class structure is mostly used so this can be run as a script.
-* Most of the print statements use fancy bash color codes to make things pretty
-*/
-class topBillingItems
-{
-
-    function __construct() {
-        $this-&amp;gt;apiUsername = &#39;&#39;;
-        $this-&amp;gt;apiKey = &#39;&#39;;
-        $this-&amp;gt;startDate = new DateTime(&#39;2015-02-12T00:00:00&#39;, new DateTimeZone(&#39;CST&#39;));
-        $this-&amp;gt;endDate = new DateTime(&#39;2015-03-12T00:00:00&#39;, new DateTimeZone(&#39;CST&#39;));
-    }
-
-    /*!
-    * Will get all the brands on an account, THEN all of those brand&#39;s accounts,
-    * Then all of THEIR brands, then all of THEIR accounts. Then, go through each
-    * of the final tier accounts, and get all the invoices, then all the billing items.
-    *
-    */
-    function main() {
-
-        //The First Object Mask. Used to get all the front line brands, which will have the
-        //accounts that are actually buying things
-        $objectMask = new \SoftLayer\Common\ObjectMask();
-        $objectMask-&amp;gt;ownedBrands-&amp;gt;allOwnedAccounts-&amp;gt;ownedBrands;
-
-        $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
-        $client-&amp;gt;setObjectMask($objectMask);
-
-        $response = $client-&amp;gt;getObject();
-
-        //Start off with the main brand
-        foreach ($response-&amp;gt;ownedBrands as $brand) {
-            print &amp;quot;BRAND=\e[31m&amp;quot; . $brand-&amp;gt;keyName .  &amp;quot; ::&amp;quot; . $brand-&amp;gt;id . &amp;quot;\e[0m=\n&amp;quot;;
-
-            //Go into each of the top brands accounts
-            foreach ($brand-&amp;gt;allOwnedAccounts as $account) {
-                print &amp;quot;==\e[32m&amp;quot; . $account-&amp;gt;companyName .&amp;quot;\e[0m\n&amp;quot;;
-
-                //Go into each of those accounts brands...
-                foreach ($account-&amp;gt;ownedBrands as $brand1) {
-                    print &amp;quot;====\e[33m&amp;quot; . $brand1-&amp;gt;name .&amp;quot; ::&amp;quot; . $brand1-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
-                    $brandInvoice = $this-&amp;gt;getAllBrandAccounts($brand1-&amp;gt;id);
-
-                    //Go through each of the accounts on the brand
-                    foreach ($brandInvoice as $brandAccount) {
-
-                        //This is recursive and a very large data structure.
-                        //we unset it here so it doesn&#39;t get in the way later
-                        unset($brandAccount-&amp;gt;brand);
-                        $this-&amp;gt;workAccount($brandAccount);
-
-                    } //END foreach $brandInvoice
-                } //END foreach $account-&amp;gt;ownedBrands
-            } //END foreach $brand-&amp;gt;allOwnedAccounts
-        } //END foreach $response-&amp;gt;ownedBrands
-    }//END MAIN
-
-    function getAllBrandAccounts($brandId) {
-
-        //This filters out all invoices that are not in our date range.
-        //all based on the invoices createDate
-        $filter = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;operation = &#39;betweenDate&#39;;
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options = array();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0] = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;name = &#39;startDate&#39;;
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;value = array($this-&amp;gt;startDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1] = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;name = &#39;endDate&#39;;
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;value = array($this-&amp;gt;endDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
-
-        //Mask for the front line brands, used to get all their accounts, and their invoices
-        $brandMask = new \SoftLayer\Common\ObjectMask();
-        $brandMask-&amp;gt;allOwnedAccounts-&amp;gt;invoices;
-
-        //From that brand, get all the brand&#39;s owned accounts, with their invoices from the current month
-        $brandClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Brand&#39;, $brandId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
-        $brandClient-&amp;gt;setObjectMask($brandMask);
-        $brandClient-&amp;gt;setObjectFilter($filter);
-        return $brandClient-&amp;gt;getAllOwnedAccounts();
-
-    }
-
-    function workAccount($account) {
-
-        print &amp;quot;=====\e[94m&amp;quot; . $account-&amp;gt;companyName .&amp;quot; ::&amp;quot; . $account-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
-        //Used to get all the actual line items from an invoice
-        $invoiceMask = new \SoftLayer\Common\ObjectMask();
-        $invoiceMask-&amp;gt;items;
-        $invoiceMask-&amp;gt;invoiceTotalAmount;
-        //Go through each of the accounts monthly invoices
-        foreach ($account-&amp;gt;invoices as $invoice) {
-            print &amp;quot;Created: &amp;quot; . $invoice-&amp;gt;createDate . &amp;quot; TYPE: &amp;quot; . $invoice-&amp;gt;typeCode .&amp;quot;\n&amp;quot;;
-
-            //Here we get the actual invoice and all the billing items inside of it
-            $bClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Billing_Invoice&#39;, $invoice-&amp;gt;id , $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
-            $bClient-&amp;gt;setObjectMask($invoiceMask);
-            $bt = $bClient-&amp;gt;getObject();
-            print &amp;quot;====\e[42;90m&amp;quot; . $bt-&amp;gt;invoiceTotalAmount .&amp;quot;\e[0m\n&amp;quot;;
-
-            //Go through each item on the invoice and print out its decription + fee.
-            //There are a few other fields that could be billable, but these are the main ones.
-            foreach ($bt-&amp;gt;items as $lineItem) {
-                unset($lineItem-&amp;gt;invoice);
-                $fee = $lineItem-&amp;gt;recurringAfterTaxAmount + $lineItem-&amp;gt;oneTimeAfterTaxAmount;
-                print &amp;quot;====\e[35m&amp;quot; . $lineItem-&amp;gt;description . &amp;quot; =&amp;gt; &amp;quot; . $fee . &amp;quot;$ \e[0m\n&amp;quot;;
-            }
-
-        }//end invoice
-    }
-}
-
-$main = new topBillingItems();
-$main-&amp;gt;main();
-
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Get Invoices</title>
-      <link>https://softlayer.github.io/php/get_invoice/</link>
-      <pubDate>Sun, 22 Feb 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/get_invoice/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-require_once __DIR__.&#39;/vendor/autoload.php&#39;;
- 
-$apiUser = &#39;&#39;;
-$key = &#39;&#39;;
-
-//The date does need to be in this specific format
-$startDate = new DateTime(&#39;2014-11-01T13:05:25&#39;, new DateTimeZone(&#39;CST&#39;));
-$endDate = new DateTime(&#39;2014-12-01T09:53:51&#39;, new DateTimeZone(&#39;CST&#39;));
- 
-$accountClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $apiUser, $key);
-
-$filter = new stdClass();
-$filter-&amp;gt;invoices = new stdClass();
-// $filter-&amp;gt;invoices-&amp;gt;accountId = new stdClass();
-// $filter-&amp;gt;invoices-&amp;gt;accountId-&amp;gt;operation = &#39;= 391780&#39;;
-$filter-&amp;gt;invoices-&amp;gt;createDate = new stdClass();
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;operation = &#39;betweenDate&#39;;
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options = array();
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0] = new stdClass();
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;name = &#39;startDate&#39;;
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;value = array($startDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1] = new stdClass();
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;name = &#39;endDate&#39;;
-$filter-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;value = array($endDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
-
-$objectMask = new \SoftLayer\Common\ObjectMask();
-$objectMask-&amp;gt;invoices; 
- 
-$accountClient-&amp;gt;setObjectFilter($filter);
-$accountClient-&amp;gt;setObjectMask($objectMask);
-
-$invoices = $accountClient-&amp;gt;getObject();
-
-print_r($invoices);
-
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Upgrade virtual guest</title>
-      <link>https://softlayer.github.io/php/upgrade_virtual_guest/</link>
-      <pubDate>Sun, 15 Feb 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/upgrade_virtual_guest/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-/* You can use the getenv() module to pull your exported Username
-and API key to keep from having to store them in your files */
-
-require_once &#39;./vendor/autoload.php&#39;;
-$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
-$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
-
-$client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Order&#39;, null, $apiUsername, $apiKey);
-
-//The price of the item you want to upgrade to
-$price1 = new \stdClass();
-$price1-&amp;gt;id = 1641;
-
-//The virtual guest you want to upgrade
-$guest = new \stdClass();
-$guest-&amp;gt;id = 22983449;
-
-$priceClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Product_Package&#39;, 46, $apiUsername, $apiKey);
-$objectMask = new \SoftLayer\Common\ObjectMask();
-$objectMask-&amp;gt;description;
-$objectMask-&amp;gt;capacity;
-$objectMask-&amp;gt;prices-&amp;gt;id;
-$objectMask-&amp;gt;categories-&amp;gt;id;
-
-$priceClient-&amp;gt;setObjectMask($objectMask);
-$items = $priceClient-&amp;gt;getObject();
-//Shows you what prices are available to select from
-print_r($items);
-
-$upgrade = new \stdClass();
-$upgrade-&amp;gt;complexType = &amp;quot;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;quot;;
-$upgrade-&amp;gt;prices = array($price1);
-$upgrade-&amp;gt;properties = new \stdClass();
-$upgrade-&amp;gt;properties-&amp;gt;maintenanceWindow;
-$upgrade-&amp;gt;properties-&amp;gt;maintenanceWindow-&amp;gt;name = &amp;quot;MAINTENANCE_WINDOW&amp;quot;;
-$upgrade-&amp;gt;properties-&amp;gt;maintenanceWindow-&amp;gt;value = &amp;quot;now&amp;quot;;
-$upgrade-&amp;gt;virtualGuests = array($guest);
-print_r($upgrade);
-
-//change to placeOrder($upgrade) to actually make it happen
-$response = $client-&amp;gt;placeOrder($upgrade);
-print_r($response);
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Get primary ip address record</title>
-      <link>https://softlayer.github.io/php/primary_ip_address_record/</link>
-      <pubDate>Sat, 03 Jan 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/primary_ip_address_record/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-/* You can use the getenv() module to pull your exported Username
-and API key to keep from having to store them in your files */
-
-require_once &#39;./vendor/autoload.php&#39;;
-$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
-$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
-$vsi_id = 22983449;
-
-try {
-  $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Virtual_Guest&#39;, $vsi_id, $apiUsername, $apiKey);
-  $objectMask = new \SoftLayer\Common\ObjectMask();
-  $objectMask-&amp;gt;primaryNetworkComponent;
-  $objectMask-&amp;gt;primaryNetworkComponent-&amp;gt;primaryIpAddressRecord;
-  $client-&amp;gt;setObjectMask($objectMask);
-  $guest = $client-&amp;gt;getObject();
-  print_r($guest);
-
- } catch(Exception $e) {
-     echo &#39;Cannot compute. Error is: &#39; . $e-&amp;gt;getMessage();
-}
 
 ?&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
