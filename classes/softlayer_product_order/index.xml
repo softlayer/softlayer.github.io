@@ -6,7 +6,91 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 18 May 2016 00:00:00 UTC</updated>
+    <updated>Wed, 05 Oct 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Advanced Quote Ordering</title>
+      <link>https://softlayer.github.io/python/order_quote_advanced/</link>
+      <pubDate>Wed, 05 Oct 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/order_quote_advanced/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.OrderingManager(self.client)
+
+
+    def orderQuote(self, quote_id):
+        # If you have more than 1 server in the quote, you will need to append
+        # 
+        guests = {
+            &#39;hostname&#39;: &#39;quotetest&#39;, 
+            &#39;domain&#39;: &#39;example.com&#39;
+
+        }
+        
+        quote = self.client[&#39;Billing_Order_Quote&#39;]
+        quote_container = quote.getRecalculatedOrderContainer(id=quote_id)
+        container = quote_container[&#39;orderContainers&#39;][0]
+
+        container[&#39;quantity&#39;] = 1
+        container[&#39;virtualGuests&#39;] = []
+        container[&#39;virtualGuests&#39;].append(guests)
+
+        # SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Order_MismatchedQuantity): The number of servers (2) does not match the order quantity (1).
+        # the hardware variable was getting filled out for some reason, even though there were no hardware on this quote.
+        container[&#39;hardware&#39;] = None
+
+
+        container[&#39;presetId&#39;] = None
+        container[&#39;provisionScripts&#39;] = [&#39;https://gist.githubusercontent.com/myscript.py&#39;]
+        # http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+        # The order of containers passed in needs to match the order they are assigned to either hardware or virtualGuests
+        container[&#39;sshKeys&#39;] = [{&#39;sshKeyIds&#39;: [1234]} ]
+
+        # Edit this ID to change the location of the order.
+        # this is AMS03
+        container[&#39;location&#39;] = 814994
+        result = self.client[&#39;Product_Order&#39;].verifyOrder(container)
+        pp(result)
+
+    def getOrderContainer(self,quote_id):
+        quote = self.client[&#39;Billing_Order_Quote&#39;]
+        container = quote.getRecalculatedOrderContainer(id=quote_id)
+        return container[&#39;orderContainers&#39;][0]
+
+
+    def listQuotes(self):
+        quotes = self.client[&#39;SoftLayer_Account&#39;].getActiveQuotes()
+        pp(quotes)
+
+    def listLocations(self):
+        locations = self.client[&#39;SoftLayer_Location&#39;].getDatacenters()
+        pp(locations)
+
+    def listSshKeys(self):
+        keys = self.client[&#39;SoftLayer_Account&#39;].getSshKeys()
+        pp(keys)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    quote_id = 1942633
+    main = example()
+    # main.main()
+    # main.listQuotes()
+    # quote = main.getOrderContainer(quote_id)
+    # pp(quote)
+    # main.listLocations()
+    # main.listSshKeys()
+    main.orderQuote(quote_id)
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Order a Local Load Balancer</title>
@@ -290,6 +374,135 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     # main.getUpgradeItemPrices(vsi_id,&#39;SoftLayer_Virtual_Guest&#39;)
     # main.upgradeVSI(vsi_id, True)
     main.getUpgradeInfo(vsi_id,&#39;SoftLayer_Virtual_Guest&#39; )
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Modify the configuration for a Bare Metal Server.</title>
+      <link>https://softlayer.github.io/python/modify_bare_metal/</link>
+      <pubDate>Mon, 11 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/modify_bare_metal/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+Upgrades a server.
+
+Important manual pages
+http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getUpgradeItemPrices
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Property
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Upgrade
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer.API
+import json
+
+
+def getServer(serverIp, hardwareService):
+    &amp;quot;&amp;quot;&amp;quot;Get the server.
+         :param string serverIp: The Ip address of the server.
+         :param SoftLayer_Hardware_Server hardwareService: the SoftLayer_Hardware_Server service.
+         :returns: A SoftLayer_Hardware_Server object.
+    &amp;quot;&amp;quot;&amp;quot;
+    try:
+        objectMask = &amp;quot;mask[id]&amp;quot;
+        server = hardwareService.findByIpAddress(serverIp, mask=objectMask)
+        if not server:
+            print(&amp;quot;There is no a server with the IP address: &amp;quot; + serverIp)
+            exit(1)
+    except SoftLayer.SoftLayerAPIError as e:
+        print(&amp;quot;Unable to retrieve the server:&amp;quot; % (e.faultCode, e.faultString))
+        exit(1)
+    return server
+
+
+def getUpgradeItems(server, hardwareService):
+    &amp;quot;&amp;quot;&amp;quot;Get the prices of the items to upgrade in a server.
+         :param SoftLayer_Hardware_Server server: The server to get the upgrade item prices.
+         :param SoftLayer_Hardware_Server hardwareService: the SoftLayer_Hardware_Server service.
+         :returns: A array of SoftLayer_Product_Item_Price object.
+    &amp;quot;&amp;quot;&amp;quot;
+    try:
+        upgradeItems = hardwareService.getUpgradeItemPrices(id=server[&#39;id&#39;])
+    except SoftLayer.SoftLayerAPIError as e:
+        print(&amp;quot;Unable to retrieve the upgrade items:&amp;quot; % (e.faultCode, e.faultString))
+        exit(1)
+    return upgradeItems
+
+# The IP address of the server we wish to modify
+serverIp = &amp;quot;184.172.45.222&amp;quot;
+
+# Specify the items to upgrade and the values.
+# It uses the same names and values as the displayed
+# in Softlayer&#39;s Portal.
+modify = {
+    &amp;quot;FIRST HARD DRIVE&amp;quot;: &amp;quot;2.00 TB SATA&amp;quot;,
+    &amp;quot;SECOND HARD DRIVE&amp;quot;: &amp;quot;500 GB SATA&amp;quot;
+}
+
+# The date for the upgrade of the server.
+dateForUpgrade = &amp;quot;2015-12-15T03:00:00-06:00&amp;quot;
+
+client = SoftLayer.Client()
+hardwareService = client[&#39;SoftLayer_Hardware_Server&#39;]
+productOrderService = client[&#39;SoftLayer_Product_Order&#39;]
+
+server = getServer(serverIp, hardwareService)
+pricesUpgrade = getUpgradeItems(server, hardwareService)
+
+# Getting the item prices for the upgrade.
+prices = []
+for item in modify.keys():
+    for price in pricesUpgrade:
+        added = False
+        for category in price[&#39;categories&#39;]:
+            if category[&#39;name&#39;].strip().upper() == item.strip().upper() and \
+               price[&#39;item&#39;][&#39;description&#39;].strip().upper() == modify[item].strip().upper():
+                prices.append(price)
+                added = True
+                break
+        if added:
+            break
+    if not added:
+        print(&amp;quot;There is no price for the item: &amp;quot; + item + &amp;quot;- &amp;quot; + modify[item])
+
+
+# Build a skeleton SoftLayer_Container_Product_Order_Property objects
+properties = [
+    {
+        &#39;name&#39;: &#39;MAINTENANCE_WINDOW&#39;,
+        &#39;value&#39;: dateForUpgrade
+    },
+    {
+        &#39;name&#39;: &#39;MAINTENANCE_WINDOW_ID&#39;,
+        &#39;value&#39;: 483
+    }
+]
+
+# Build a skeleton SoftLayer_Container_Product_Order_Hardware_Server_Upgrade object
+# containing the upgrade you wish to place
+upgradeData = {
+    &#39;hardware&#39;: [server],
+    &#39;prices&#39;: prices,
+    &#39;properties&#39;: properties,
+    &#39;complexType&#39;: &#39;SoftLayer_Container_Product_Order_Hardware_Server_Upgrade&#39;
+}
+
+try:
+    # When you are ready to upgrade the server
+    # change veryOrder() method by placeOrder method.
+    result = productOrderService.verifyOrder(upgradeData)
+    print(json.dumps(result, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to upgrade bare metal server faultCode=%s, faultString=%s&amp;quot; % (e.faultCode, e.faultString))
+
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
@@ -1705,62 +1918,6 @@ print_r($upgrade);
 $response = $client-&amp;gt;placeOrder($upgrade);
 print_r($response);
 ?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Create a virtual server from an existing image template</title>
-      <link>https://softlayer.github.io/python/create_server_from_template/</link>
-      <pubDate>Mon, 01 Sep 2014 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/create_server_from_template/</guid>
-      <description>&lt;p&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Account/getPrivateBlockDeviceTemplateGroups&#34;&gt;getPrivateBlockDeviceTemplateGroups&lt;/a&gt; will return a list of all the templates that you have created on your account. Use this method to find the id of the template you want to create a server from.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-from pprint import pprint as pp
-
-templateId = 12345
-
-client = SoftLayer.Client()
-
-mask = &amp;quot;mask[id,name,note]&amp;quot;
-imageTemplates = client[&#39;SoftLayer_Account&#39;].getPrivateBlockDeviceTemplateGroups(mask=mask)
-print(&amp;quot;ID - Name - Note&amp;quot;)
-for template in imageTemplates:
-    try:
-        print(&amp;quot;%s - %s - %s&amp;quot; % (template[&#39;id&#39;], template[&#39;name&#39;], template[&#39;note&#39;]))
-    except KeyError:
-        print(&amp;quot;%s - %s - %s&amp;quot; % (template[&#39;id&#39;], template[&#39;name&#39;], &#39;None&#39;))
-
-order = {
-    &#39;complexType&#39;: &#39;SoftLayer_Container_Product_Order_Virtual_Guest&#39;,
-    &#39;quantity&#39;: 1,
-    &#39;virtualGuests&#39;: [
-        {&#39;hostname&#39;: &#39;test-template&#39;, &#39;domain&#39;: &#39;example.com&#39;}
-    ],
-    &#39;location&#39;: 168642,  # San Jose 1
-    &#39;packageId&#39;: 46,  # CCI Package
-    &#39;prices&#39;: [
-        {&#39;id&#39;: 1640},  # 1 x 2.0 GHz Core
-        {&#39;id&#39;: 1644},  # 1 GB RAM
-        {&#39;id&#39;:  905},  # Reboot / Remote Console
-        {&#39;id&#39;:  272},  # 10 Mbps Public &amp;amp; Private Networks
-        {&#39;id&#39;:50231},  # 1000 GB Bandwidth
-        {&#39;id&#39;:   21},  # 1 IP Address
-        {&#39;id&#39;: 2202},  # 25 GB (SAN)
-        {&#39;id&#39;: 1684},  # CentOS 5 - Minimal Install (32 bit)
-        {&#39;id&#39;:   55},  # Host Ping Monitoring
-        {&#39;id&#39;:   57},  # Email and Ticket Notifications
-        {&#39;id&#39;:   58},  # Automated Notification Response
-        {&#39;id&#39;:  420},  # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
-        {&#39;id&#39;:  418},  # Nessus Vulnerability Assessment &amp;amp; Reporting
-    ],
-    &#39;imageTemplateId&#39;: templateId
-}
-
-result = client[&#39;SoftLayer_Product_Order&#39;].verifyOrder(order)
-pp(result)
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>

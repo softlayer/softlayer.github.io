@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Bare Metal on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/tags/bare-metal/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Mon, 11 Jan 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Modify the configuration for a Bare Metal Server.</title>
+      <link>https://softlayer.github.io/python/modify_bare_metal/</link>
+      <pubDate>Mon, 11 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/modify_bare_metal/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+Upgrades a server.
+
+Important manual pages
+http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getUpgradeItemPrices
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Property
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Upgrade
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer.API
+import json
+
+
+def getServer(serverIp, hardwareService):
+    &amp;quot;&amp;quot;&amp;quot;Get the server.
+         :param string serverIp: The Ip address of the server.
+         :param SoftLayer_Hardware_Server hardwareService: the SoftLayer_Hardware_Server service.
+         :returns: A SoftLayer_Hardware_Server object.
+    &amp;quot;&amp;quot;&amp;quot;
+    try:
+        objectMask = &amp;quot;mask[id]&amp;quot;
+        server = hardwareService.findByIpAddress(serverIp, mask=objectMask)
+        if not server:
+            print(&amp;quot;There is no a server with the IP address: &amp;quot; + serverIp)
+            exit(1)
+    except SoftLayer.SoftLayerAPIError as e:
+        print(&amp;quot;Unable to retrieve the server:&amp;quot; % (e.faultCode, e.faultString))
+        exit(1)
+    return server
+
+
+def getUpgradeItems(server, hardwareService):
+    &amp;quot;&amp;quot;&amp;quot;Get the prices of the items to upgrade in a server.
+         :param SoftLayer_Hardware_Server server: The server to get the upgrade item prices.
+         :param SoftLayer_Hardware_Server hardwareService: the SoftLayer_Hardware_Server service.
+         :returns: A array of SoftLayer_Product_Item_Price object.
+    &amp;quot;&amp;quot;&amp;quot;
+    try:
+        upgradeItems = hardwareService.getUpgradeItemPrices(id=server[&#39;id&#39;])
+    except SoftLayer.SoftLayerAPIError as e:
+        print(&amp;quot;Unable to retrieve the upgrade items:&amp;quot; % (e.faultCode, e.faultString))
+        exit(1)
+    return upgradeItems
+
+# The IP address of the server we wish to modify
+serverIp = &amp;quot;184.172.45.222&amp;quot;
+
+# Specify the items to upgrade and the values.
+# It uses the same names and values as the displayed
+# in Softlayer&#39;s Portal.
+modify = {
+    &amp;quot;FIRST HARD DRIVE&amp;quot;: &amp;quot;2.00 TB SATA&amp;quot;,
+    &amp;quot;SECOND HARD DRIVE&amp;quot;: &amp;quot;500 GB SATA&amp;quot;
+}
+
+# The date for the upgrade of the server.
+dateForUpgrade = &amp;quot;2015-12-15T03:00:00-06:00&amp;quot;
+
+client = SoftLayer.Client()
+hardwareService = client[&#39;SoftLayer_Hardware_Server&#39;]
+productOrderService = client[&#39;SoftLayer_Product_Order&#39;]
+
+server = getServer(serverIp, hardwareService)
+pricesUpgrade = getUpgradeItems(server, hardwareService)
+
+# Getting the item prices for the upgrade.
+prices = []
+for item in modify.keys():
+    for price in pricesUpgrade:
+        added = False
+        for category in price[&#39;categories&#39;]:
+            if category[&#39;name&#39;].strip().upper() == item.strip().upper() and \
+               price[&#39;item&#39;][&#39;description&#39;].strip().upper() == modify[item].strip().upper():
+                prices.append(price)
+                added = True
+                break
+        if added:
+            break
+    if not added:
+        print(&amp;quot;There is no price for the item: &amp;quot; + item + &amp;quot;- &amp;quot; + modify[item])
+
+
+# Build a skeleton SoftLayer_Container_Product_Order_Property objects
+properties = [
+    {
+        &#39;name&#39;: &#39;MAINTENANCE_WINDOW&#39;,
+        &#39;value&#39;: dateForUpgrade
+    },
+    {
+        &#39;name&#39;: &#39;MAINTENANCE_WINDOW_ID&#39;,
+        &#39;value&#39;: 483
+    }
+]
+
+# Build a skeleton SoftLayer_Container_Product_Order_Hardware_Server_Upgrade object
+# containing the upgrade you wish to place
+upgradeData = {
+    &#39;hardware&#39;: [server],
+    &#39;prices&#39;: prices,
+    &#39;properties&#39;: properties,
+    &#39;complexType&#39;: &#39;SoftLayer_Container_Product_Order_Hardware_Server_Upgrade&#39;
+}
+
+try:
+    # When you are ready to upgrade the server
+    # change veryOrder() method by placeOrder method.
+    result = productOrderService.verifyOrder(upgradeData)
+    print(json.dumps(result, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to upgrade bare metal server faultCode=%s, faultString=%s&amp;quot; % (e.faultCode, e.faultString))
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Required the available servers to order</title>
+      <link>https://softlayer.github.io/python/list_available_servers_to_order/</link>
+      <pubDate>Mon, 11 Jan 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/list_available_servers_to_order/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+List all the vailable servers to order.
+
+Important manual pages:
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package_Server/getAllObjects
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Package_Server/
+http://sldn.softlayer.com/article/Object-Filters
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+import json
+
+client = SoftLayer.Client()
+packageService = client[&#39;SoftLayer_Product_Package_Server&#39;]
+
+objectFilter = {
+    &amp;quot;packageType&amp;quot;: {
+        &amp;quot;operation&amp;quot;: &amp;quot;in&amp;quot;,
+        &amp;quot;options&amp;quot;: [{
+            &amp;quot;name&amp;quot;: &amp;quot;data&amp;quot;,
+            &amp;quot;value&amp;quot;: [
+                &amp;quot;BARE_METAL_CORE&amp;quot;,
+                &amp;quot;BARE_METAL_CPU&amp;quot;,
+                &amp;quot;BARE_METAL_CPU_FAST_PROVISION&amp;quot;
+            ]
+        }]
+    }
+}
+
+try:
+    servers = packageService.getAllObjects(filter=objectFilter)
+    print(json.dumps(servers, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to list the servers to order. faultCode=%s, faultString=%s&amp;quot; % (e.faultCode, e.faultString))
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
