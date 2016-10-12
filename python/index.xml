@@ -6,7 +6,338 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 05 Oct 2016 00:00:00 UTC</updated>
+    <updated>Wed, 12 Oct 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Monitoring Examples</title>
+      <link>https://softlayer.github.io/python/monitoring/</link>
+      <pubDate>Wed, 12 Oct 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/monitoring/</guid>
+      <description>&lt;p&gt;ResponseStatus codes and what they mean.
+&lt;a href=&#34;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Monitor_Version1_Query_Result&#34;&gt;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Monitor_Version1_Query_Result&lt;/a&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;0: CRITICAL&lt;/li&gt;
+&lt;li&gt;1: Warning&lt;/li&gt;
+&lt;li&gt;2: OK&lt;br /&gt;&lt;/li&gt;
+&lt;li&gt;4 - 5: Unknown Status, Contact Support&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;More information:
+&lt;a href=&#34;https://stackoverflow.com/questions/37662607/python-api-monitoring-manager&#34;&gt;https://stackoverflow.com/questions/37662607/python-api-monitoring-manager&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This example gets the status of your Basic and Advanced monitoring.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+    def main(self):
+        return True
+
+    def getBasicStatus(self, server_id):
+        mask = &amp;quot;mask[fullyQualifiedDomainName, networkMonitors[lastResult]]&amp;quot;
+        server = self.client[&#39;SoftLayer_Virtual_Guest&#39;].getObject(id=server_id, mask=mask )
+        pp(server)
+
+    def getAdvancedStatus(self, server_id):
+        mask = &amp;quot;mask[fullyQualifiedDomainName, monitoringAgents[configurationValues[definition]]]&amp;quot;
+        server = self.client[&#39;SoftLayer_Virtual_Guest&#39;].getObject(id=server_id, mask=mask )
+        pp(server)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    server = 24880113
+    main = example()
+    main.getBasicStatus(server)
+    main.getAdvancedStatus(server)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This example configures the CPU monitor&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
+Configure the section &#39;CPU&#39; from the &#39;Cpu, Disk, and Memory Monitoring Agent&#39; agent.
+
+Important manual pages
+http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Monitoring_Agent/applyConfigurationValues
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Monitoring_Agent_Configuration_Value
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+import json
+
+# The IP address of the server or VSI to configure.
+ipAddres = &amp;quot;159.8.52.188&amp;quot;
+
+configuration = {
+    &#39;Graph System CPU Usage&#39;: &amp;quot;False&amp;quot;,
+    &#39;Graph Total CPU Usage&#39;: &amp;quot;False&amp;quot;,
+    &#39;Graph User CPU Usage&#39;: &amp;quot;True&amp;quot;,
+    &#39;Graph I/O Wait CPU Usage&#39;: &amp;quot;True&amp;quot;,
+    &#39;Processor Queue Length Alarm&#39;: &amp;quot;True&amp;quot;,
+    &#39;CPU Usage Error Alarm&#39;: &amp;quot;True&amp;quot;,
+    &#39;CPU Usage Error Alarm Threshold&#39;: &amp;quot;99&amp;quot;,
+    &#39;CPU Usage Warning Alarm&#39;: &amp;quot;True&amp;quot;,
+    &#39;CPU Usage Warning Alarm Threshold&#39;: &amp;quot;82&amp;quot;,
+    &#39;Processor Queue Length Alarm&#39;: &amp;quot;True&amp;quot;,
+    &#39;Max Queue Length&#39;: &amp;quot;4&amp;quot;
+}
+
+# The agent&#39;s name we wish to configure.
+agentName = &#39;Cpu, Disk, and Memory Monitoring Agent&#39;
+
+client = SoftLayer.Client()
+vsiService = client[&#39;SoftLayer_Virtual_Guest&#39;]
+hardwareService = client[&#39;SoftLayer_Hardware_Server&#39;]
+monitoringService = client[&#39;SoftLayer_Monitoring_Agent&#39;]
+
+# Getting the monitoring agents installed in the server or VSI.
+try:
+    objectMask = &#39;mask[monitoringAgents[configurationValues[definition]]]&#39;
+    server = vsiService.findByIpAddress(ipAddres, mask=objectMask)
+    if not &#39;id&#39; in server:
+        server = hardwareService.findByIpAddress(ipAddres, mask=objectMask)
+        if not &#39;id&#39; in server:
+            print(&amp;quot;There is no a Server or VSI with the IP address: &amp;quot; + ipAddres)
+            exit(1)
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to get the server &amp;quot;
+          % (e.faultCode, e.faultString))
+    exit(1)
+
+# Getting the agent to configure.
+agents = [agent for agent in server[&#39;monitoringAgents&#39;] if agent[&#39;name&#39;] == agentName]
+if len(agents) == 0:
+    print(&amp;quot;Unable to find the agent: &amp;quot; + agentName)
+    exit(1)
+agent = agents[0]
+
+# Creating an SoftLayer_Monitoring_Agent_Configuration_Value skeleton
+# which contains the configuration for the agent.
+configurationValues = []
+for item in configuration.keys():
+    itemFound = False
+    for value in agent[&#39;configurationValues&#39;]:
+        if value[&#39;definition&#39;][&#39;name&#39;].strip().upper() == item.strip().upper():
+            itemFound = True
+            configurationValue = value
+            configurationValue[&#39;value&#39;] = configuration[item].strip().upper()
+            configurationValues.append(configurationValue)
+            break
+    if not itemFound:
+        print(&amp;quot;The configuration: &amp;quot; + item + &amp;quot; is not available for the agent.&amp;quot;)
+
+
+# Calling the SoftLayer_Monitoring_Agent::applyConfigurationValues method
+# to apply the changes in the agent.
+# Note: In case there is no changes in the agent configuration the method
+# will return error.
+try:
+    result = monitoringService.applyConfigurationValues(configurationValues, id=agent[&#39;id&#39;])
+    print(json.dumps(result, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to apply the configuration in the monitoring agent.&amp;quot;
+          % (e.faultCode, e.faultString))
+    exit(1)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This example GETs the monitoring configuration&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+Get the configuration of the monitoring agent in a server or VSI.
+
+Important manual pages:
+http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/findByIpAddress
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Monitoring_Agent/
+http://sldn.softlayer.com/article/Object-Masks
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+import json
+
+ipAddres = &amp;quot;169.54.54.164&amp;quot;
+
+client = SoftLayer.Client()
+vsiService = client[&#39;SoftLayer_Virtual_Guest&#39;]
+hardwareService = client[&#39;SoftLayer_Hardware_Server&#39;]
+
+try:
+    objectMask = &#39;mask[monitoringAgents[configurationTemplate[configurationSections[subSections]],&#39; \
+                 &#39;configurationValues[id, value, profileId, agentId, configurationDefinitionId,&#39; \
+                 &#39;profile, definition[attributes, section, valueType]]]]&#39;
+    server = vsiService.findByIpAddress(ipAddres, mask=objectMask)
+    if not &#39;id&#39; in server:
+        server = hardwareService.findByIpAddress(ipAddres, mask=objectMask)
+        if not &#39;id&#39; in server:
+            print(&amp;quot;There is no a Server or VSI with the IP address: &amp;quot; + ipAddres)
+            exit(1)
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to get the server &amp;quot;
+          % (e.faultCode, e.faultString))
+    exit(1)
+
+# We will get the configuration of the active agents
+agents = [agent for agent in server[&#39;monitoringAgents&#39;] if agent[&#39;statusName&#39;] == &amp;quot;Active&amp;quot;]
+server[&#39;monitoringAgents&#39;] = agents
+
+configs = []
+for agent in server[&#39;monitoringAgents&#39;]:
+    config = {}
+    config[&#39;agent&#39;] = agent[&#39;name&#39;]
+    config[&#39;id&#39;] = agent[&#39;id&#39;]
+    sections = []
+    for section in agent[&#39;configurationTemplate&#39;][&#39;configurationSections&#39;]:
+        sect = {}
+        subsects = []
+        hasProfile = False
+        profileIds = []
+        confs = []
+        for subsection in section[&#39;subSections&#39;]:
+            values = [value for value in agent[&#39;configurationValues&#39;] if
+                      value[&#39;definition&#39;][&#39;sectionId&#39;] == subsection[&#39;id&#39;]]
+            for value in values:
+                conf = {}
+                if value[&#39;profileId&#39;] == &amp;quot;&amp;quot;:
+                    conf[value[&#39;definition&#39;][&#39;name&#39;]] = value[&#39;value&#39;]
+                    confs.append(conf)
+                else:
+                    hasProfile = True
+                    profileIds.append(value[&#39;profileId&#39;])      
+        sect[&#39;name&#39;] = section[&#39;name&#39;]
+        if not hasProfile:
+            sect[&#39;configuration&#39;] = confs
+            sections.append(sect)
+        else:
+            profileIds = list(set(profileIds))
+            profiles = []
+            for profileId in profileIds:
+                profile = {}
+                valueConfs = []
+                valueProfiles = [value for value in agent[&#39;configurationValues&#39;] if
+                                 value[&#39;profileId&#39;] == profileId]
+                profile[&#39;name&#39;] = valueProfiles[0][&#39;profile&#39;][&#39;name&#39;]
+                for valueProfile in valueProfiles:
+                    value = {}
+                    value[valueProfile[&#39;definition&#39;][&#39;name&#39;]] = valueProfile[&#39;value&#39;]
+                    valueConfs.append(value)
+                profile[&#39;configuration&#39;] = valueConfs
+                profiles.append(profile)
+            sect[&#39;profiles&#39;] = profiles
+            sections.append(sect)
+    config[&#39;sections&#39;] = sections
+    configs.append(config)
+print(json.dumps(configs, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This example views the results of the monitoring&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+View the reports for the  &amp;quot;CPU&amp;quot; section from the
+&#39;Cpu, Disk, and Memory Monitoring Agent&#39; monitor agent.
+
+Important manual pages
+http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Monitoring_Agent/getGraphData
+http://sldn.softlayer.com/reference/services/Monitoring_Agent_Configuration_Value/getMetricDataType
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+import json
+
+# The IP address of the server or VSI to configure.
+ipAddres = &amp;quot;159.8.52.188&amp;quot;
+
+startDate = &#39;2016-01-02&#39;
+endDate = &#39;2016-01-08&#39;
+
+# Set &amp;quot;True&amp;quot; the reports you wish to see.
+reports = {
+    &#39;Graph System CPU Usage&#39;: &amp;quot;False&amp;quot;,
+    &#39;Graph Total CPU Usage&#39;: &amp;quot;False&amp;quot;,
+    &#39;Graph User CPU Usage&#39;: &amp;quot;False&amp;quot;,
+    &#39;Graph I/O Wait CPU Usage&#39;: &amp;quot;True&amp;quot;,
+}
+
+# The agent&#39;s name we wish to see the reports.
+agentName = &#39;Cpu, Disk, and Memory Monitoring Agent&#39;
+
+client = SoftLayer.Client()
+vsiService = client[&#39;SoftLayer_Virtual_Guest&#39;]
+hardwareService = client[&#39;SoftLayer_Hardware_Server&#39;]
+monitoringService = client[&#39;SoftLayer_Monitoring_Agent&#39;]
+agentConfigurationService = client[&#39;Monitoring_Agent_Configuration_Value&#39;]
+
+# Getting the monitoring agents installed in the server or VSI.
+try:
+    # Setting an object mask to retrieve information about the monitoring agents.
+    objectMask = &#39;mask[monitoringAgents[configurationValues[definition]]]&#39;
+    server = vsiService.findByIpAddress(ipAddres, mask=objectMask)
+    if not &#39;id&#39; in server:
+        server = hardwareService.findByIpAddress(ipAddres, mask=objectMask)
+        if not &#39;id&#39; in server:
+            print(&amp;quot;There is no a Server or VSI with the IP address: &amp;quot; + ipAddres)
+            exit(1)
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to get the server &amp;quot;
+          % (e.faultCode, e.faultString))
+    exit(1)
+
+# Getting the agent to see the reports.
+agents = [agent for agent in server[&#39;monitoringAgents&#39;] if agent[&#39;name&#39;] == agentName]
+if len(agents) == 0:
+    print(&amp;quot;Unable to find the agent: &amp;quot; + agentName)
+    exit(1)
+agent = agents[0]
+
+# Creating the list of SoftLayer_Container_Metric_Data_Type objects
+metricDataTypes = []
+for item in reports.keys():
+    if reports[item].strip().upper() == &amp;quot;TRUE&amp;quot;:
+        itemFound = False
+        for value in agent[&#39;configurationValues&#39;]:
+            if value[&#39;definition&#39;][&#39;name&#39;].strip().upper() == item.strip().upper():
+                itemFound = True
+                if value[&#39;value&#39;].strip().upper() == &amp;quot;TRUE&amp;quot;:
+                    try:
+                        metrics = agentConfigurationService.getMetricDataType(id=value[&#39;id&#39;])
+                        metricDataTypes.append(metrics)
+                    except SoftLayer.SoftLayerAPIError as e:
+                        print(&amp;quot;Unable to get the metrics. &amp;quot; % (e.faultCode, e.faultString))
+                else:
+                    print(&amp;quot;The report: &amp;quot; + item + &amp;quot; is disable for the agent. Please review the agent configuration.&amp;quot;)
+                    exit(1)
+                break
+        if not itemFound:
+            print(&amp;quot;The configuration: &amp;quot; + item + &amp;quot; is not available for the agent.&amp;quot;)
+
+# Getting the reports.
+try:
+    data = monitoringService.getGraphData(metricDataTypes, startDate, endDate, id=agent[&#39;id&#39;])
+    print(json.dumps(data, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Unable to get the report. &amp;quot;  % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Advanced Quote Ordering</title>
@@ -820,223 +1151,6 @@ client = SoftLayer.Client()
 mgr = SoftLayer.HardwareManager(client)
 
 result = mgr.update_firmware(hardware_id=12345,ipmi=True,raid_controller=True,bios=True,hard_drive=True)
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Manage Users</title>
-      <link>https://softlayer.github.io/python/manageUsers/</link>
-      <pubDate>Tue, 01 Mar 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/manageUsers/</guid>
-      <description>&lt;p&gt;Creates a user, sets up proper permissions, sets up devices access restrictions, creates API keys and orders the user a server.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;import SoftLayer.API
-from pprint import pprint as pp
-
-
-def create_user(username, password):
-    user_template = {
-        &#39;username&#39;: username,
-        &#39;firstName&#39;: &#39;API&#39;,
-        &#39;lastName&#39;: &#39;Learner&#39;,
-        &#39;email&#39;: &#39;someone@somewhere.com&#39;,
-        &#39;companyName&#39;: &#39;IBM&#39;,
-        &#39;address1&#39;: &#39;123 api road&#39;,
-        &#39;city&#39;: &#39;Houston&#39;,
-        &#39;country&#39;: &#39;US&#39;,
-        &#39;postalCode&#39;: &#39;TX 77002&#39;,
-        &#39;userStatusId&#39;: 1001,
-        &#39;timezoneId&#39;: 107
-    }
-    created_user = client[&#39;User_Customer&#39;].createObject(
-        user_template,
-        password,
-        password)
-    return created_user
-
-def get_permissions(_id):
-    permissions = client[&#39;User_Customer&#39;].getPermissions(id=_id)
-    return permissions
-
-def set_permissions(_id, permissions):
-    &amp;quot;&amp;quot;&amp;quot;
-    To get permissions correct, I take the existing permissions of a user
-    that I already have, and set my new user&#39;s permissions to be the same
-    with addBulkPortalPermission
-    &amp;quot;&amp;quot;&amp;quot;
-    return client[&#39;User_Customer&#39;].addBulkPortalPermission(
-        permissions, id=_id)
-
-def fix_permissions(user,permissions):
-    # I only want users to have access to this one host
-    virtualGuestId = 22334455
-    t = user[&#39;id&#39;]
-    set_permissions(user[&#39;id&#39;], permissions)
-    client[&#39;User_Customer&#39;].removeAllVirtualAccessForThisUser(id=t)
-    client[&#39;User_Customer&#39;].removeAllHardwareAccessForThisUser(id=t)
-    client[&#39;User_Customer&#39;].addApiAuthenticationKey(id=t)
-    client[&#39;User_Customer&#39;].addVirtualGuestAccess(virtualGuestId,id=t)
-
-def orderUserServer(user, apiKey):
-    &amp;quot;&amp;quot;&amp;quot;
-    Orders a server as the newly created user. 
-    &amp;quot;&amp;quot;&amp;quot;
-    hostname = user + &amp;quot;-lab-server&amp;quot;
-    guest = {}
-    guest[&#39;startCpus&#39;] = 1
-    guest[&#39;maxMemory&#39;] = 1024
-    guest[&#39;localDiskFlag&#39;] = False
-    guest[&#39;hostname&#39;] = hostname
-    guest[&#39;domain&#39;] = user + &amp;quot;.lablayer.info&amp;quot;
-    guest[&#39;hourlyBillingFlag&#39;] = True
-    guest[&#39;datacenter&#39;] = {}
-    guest[&#39;datacenter&#39;][&#39;name&#39;] = &#39;tok02&#39;
-    guest[&#39;blockDeviceTemplateGroup&#39;] = {&#39;globalIdentifier&#39;: &amp;quot;6c64f59a-edeb-4ba4-b992-d04972597357&amp;quot;}
-    userClient = SoftLayer.Client(
-        username = user,
-        api_key = apiKey )
-    result = userClient[&#39;Virtual_Guest&#39;].createObject(guest)
-    print &amp;quot;Added server id: %s  ( %s )&amp;quot; % (result[&#39;id&#39;],result[&#39;fullyQualifiedDomainName&#39;]) 
-    return
-   
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    import argparse
-    argsparse = argparse.ArgumentParser(description=&#39;Number of users&#39;)
-    argsparse.add_argument(&#39;--num-users&#39;, dest=&#39;num_users&#39;, type=int,
-                           help=&#39;Number of users to provision.&#39;)
-    argsparse.add_argument(&#39;--offset&#39;, dest=&amp;quot;offset&amp;quot;, type=int,
-                           default=1, help=&#39;Username offset&#39;)
-    argsparse.add_argument(&#39;--prefix&#39;,
-                           help=&#39;Username prefix&#39;, default=False)
-    args = argsparse.parse_args()
-
-    ##### CHANGE THESE ##########
-    template_user_id = 123456
-    password = &#39;APAsswordGoes!!!H3r3&#39; 
-
-    client = SoftLayer.Client()
-    
-    userPerms = client[&#39;User_Customer&#39;].getPermissions(id=template_user_id)
-   
-    start_user_num = args.offset
-
-    for i in range(args.num_users):
-        target_username = &#39;%s-%s&#39; % (args.prefix,start_user_num)
-        try:
-            new_user = create_user(target_username,password)
-            fix_permissions(new_user,userPerms)
-            client[&#39;User_Customer&#39;].addApiAuthenticationKey(id=new_user[&#39;id&#39;])
-
-        except SoftLayer.exceptions.SoftLayerAPIError as error:
-            &amp;quot;&amp;quot;&amp;quot;
-            If the user already exists, an exception is thrown. 
-            Just reset their permissions and continue on.
-            &amp;quot;&amp;quot;&amp;quot;
-            oFilter = {}
-            oFilter[&#39;users&#39;] = {}
-            oFilter[&#39;users&#39;][&#39;username&#39;] = {}
-            oFilter[&#39;users&#39;][&#39;username&#39;][&#39;operation&#39;] = target_username
-            new_user = client[&#39;Account&#39;].getUsers(filter=oFilter)[0]
-            fix_permissions(new_user,userPerms)
-
-        newApiKey = client[&#39;User_Customer&#39;].getApiAuthenticationKeys(id=new_user[&#39;id&#39;])
-        print &amp;quot;username = %s&amp;quot; % (newApiKey[0][&#39;user&#39;][&#39;username&#39;])
-        print &amp;quot;api_key =  %s&amp;quot; % (newApiKey[0][&#39;authenticationKey&#39;])
-        orderUserServer(newApiKey[0][&#39;user&#39;][&#39;username&#39;],newApiKey[0][&#39;authenticationKey&#39;])
-        start_user_num = start_user_num + 1
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Disable user, changes their password, cancels their servers, and removes any sshKeys&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;import SoftLayer.API
-from pprint import pprint as pp
-
-def get_target_users(prefix):
-    _filter = {
-        &#39;users&#39;: {
-            &#39;username&#39;: {
-                &#39;operation&#39;: &#39;*= %s&#39; % (prefix)
-            }
-        }
-    }
-    _mask = &amp;quot;mask[id,username]&amp;quot;
-    _users = client[&#39;Account&#39;].getUsers(filter=_filter, mask=_mask)
-    return _users
-
-def get_target_keys(prefix):
-    _filter = {
-        &#39;sshKeys&#39;: {
-            &#39;label&#39;: {
-                &#39;operation&#39;: &#39;*= %s&#39; % (prefix)
-            }
-        }
-    }
-
-    _mask = &amp;quot;mask[id,label]&amp;quot;
-    _users = client[&#39;Account&#39;].getSshKeys(filter=_filter, mask=_mask)
-    return _users
-
-def print_result(result, thing):
-    if result == True:
-        print &amp;quot;OK&amp;quot;
-    else:
-        print &amp;quot;ERROR: &amp;quot;
-        pp(thing)
-    return
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    import argparse
-    argsparse = argparse.ArgumentParser(description=&#39;Number of users&#39;)
-    argsparse.add_argument(&#39;--prefix&#39;,
-                           help=&#39;Username prefix&#39;, default=False)
-    argsparse.add_argument(&#39;--password&#39;,
-                           help=&#39;New Password&#39;, default=False)
- 
-    args = argsparse.parse_args()
-
-    client = SoftLayer.Client()
-  
-    users = get_target_users(args.prefix)
-
-    for user in users:
-        password =  args.password
-        print &#39;User: &#39; + user[&#39;username&#39;] + &#39; Password: &#39; + password 
-        # status 1021 disables the user
-        template = {
-            &#39;id&#39;: user[&#39;id&#39;],
-            &#39;userStatusId&#39;: 1021
-        }
-
-        # Cancel any servers the user created
-        servers = client[&#39;User_Customer&#39;].getVirtualGuests(id=user[&#39;id&#39;])
-        result = True
-        for virt in servers: 
-            # the &amp;quot;,&amp;quot; and the end of print removes the automatic newline
-            print(&amp;quot;\tCanceling host... &amp;quot; + virt[&#39;fullyQualifiedDomainName&#39;] + &amp;quot; (&amp;quot; + str(virt[&#39;id&#39;]) + &amp;quot;)\t&amp;quot;),
-            try:
-                result = client[&#39;Virtual_Guest&#39;].deleteObject(id=virt[&#39;id&#39;])
-                print_result(result,virt)
-            except SoftLayer.exceptions.SoftLayerAPIError as error:
-                print(&amp;quot;\tException, host might already be canceling...&amp;quot;)
-                pp(error)
-
-        print(&amp;quot;\tChanging password for...&amp;quot; + user[&#39;username&#39;] + &amp;quot; (&amp;quot; + str(user[&#39;id&#39;]) + &amp;quot;)\t&amp;quot;),
-        result = client[&#39;User_Customer&#39;].updatePassword(password, id=user[&#39;id&#39;])
-        print_result(result,user)
- 
-    sshkeys = get_target_keys(args.prefix)
-    print &#39;SSH Key Removal&#39;
-    for key in sshkeys:
-        print(&amp;quot;Deleting key... &amp;quot; + key[&#39;label&#39;] + &amp;quot; (&amp;quot; + str(key[&#39;id&#39;]) + &amp;quot;)\t&amp;quot;),
-        result = client[&#39;SoftLayer_Security_Ssh_Key&#39;].deleteObject(id=key[&#39;id&#39;])
-        print_result(result,key)
-
-    print &#39;Complete&#39;
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
