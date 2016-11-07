@@ -6,7 +6,250 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 04 Nov 2016 00:00:00 UTC</updated>
+    <updated>Mon, 07 Nov 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Creating a Virtual Guest</title>
+      <link>https://softlayer.github.io/go/createVsi/</link>
+      <pubDate>Mon, 07 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/go/createVsi/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;
+package main
+
+import (
+    &amp;quot;fmt&amp;quot;
+
+    &amp;quot;github.com/softlayer/softlayer-go/datatypes&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/services&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/session&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/sl&amp;quot;
+)
+
+func main() {
+
+          sess := session.New()
+          doCreateVMTest(sess)
+}
+
+
+func doCreateVMTest(sess *session.Session) {
+    service := services.GetVirtualGuestService(sess)
+
+    // Create a Virtual_Guest instance as a template
+    vGuestTemplate := datatypes.Virtual_Guest{}
+
+    //Set Creation values - use helpers from the sl package to set pointer values
+    vGuestTemplate.Hostname = sl.String(&amp;quot;sample&amp;quot;)
+    vGuestTemplate.Domain = sl.String(&amp;quot;example.com&amp;quot;)
+    vGuestTemplate.MaxMemory = sl.Int(4096)
+    vGuestTemplate.StartCpus = sl.Int(1)
+    vGuestTemplate.Datacenter = &amp;amp;datatypes.Location{Name: sl.String(&amp;quot;wdc01&amp;quot;)}
+    vGuestTemplate.OperatingSystemReferenceCode = sl.String(&amp;quot;UBUNTU_LATEST&amp;quot;)
+    vGuestTemplate.LocalDiskFlag = sl.Bool(true)
+
+    vGuest, err := service.Mask(&amp;quot;id;domain&amp;quot;).CreateObject(&amp;amp;vGuestTemplate)
+    if err != nil {
+        fmt.Printf(&amp;quot;%s\n&amp;quot;, err)
+        return
+    } else {
+        fmt.Printf(&amp;quot;\nNew Virtual Guest created with ID %d\n&amp;quot;, *vGuest.Id)
+        fmt.Printf(&amp;quot;Domain: %s\n&amp;quot;, *vGuest.Domain)
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Listing Virtual Guests</title>
+      <link>https://softlayer.github.io/go/listvsis/</link>
+      <pubDate>Mon, 07 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/go/listvsis/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
+
+import (
+    &amp;quot;fmt&amp;quot;
+
+    &amp;quot;github.com/softlayer/softlayer-go/services&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/session&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/sl&amp;quot;
+)
+
+func main() {
+
+          sess := session.New()
+          doListAccountVMsTest(sess)
+}
+
+func doListAccountVMsTest(sess *session.Session) {
+    // Get the Account service
+    service := services.GetAccountService(sess)
+
+    // List VMs
+    vms, err := service.Mask(&amp;quot;id;hostname;domain&amp;quot;).Limit(10).GetVirtualGuests()
+    if err != nil {
+        fmt.Printf(&amp;quot;Error retrieving Virtual Guests from Account: %s\n&amp;quot;, err)
+        return
+    } else {
+        fmt.Println(&amp;quot;VMs under Account:&amp;quot;)
+    }
+
+    for _, vm := range vms {
+        fmt.Printf(&amp;quot;\t[%d]%s.%s\n&amp;quot;, *vm.Id, *vm.Hostname, *vm.Domain)
+    }
+}
+
+func handleError(err error) {
+    apiErr := err.(sl.Error)
+    fmt.Printf(
+        &amp;quot;Exception: %s\nMessage: %s\nHTTP Status Code: %d\n&amp;quot;,
+        apiErr.Exception,
+        apiErr.Message,
+        apiErr.StatusCode)
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Migrating a VSI from SAN to Local Storage and vice-versa</title>
+      <link>https://softlayer.github.io/python/migratevsi/</link>
+      <pubDate>Mon, 07 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/migratevsi/</guid>
+      <description>&lt;p&gt;You can use the following &lt;a href=&#34;https://softlayer.github.io/python/list_packages/&#34;&gt;python example&lt;/a&gt; to get a list of all the available priceId&amp;rsquo;s for the Virtual_Guest package. You need to change the second to last line from main.getPackage(126) to main.getPackage(46). The priceId you need will depend on if you are moving to or from Local Storage and the size of the current primary drive.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+import json
+
+# The package for Virtual Guests
+packageId = 46
+
+# Our exising VSI ID
+virtualGuests = [
+    {
+        &amp;quot;id&amp;quot;:25367125
+    }
+]
+
+# The price item id for a 25GB Local Primary Drive.
+prices = [
+   {
+     &amp;quot;id&amp;quot;:13899,
+     &amp;quot;categories&amp;quot;:[
+        {
+            &amp;quot;categoryCode&amp;quot;:&amp;quot;guest_disk0&amp;quot;,
+            &amp;quot;id&amp;quot;:81,
+            &amp;quot;name&amp;quot;:&amp;quot;First Disk&amp;quot;
+        }
+    ]
+   }
+]
+
+# Maintenance Window time. The migration requires downtime
+properties = [
+    {
+        &amp;quot;name&amp;quot;:&amp;quot;MAINTENANCE_WINDOW&amp;quot;,
+        &amp;quot;value&amp;quot;:&amp;quot;now&amp;quot;
+    }
+]
+
+# Declare the API client.
+client = SoftLayer.Client()
+productOrderService = client[&#39;SoftLayer_Product_Order&#39;]
+
+# The parameters needed for the migration order
+orderData = {
+   &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;quot;,
+   &amp;quot;packageId&amp;quot;: packageId,
+   &amp;quot;prices&amp;quot;: prices,
+   &amp;quot;properties&amp;quot;: properties,
+   &amp;quot;virtualGuests&amp;quot; : virtualGuests,
+}
+
+try:
+   # verifyOrder() will check your order for errors. Replace this with a call to
+   # placeOrder() when you&#39;re ready to order. Both calls return a receipt object
+   # that you can use for your records.
+   response = productOrderService.verifyOrder(orderData)
+   print(json.dumps(response, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+   # If there was an error returned from the SoftLayer API then bomb out with the
+   # error message.
+   print(&amp;quot;Unable to place the order. faultCode=%s, faultString=%s&amp;quot; % (e.faultCode, e.faultString))
+
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Migrating a VSI from SAN to Local Storage and vice-versa</title>
+      <link>https://softlayer.github.io/ruby/migrateVsi/</link>
+      <pubDate>Mon, 07 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/migrateVsi/</guid>
+      <description>&lt;p&gt;You can use the following &lt;a href=&#34;https://softlayer.github.io/ruby/list_packages/&#34;&gt;ruby example&lt;/a&gt; to get a list of all the available priceId&amp;rsquo;s for the Virtual_Guest package. You need to change the second to last line from main.getPackage(126) to main.getPackage(46). The priceId you need will depend on if you are moving to or from Local Storage and the size of the current primary drive.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;
+require &#39;softlayer_api&#39;
+require &#39;pp&#39;
+
+softlayer_client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
+client = softlayer_client.service_named(&#39;Product_Order&#39;)
+
+# The package for Virtual Guests
+packageId = 46
+
+# The price item id for a 25GB Local Primary Drive.
+prices = [
+{
+  &#39;id&#39; =&amp;gt; 13899,
+    &#39;categories&#39; =&amp;gt; [
+       {
+           &#39;categoryCode&#39; =&amp;gt; &#39;guest_disk0&#39;,
+           &#39;id&#39; =&amp;gt; 81,
+           &#39;name&#39; =&amp;gt; &#39;First Disk&#39;
+       }
+   ]
+  }
+]
+
+# Maintenance Window time. The migration requires downtime
+properties = [
+  {
+      &#39;name&#39; =&amp;gt; &#39;MAINTENANCE_WINDOW&#39;,
+      &#39;value&#39; =&amp;gt; &#39;now&#39;
+  }
+]
+
+productOrder = {
+  &#39;complexType&#39; =&amp;gt; &#39;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#39;,
+  &#39;packageId&#39; =&amp;gt; packageId,
+  &#39;prices&#39; =&amp;gt; prices,
+  &#39;properties&#39; =&amp;gt; properties,
+  &#39;virtualGuests&#39; =&amp;gt; [ {&#39;id&#39; =&amp;gt; &#39;25367125&#39;} ]
+}
+
+begin
+ # verifyOrder() will check your order for errors. Replace this with a call to
+ # placeOrder() when you&#39;re ready to order. Both calls return a receipt object
+ # that you can use for your records.
+ #
+ # Once your order is placed it&#39;ll go through SoftLayer&#39;s provisioning process.
+
+ receipt = client.verifyOrder(productOrder)
+ puts receipt
+rescue Exception =&amp;gt; exception
+ puts &amp;quot;There is an error in the order: #{exception}&amp;quot;
+end
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Migrating a VSI from SAN to Local Storage and vice-versa</title>
@@ -573,37 +816,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     </item>
     
     <item>
-      <title>Getting started with SoftLayer and Terraform</title>
-      <link>https://softlayer.github.io/terraform/getting_started/</link>
-      <pubDate>Fri, 30 Sep 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/terraform/getting_started/</guid>
-      <description>
-
-&lt;h3 id=&#34;overview:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Overview&lt;/h3&gt;
-
-&lt;p&gt;Terraform is a tool for building, changing, and versioning infrastructure safely and efficiently. Terraform can manage existing and popular service providers as well as custom in-house solutions. Terraform supports several Cloud Service providers by default but is also extensible with plugins written in Go.&lt;/p&gt;
-
-&lt;p&gt;The infrastructure Terraform can manage includes low-level components such as compute instances, storage, and networking, as well as high-level components such as DNS entries, SaaS features, etc.&lt;/p&gt;
-
-&lt;h3 id=&#34;installing-terraform:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Installing Terraform&lt;/h3&gt;
-
-&lt;p&gt;You can grab the installer for your specific Operating System on the Terraform &lt;a href=&#34;https://www.terraform.io/downloads.html&#34;&gt;Download Page&lt;/a&gt;. Terraform will run on OS X, Linux, FreeBSD and Windows.&lt;/p&gt;
-
-&lt;h3 id=&#34;terraform-configuration:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Terraform Configuration&lt;/h3&gt;
-
-&lt;p&gt;Terraform uses text files to describe infrastructure and to set variables. These text files are called Terraform configurations and end in &lt;code&gt;.tf&lt;/code&gt;. This section talks about the format of these files as well as how they&amp;rsquo;re loaded.&lt;/p&gt;
-
-&lt;p&gt;The format of the configuration files are able to be in two formats: Terraform format and JSON. The Terraform format is more human-readable, supports comments, and is the generally recommended format for most Terraform files. The JSON format is meant for machines to create, modify, and update, but can also be done by Terraform operators if you prefer. Terraform format ends in &lt;code&gt;.tf&lt;/code&gt; and JSON format ends in &lt;code&gt;.tf.json&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;If you don&amp;rsquo;t want to put credentials in your configuration file, you can leave them out and use &lt;code&gt;provider &amp;quot;softlayer&amp;quot; {}&lt;/code&gt; in the configuration file and instead set these environment variables:&lt;/p&gt;
-
-&lt;p&gt;SOFTLAYER_USERNAME: Your SoftLayer username
-SOFTLAYER_API_KEY: Your API key&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
       <title>Create a SoftLayer Virtual Guest</title>
       <link>https://softlayer.github.io/terraform/create_vsi/</link>
       <pubDate>Fri, 30 Sep 2016 00:00:00 UTC</pubDate>
@@ -702,6 +914,37 @@ softlayer_virtual_guest.terraform:
     </item>
     
     <item>
+      <title>Getting started with SoftLayer and Terraform</title>
+      <link>https://softlayer.github.io/terraform/getting_started/</link>
+      <pubDate>Fri, 30 Sep 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/terraform/getting_started/</guid>
+      <description>
+
+&lt;h3 id=&#34;overview:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Overview&lt;/h3&gt;
+
+&lt;p&gt;Terraform is a tool for building, changing, and versioning infrastructure safely and efficiently. Terraform can manage existing and popular service providers as well as custom in-house solutions. Terraform supports several Cloud Service providers by default but is also extensible with plugins written in Go.&lt;/p&gt;
+
+&lt;p&gt;The infrastructure Terraform can manage includes low-level components such as compute instances, storage, and networking, as well as high-level components such as DNS entries, SaaS features, etc.&lt;/p&gt;
+
+&lt;h3 id=&#34;installing-terraform:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Installing Terraform&lt;/h3&gt;
+
+&lt;p&gt;You can grab the installer for your specific Operating System on the Terraform &lt;a href=&#34;https://www.terraform.io/downloads.html&#34;&gt;Download Page&lt;/a&gt;. Terraform will run on OS X, Linux, FreeBSD and Windows.&lt;/p&gt;
+
+&lt;h3 id=&#34;terraform-configuration:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Terraform Configuration&lt;/h3&gt;
+
+&lt;p&gt;Terraform uses text files to describe infrastructure and to set variables. These text files are called Terraform configurations and end in &lt;code&gt;.tf&lt;/code&gt;. This section talks about the format of these files as well as how they&amp;rsquo;re loaded.&lt;/p&gt;
+
+&lt;p&gt;The format of the configuration files are able to be in two formats: Terraform format and JSON. The Terraform format is more human-readable, supports comments, and is the generally recommended format for most Terraform files. The JSON format is meant for machines to create, modify, and update, but can also be done by Terraform operators if you prefer. Terraform format ends in &lt;code&gt;.tf&lt;/code&gt; and JSON format ends in &lt;code&gt;.tf.json&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you don&amp;rsquo;t want to put credentials in your configuration file, you can leave them out and use &lt;code&gt;provider &amp;quot;softlayer&amp;quot; {}&lt;/code&gt; in the configuration file and instead set these environment variables:&lt;/p&gt;
+
+&lt;p&gt;SOFTLAYER_USERNAME: Your SoftLayer username
+SOFTLAYER_API_KEY: Your API key&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Release notes: September 20, 2016</title>
       <link>https://softlayer.github.io/release_notes/20160920/</link>
       <pubDate>Tue, 20 Sep 2016 00:00:00 UTC</pubDate>
@@ -731,210 +974,91 @@ softlayer_virtual_guest.terraform:
     </item>
     
     <item>
-      <title>Release notes: September 12, 2016</title>
-      <link>https://softlayer.github.io/release_notes/20160912/</link>
-      <pubDate>Mon, 12 Sep 2016 00:00:00 UTC</pubDate>
+      <title>Get disk usage metrics for a time range</title>
+      <link>https://softlayer.github.io/go/account_disk_usage_metrics/</link>
+      <pubDate>Mon, 19 Sep 2016 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20160912/</guid>
-      <description>
+      <guid>https://softlayer.github.io/go/account_disk_usage_metrics/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
 
-&lt;h4 id=&#34;portal:a27f71a35b7f6b3a4b19230b3b8d6610&#34;&gt;Portal&lt;/h4&gt;
+import (
+    &amp;quot;fmt&amp;quot;
+    &amp;quot;log&amp;quot;
+    &amp;quot;time&amp;quot;
 
-&lt;ul&gt;
-&lt;li&gt;Made changes to the order form to align with the change in colored branding to the customer portal.&lt;/li&gt;
-&lt;/ul&gt;
+    &amp;quot;github.com/softlayer/softlayer-go/services&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/session&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/sl&amp;quot;
+)
 
-&lt;h4 id=&#34;api:a27f71a35b7f6b3a4b19230b3b8d6610&#34;&gt;API&lt;/h4&gt;
+func main() {
+    // Create a session
+    sess := session.New()
 
-&lt;ul&gt;
-&lt;li&gt;Resolved issues of API response timeout when removing a users API key. This occurred on customer accounts with a lot of Object Storage users.&lt;br /&gt;&lt;/li&gt;
-&lt;li&gt;Resolved an issue that was causing changes in products and catalog offerings to not be properly reflected in the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package_Server&#34;&gt;SoftLayer_Product_Package_Server&lt;/a&gt; service.&lt;/li&gt;
-&lt;li&gt;Added the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Resource_Metadata/getGlobalIdentifier&#34;&gt;getGlobalIdentifier&lt;/a&gt; method to the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Resource_Metadata&#34;&gt;SoftLayer_Resource_Metadata&lt;/a&gt; service.&lt;/li&gt;
-&lt;/ul&gt;
+    // Account service has the method we need
+    service := services.GetAccountService(sess)
 
-&lt;h4 id=&#34;backend:a27f71a35b7f6b3a4b19230b3b8d6610&#34;&gt;Backend&lt;/h4&gt;
+    // Range: most recent 24 hours
+    //
+    // Time values are wrapped within an sl.Time type, to facilitate json marshaling
+    tEnd := sl.Time(time.Now())
+    tStart := sl.Time(tEnd.AddDate(0, 0, -1))
 
-&lt;ul&gt;
-&lt;li&gt;Rolled out code to limit the number of combined manual and scheduled snapshots that are supported on Block and File Storage. Going forward the limit is 50 snapshots per volume. The portal and API will now display a warning if there are 50 snapshots on the system for a particular volume, and the user tries to create the 51st snapshot manually. The scheduled snapshots are auto deleted per retention policy when their limit is reached.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Create a new virtual server with all options</title>
-      <link>https://softlayer.github.io/php/createVsi/</link>
-      <pubDate>Thu, 01 Sep 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/createVsi/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
+    data, err := service.GetDiskUsageMetricDataByDate(tStart, tEnd)
+    if err != nil {
+        log.Fatal(err)
+    }
 
-/* You can use the getenv() module to pull your exported Username
-and API key to keep from having to store them in your files */
+    fmt.Printf(&amp;quot;Number of elements returned: %d\n&amp;quot;, len(data))
 
-require_once &#39;./vendor/autoload.php&#39;;
-$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
-$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
-
-$template = new stdClass();
-$template-&amp;gt;location = 1441195;
-$template-&amp;gt;datacenter-&amp;gt;name = &#39;dal10&#39;;
-$template-&amp;gt;domain = &#39;example.com&#39;;
-$template-&amp;gt;startCpus = 2;
-$template-&amp;gt;maxMemory = 2048;
-$template-&amp;gt;operatingSystemReferenceCode = &#39;CENTOS_6_64&#39;;
-$template-&amp;gt;hostname = &#39;testphp&#39;;
-$template-&amp;gt;localDiskFlag = True;
-$template-&amp;gt;hourlyBillingFlag = True;
-$template-&amp;gt;dedicatedAccountHostOnlyFlag = False;
-$template-&amp;gt;primaryBackendNetworkComponent = 1286783;
-$template-&amp;gt;primaryNetworkComponent = 1286781;
-$template-&amp;gt;privateNetworkOnlyFlag = False;
-
-try {
-  $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Virtual_Guest&#39;,null, $apiUsername, $apiKey);
-  $response = $client-&amp;gt;createObject($template);
-
-  print_r($response);
-
- } catch(Exception $e) {
-     echo &#39;Cannot compute. Error is: &#39; . $e-&amp;gt;getMessage();
+    for _, d := range data {
+        fmt.Printf(&amp;quot;Counter: %.f, Time: %s, Type: %s\n&amp;quot;, *d.Counter, *d.DateTime, *d.Type)
+    }
 }
-
-?&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     
     <item>
-      <title>Create a new virtual server with all options</title>
-      <link>https://softlayer.github.io/ruby/createVSI/</link>
-      <pubDate>Thu, 01 Sep 2016 00:00:00 UTC</pubDate>
+      <title>Handle API errors</title>
+      <link>https://softlayer.github.io/go/errors/</link>
+      <pubDate>Mon, 19 Sep 2016 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/createVSI/</guid>
-      <description>&lt;p&gt;When you are ready to place the order change &lt;code&gt;verifyOrder(productOrder)&lt;/code&gt; to &lt;code&gt;placeOrder(productOrder)&lt;/code&gt;.&lt;/p&gt;
+      <guid>https://softlayer.github.io/go/errors/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
 
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;
-require &#39;softlayer_api&#39;
-require &#39;pp&#39;
+import (
+    &amp;quot;fmt&amp;quot;
+    &amp;quot;log&amp;quot;
 
-client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
+    &amp;quot;github.com/softlayer/softlayer-go/services&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/session&amp;quot;
+    &amp;quot;github.com/softlayer/softlayer-go/sl&amp;quot;
+)
 
-productOrder = {
-  &#39;virtualGuests&#39; =&amp;gt; [{
-     &#39;hostname&#39; =&amp;gt; &#39;testRuby&#39;,
-     &#39;domain&#39;   =&amp;gt; &#39;example.com&#39;,
-     &#39;primaryBackendNetworkComponent&#39; =&amp;gt; { &#39;networkVlan&#39; =&amp;gt; { &#39;id&#39; =&amp;gt; 1286783 } }
-  }],
-  &#39;location&#39; =&amp;gt; 1441195,
-  &#39;packageId&#39; =&amp;gt; 46,
-  &#39;operatingSystemReferenceCode&#39; =&amp;gt; &#39;CENTOS_6_64&#39;, 
-  &#39;useHourlyPricing&#39; =&amp;gt; false,
-  &#39;prices&#39; =&amp;gt; [
-     {&#39;id&#39; =&amp;gt; 1640 }, # 1 x 2.0 GHz Core
-     {&#39;id&#39; =&amp;gt; 1644 }, # 1 GB RAM
-     {&#39;id&#39; =&amp;gt; 13945 }, # CENTOS_6_64
-     {&#39;id&#39; =&amp;gt; 1639 }, # 100 GB (SAN) First Disk
-     {&#39;id&#39; =&amp;gt; 2277 }, # 100 GB (SAN) Second Disk
-     {&#39;id&#39; =&amp;gt; 50367 }, # 250 GB Bandwidth
-     {&#39;id&#39; =&amp;gt; 274 }, # 1 Gbps Public &amp;amp; Private Network Uplinks
-     {&#39;id&#39; =&amp;gt; 21 }, # 1 IP Address
-     {&#39;id&#39; =&amp;gt; 420 }, # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
-     {&#39;id&#39; =&amp;gt; 56 }, # Host Ping and TCP Service Monitoring
-     {&#39;id&#39; =&amp;gt; 57 }, # Email and Ticket
-     {&#39;id&#39; =&amp;gt; 418 }, # NESSUS_VULNERABILITY_ASSESSMENT_REPORTING
-     {&#39;id&#39; =&amp;gt; 905 }, # REBOOT_REMOTE_CONSOLE
-     {&#39;id&#39; =&amp;gt; 58 }  # AUTOMATED_NOTIFICATION
-  ]
+var invalidId = 0
+
+func main() {
+    // Create a session
+    sess := session.New()
+
+    // Call DeleteObject on an invalid virtual guest
+    _, err := services.GetVirtualGuestService(sess).
+        Id(invalidId).
+        DeleteObject()
+
+    // Check the error.  In this instance, a 404 is handled by the application.  
+  // Anything else is a no-go.
+    if err != nil {
+        // Try to type assert the error and look for http status code 404
+        if apiErr, ok := err.(sl.Error); ok &amp;amp;&amp;amp; apiErr.StatusCode == 404 {
+            fmt.Println(&amp;quot;Virtual Guest not found (already deleted?)&amp;quot;)
+        } else {
+            log.Fatal(&amp;quot;Unhandled error:&amp;quot;, err)
+        }
+    }
 }
-
-order = client[&#39;Product_Order&#39;].verifyOrder(productOrder)
-
-pp order
-
 &lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Find Location specific pricing for a package</title>
-      <link>https://softlayer.github.io/ruby/getLocationPricing/</link>
-      <pubDate>Thu, 01 Sep 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/getLocationPricing/</guid>
-      <description>&lt;p&gt;With the introduction to Location-based Pricing, we updated our pricing model to represent the costs in each data center more clearly. Instead of adding premiums to a base server price, we have priced servers and services in each data center with their own location-based &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price&#34;&gt;SoftLayer_Product_Item_Price&lt;/a&gt; objects via the API. In the following example we will query for the Dallas 10 data center for SoftLayer Virtual Guests.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
-
-object_filter = SoftLayer::ObjectFilter.new
-object_filter.set_criteria_for_key_path(&#39;items.prices.locationGroupId&#39;,
-	&#39;operation&#39; =&amp;gt; &#39;in&#39;,
-        &#39;options&#39; =&amp;gt; [{
-        &#39;name&#39; =&amp;gt; &#39;data&#39;,
-        &#39;value&#39; =&amp;gt; 1441195
-        }])
-
-
-location = client[&#39;SoftLayer_Product_Package&#39;]
-result = location.object_with_id(46).object_filter(object_filter).getItems
-
-pp result
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Find standard location pricing for a package</title>
-      <link>https://softlayer.github.io/ruby/getStandardPricing/</link>
-      <pubDate>Thu, 01 Sep 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/getStandardPricing/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
-
-object_filter = SoftLayer::ObjectFilter.new do |object_filter|
-  object_filter.accept(&#39;items.prices.locationGroupId&#39;).when_it is_null
-end
-
-location = client[&#39;SoftLayer_Product_Package&#39;]
-result = location.object_with_id(46).object_filter(object_filter).getItems
-
-pp result
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: August 28, 2016</title>
-      <link>https://softlayer.github.io/release_notes/20160828/</link>
-      <pubDate>Sun, 28 Aug 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20160828/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal:b9d5ea7172071ff57acc312ad34716d7&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Pushed code fix that filters Vlans with respect to Datacenter selected when ordering Dedicated firewall.&lt;/li&gt;
-&lt;li&gt;Pushed code fix that filters the severs based on Datacenter selected and the price capacity when ordering hardware firewall.&lt;/li&gt;
-&lt;li&gt;Resolved an issue what was causing storage group templates with JBODs to not load correctly in the order forms.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api:b9d5ea7172071ff57acc312ad34716d7&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Resolved a bug that was causing the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getMemoryMetricImageByDate&#34;&gt;SoftLayer_Virtual_Guest::getMemoryMetricImageByDate&lt;/a&gt; method to return an incorrect graph.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend:b9d5ea7172071ff57acc312ad34716d7&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
 </description>
     </item>
     

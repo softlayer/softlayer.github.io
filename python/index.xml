@@ -6,7 +6,80 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 12 Oct 2016 00:00:00 UTC</updated>
+    <updated>Mon, 07 Nov 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Migrating a VSI from SAN to Local Storage and vice-versa</title>
+      <link>https://softlayer.github.io/python/migratevsi/</link>
+      <pubDate>Mon, 07 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/migratevsi/</guid>
+      <description>&lt;p&gt;You can use the following &lt;a href=&#34;https://softlayer.github.io/python/list_packages/&#34;&gt;python example&lt;/a&gt; to get a list of all the available priceId&amp;rsquo;s for the Virtual_Guest package. You need to change the second to last line from main.getPackage(126) to main.getPackage(46). The priceId you need will depend on if you are moving to or from Local Storage and the size of the current primary drive.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+import json
+
+# The package for Virtual Guests
+packageId = 46
+
+# Our exising VSI ID
+virtualGuests = [
+    {
+        &amp;quot;id&amp;quot;:25367125
+    }
+]
+
+# The price item id for a 25GB Local Primary Drive.
+prices = [
+   {
+     &amp;quot;id&amp;quot;:13899,
+     &amp;quot;categories&amp;quot;:[
+        {
+            &amp;quot;categoryCode&amp;quot;:&amp;quot;guest_disk0&amp;quot;,
+            &amp;quot;id&amp;quot;:81,
+            &amp;quot;name&amp;quot;:&amp;quot;First Disk&amp;quot;
+        }
+    ]
+   }
+]
+
+# Maintenance Window time. The migration requires downtime
+properties = [
+    {
+        &amp;quot;name&amp;quot;:&amp;quot;MAINTENANCE_WINDOW&amp;quot;,
+        &amp;quot;value&amp;quot;:&amp;quot;now&amp;quot;
+    }
+]
+
+# Declare the API client.
+client = SoftLayer.Client()
+productOrderService = client[&#39;SoftLayer_Product_Order&#39;]
+
+# The parameters needed for the migration order
+orderData = {
+   &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;quot;,
+   &amp;quot;packageId&amp;quot;: packageId,
+   &amp;quot;prices&amp;quot;: prices,
+   &amp;quot;properties&amp;quot;: properties,
+   &amp;quot;virtualGuests&amp;quot; : virtualGuests,
+}
+
+try:
+   # verifyOrder() will check your order for errors. Replace this with a call to
+   # placeOrder() when you&#39;re ready to order. Both calls return a receipt object
+   # that you can use for your records.
+   response = productOrderService.verifyOrder(orderData)
+   print(json.dumps(response, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+   # If there was an error returned from the SoftLayer API then bomb out with the
+   # error message.
+   print(&amp;quot;Unable to place the order. faultCode=%s, faultString=%s&amp;quot; % (e.faultCode, e.faultString))
+
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Monitoring Examples</title>
@@ -1133,24 +1206,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     # The new guest will only show up on the image once the migration transaction is completed
     main.getMyImage(image_id)
 
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Update Firmware on a Bare Metal Server</title>
-      <link>https://softlayer.github.io/python/update_firmware/</link>
-      <pubDate>Thu, 03 Mar 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/update_firmware/</guid>
-      <description>&lt;p&gt;In the following example we are updating the firmware for the IPMI, BIOS, Hard Drives, and Raid Controller on our Bare Metal Server with ID 12345. We can toggle the specific items we want updated by setting the values to False (Do not update firmware) or True (Do update firmware).&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-client = SoftLayer.Client()
-mgr = SoftLayer.HardwareManager(client)
-
-result = mgr.update_firmware(hardware_id=12345,ipmi=True,raid_controller=True,bios=True,hard_drive=True)
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>

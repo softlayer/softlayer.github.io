@@ -6,7 +6,144 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 04 Nov 2016 00:00:00 UTC</updated>
+    <updated>Mon, 07 Nov 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Migrating a VSI from SAN to Local Storage and vice-versa</title>
+      <link>https://softlayer.github.io/python/migratevsi/</link>
+      <pubDate>Mon, 07 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/migratevsi/</guid>
+      <description>&lt;p&gt;You can use the following &lt;a href=&#34;https://softlayer.github.io/python/list_packages/&#34;&gt;python example&lt;/a&gt; to get a list of all the available priceId&amp;rsquo;s for the Virtual_Guest package. You need to change the second to last line from main.getPackage(126) to main.getPackage(46). The priceId you need will depend on if you are moving to or from Local Storage and the size of the current primary drive.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+import SoftLayer
+import json
+
+# The package for Virtual Guests
+packageId = 46
+
+# Our exising VSI ID
+virtualGuests = [
+    {
+        &amp;quot;id&amp;quot;:25367125
+    }
+]
+
+# The price item id for a 25GB Local Primary Drive.
+prices = [
+   {
+     &amp;quot;id&amp;quot;:13899,
+     &amp;quot;categories&amp;quot;:[
+        {
+            &amp;quot;categoryCode&amp;quot;:&amp;quot;guest_disk0&amp;quot;,
+            &amp;quot;id&amp;quot;:81,
+            &amp;quot;name&amp;quot;:&amp;quot;First Disk&amp;quot;
+        }
+    ]
+   }
+]
+
+# Maintenance Window time. The migration requires downtime
+properties = [
+    {
+        &amp;quot;name&amp;quot;:&amp;quot;MAINTENANCE_WINDOW&amp;quot;,
+        &amp;quot;value&amp;quot;:&amp;quot;now&amp;quot;
+    }
+]
+
+# Declare the API client.
+client = SoftLayer.Client()
+productOrderService = client[&#39;SoftLayer_Product_Order&#39;]
+
+# The parameters needed for the migration order
+orderData = {
+   &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;quot;,
+   &amp;quot;packageId&amp;quot;: packageId,
+   &amp;quot;prices&amp;quot;: prices,
+   &amp;quot;properties&amp;quot;: properties,
+   &amp;quot;virtualGuests&amp;quot; : virtualGuests,
+}
+
+try:
+   # verifyOrder() will check your order for errors. Replace this with a call to
+   # placeOrder() when you&#39;re ready to order. Both calls return a receipt object
+   # that you can use for your records.
+   response = productOrderService.verifyOrder(orderData)
+   print(json.dumps(response, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+except SoftLayer.SoftLayerAPIError as e:
+   # If there was an error returned from the SoftLayer API then bomb out with the
+   # error message.
+   print(&amp;quot;Unable to place the order. faultCode=%s, faultString=%s&amp;quot; % (e.faultCode, e.faultString))
+
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Migrating a VSI from SAN to Local Storage and vice-versa</title>
+      <link>https://softlayer.github.io/ruby/migrateVsi/</link>
+      <pubDate>Mon, 07 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/migrateVsi/</guid>
+      <description>&lt;p&gt;You can use the following &lt;a href=&#34;https://softlayer.github.io/ruby/list_packages/&#34;&gt;ruby example&lt;/a&gt; to get a list of all the available priceId&amp;rsquo;s for the Virtual_Guest package. You need to change the second to last line from main.getPackage(126) to main.getPackage(46). The priceId you need will depend on if you are moving to or from Local Storage and the size of the current primary drive.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;
+require &#39;softlayer_api&#39;
+require &#39;pp&#39;
+
+softlayer_client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
+client = softlayer_client.service_named(&#39;Product_Order&#39;)
+
+# The package for Virtual Guests
+packageId = 46
+
+# The price item id for a 25GB Local Primary Drive.
+prices = [
+{
+  &#39;id&#39; =&amp;gt; 13899,
+    &#39;categories&#39; =&amp;gt; [
+       {
+           &#39;categoryCode&#39; =&amp;gt; &#39;guest_disk0&#39;,
+           &#39;id&#39; =&amp;gt; 81,
+           &#39;name&#39; =&amp;gt; &#39;First Disk&#39;
+       }
+   ]
+  }
+]
+
+# Maintenance Window time. The migration requires downtime
+properties = [
+  {
+      &#39;name&#39; =&amp;gt; &#39;MAINTENANCE_WINDOW&#39;,
+      &#39;value&#39; =&amp;gt; &#39;now&#39;
+  }
+]
+
+productOrder = {
+  &#39;complexType&#39; =&amp;gt; &#39;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#39;,
+  &#39;packageId&#39; =&amp;gt; packageId,
+  &#39;prices&#39; =&amp;gt; prices,
+  &#39;properties&#39; =&amp;gt; properties,
+  &#39;virtualGuests&#39; =&amp;gt; [ {&#39;id&#39; =&amp;gt; &#39;25367125&#39;} ]
+}
+
+begin
+ # verifyOrder() will check your order for errors. Replace this with a call to
+ # placeOrder() when you&#39;re ready to order. Both calls return a receipt object
+ # that you can use for your records.
+ #
+ # Once your order is placed it&#39;ll go through SoftLayer&#39;s provisioning process.
+
+ receipt = client.verifyOrder(productOrder)
+ puts receipt
+rescue Exception =&amp;gt; exception
+ puts &amp;quot;There is an error in the order: #{exception}&amp;quot;
+end
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Migrating a VSI from SAN to Local Storage and vice-versa</title>
