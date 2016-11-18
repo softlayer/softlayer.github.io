@@ -6,7 +6,92 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 14 Nov 2016 00:00:00 UTC</updated>
+    <updated>Fri, 18 Nov 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Get a list of Virtual Guests and Bare Metal servers per Pod in a Datacenter</title>
+      <link>https://softlayer.github.io/python/listByPod/</link>
+      <pubDate>Fri, 18 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/listByPod/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+import pprint
+from prettytable import PrettyTable
+
+client = SoftLayer.Client()
+
+# Define datacenter e.g: dal05, dal09, ams01, sao01, etc
+datacenter = &#39;dal10&#39;
+
+# Declare a new API service objects for SoftLayer_Account
+accountClient = client[&#39;SoftLayer_Account&#39;]
+
+# Define objectMask and objectFilters to get additional information
+objectMask = &#39;mask[primaryNetworkComponent[router[hostname]]]&#39;
+objectFilterBms = {&amp;quot;hardware&amp;quot;: {&amp;quot;datacenter&amp;quot;: {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: datacenter}}}}
+objectFilterVsi = {&amp;quot;virtualGuests&amp;quot;: {&amp;quot;datacenter&amp;quot;: {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: datacenter}}}}
+
+# Define array to add pods
+pods = []
+
+try:
+    # Getting servers and vsis
+    servers = accountClient.getHardware(mask=objectMask, filter=objectFilterBms)
+    vsis = accountClient.getVirtualGuests(mask=objectMask, filter=objectFilterVsi)
+
+    # Getting pods from servers
+    for server in servers:
+        if server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;] not in pods:
+            pods.append(server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;])
+    for vsi in vsis:
+        if vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;] not in pods:
+            pods.append(vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;])
+    # Printing servers according pods
+    for pod in pods:
+        table = []
+        tableDetails = PrettyTable([&#39;POD&#39;, &#39;Server Id&#39;, &#39;Hostname&#39;, &#39;Domain&#39;, &#39;Type&#39;])
+        print(&amp;quot;POD: %s &amp;quot; % pod)
+        for server in servers:
+            if pod in server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;]:
+                tableDetails.add_row([pod, server[&#39;id&#39;], server[&#39;hostname&#39;], server[&#39;domain&#39;], &#39;Hardware&#39;])
+        for vsi in vsis:
+            if pod in vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;]:
+                tableDetails.add_row([pod, vsi[&#39;id&#39;], vsi[&#39;hostname&#39;], vsi[&#39;domain&#39;], &#39;Virtual Guest&#39;])
+        print(tableDetails)
+
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Error. &amp;quot; % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Output&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;POD: fcr01a.dal10
++--------------+-----------+-----------------+------------------------------+---------------+
+|     POD      | Server Id |     Hostname    |            Domain            |      Type     |
++--------------+-----------+-----------------+------------------------------+---------------+
+| fcr01a.dal10 |  xxxxxxx  | foundationtest0 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  | foundationtest1 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  | foundationtest2 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  | foundationtest3 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  |   sethjannygpu  |         example.com          |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  |  vayatta-tester |         example.com          |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  |  foundationtVW  | foundationtest.vsphere.local | Virtual Guest |
+| fcr01a.dal10 |  xxxxxxx  |     jrh-oel     |         example.com          | Virtual Guest |
+| fcr01a.dal10 |  xxxxxxx  |   sa.blmx.cli   |         example.com          | Virtual Guest |
++--------------+-----------+-----------------+------------------------------+---------------+
+POD: fcr02a.dal10
++--------------+-----------+--------------+--------------------+---------------+
+|     POD      | Server Id |   Hostname   |       Domain       |      Type     |
++--------------+-----------+--------------+--------------------+---------------+
+| fcr02a.dal10 |  xxxxxxx  |  jrh-quanta  |      example.com   |    Hardware   |
+| fcr02a.dal10 |  xxxxxxx  | msebastian1  |      example.com   | Virtual Guest |
+| fcr02a.dal10 |  xxxxxxx  |  privdal10   |      example.com   | Virtual Guest |
+| fcr02a.dal10 |  xxxxxxx  |   pubdal10   |      example.com   | Virtual Guest |
+| fcr02a.dal10 |  xxxxxxx  | userdatatest |      example.com   | Virtual Guest |
++--------------+-----------+--------------+--------------------+---------------+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: November 14, 2016</title>
@@ -875,37 +960,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     </item>
     
     <item>
-      <title>Getting started with SoftLayer and Terraform</title>
-      <link>https://softlayer.github.io/terraform/getting_started/</link>
-      <pubDate>Fri, 30 Sep 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/terraform/getting_started/</guid>
-      <description>
-
-&lt;h3 id=&#34;overview:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Overview&lt;/h3&gt;
-
-&lt;p&gt;Terraform is a tool for building, changing, and versioning infrastructure safely and efficiently. Terraform can manage existing and popular service providers as well as custom in-house solutions. Terraform supports several Cloud Service providers by default but is also extensible with plugins written in Go.&lt;/p&gt;
-
-&lt;p&gt;The infrastructure Terraform can manage includes low-level components such as compute instances, storage, and networking, as well as high-level components such as DNS entries, SaaS features, etc.&lt;/p&gt;
-
-&lt;h3 id=&#34;installing-terraform:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Installing Terraform&lt;/h3&gt;
-
-&lt;p&gt;You can grab the installer for your specific Operating System on the Terraform &lt;a href=&#34;https://www.terraform.io/downloads.html&#34;&gt;Download Page&lt;/a&gt;. Terraform will run on OS X, Linux, FreeBSD and Windows.&lt;/p&gt;
-
-&lt;h3 id=&#34;terraform-configuration:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Terraform Configuration&lt;/h3&gt;
-
-&lt;p&gt;Terraform uses text files to describe infrastructure and to set variables. These text files are called Terraform configurations and end in &lt;code&gt;.tf&lt;/code&gt;. This section talks about the format of these files as well as how they&amp;rsquo;re loaded.&lt;/p&gt;
-
-&lt;p&gt;The format of the configuration files are able to be in two formats: Terraform format and JSON. The Terraform format is more human-readable, supports comments, and is the generally recommended format for most Terraform files. The JSON format is meant for machines to create, modify, and update, but can also be done by Terraform operators if you prefer. Terraform format ends in &lt;code&gt;.tf&lt;/code&gt; and JSON format ends in &lt;code&gt;.tf.json&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;If you don&amp;rsquo;t want to put credentials in your configuration file, you can leave them out and use &lt;code&gt;provider &amp;quot;softlayer&amp;quot; {}&lt;/code&gt; in the configuration file and instead set these environment variables:&lt;/p&gt;
-
-&lt;p&gt;SOFTLAYER_USERNAME: Your SoftLayer username
-SOFTLAYER_API_KEY: Your API key&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
       <title>Create a SoftLayer Virtual Guest</title>
       <link>https://softlayer.github.io/terraform/create_vsi/</link>
       <pubDate>Fri, 30 Sep 2016 00:00:00 UTC</pubDate>
@@ -1004,31 +1058,33 @@ softlayer_virtual_guest.terraform:
     </item>
     
     <item>
-      <title>Release notes: September 20, 2016</title>
-      <link>https://softlayer.github.io/release_notes/20160920/</link>
-      <pubDate>Tue, 20 Sep 2016 00:00:00 UTC</pubDate>
+      <title>Getting started with SoftLayer and Terraform</title>
+      <link>https://softlayer.github.io/terraform/getting_started/</link>
+      <pubDate>Fri, 30 Sep 2016 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20160920/</guid>
+      <guid>https://softlayer.github.io/terraform/getting_started/</guid>
       <description>
 
-&lt;h4 id=&#34;portal:0a2f0d50e6727c60129af255ec508f65&#34;&gt;Portal&lt;/h4&gt;
+&lt;h3 id=&#34;overview:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Overview&lt;/h3&gt;
 
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
+&lt;p&gt;Terraform is a tool for building, changing, and versioning infrastructure safely and efficiently. Terraform can manage existing and popular service providers as well as custom in-house solutions. Terraform supports several Cloud Service providers by default but is also extensible with plugins written in Go.&lt;/p&gt;
 
-&lt;h4 id=&#34;api:0a2f0d50e6727c60129af255ec508f65&#34;&gt;API&lt;/h4&gt;
+&lt;p&gt;The infrastructure Terraform can manage includes low-level components such as compute instances, storage, and networking, as well as high-level components such as DNS entries, SaaS features, etc.&lt;/p&gt;
 
-&lt;ul&gt;
-&lt;li&gt;Added the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer/getOpenIdConnectMigrationState&#34;&gt;getOpenIdConnectMigrationState&lt;/a&gt; to the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer&#34;&gt;SoftLayer_User_Customer&lt;/a&gt; service. This new method allows users to query whether an open invitation exists for a user.&lt;/li&gt;
-&lt;/ul&gt;
+&lt;h3 id=&#34;installing-terraform:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Installing Terraform&lt;/h3&gt;
 
-&lt;h4 id=&#34;backend:0a2f0d50e6727c60129af255ec508f65&#34;&gt;Backend&lt;/h4&gt;
+&lt;p&gt;You can grab the installer for your specific Operating System on the Terraform &lt;a href=&#34;https://www.terraform.io/downloads.html&#34;&gt;Download Page&lt;/a&gt;. Terraform will run on OS X, Linux, FreeBSD and Windows.&lt;/p&gt;
 
-&lt;ul&gt;
-&lt;li&gt;Resolved an bug that was causing Netscaler provisioning issues due to hostname/domain validation errors.&lt;/li&gt;
-&lt;li&gt;Fixed an issue with NO OS servers that was causing the Evault Bare Metal restore transaction to fail.&lt;/li&gt;
-&lt;/ul&gt;
+&lt;h3 id=&#34;terraform-configuration:90d2f5b321651d7e838fc1e3cf5f419b&#34;&gt;Terraform Configuration&lt;/h3&gt;
+
+&lt;p&gt;Terraform uses text files to describe infrastructure and to set variables. These text files are called Terraform configurations and end in &lt;code&gt;.tf&lt;/code&gt;. This section talks about the format of these files as well as how they&amp;rsquo;re loaded.&lt;/p&gt;
+
+&lt;p&gt;The format of the configuration files are able to be in two formats: Terraform format and JSON. The Terraform format is more human-readable, supports comments, and is the generally recommended format for most Terraform files. The JSON format is meant for machines to create, modify, and update, but can also be done by Terraform operators if you prefer. Terraform format ends in &lt;code&gt;.tf&lt;/code&gt; and JSON format ends in &lt;code&gt;.tf.json&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you don&amp;rsquo;t want to put credentials in your configuration file, you can leave them out and use &lt;code&gt;provider &amp;quot;softlayer&amp;quot; {}&lt;/code&gt; in the configuration file and instead set these environment variables:&lt;/p&gt;
+
+&lt;p&gt;SOFTLAYER_USERNAME: Your SoftLayer username
+SOFTLAYER_API_KEY: Your API key&lt;/p&gt;
 </description>
     </item>
     

@@ -6,7 +6,92 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 07 Nov 2016 00:00:00 UTC</updated>
+    <updated>Fri, 18 Nov 2016 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Get a list of Virtual Guests and Bare Metal servers per Pod in a Datacenter</title>
+      <link>https://softlayer.github.io/python/listByPod/</link>
+      <pubDate>Fri, 18 Nov 2016 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/listByPod/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+import pprint
+from prettytable import PrettyTable
+
+client = SoftLayer.Client()
+
+# Define datacenter e.g: dal05, dal09, ams01, sao01, etc
+datacenter = &#39;dal10&#39;
+
+# Declare a new API service objects for SoftLayer_Account
+accountClient = client[&#39;SoftLayer_Account&#39;]
+
+# Define objectMask and objectFilters to get additional information
+objectMask = &#39;mask[primaryNetworkComponent[router[hostname]]]&#39;
+objectFilterBms = {&amp;quot;hardware&amp;quot;: {&amp;quot;datacenter&amp;quot;: {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: datacenter}}}}
+objectFilterVsi = {&amp;quot;virtualGuests&amp;quot;: {&amp;quot;datacenter&amp;quot;: {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: datacenter}}}}
+
+# Define array to add pods
+pods = []
+
+try:
+    # Getting servers and vsis
+    servers = accountClient.getHardware(mask=objectMask, filter=objectFilterBms)
+    vsis = accountClient.getVirtualGuests(mask=objectMask, filter=objectFilterVsi)
+
+    # Getting pods from servers
+    for server in servers:
+        if server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;] not in pods:
+            pods.append(server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;])
+    for vsi in vsis:
+        if vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;] not in pods:
+            pods.append(vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;])
+    # Printing servers according pods
+    for pod in pods:
+        table = []
+        tableDetails = PrettyTable([&#39;POD&#39;, &#39;Server Id&#39;, &#39;Hostname&#39;, &#39;Domain&#39;, &#39;Type&#39;])
+        print(&amp;quot;POD: %s &amp;quot; % pod)
+        for server in servers:
+            if pod in server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;]:
+                tableDetails.add_row([pod, server[&#39;id&#39;], server[&#39;hostname&#39;], server[&#39;domain&#39;], &#39;Hardware&#39;])
+        for vsi in vsis:
+            if pod in vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;]:
+                tableDetails.add_row([pod, vsi[&#39;id&#39;], vsi[&#39;hostname&#39;], vsi[&#39;domain&#39;], &#39;Virtual Guest&#39;])
+        print(tableDetails)
+
+except SoftLayer.SoftLayerAPIError as e:
+    print(&amp;quot;Error. &amp;quot; % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Output&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;POD: fcr01a.dal10
++--------------+-----------+-----------------+------------------------------+---------------+
+|     POD      | Server Id |     Hostname    |            Domain            |      Type     |
++--------------+-----------+-----------------+------------------------------+---------------+
+| fcr01a.dal10 |  xxxxxxx  | foundationtest0 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  | foundationtest1 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  | foundationtest2 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  | foundationtest3 |         vmonic.local         |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  |   sethjannygpu  |         example.com          |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  |  vayatta-tester |         example.com          |    Hardware   |
+| fcr01a.dal10 |  xxxxxxx  |  foundationtVW  | foundationtest.vsphere.local | Virtual Guest |
+| fcr01a.dal10 |  xxxxxxx  |     jrh-oel     |         example.com          | Virtual Guest |
+| fcr01a.dal10 |  xxxxxxx  |   sa.blmx.cli   |         example.com          | Virtual Guest |
++--------------+-----------+-----------------+------------------------------+---------------+
+POD: fcr02a.dal10
++--------------+-----------+--------------+--------------------+---------------+
+|     POD      | Server Id |   Hostname   |       Domain       |      Type     |
++--------------+-----------+--------------+--------------------+---------------+
+| fcr02a.dal10 |  xxxxxxx  |  jrh-quanta  |      example.com   |    Hardware   |
+| fcr02a.dal10 |  xxxxxxx  | msebastian1  |      example.com   | Virtual Guest |
+| fcr02a.dal10 |  xxxxxxx  |  privdal10   |      example.com   | Virtual Guest |
+| fcr02a.dal10 |  xxxxxxx  |   pubdal10   |      example.com   | Virtual Guest |
+| fcr02a.dal10 |  xxxxxxx  | userdatatest |      example.com   | Virtual Guest |
++--------------+-----------+--------------+--------------------+---------------+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Listing Virtual Guests</title>
@@ -780,51 +865,6 @@ client = SoftLayer::Client.with_password(
 # Test our client
 puts client[&#39;Account&#39;].object_mask(&#39;mask[id, apiAuthenticationKeys]&#39;).
     getCurrentUser
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Find active VMs of specified creator</title>
-      <link>https://softlayer.github.io/ruby/find_my_vms/</link>
-      <pubDate>Mon, 12 Oct 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/find_my_vms/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# Code example of how to list virtual instances from a SoftLayer account.
-# You can call the script from the command and provide the username you
-# want to filter on. The script expects that you have the SoftLayer gem
-# installed and have it configured with the credentials you&#39;d like
-# to use with SoftLayer.
-# See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44.
-#
-# You can run the script with the username you&#39;d like to check under
-# the account you have configured:
-# find_my_active_vms userid
-#
-# The output of the script is in a csv format with commas as the
-# column separator.
-require &#39;softlayer_api&#39;
-require &#39;vine&#39;
-require &#39;csv&#39;
-
-client = SoftLayer::Client.new
-account_service = client[&#39;Account&#39;]
-object_mask = &#39;mask[id,fullyQualifiedDomainName,primaryIpAddress,createDate,billingItem[orderItem[description,order[userRecord[username],id]]]]&#39;
-
-USER_ID = ARGV[0] || client.username
-
-vms = account_service.object_mask(object_mask).getVirtualGuests
-
-csv_string = CSV.generate do |csv|
-  csv &amp;lt;&amp;lt; [&#39;VM ID&#39;, &#39;Host&#39;, &#39;Public IP&#39;, &#39;Create Date&#39;] # table headers
-  vms.each do |vm|
-    creator = vm.access(&#39;billingItem.orderItem.order.userRecord.username&#39;)
-    next unless creator == USER_ID
-    csv &amp;lt;&amp;lt; [vm[&#39;id&#39;], vm[&#39;fullyQualifiedDomainName&#39;], vm[&#39;primaryIpAddress&#39;], vm[&#39;createDate&#39;]]
-  end
-end
-
-puts csv_string
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
