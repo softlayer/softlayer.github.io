@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
+    <meta name="author" content="SoftLayer">
+
+    <title>Endurance Storage Replication - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/python/EnduranceReplication/">
+    
+    <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/custom.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/highlight/solarized_dark.css" rel="stylesheet">
+    <script src="https://softlayer.github.io/js/highlight.pack.js"></script>
+    <script src="https://softlayer.github.io/js/jquery.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <link rel="shortcut icon" href="https://softlayer.github.io/img/favicon.ico" type="image/x-icon" />
+	<link rel="stylesheet" type="text/css"
+						href="//fonts.googleapis.com/css?family=Lato" />
+
+    
+	<script>
+		$(document).ready(function() {
+			$('table').addClass("table table-hover table-striped")
+		})
+	</script>
+    
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-88235803-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+</head>
+
+<body>
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle Navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="https://softlayer.github.io/">SoftLayer API Examples</a>
+            </div>
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav">
+                    
+                        <li><a href="https://softlayer.github.io/go/">go</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/perl/">perl</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/php/">php</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/python/">python</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/rest/">rest</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/ruby/">ruby</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/tools/">tools</a></li>
+                    
+
+                    
+                </ul>
+                <div id="custom-search-input" class="pull-right">
+                  <form class="navbar-form" role="search" method="get" action="http://www.bing.com/">
+                    <div class="input-group col-md-12">
+                      <input type="text" class="form-control input-md" placeholder="Search" name="q" id="srch-term">
+                      <input type="hidden" name="q1" value="site:softlayer.github.io" />
+                      <div class="input-group-btn">
+                        <button class="btn btn-info" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<div class="container">
+    <div class="row">
+		<div class="col-md-9">
+            <div class="well well-sm release-note" style="word-wrap: break-word;">
+				<h3>Endurance Storage Replication<br> <small>Examples on ordering, snapshots, and replication for endurance storage. </small></h3>
+				
+                
+				
+                <pre><code>&quot;&quot;&quot;
+@package examples 
+@author Christopher Gallo
+&quot;&quot;&quot;
+
+import SoftLayer
+import logging
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+        &quot;&quot;&quot;
+        If you need debugging, uncomment these. be prepared for a lot of XML
+        &quot;&quot;&quot;
+        # logger = logging.getLogger()
+        # logger.addHandler(logging.StreamHandler())
+        # logger.setLevel(3)
+        self.client = SoftLayer.Client()
+        self.product_name = &quot;SoftLayer_Container_Product_Order_Network_Storage_Enterprise&quot;
+        self.mgr = SoftLayer.FileStorageManager(self.client)
+
+    def orderStorage(self):
+        &quot;&quot;&quot;
+        For more information on the magic of storage ordering see the following
+        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py
+        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py
+        This will order endurance storasge in HOU02, with 20G in size, and the 0.25IOPS/GB tier
+        0.25, 2, 4 and 10 iops/g are tiers available. 
+        &quot;&quot;&quot;
+        result = self.mgr.order_file_volume(
+            storage_type=&quot;storage_service_enterprise&quot;,
+            location = &quot;hou02&quot;,
+            size = 20,
+            tier_level = 0.25
+            )
+        pp(result)
+
+    def orderSnapshot(self, volume_id):
+        result = self.mgr.order_snapshot_space(
+            volume_id=volume_id,
+            capacity=20,
+            tier = 0.25,
+            upgrade=False)
+        pp(result)
+
+    def orderReplicant(self, volume_id, schedule):
+        &quot;&quot;&quot;
+        Same as other ordering methods, schedule is 
+        &quot;HOURLY&quot;, &quot;DAILY&quot; or &quot;WEEKLY&quot;
+        &quot;&quot;&quot;
+        result = self.mgr.order_replicant_volume(
+            volume_id=volume_id,
+            snapshot_schedule=schedule,
+            location = &quot;dal06&quot;,
+            tier = 0.25
+        )
+        pp(result)
+
+
+
+    def listStoragePrices(self):
+        &quot;&quot;&quot;
+        222 - Performance - PERFORMANCE_STORAGE_SERVICE
+        240 - Endurance - CODENAME_PRIME_STORAGE
+        If you feel like building the pricing object yourself, start here.
+        &quot;&quot;&quot;
+        mask = &quot;mask[items[prices[pricingLocationGroup,categories],attributes]]&quot;
+        # locations = self.client['Product_Package'].getLocations(id=package_id)
+        result = self.client['Product_Package'].getObject(mask=mask,id=240)
+        for item in result['items']:
+            print str(item['id']) + &quot; - &quot; + item['description'] + &quot; --- &quot; + item['keyName']
+            # pp(item)
+            for prices in item['prices']:
+                if prices['locationGroupId'] is  '':
+                    print &quot;\t&quot; + str(prices['id']) + &quot; TIER + &quot; +  str(prices.get('capacityRestrictionMaximum',&quot;??&quot;))
+                # pp(prices)
+
+    def listStorage(self):
+        # result = self.mgr.list_file_volumes(datacenter='hou02',storage_type='Endurance')
+        objectMask = &quot;mask[id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], \
+                      serviceResourceBackendIpAddress, activeTransactionCount, fileNetworkMountAddress, \
+                      snapshots[id,createDate], hourlySchedule, allowedReplicationVirtualGuests[hostname], \
+                      allowedVirtualGuests[hostname], replicationStatus,  \
+                      replicationPartners ]&quot;
+        objectFilter = {
+            'nasNetworkStorage': {
+                'serviceResource': {
+                    'type': {
+                        'type': {
+                            'operation': '!~ NAS'
+                        }
+                    },
+                    'datacenter': {
+                        'name': {
+                            'operation': 'in',
+                            'options': [{
+                                'name': 'data',
+                                'value': ['dal06','hou02']
+                            }]
+                        }
+                    }
+                },
+                'storageType': {
+                    'keyName': {
+                        'operation': 'ENDURANCE_FILE_STORAGE'
+                    }
+                }
+            }
+        }
+        result = self.client['Account'].getNasNetworkStorage(mask=objectMask,filter=objectFilter)
+        pp(result)
+
+    def authHost(self, volume_id, host_id):
+        &quot;&quot;&quot;
+        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
+        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
+        &quot;&quot;&quot;
+        guest = {
+            'id': host_id
+        }
+        self.client['SoftLayer_Network_Storage'].allowAccessFromVirtualGuest(guest, id=volume_id)
+
+    def authReplicant(self, volume_id, host_id):
+        &quot;&quot;&quot;
+        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
+        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
+        &quot;&quot;&quot;
+        guest = {
+            'id': host_id
+        }
+        self.client['SoftLayer_Network_Storage'].allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
+
+    def createSnapSchedule(self, volume_id):
+        # http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots
+        # HOURLY, 24 copies, first minute of the hour. 
+        self.client['SoftLayer_Network_Storage'].enableSnapshots('HOURLY', 24, 1,0,0, id=volume_id)
+
+    def manualSnap(self, volume_id):
+        self.client['SoftLayer_Network_Storage'].createSnapshot('Manul SNAP', id=volume_id)
+
+    def getReplicantId(self, volume_id):
+        &quot;&quot;&quot;
+        there might be more than 1 replicant id in this list if there are more 
+        than 1 replicant targets. Or none of course.
+        &quot;&quot;&quot;
+        result = self.client['SoftLayer_Network_Storage'].getReplicationPartners(id=volume_id)
+        return result[0]['id']
+        
+
+    def houIsDown(self, volume_id):
+        replicate_to = main.getReplicantId(volume_id)
+        self.client['SoftLayer_Network_Storage'].failoverToReplicant(replicate_to, id=volume_id)
+
+    def houIsBack(self, volume_id):
+        self.client['SoftLayer_Network_Storage'].failbackFromReplicant(id=volume_id)
+
+    def volumeStatus(self, volume_id):
+        objectMask = &quot;mask[id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], \
+            serviceResourceBackendIpAddress, activeTransactionCount, fileNetworkMountAddress, \
+            snapshots[id,createDate], hourlySchedule, allowedReplicationVirtualGuests[hostname], \
+            allowedVirtualGuests[hostname], replicationStatus,  \
+            replicationPartners ]&quot;
+        result = self.client['SoftLayer_Network_Storage'].getObject(mask=objectMask, id=volume_id)
+        pp(result)
+
+
+if __name__ == &quot;__main__&quot;:
+
+
+    host_a = 25206857
+    host_b = 28630647
+    main = example()
+    main.listStorage()
+    ### First we need to order a storage volume, and get its ID.
+    # main.orderStorage()
+    volume_id = 20017773
+    ### Then we need to order snapshot space
+    # main.orderSnapshot(volume_id)
+    ### Then create a snapshot schedule.
+    # main.createSnapSchedule(volume_id)
+    ### Then Allow our host to access the volume
+    # main.authHost(volume_id, [host_a])
+    ### Create a manual snapshot for fun 
+    # main.manualSnap(volume_id)
+    ### Order replication space.
+    # main.orderReplicant(volume_id, 'HOURLY')
+    ### Allow our vm to access replicant volume
+    # main.authReplicant(volume_id,host_b)
+    ### Failover to replicant
+    # main.houIsDown(volume_id)
+    ### Failback to main
+    # main.houIsBack(volume_id)
+    ### Get some status
+    # main.volumeStatus(volume_id)
+
+</code></pre>
+
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <h4>February 21, 2017<br>
+                </h4>
+                <hr>
+                <strong>Classes</strong>
+                <ul class="list-unstyled">
+                
+                    <li><a href="https://softlayer.github.io/classes/softlayer_network_storage">SoftLayer_Network_Storage</a></li>
+                
+                </ul>
+                <hr>
+                <strong>Tags <span class="fa fa-tags"/></strong><br>
+                <a class="label label-default" href="https://softlayer.github.io/tags/endurance">endurance</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/replication">replication</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/snapshot">snapshot</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/storage">storage</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/objectfilter">objectFilter</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/objectmask">objectMask</a>
+                 <a class="label label-default" href="https://softlayer.github.io/tags/enablesnapshots">enableSnapshots</a>
+                 
+                <hr>
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Endurance%20Storage%20Replication&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2fEnduranceReplication%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+                    
+                
+            </div>
+            
+<div class="panel panel-default">
+    <div class="panel-heading" style="padding: 2px 15px;">
+        <h4>More Documentation</h4>
+    </div>
+    <div class="panel-body">
+        <a href="http://sldn.softlayer.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
+        <a href="https://github.com/softlayer/softlayer-java"><i class="fa fa-github"></i> softlayer-java<br></a>
+        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fa fa-github"></i> softlayer-perl<br></a>
+        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fa fa-github"></i> softlayer-php<br></a>
+        <a href="https://github.com/softlayer/softlayer-python"><i class="fa fa-github"></i> softlayer-python<br></a>
+        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fa fa-github"></i> softlayer-ruby<br></a>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading text-center" style="padding: 2px 15px;">
+      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fa fa-facebook-square" alt="facebook"></i> </a>
+      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fa fa-twitter" alt="twitter"></i> </a>
+      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fa fa-linkedin-square"></i> </a>
+      <a href="https://github.com/softlayer"><i class="fa fa-github" alt="github"></i> </a>
+      <a href="irc://irc.freenode.net/softlayer"><i class="fa fa-comment" alt="irc"></i> </a>
+    </div>
+</div>
+
+        </div>
+    </div>
+        <footer>
+            <div class="row">
+                <hr>
+                <div class="col-sm-12">
+                    <p>&copy; SoftLayer 2015<br>
+                    Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
+                </div>
+            </div>
+        </footer>
+</div>
+
+    <script src="https://softlayer.github.io/js/jquery.js"></script>
+    <script src="https://softlayer.github.io/js/bootstrap.js"></script>
+</body>
+</html>
+
+/python/EnduranceReplication/

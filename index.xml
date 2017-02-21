@@ -6,7 +6,213 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 16 Feb 2017 00:00:00 UTC</updated>
+    <updated>Tue, 21 Feb 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Endurance Storage Replication</title>
+      <link>https://softlayer.github.io/python/EnduranceReplication/</link>
+      <pubDate>Tue, 21 Feb 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/EnduranceReplication/</guid>
+      <description>&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
+@package examples 
+@author Christopher Gallo
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+import logging
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        If you need debugging, uncomment these. be prepared for a lot of XML
+        &amp;quot;&amp;quot;&amp;quot;
+        # logger = logging.getLogger()
+        # logger.addHandler(logging.StreamHandler())
+        # logger.setLevel(3)
+        self.client = SoftLayer.Client()
+        self.product_name = &amp;quot;SoftLayer_Container_Product_Order_Network_Storage_Enterprise&amp;quot;
+        self.mgr = SoftLayer.FileStorageManager(self.client)
+
+    def orderStorage(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        For more information on the magic of storage ordering see the following
+        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py
+        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py
+        This will order endurance storasge in HOU02, with 20G in size, and the 0.25IOPS/GB tier
+        0.25, 2, 4 and 10 iops/g are tiers available. 
+        &amp;quot;&amp;quot;&amp;quot;
+        result = self.mgr.order_file_volume(
+            storage_type=&amp;quot;storage_service_enterprise&amp;quot;,
+            location = &amp;quot;hou02&amp;quot;,
+            size = 20,
+            tier_level = 0.25
+            )
+        pp(result)
+
+    def orderSnapshot(self, volume_id):
+        result = self.mgr.order_snapshot_space(
+            volume_id=volume_id,
+            capacity=20,
+            tier = 0.25,
+            upgrade=False)
+        pp(result)
+
+    def orderReplicant(self, volume_id, schedule):
+        &amp;quot;&amp;quot;&amp;quot;
+        Same as other ordering methods, schedule is 
+        &amp;quot;HOURLY&amp;quot;, &amp;quot;DAILY&amp;quot; or &amp;quot;WEEKLY&amp;quot;
+        &amp;quot;&amp;quot;&amp;quot;
+        result = self.mgr.order_replicant_volume(
+            volume_id=volume_id,
+            snapshot_schedule=schedule,
+            location = &amp;quot;dal06&amp;quot;,
+            tier = 0.25
+        )
+        pp(result)
+
+
+
+    def listStoragePrices(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        222 - Performance - PERFORMANCE_STORAGE_SERVICE
+        240 - Endurance - CODENAME_PRIME_STORAGE
+        If you feel like building the pricing object yourself, start here.
+        &amp;quot;&amp;quot;&amp;quot;
+        mask = &amp;quot;mask[items[prices[pricingLocationGroup,categories],attributes]]&amp;quot;
+        # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
+        result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=240)
+        for item in result[&#39;items&#39;]:
+            print str(item[&#39;id&#39;]) + &amp;quot; - &amp;quot; + item[&#39;description&#39;] + &amp;quot; --- &amp;quot; + item[&#39;keyName&#39;]
+            # pp(item)
+            for prices in item[&#39;prices&#39;]:
+                if prices[&#39;locationGroupId&#39;] is  &#39;&#39;:
+                    print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;]) + &amp;quot; TIER + &amp;quot; +  str(prices.get(&#39;capacityRestrictionMaximum&#39;,&amp;quot;??&amp;quot;))
+                # pp(prices)
+
+    def listStorage(self):
+        # result = self.mgr.list_file_volumes(datacenter=&#39;hou02&#39;,storage_type=&#39;Endurance&#39;)
+        objectMask = &amp;quot;mask[id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], \
+                      serviceResourceBackendIpAddress, activeTransactionCount, fileNetworkMountAddress, \
+                      snapshots[id,createDate], hourlySchedule, allowedReplicationVirtualGuests[hostname], \
+                      allowedVirtualGuests[hostname], replicationStatus,  \
+                      replicationPartners ]&amp;quot;
+        objectFilter = {
+            &#39;nasNetworkStorage&#39;: {
+                &#39;serviceResource&#39;: {
+                    &#39;type&#39;: {
+                        &#39;type&#39;: {
+                            &#39;operation&#39;: &#39;!~ NAS&#39;
+                        }
+                    },
+                    &#39;datacenter&#39;: {
+                        &#39;name&#39;: {
+                            &#39;operation&#39;: &#39;in&#39;,
+                            &#39;options&#39;: [{
+                                &#39;name&#39;: &#39;data&#39;,
+                                &#39;value&#39;: [&#39;dal06&#39;,&#39;hou02&#39;]
+                            }]
+                        }
+                    }
+                },
+                &#39;storageType&#39;: {
+                    &#39;keyName&#39;: {
+                        &#39;operation&#39;: &#39;ENDURANCE_FILE_STORAGE&#39;
+                    }
+                }
+            }
+        }
+        result = self.client[&#39;Account&#39;].getNasNetworkStorage(mask=objectMask,filter=objectFilter)
+        pp(result)
+
+    def authHost(self, volume_id, host_id):
+        &amp;quot;&amp;quot;&amp;quot;
+        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
+        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
+        &amp;quot;&amp;quot;&amp;quot;
+        guest = {
+            &#39;id&#39;: host_id
+        }
+        self.client[&#39;SoftLayer_Network_Storage&#39;].allowAccessFromVirtualGuest(guest, id=volume_id)
+
+    def authReplicant(self, volume_id, host_id):
+        &amp;quot;&amp;quot;&amp;quot;
+        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
+        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
+        &amp;quot;&amp;quot;&amp;quot;
+        guest = {
+            &#39;id&#39;: host_id
+        }
+        self.client[&#39;SoftLayer_Network_Storage&#39;].allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
+
+    def createSnapSchedule(self, volume_id):
+        # http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots
+        # HOURLY, 24 copies, first minute of the hour. 
+        self.client[&#39;SoftLayer_Network_Storage&#39;].enableSnapshots(&#39;HOURLY&#39;, 24, 1,0,0, id=volume_id)
+
+    def manualSnap(self, volume_id):
+        self.client[&#39;SoftLayer_Network_Storage&#39;].createSnapshot(&#39;Manul SNAP&#39;, id=volume_id)
+
+    def getReplicantId(self, volume_id):
+        &amp;quot;&amp;quot;&amp;quot;
+        there might be more than 1 replicant id in this list if there are more 
+        than 1 replicant targets. Or none of course.
+        &amp;quot;&amp;quot;&amp;quot;
+        result = self.client[&#39;SoftLayer_Network_Storage&#39;].getReplicationPartners(id=volume_id)
+        return result[0][&#39;id&#39;]
+        
+
+    def houIsDown(self, volume_id):
+        replicate_to = main.getReplicantId(volume_id)
+        self.client[&#39;SoftLayer_Network_Storage&#39;].failoverToReplicant(replicate_to, id=volume_id)
+
+    def houIsBack(self, volume_id):
+        self.client[&#39;SoftLayer_Network_Storage&#39;].failbackFromReplicant(id=volume_id)
+
+    def volumeStatus(self, volume_id):
+        objectMask = &amp;quot;mask[id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], \
+            serviceResourceBackendIpAddress, activeTransactionCount, fileNetworkMountAddress, \
+            snapshots[id,createDate], hourlySchedule, allowedReplicationVirtualGuests[hostname], \
+            allowedVirtualGuests[hostname], replicationStatus,  \
+            replicationPartners ]&amp;quot;
+        result = self.client[&#39;SoftLayer_Network_Storage&#39;].getObject(mask=objectMask, id=volume_id)
+        pp(result)
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+
+
+    host_a = 25206857
+    host_b = 28630647
+    main = example()
+    main.listStorage()
+    ### First we need to order a storage volume, and get its ID.
+    # main.orderStorage()
+    volume_id = 20017773
+    ### Then we need to order snapshot space
+    # main.orderSnapshot(volume_id)
+    ### Then create a snapshot schedule.
+    # main.createSnapSchedule(volume_id)
+    ### Then Allow our host to access the volume
+    # main.authHost(volume_id, [host_a])
+    ### Create a manual snapshot for fun 
+    # main.manualSnap(volume_id)
+    ### Order replication space.
+    # main.orderReplicant(volume_id, &#39;HOURLY&#39;)
+    ### Allow our vm to access replicant volume
+    # main.authReplicant(volume_id,host_b)
+    ### Failover to replicant
+    # main.houIsDown(volume_id)
+    ### Failback to main
+    # main.houIsBack(volume_id)
+    ### Get some status
+    # main.volumeStatus(volume_id)
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: February 16, 2017</title>
@@ -457,36 +663,6 @@ POD: fcr02a.dal10
 | fcr02a.dal10 |  xxxxxxx  | userdatatest |      example.com   | Virtual Guest |
 +--------------+-----------+--------------+--------------------+---------------+
 &lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: November 14, 2016</title>
-      <link>https://softlayer.github.io/release_notes/20161114/</link>
-      <pubDate>Mon, 14 Nov 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/20161114/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Corrected an issue on the Bluemix order forms where the order form content appear in a different language based on the www.softlayer.com language cookie. The order forms are set to English until all language translations have been completed.&lt;/li&gt;
-&lt;li&gt;Increased the space allowed for addresses when making payments via PayPal. The shorter space was causing PayPal transactions to fail when an account used a bunch of unicode characters.&lt;/li&gt;
-&lt;li&gt;Fixed an issue where users might be immediately logged out after navigating to the order forms due to a non-public API call.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
 </description>
     </item>
     
