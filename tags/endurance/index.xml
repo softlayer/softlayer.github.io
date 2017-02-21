@@ -14,11 +14,28 @@
       <pubDate>Tue, 21 Feb 2017 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
       <guid>https://softlayer.github.io/python/EnduranceReplication/</guid>
-      <description>&lt;p&gt;Some good starting reading.
-* &lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-replication&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-replication&lt;/a&gt;
-* &lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&lt;/a&gt;&lt;/p&gt;
+      <description>&lt;p&gt;Some good starting reading.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-replication&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-replication&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For more information on the magic of storage ordering see the following&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
 &lt;p&gt;This example should touch on all the basics of dealing with endurance storage replication volumes. This example uses the SoftLayer-python File manager a little bit for ordering&lt;/p&gt;
+
+&lt;p&gt;TO authorize hosts that are NOT virtual guests, see the allowAccessFrom* methods in&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
 &lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
 @package examples 
@@ -41,21 +58,24 @@ class example():
         self.client = SoftLayer.Client()
         self.storage = self.client[&#39;SoftLayer_Network_Storage&#39;]
         self.mgr = SoftLayer.FileStorageManager(self.client)
-        self.objectMask = &amp;quot;mask[ \
-            id, username, capacityGb, bytesUsed, \
-            serviceResource[datacenter[name]], \
-            serviceResourceBackendIpAddress, activeTransactionCount, \ fileNetworkMountAddress, \
-            snapshots[id,createDate], hourlySchedule, \ allowedReplicationVirtualGuests[hostname], \
-            allowedVirtualGuests[hostname], replicationStatus,  \
-            replicationPartners \
-        ]&amp;quot;
+        # Broken up like this to look &#39;good&#39; on softlayer.github.io
+        self.objectMask = &amp;quot;mask[&amp;quot;
+            &amp;quot;id, username, capacityGb, bytesUsed,&amp;quot;
+            &amp;quot;serviceResource[datacenter[name]],&amp;quot;
+            &amp;quot;serviceResourceBackendIpAddress, &amp;quot; 
+            &amp;quot;activeTransactionCount, &amp;quot;
+            &amp;quot;fileNetworkMountAddress, &amp;quot;
+            &amp;quot;snapshots[id,createDate], &amp;quot;
+            &amp;quot;hourlySchedule, &amp;quot; 
+            &amp;quot;allowedReplicationVirtualGuests[hostname], &amp;quot;
+            &amp;quot;allowedVirtualGuests[hostname], &amp;quot;
+            &amp;quot;replicationStatus, replicationPartners]&amp;quot;
 
     def orderStorage(self):
         &amp;quot;&amp;quot;&amp;quot;
-        For more information on the magic of storage ordering see the following
-        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py
-        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py
-        This will order endurance storasge in HOU02, with 20G in size, and the 0.25IOPS/GB tier
+
+        This will order endurance storage in HOU02 
+        with 20G in size, and the 0.25IOPS/GB tier
         0.25, 2, 4 and 10 iops/g are tiers available. 
         &amp;quot;&amp;quot;&amp;quot;
         result = self.mgr.order_file_volume(
@@ -99,11 +119,12 @@ class example():
         # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
         result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=240)
         for item in result[&#39;items&#39;]:
-            print str(item[&#39;id&#39;]) + &amp;quot; - &amp;quot; + item[&#39;description&#39;] + &amp;quot; --- &amp;quot; + item[&#39;keyName&#39;]
+            print(&amp;quot;%s - %s - %s&amp;quot; % 
+                (str(item[&#39;id&#39;]), item[&#39;description&#39;], item[&#39;keyName&#39;]) 
             # pp(item)
             for prices in item[&#39;prices&#39;]:
                 if prices[&#39;locationGroupId&#39;] is  &#39;&#39;:
-                    print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;]) + &amp;quot; TIER + &amp;quot; +  str(prices.get(&#39;capacityRestrictionMaximum&#39;,&amp;quot;??&amp;quot;))
+                    print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;])
                 # pp(prices)
 
     def listStorage(self):
@@ -132,36 +153,31 @@ class example():
                 }
             }
         }
-        result = self.client[&#39;Account&#39;].getNasNetworkStorage(mask=objectMask,filter=self.objectMask)
+        result = self.client[&#39;Account&#39;].getNasNetworkStorage(
+            mask=self.objectMask,filter=objectFilter)
         pp(result)
 
     def authHost(self, volume_id, host_id):
-        &amp;quot;&amp;quot;&amp;quot;
-        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
-        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
-        &amp;quot;&amp;quot;&amp;quot;
+
         guest = {
             &#39;id&#39;: host_id
         }
         self.storage.allowAccessFromVirtualGuest(guest, id=volume_id)
 
     def authReplicant(self, volume_id, host_id):
-        &amp;quot;&amp;quot;&amp;quot;
-        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
-        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
-        &amp;quot;&amp;quot;&amp;quot;
+
         guest = {
             &#39;id&#39;: host_id
         }
         self.storage.allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
 
     def createSnapSchedule(self, volume_id):
-        # http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots
+        # 
         # HOURLY, 24 copies, first minute of the hour. 
-        self.client[&#39;SoftLayer_Network_Storage&#39;].enableSnapshots(&#39;HOURLY&#39;, 24, 1,0,0, id=volume_id)
+        self.storage.enableSnapshots(&#39;HOURLY&#39;, 24, 1, 0, 0, id=volume_id)
 
     def manualSnap(self, volume_id):
-        self.storage.createSnapshot(&#39;Manul SNAP&#39;, id=volume_id)
+        self.storage.createSnapshot(&#39;Manual SNAP&#39;, id=volume_id)
 
     def getReplicantId(self, volume_id):
         &amp;quot;&amp;quot;&amp;quot;

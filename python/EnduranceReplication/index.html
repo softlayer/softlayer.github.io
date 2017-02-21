@@ -98,11 +98,28 @@ ga('send', 'pageview');
 				
                 
 				
-                <p>Some good starting reading.
-* <a href="https://knowledgelayer.softlayer.com/procedure/endurance-replication">https://knowledgelayer.softlayer.com/procedure/endurance-replication</a>
-* <a href="https://knowledgelayer.softlayer.com/procedure/endurance-snapshots">https://knowledgelayer.softlayer.com/procedure/endurance-snapshots</a></p>
+                <p>Some good starting reading.</p>
+
+<ul>
+<li><a href="https://knowledgelayer.softlayer.com/procedure/endurance-replication">https://knowledgelayer.softlayer.com/procedure/endurance-replication</a></li>
+<li><a href="https://knowledgelayer.softlayer.com/procedure/endurance-snapshots">https://knowledgelayer.softlayer.com/procedure/endurance-snapshots</a></li>
+<li><a href="http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots</a></li>
+</ul>
+
+<p>For more information on the magic of storage ordering see the following</p>
+
+<ul>
+<li><a href="https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py">https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py</a></li>
+<li><a href="https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py">https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py</a></li>
+</ul>
 
 <p>This example should touch on all the basics of dealing with endurance storage replication volumes. This example uses the SoftLayer-python File manager a little bit for ordering</p>
+
+<p>TO authorize hosts that are NOT virtual guests, see the allowAccessFrom* methods in</p>
+
+<ul>
+<li><a href="http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/</a></li>
+</ul>
 
 <pre><code>&quot;&quot;&quot;
 @package examples 
@@ -125,21 +142,24 @@ class example():
         self.client = SoftLayer.Client()
         self.storage = self.client['SoftLayer_Network_Storage']
         self.mgr = SoftLayer.FileStorageManager(self.client)
-        self.objectMask = &quot;mask[ \
-            id, username, capacityGb, bytesUsed, \
-            serviceResource[datacenter[name]], \
-            serviceResourceBackendIpAddress, activeTransactionCount, \ fileNetworkMountAddress, \
-            snapshots[id,createDate], hourlySchedule, \ allowedReplicationVirtualGuests[hostname], \
-            allowedVirtualGuests[hostname], replicationStatus,  \
-            replicationPartners \
-        ]&quot;
+        # Broken up like this to look 'good' on softlayer.github.io
+        self.objectMask = &quot;mask[&quot;
+            &quot;id, username, capacityGb, bytesUsed,&quot;
+            &quot;serviceResource[datacenter[name]],&quot;
+            &quot;serviceResourceBackendIpAddress, &quot; 
+            &quot;activeTransactionCount, &quot;
+            &quot;fileNetworkMountAddress, &quot;
+            &quot;snapshots[id,createDate], &quot;
+            &quot;hourlySchedule, &quot; 
+            &quot;allowedReplicationVirtualGuests[hostname], &quot;
+            &quot;allowedVirtualGuests[hostname], &quot;
+            &quot;replicationStatus, replicationPartners]&quot;
 
     def orderStorage(self):
         &quot;&quot;&quot;
-        For more information on the magic of storage ordering see the following
-        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py
-        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py
-        This will order endurance storasge in HOU02, with 20G in size, and the 0.25IOPS/GB tier
+
+        This will order endurance storage in HOU02 
+        with 20G in size, and the 0.25IOPS/GB tier
         0.25, 2, 4 and 10 iops/g are tiers available. 
         &quot;&quot;&quot;
         result = self.mgr.order_file_volume(
@@ -183,11 +203,12 @@ class example():
         # locations = self.client['Product_Package'].getLocations(id=package_id)
         result = self.client['Product_Package'].getObject(mask=mask,id=240)
         for item in result['items']:
-            print str(item['id']) + &quot; - &quot; + item['description'] + &quot; --- &quot; + item['keyName']
+            print(&quot;%s - %s - %s&quot; % 
+                (str(item['id']), item['description'], item['keyName']) 
             # pp(item)
             for prices in item['prices']:
                 if prices['locationGroupId'] is  '':
-                    print &quot;\t&quot; + str(prices['id']) + &quot; TIER + &quot; +  str(prices.get('capacityRestrictionMaximum',&quot;??&quot;))
+                    print &quot;\t&quot; + str(prices['id'])
                 # pp(prices)
 
     def listStorage(self):
@@ -216,36 +237,31 @@ class example():
                 }
             }
         }
-        result = self.client['Account'].getNasNetworkStorage(mask=objectMask,filter=self.objectMask)
+        result = self.client['Account'].getNasNetworkStorage(
+            mask=self.objectMask,filter=objectFilter)
         pp(result)
 
     def authHost(self, volume_id, host_id):
-        &quot;&quot;&quot;
-        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
-        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
-        &quot;&quot;&quot;
+
         guest = {
             'id': host_id
         }
         self.storage.allowAccessFromVirtualGuest(guest, id=volume_id)
 
     def authReplicant(self, volume_id, host_id):
-        &quot;&quot;&quot;
-        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
-        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
-        &quot;&quot;&quot;
+
         guest = {
             'id': host_id
         }
         self.storage.allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
 
     def createSnapSchedule(self, volume_id):
-        # http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots
+        # 
         # HOURLY, 24 copies, first minute of the hour. 
-        self.client['SoftLayer_Network_Storage'].enableSnapshots('HOURLY', 24, 1,0,0, id=volume_id)
+        self.storage.enableSnapshots('HOURLY', 24, 1, 0, 0, id=volume_id)
 
     def manualSnap(self, volume_id):
-        self.storage.createSnapshot('Manul SNAP', id=volume_id)
+        self.storage.createSnapshot('Manual SNAP', id=volume_id)
 
     def getReplicantId(self, volume_id):
         &quot;&quot;&quot;

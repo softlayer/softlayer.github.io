@@ -14,11 +14,28 @@
       <pubDate>Tue, 21 Feb 2017 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
       <guid>https://softlayer.github.io/python/EnduranceReplication/</guid>
-      <description>&lt;p&gt;Some good starting reading.
-* &lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-replication&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-replication&lt;/a&gt;
-* &lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&lt;/a&gt;&lt;/p&gt;
+      <description>&lt;p&gt;Some good starting reading.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-replication&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-replication&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For more information on the magic of storage ordering see the following&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
 &lt;p&gt;This example should touch on all the basics of dealing with endurance storage replication volumes. This example uses the SoftLayer-python File manager a little bit for ordering&lt;/p&gt;
+
+&lt;p&gt;TO authorize hosts that are NOT virtual guests, see the allowAccessFrom* methods in&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
 &lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
 @package examples 
@@ -41,21 +58,24 @@ class example():
         self.client = SoftLayer.Client()
         self.storage = self.client[&#39;SoftLayer_Network_Storage&#39;]
         self.mgr = SoftLayer.FileStorageManager(self.client)
-        self.objectMask = &amp;quot;mask[ \
-            id, username, capacityGb, bytesUsed, \
-            serviceResource[datacenter[name]], \
-            serviceResourceBackendIpAddress, activeTransactionCount, \ fileNetworkMountAddress, \
-            snapshots[id,createDate], hourlySchedule, \ allowedReplicationVirtualGuests[hostname], \
-            allowedVirtualGuests[hostname], replicationStatus,  \
-            replicationPartners \
-        ]&amp;quot;
+        # Broken up like this to look &#39;good&#39; on softlayer.github.io
+        self.objectMask = &amp;quot;mask[&amp;quot;
+            &amp;quot;id, username, capacityGb, bytesUsed,&amp;quot;
+            &amp;quot;serviceResource[datacenter[name]],&amp;quot;
+            &amp;quot;serviceResourceBackendIpAddress, &amp;quot; 
+            &amp;quot;activeTransactionCount, &amp;quot;
+            &amp;quot;fileNetworkMountAddress, &amp;quot;
+            &amp;quot;snapshots[id,createDate], &amp;quot;
+            &amp;quot;hourlySchedule, &amp;quot; 
+            &amp;quot;allowedReplicationVirtualGuests[hostname], &amp;quot;
+            &amp;quot;allowedVirtualGuests[hostname], &amp;quot;
+            &amp;quot;replicationStatus, replicationPartners]&amp;quot;
 
     def orderStorage(self):
         &amp;quot;&amp;quot;&amp;quot;
-        For more information on the magic of storage ordering see the following
-        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py
-        https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py
-        This will order endurance storasge in HOU02, with 20G in size, and the 0.25IOPS/GB tier
+
+        This will order endurance storage in HOU02 
+        with 20G in size, and the 0.25IOPS/GB tier
         0.25, 2, 4 and 10 iops/g are tiers available. 
         &amp;quot;&amp;quot;&amp;quot;
         result = self.mgr.order_file_volume(
@@ -99,11 +119,12 @@ class example():
         # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
         result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=240)
         for item in result[&#39;items&#39;]:
-            print str(item[&#39;id&#39;]) + &amp;quot; - &amp;quot; + item[&#39;description&#39;] + &amp;quot; --- &amp;quot; + item[&#39;keyName&#39;]
+            print(&amp;quot;%s - %s - %s&amp;quot; % 
+                (str(item[&#39;id&#39;]), item[&#39;description&#39;], item[&#39;keyName&#39;]) 
             # pp(item)
             for prices in item[&#39;prices&#39;]:
                 if prices[&#39;locationGroupId&#39;] is  &#39;&#39;:
-                    print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;]) + &amp;quot; TIER + &amp;quot; +  str(prices.get(&#39;capacityRestrictionMaximum&#39;,&amp;quot;??&amp;quot;))
+                    print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;])
                 # pp(prices)
 
     def listStorage(self):
@@ -132,36 +153,31 @@ class example():
                 }
             }
         }
-        result = self.client[&#39;Account&#39;].getNasNetworkStorage(mask=objectMask,filter=self.objectMask)
+        result = self.client[&#39;Account&#39;].getNasNetworkStorage(
+            mask=self.objectMask,filter=objectFilter)
         pp(result)
 
     def authHost(self, volume_id, host_id):
-        &amp;quot;&amp;quot;&amp;quot;
-        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
-        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
-        &amp;quot;&amp;quot;&amp;quot;
+
         guest = {
             &#39;id&#39;: host_id
         }
         self.storage.allowAccessFromVirtualGuest(guest, id=volume_id)
 
     def authReplicant(self, volume_id, host_id):
-        &amp;quot;&amp;quot;&amp;quot;
-        Need to use appropriate method if you want to allow a hardware server, or ip/subnet etc. See the 
-        http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/ allowAccessFrom* methods
-        &amp;quot;&amp;quot;&amp;quot;
+
         guest = {
             &#39;id&#39;: host_id
         }
         self.storage.allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
 
     def createSnapSchedule(self, volume_id):
-        # http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots
+        # 
         # HOURLY, 24 copies, first minute of the hour. 
-        self.client[&#39;SoftLayer_Network_Storage&#39;].enableSnapshots(&#39;HOURLY&#39;, 24, 1,0,0, id=volume_id)
+        self.storage.enableSnapshots(&#39;HOURLY&#39;, 24, 1, 0, 0, id=volume_id)
 
     def manualSnap(self, volume_id):
-        self.storage.createSnapshot(&#39;Manul SNAP&#39;, id=volume_id)
+        self.storage.createSnapshot(&#39;Manual SNAP&#39;, id=volume_id)
 
     def getReplicantId(self, volume_id):
         &amp;quot;&amp;quot;&amp;quot;
@@ -242,6 +258,61 @@ if __name__ == &amp;quot;__main__&amp;quot;:
 &lt;ul&gt;
 &lt;li&gt;Added some backend code to help automation issues related to sending automated password reset emails.&lt;/li&gt;
 &lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Subnets and Bandwidth Pools</title>
+      <link>https://softlayer.github.io/python/bandwidthPoolsAndSubnets/</link>
+      <pubDate>Thu, 16 Feb 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/bandwidthPoolsAndSubnets/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+    def getPublicSubnets(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        subnet types
+        SECONDARY_ON_VLAN = Portable IPs
+        PRIMARY
+        SUBNET_ON_VLAN = static subnets
+        PRIMARY_6
+        STATIC_IP_ROUTED
+        GLOBAL_IP
+        ADDITIONAL_PRIMARY
+        &amp;quot;&amp;quot;&amp;quot;
+        object_filter = {
+            &#39;publicSubnets&#39; : {
+                &#39;subnetType&#39; : {
+                    &#39;operation&#39;: &#39;SECONDARY_ON_VLAN&#39;
+                }
+            }
+        }
+
+        subnets = self.client[&#39;Account&#39;].getPublicSubnets(filter=object_filter)
+        pp(subnets)
+
+    def getBandwidthPools(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        bareMetalInstances and privateNetworkOnlyHardware
+        may need to be included in the mask if applicable. 
+        &amp;quot;&amp;quot;&amp;quot;
+        mask = &amp;quot;mask[hardware,virtualGuests]&amp;quot;
+        pool = self.client[&#39;Account&#39;].getVirtualDedicatedRacks(mask=mask)
+        pp(pool)
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.getBandwidthPools()
+    main.getPublicSubnets()
+&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     
@@ -580,91 +651,6 @@ class orderNetscaler():
 if __name__ == &amp;quot;__main__&amp;quot;:
     main = example()
     main.main()
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Get a list of Virtual Guests and Bare Metal servers per Pod in a Datacenter</title>
-      <link>https://softlayer.github.io/python/listByPod/</link>
-      <pubDate>Fri, 18 Nov 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/listByPod/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-import pprint
-from prettytable import PrettyTable
-
-client = SoftLayer.Client()
-
-# Define datacenter e.g: dal05, dal09, ams01, sao01, etc
-datacenter = &#39;dal10&#39;
-
-# Declare a new API service objects for SoftLayer_Account
-accountClient = client[&#39;SoftLayer_Account&#39;]
-
-# Define objectMask and objectFilters to get additional information
-objectMask = &#39;mask[primaryNetworkComponent[router[hostname]]]&#39;
-objectFilterBms = {&amp;quot;hardware&amp;quot;: {&amp;quot;datacenter&amp;quot;: {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: datacenter}}}}
-objectFilterVsi = {&amp;quot;virtualGuests&amp;quot;: {&amp;quot;datacenter&amp;quot;: {&amp;quot;name&amp;quot;: {&amp;quot;operation&amp;quot;: datacenter}}}}
-
-# Define array to add pods
-pods = []
-
-try:
-    # Getting servers and vsis
-    servers = accountClient.getHardware(mask=objectMask, filter=objectFilterBms)
-    vsis = accountClient.getVirtualGuests(mask=objectMask, filter=objectFilterVsi)
-
-    # Getting pods from servers
-    for server in servers:
-        if server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;] not in pods:
-            pods.append(server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;])
-    for vsi in vsis:
-        if vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;] not in pods:
-            pods.append(vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;])
-    # Printing servers according pods
-    for pod in pods:
-        table = []
-        tableDetails = PrettyTable([&#39;POD&#39;, &#39;Server Id&#39;, &#39;Hostname&#39;, &#39;Domain&#39;, &#39;Type&#39;])
-        print(&amp;quot;POD: %s &amp;quot; % pod)
-        for server in servers:
-            if pod in server[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;]:
-                tableDetails.add_row([pod, server[&#39;id&#39;], server[&#39;hostname&#39;], server[&#39;domain&#39;], &#39;Hardware&#39;])
-        for vsi in vsis:
-            if pod in vsi[&#39;primaryNetworkComponent&#39;][&#39;router&#39;][&#39;hostname&#39;]:
-                tableDetails.add_row([pod, vsi[&#39;id&#39;], vsi[&#39;hostname&#39;], vsi[&#39;domain&#39;], &#39;Virtual Guest&#39;])
-        print(tableDetails)
-
-except SoftLayer.SoftLayerAPIError as e:
-    print(&amp;quot;Error. &amp;quot; % (e.faultCode, e.faultString))
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Output&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;POD: fcr01a.dal10
-+--------------+-----------+-----------------+------------------------------+---------------+
-|     POD      | Server Id |     Hostname    |            Domain            |      Type     |
-+--------------+-----------+-----------------+------------------------------+---------------+
-| fcr01a.dal10 |  xxxxxxx  | foundationtest0 |         vmonic.local         |    Hardware   |
-| fcr01a.dal10 |  xxxxxxx  | foundationtest1 |         vmonic.local         |    Hardware   |
-| fcr01a.dal10 |  xxxxxxx  | foundationtest2 |         vmonic.local         |    Hardware   |
-| fcr01a.dal10 |  xxxxxxx  | foundationtest3 |         vmonic.local         |    Hardware   |
-| fcr01a.dal10 |  xxxxxxx  |   sethjannygpu  |         example.com          |    Hardware   |
-| fcr01a.dal10 |  xxxxxxx  |  vayatta-tester |         example.com          |    Hardware   |
-| fcr01a.dal10 |  xxxxxxx  |  foundationtVW  | foundationtest.vsphere.local | Virtual Guest |
-| fcr01a.dal10 |  xxxxxxx  |     jrh-oel     |         example.com          | Virtual Guest |
-| fcr01a.dal10 |  xxxxxxx  |   sa.blmx.cli   |         example.com          | Virtual Guest |
-+--------------+-----------+-----------------+------------------------------+---------------+
-POD: fcr02a.dal10
-+--------------+-----------+--------------+--------------------+---------------+
-|     POD      | Server Id |   Hostname   |       Domain       |      Type     |
-+--------------+-----------+--------------+--------------------+---------------+
-| fcr02a.dal10 |  xxxxxxx  |  jrh-quanta  |      example.com   |    Hardware   |
-| fcr02a.dal10 |  xxxxxxx  | msebastian1  |      example.com   | Virtual Guest |
-| fcr02a.dal10 |  xxxxxxx  |  privdal10   |      example.com   | Virtual Guest |
-| fcr02a.dal10 |  xxxxxxx  |   pubdal10   |      example.com   | Virtual Guest |
-| fcr02a.dal10 |  xxxxxxx  | userdatatest |      example.com   | Virtual Guest |
-+--------------+-----------+--------------+--------------------+---------------+
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
