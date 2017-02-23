@@ -92,7 +92,40 @@ ga('send', 'pageview');
 
 <div class="container">
     <div class="row">
-		<div class="col-md-9">
+    
+        <div class="col-md-3">
+            <div style="word-wrap: break-word;"> 
+                <h4>February 21, 2017<br></h4>
+            </div>
+        </div>
+        <div class="col-md-9">
+
+                <strong>Classes <span class="fa fa-book"/></strong>
+                
+                    <a class="label label-primary" href="https://softlayer.github.io/classes/softlayer_network_storage">SoftLayer_Network_Storage</a>
+                
+                <br>
+                <strong>Tags <span class="fa fa-tags"/></strong>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/endurance">endurance</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/replication">replication</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/snapshot">snapshot</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/storage">storage</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/objectfilter">objectFilter</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/objectmask">objectMask</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/enablesnapshots">enableSnapshots</a>
+                          
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+		<div class="col-md-12">
             <div class="well well-sm release-note" style="word-wrap: break-word;">
 				<h3>Endurance Storage Replication<br> <small>Examples on ordering, snapshots, and replication for endurance storage. </small></h3>
 				
@@ -121,6 +154,15 @@ ga('send', 'pageview');
 <li><a href="http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/</a></li>
 </ul>
 
+<p>Graceful vs Immediate failover</p>
+
+<ul>
+<li><a href="http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant</a></li>
+<li><a href="http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant</a></li>
+</ul>
+
+<p>Failback is always immediate.</p>
+
 <pre><code>&quot;&quot;&quot;
 @package examples 
 @author Christopher Gallo
@@ -144,22 +186,15 @@ class example():
         self.mgr = SoftLayer.FileStorageManager(self.client)
         # Broken up like this to look 'good' on softlayer.github.io
         self.objectMask = &quot;mask[&quot;
-            &quot;id, username, capacityGb, bytesUsed,&quot;
-            &quot;serviceResource[datacenter[name]],&quot;
-            &quot;serviceResourceBackendIpAddress, &quot; 
-            &quot;activeTransactionCount, &quot;
-            &quot;fileNetworkMountAddress, &quot;
-            &quot;snapshots[id,createDate], &quot;
-            &quot;hourlySchedule, &quot; 
-            &quot;allowedReplicationVirtualGuests[hostname], &quot;
-            &quot;allowedVirtualGuests[hostname], &quot;
+            &quot;id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], &quot;
+            &quot;serviceResourceBackendIpAddress, activeTransactionCount, &quot;
+            &quot;fileNetworkMountAddress, snapshots[id,createDate], hourlySchedule, &quot; 
+            &quot;allowedReplicationVirtualGuests[hostname], allowedVirtualGuests[hostname], &quot;
             &quot;replicationStatus, replicationPartners]&quot;
 
     def orderStorage(self):
         &quot;&quot;&quot;
-
-        This will order endurance storage in HOU02 
-        with 20G in size, and the 0.25IOPS/GB tier
+        This will order endurance storage in HOU02 with 20G in size, and the 0.25IOPS/GB tier
         0.25, 2, 4 and 10 iops/g are tiers available. 
         &quot;&quot;&quot;
         result = self.mgr.order_file_volume(
@@ -212,13 +247,15 @@ class example():
                 # pp(prices)
 
     def listStorage(self):
+    &quot;&quot;&quot;
+    Super complicated objectFilter. Mostly here as an example of how to do an IN filter.
+    Returns all storage that is in DAL06, HOU02, is NOT NAS, and is Endurance_File_Storage
+    &quot;&quot;&quot;
         objectFilter = {
             'nasNetworkStorage': {
                 'serviceResource': {
                     'type': {
-                        'type': {
-                            'operation': '!~ NAS'
-                        }
+                        'type': {'operation': '!~ NAS'}
                     },
                     'datacenter': {
                         'name': {
@@ -231,9 +268,7 @@ class example():
                     }
                 },
                 'storageType': {
-                    'keyName': {
-                        'operation': 'ENDURANCE_FILE_STORAGE'
-                    }
+                    'keyName': {'operation': 'ENDURANCE_FILE_STORAGE'}
                 }
             }
         }
@@ -242,21 +277,26 @@ class example():
         pp(result)
 
     def authHost(self, volume_id, host_id):
-
+    &quot;&quot;&quot;
+    each host that needs to mount the volume needs to be authorized.
+    host and volume need to be in the same DC
+    &quot;&quot;&quot;
         guest = {
             'id': host_id
         }
         self.storage.allowAccessFromVirtualGuest(guest, id=volume_id)
 
     def authReplicant(self, volume_id, host_id):
-
+    &quot;&quot;&quot;
+    each host that needs to mount the REPLICANT needs to be authorized.
+    host and volume need to be in the same DC
+    &quot;&quot;&quot;
         guest = {
             'id': host_id
         }
         self.storage.allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
 
     def createSnapSchedule(self, volume_id):
-        # 
         # HOURLY, 24 copies, first minute of the hour. 
         self.storage.enableSnapshots('HOURLY', 24, 1, 0, 0, id=volume_id)
 
@@ -272,12 +312,16 @@ class example():
         return result[0]['id']
         
 
-    def houIsDown(self, volume_id):
+    def houIsDown(self, volume_id, now=False):
+
         replicate_to = main.getReplicantId(volume_id)
-        self.storage.failoverToReplicant(replicate_to, id=volume_id)
+        if now:
+            self.storage.immediateFailoverToReplicant(replicate_to, id=volume_id)
+        else
+            self.storage.failoverToReplicant(replicate_to, id=volume_id)
 
     def houIsBack(self, volume_id):
-        self.storage.failbackFromReplicant(id=volume_id)
+        self.storage.failbackFromReplicant(id=volume_id,now=False)
 
     def volumeStatus(self, volume_id):
         result = self.storage.getObject(mask=self.objectMask, id=volume_id)
@@ -285,7 +329,12 @@ class example():
 
 
 if __name__ == &quot;__main__&quot;:
+&quot;&quot;&quot;
+Covers each of the steps required to create a storage volume, and then fail it over.
+The ordering methods will need to be slightly modified for block storage. 
+everything else should be good as is.
 
+&quot;&quot;&quot;
 
     host_a = 25206857
     host_b = 28630647
@@ -294,22 +343,31 @@ if __name__ == &quot;__main__&quot;:
     ### First we need to order a storage volume, and get its ID.
     # main.orderStorage()
     volume_id = 20017773
+
     ### Then we need to order snapshot space
     # main.orderSnapshot(volume_id)
+
     ### Then create a snapshot schedule.
     # main.createSnapSchedule(volume_id)
+
     ### Then Allow our host to access the volume
     # main.authHost(volume_id, [host_a])
+
     ### Create a manual snapshot for fun 
     # main.manualSnap(volume_id)
+
     ### Order replication space.
     # main.orderReplicant(volume_id, 'HOURLY')
+
     ### Allow our vm to access replicant volume
     # main.authReplicant(volume_id,host_b)
+
     ### Failover to replicant
     # main.houIsDown(volume_id)
+
     ### Failback to main
     # main.houIsBack(volume_id)
+
     ### Get some status
     # main.volumeStatus(volume_id)
 
@@ -317,37 +375,12 @@ if __name__ == &quot;__main__&quot;:
 
             </div>
         </div>
-        
-        <div class="col-md-3">
-            <div class="well well-sm" style="word-wrap: break-word;"> 
-                <h4>February 21, 2017<br>
-                </h4>
-                <hr>
-                <strong>Classes</strong>
-                <ul class="list-unstyled">
-                
-                    <li><a href="https://softlayer.github.io/classes/softlayer_network_storage">SoftLayer_Network_Storage</a></li>
-                
-                </ul>
-                <hr>
-                <strong>Tags <span class="fa fa-tags"/></strong><br>
-                <a class="label label-default" href="https://softlayer.github.io/tags/endurance">endurance</a>
-                 <a class="label label-default" href="https://softlayer.github.io/tags/replication">replication</a>
-                 <a class="label label-default" href="https://softlayer.github.io/tags/snapshot">snapshot</a>
-                 <a class="label label-default" href="https://softlayer.github.io/tags/storage">storage</a>
-                 <a class="label label-default" href="https://softlayer.github.io/tags/objectfilter">objectFilter</a>
-                 <a class="label label-default" href="https://softlayer.github.io/tags/objectmask">objectMask</a>
-                 <a class="label label-default" href="https://softlayer.github.io/tags/enablesnapshots">enableSnapshots</a>
-                 
-                <hr>
-                <strong>Feedback? <span class="fa fa-comment"/></strong>
-                    <p>
-                        We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Endurance%20Storage%20Replication&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2fEnduranceReplication%2f"><span class="fa fa-github-square"/> Open an issue</a>
-                    </p>
-                    
-                
-            </div>
+
+    </div>
+    <hr>
+    <div class="row">
+            
+        <div class="col-md-6">
             
 <div class="panel panel-default">
     <div class="panel-heading" style="padding: 2px 15px;">
@@ -374,6 +407,16 @@ if __name__ == &quot;__main__&quot;:
 </div>
 
         </div>
+        <div class="col-md-6">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Endurance%20Storage%20Replication&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2fEnduranceReplication%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+            </div>
+        </div>
+
     </div>
         <footer>
             <div class="row">

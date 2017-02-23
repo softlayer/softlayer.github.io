@@ -6,7 +6,35 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Tue, 21 Feb 2017 00:00:00 UTC</updated>
+    <updated>Thu, 23 Feb 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Release notes: February 23, 2017</title>
+      <link>https://softlayer.github.io/release_notes/20170223/</link>
+      <pubDate>Thu, 23 Feb 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/release_notes/20170223/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Portal Exception message was unclear when a user without &amp;lsquo;ticket add&amp;rsquo; and &amp;lsquo;ticket view&amp;rsquo; permissions tried to create an upgrade order. New change accurately indicates that the user must have these two permissions in order to create an upgrade order.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;None&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Fixed two separate bugs in Endurance and Performance Storage provisioning where provisions were stalling due to API call timeout.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Endurance Storage Replication</title>
@@ -37,6 +65,15 @@
 &lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
+&lt;p&gt;Graceful vs Immediate failover&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Failback is always immediate.&lt;/p&gt;
+
 &lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
 @package examples 
 @author Christopher Gallo
@@ -60,22 +97,15 @@ class example():
         self.mgr = SoftLayer.FileStorageManager(self.client)
         # Broken up like this to look &#39;good&#39; on softlayer.github.io
         self.objectMask = &amp;quot;mask[&amp;quot;
-            &amp;quot;id, username, capacityGb, bytesUsed,&amp;quot;
-            &amp;quot;serviceResource[datacenter[name]],&amp;quot;
-            &amp;quot;serviceResourceBackendIpAddress, &amp;quot; 
-            &amp;quot;activeTransactionCount, &amp;quot;
-            &amp;quot;fileNetworkMountAddress, &amp;quot;
-            &amp;quot;snapshots[id,createDate], &amp;quot;
-            &amp;quot;hourlySchedule, &amp;quot; 
-            &amp;quot;allowedReplicationVirtualGuests[hostname], &amp;quot;
-            &amp;quot;allowedVirtualGuests[hostname], &amp;quot;
+            &amp;quot;id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], &amp;quot;
+            &amp;quot;serviceResourceBackendIpAddress, activeTransactionCount, &amp;quot;
+            &amp;quot;fileNetworkMountAddress, snapshots[id,createDate], hourlySchedule, &amp;quot; 
+            &amp;quot;allowedReplicationVirtualGuests[hostname], allowedVirtualGuests[hostname], &amp;quot;
             &amp;quot;replicationStatus, replicationPartners]&amp;quot;
 
     def orderStorage(self):
         &amp;quot;&amp;quot;&amp;quot;
-
-        This will order endurance storage in HOU02 
-        with 20G in size, and the 0.25IOPS/GB tier
+        This will order endurance storage in HOU02 with 20G in size, and the 0.25IOPS/GB tier
         0.25, 2, 4 and 10 iops/g are tiers available. 
         &amp;quot;&amp;quot;&amp;quot;
         result = self.mgr.order_file_volume(
@@ -128,13 +158,15 @@ class example():
                 # pp(prices)
 
     def listStorage(self):
+    &amp;quot;&amp;quot;&amp;quot;
+    Super complicated objectFilter. Mostly here as an example of how to do an IN filter.
+    Returns all storage that is in DAL06, HOU02, is NOT NAS, and is Endurance_File_Storage
+    &amp;quot;&amp;quot;&amp;quot;
         objectFilter = {
             &#39;nasNetworkStorage&#39;: {
                 &#39;serviceResource&#39;: {
                     &#39;type&#39;: {
-                        &#39;type&#39;: {
-                            &#39;operation&#39;: &#39;!~ NAS&#39;
-                        }
+                        &#39;type&#39;: {&#39;operation&#39;: &#39;!~ NAS&#39;}
                     },
                     &#39;datacenter&#39;: {
                         &#39;name&#39;: {
@@ -147,9 +179,7 @@ class example():
                     }
                 },
                 &#39;storageType&#39;: {
-                    &#39;keyName&#39;: {
-                        &#39;operation&#39;: &#39;ENDURANCE_FILE_STORAGE&#39;
-                    }
+                    &#39;keyName&#39;: {&#39;operation&#39;: &#39;ENDURANCE_FILE_STORAGE&#39;}
                 }
             }
         }
@@ -158,21 +188,26 @@ class example():
         pp(result)
 
     def authHost(self, volume_id, host_id):
-
+    &amp;quot;&amp;quot;&amp;quot;
+    each host that needs to mount the volume needs to be authorized.
+    host and volume need to be in the same DC
+    &amp;quot;&amp;quot;&amp;quot;
         guest = {
             &#39;id&#39;: host_id
         }
         self.storage.allowAccessFromVirtualGuest(guest, id=volume_id)
 
     def authReplicant(self, volume_id, host_id):
-
+    &amp;quot;&amp;quot;&amp;quot;
+    each host that needs to mount the REPLICANT needs to be authorized.
+    host and volume need to be in the same DC
+    &amp;quot;&amp;quot;&amp;quot;
         guest = {
             &#39;id&#39;: host_id
         }
         self.storage.allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
 
     def createSnapSchedule(self, volume_id):
-        # 
         # HOURLY, 24 copies, first minute of the hour. 
         self.storage.enableSnapshots(&#39;HOURLY&#39;, 24, 1, 0, 0, id=volume_id)
 
@@ -188,12 +223,16 @@ class example():
         return result[0][&#39;id&#39;]
         
 
-    def houIsDown(self, volume_id):
+    def houIsDown(self, volume_id, now=False):
+
         replicate_to = main.getReplicantId(volume_id)
-        self.storage.failoverToReplicant(replicate_to, id=volume_id)
+        if now:
+            self.storage.immediateFailoverToReplicant(replicate_to, id=volume_id)
+        else
+            self.storage.failoverToReplicant(replicate_to, id=volume_id)
 
     def houIsBack(self, volume_id):
-        self.storage.failbackFromReplicant(id=volume_id)
+        self.storage.failbackFromReplicant(id=volume_id,now=False)
 
     def volumeStatus(self, volume_id):
         result = self.storage.getObject(mask=self.objectMask, id=volume_id)
@@ -201,7 +240,12 @@ class example():
 
 
 if __name__ == &amp;quot;__main__&amp;quot;:
+&amp;quot;&amp;quot;&amp;quot;
+Covers each of the steps required to create a storage volume, and then fail it over.
+The ordering methods will need to be slightly modified for block storage. 
+everything else should be good as is.
 
+&amp;quot;&amp;quot;&amp;quot;
 
     host_a = 25206857
     host_b = 28630647
@@ -210,22 +254,31 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     ### First we need to order a storage volume, and get its ID.
     # main.orderStorage()
     volume_id = 20017773
+
     ### Then we need to order snapshot space
     # main.orderSnapshot(volume_id)
+
     ### Then create a snapshot schedule.
     # main.createSnapSchedule(volume_id)
+
     ### Then Allow our host to access the volume
     # main.authHost(volume_id, [host_a])
+
     ### Create a manual snapshot for fun 
     # main.manualSnap(volume_id)
+
     ### Order replication space.
     # main.orderReplicant(volume_id, &#39;HOURLY&#39;)
+
     ### Allow our vm to access replicant volume
     # main.authReplicant(volume_id,host_b)
+
     ### Failover to replicant
     # main.houIsDown(volume_id)
+
     ### Failback to main
     # main.houIsBack(volume_id)
+
     ### Get some status
     # main.volumeStatus(volume_id)
 
@@ -602,56 +655,6 @@ pp(getDetails)
 &lt;ul&gt;
 &lt;li&gt;None&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order a Netscaler</title>
-      <link>https://softlayer.github.io/python/orderNetscaler/</link>
-      <pubDate>Tue, 29 Nov 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/orderNetscaler/</guid>
-      <description>&lt;pre&gt;&lt;code&gt;import SoftLayer
-from pprint import pprint as pp
-
-class orderNetscaler():
-
-    def __init__(self):
-
-        self.client = SoftLayer.Client()
-
-    def main(self):
-
-        productOrder = {
-        &#39;orderContainers&#39;: [
-            {&amp;quot;hardware&amp;quot;: [{
-                &amp;quot;primaryBackendNetworkComponent&amp;quot;: {
-                    # REPLACE THIS
-                    &amp;quot;networkVlanId&amp;quot;: 1234
-                },
-                &amp;quot;primaryNetworkComponent&amp;quot;: {
-                    # REPLACE THIS
-                    &amp;quot;networkVlanId&amp;quot;: 456
-                }
-            }],
-            # REPLACE THIS with your location
-            &amp;quot;location&amp;quot;: &amp;quot;DALLAS09&amp;quot;,
-            &amp;quot;packageId&amp;quot;: 192,
-            &amp;quot;quantity&amp;quot;: 1,
-            # Price IDS for Netscaler and 2 IPs
-            &amp;quot;prices&amp;quot;: [
-                {&amp;quot;id&amp;quot;: 44964},
-                {&amp;quot;id&amp;quot;: 17238}
-            ]
-        }]
-        }
-        order = self.client[&#39;Product_Order&#39;].placeOrder(productOrder)
-        pp(order)
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = example()
-    main.main()
-&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     
