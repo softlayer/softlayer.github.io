@@ -9,6 +9,161 @@
     <updated>Mon, 01 Jan 0001 00:00:00 UTC</updated>
     
     <item>
+      <title>Network Topology</title>
+      <link>https://softlayer.github.io/python/networkTopology/</link>
+      <pubDate>Fri, 17 Mar 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/networkTopology/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+
+    def main(self):
+
+        mask = &amp;quot;&amp;quot;&amp;quot;
+            mask[attachedNetworkGateway[publicVlan,privateVlan],hardware[fullyQualifiedDomainName],
+            network,networkSpace,primaryRouter[hostname],primarySubnet,subnets[networkIdentifier],virtualGuests[fullyQualifiedDomainName]
+            ]
+        &amp;quot;&amp;quot;&amp;quot;
+        orderedVlans = {}
+        result = self.client[&#39;SoftLayer_Account&#39;].getNetworkVlans(mask=mask)
+
+        &amp;quot;&amp;quot;&amp;quot;
+        This bit builds a nicely structured object of the network topology
+        &amp;quot;&amp;quot;&amp;quot;
+        for vlan in result:
+            vlanNumber = vlan[&#39;vlanNumber&#39;]
+            router,dc  = vlan[&#39;primaryRouter&#39;][&#39;hostname&#39;].split(&amp;quot;.&amp;quot;)
+            if dc not in orderedVlans:
+                orderedVlans[dc] = {}
+            if router not in orderedVlans[dc]:
+                orderedVlans[dc][router] = {}
+
+
+            toAppend = {
+                &#39;hardware&#39;: vlan[&#39;hardware&#39;],
+                &#39;virtualGuests&#39;: vlan[&#39;virtualGuests&#39;],
+                &#39;subnets&#39;: vlan[&#39;subnets&#39;]
+
+            }
+
+            if &#39;attachedNetworkGateway&#39; in vlan:
+                if vlan[&#39;networkSpace&#39;] == &#39;PUBLIC&#39;:
+                    gatewayVlan = vlan[&#39;attachedNetworkGateway&#39;][&#39;publicVlan&#39;][&#39;vlanNumber&#39;]
+                elif vlan[&#39;networkSpace&#39;] == &#39;PRIVATE&#39;:
+                    gatewayVlan = vlan[&#39;attachedNetworkGateway&#39;][&#39;privateVlan&#39;][&#39;vlanNumber&#39;]
+                if gatewayVlan not in orderedVlans[dc][router]:
+                    orderedVlans[dc][router][gatewayVlan] = {}
+                orderedVlans[dc][router][gatewayVlan][vlanNumber] = toAppend
+                orderedVlans[dc][router][gatewayVlan][&#39;gateway&#39;] = True
+            else:
+                orderedVlans[dc][router][vlanNumber] = toAppend
+
+        &amp;quot;&amp;quot;&amp;quot;
+        This bit prints out everything nicely-ish.
+        &amp;quot;&amp;quot;&amp;quot;
+        for dc in orderedVlans:
+            print(&amp;quot;DC: %s&amp;quot; % dc)
+            for router in orderedVlans[dc]:
+                print(&amp;quot;\tRouter: %s&amp;quot; % router)
+                for vlan in orderedVlans[dc][router]:
+                    if &#39;gateway&#39; in orderedVlans[dc][router][vlan]:
+                        print(&amp;quot;\t\tGATEWAY VLAN: %s&amp;quot; % vlan )
+                        for vlanInner in orderedVlans[dc][router][vlan]:
+
+                            if isinstance(vlanInner, int):
+                                print(&amp;quot;\t\t\tVLAN: %s&amp;quot; % vlanInner )
+                                if len(orderedVlans[dc][router][vlan][vlanInner][&#39;hardware&#39;]):
+                                    print(&amp;quot;\t\t\t  ==SERVERS==&amp;quot;)
+                                    for hardware in orderedVlans[dc][router][vlan][vlanInner][&#39;hardware&#39;]:
+                                        print(&amp;quot;\t\t\t\t%s&amp;quot; % hardware[&#39;fullyQualifiedDomainName&#39;])
+                                if len(orderedVlans[dc][router][vlan][vlanInner][&#39;virtualGuests&#39;]):
+                                    print(&amp;quot;\t\t\t  ==VIRTUAL SERVERS==&amp;quot;)
+                                    for virtualGuest in orderedVlans[dc][router][vlan][vlanInner][&#39;virtualGuests&#39;]:
+                                        print(&amp;quot;\t\t\t\t%s&amp;quot; % virtualGuest[&#39;fullyQualifiedDomainName&#39;])
+                                if len(orderedVlans[dc][router][vlan][vlanInner][&#39;subnets&#39;]):
+                                    print(&amp;quot;\t\t\t  ==SUBNETS==&amp;quot;)
+                                    for subnet in orderedVlans[dc][router][vlan][vlanInner][&#39;subnets&#39;]:
+                                        print(&amp;quot;\t\t\t\t%s&amp;quot; % subnet[&#39;networkIdentifier&#39;])
+                    else:
+                        print(&amp;quot;\t\tVLAN: %s&amp;quot; % vlan )
+
+                    if len(orderedVlans[dc][router][vlan][&#39;hardware&#39;]):
+                        print(&amp;quot;\t\t  ==SERVERS==&amp;quot;)
+                        for hardware in orderedVlans[dc][router][vlan][&#39;hardware&#39;]:
+                            print(&amp;quot;\t\t\t%s&amp;quot; % hardware[&#39;fullyQualifiedDomainName&#39;])
+                    if len(orderedVlans[dc][router][vlan][&#39;virtualGuests&#39;]):
+                        print(&amp;quot;\t\t  ==VIRTUAL SERVERS==&amp;quot;)
+                        for vm in orderedVlans[dc][router][vlan][&#39;virtualGuests&#39;]:
+                            print(&amp;quot;\t\t\t%s&amp;quot; % vm[&#39;fullyQualifiedDomainName&#39;])
+                    if len(orderedVlans[dc][router][vlan][&#39;subnets&#39;]):
+                        print(&amp;quot;\t\t  ==SUBNETS==&amp;quot;)
+                        for subnet in orderedVlans[dc][router][vlan][&#39;subnets&#39;]:
+                            print(&amp;quot;\t\t\t%s&amp;quot; % subnet[&#39;networkIdentifier&#39;])
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Output:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;DC: sjc03
+    Router: bcr02a
+        VLAN: 904
+          ==VIRTUAL SERVERS==
+            jrh-jump.poc.engineering
+          ==SUBNETS==
+            10.168.140.0
+    Router: bcr01a
+        GATEWAY VLAN: 1436
+            VLAN: 1440
+              ==SERVERS==
+                jd-test-5600-srv.secore.com
+                jd-cos-testing-sjc03.secore.com
+              ==SUBNETS==
+                10.161.111.64
+          ==SERVERS==
+            jd-5600-test.secore.com
+          ==SUBNETS==
+            10.161.110.0
+    Router: fcr02a
+        VLAN: 857
+          ==VIRTUAL SERVERS==
+            jrh-jump.poc.engineering
+          ==SUBNETS==
+            169.44.183.224
+    Router: fcr01a
+        VLAN: 1296
+          ==SERVERS==
+            jd-test-5600-srv.secore.com
+            jd-cos-testing-sjc03.secore.com
+          ==SUBNETS==
+            169.45.115.16
+            2607:f0d0:2601:00cc:0000:0000:0000:0000
+        VLAN: 1273
+          ==SERVERS==
+            jd-5600-test.secore.com
+          ==SUBNETS==
+            169.44.136.64
+            2607:f0d0:2601:0065:0000:0000:0000:0000
+            2607:f0d0:2601:00ac:0000:0000:0000:0000
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Subnets and Bandwidth Pools</title>
       <link>https://softlayer.github.io/python/bandwidthPoolsAndSubnets/</link>
       <pubDate>Thu, 16 Feb 2017 00:00:00 UTC</pubDate>
@@ -823,84 +978,6 @@ print &amp;quot;Next Invoice Total: &amp;quot; . $result-&amp;gt;result . &amp;q
 &lt;p&gt;Example Response:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;250.26
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Edit IP address note</title>
-      <link>https://softlayer.github.io/python/edit_ip_note/</link>
-      <pubDate>Fri, 11 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/edit_ip_note/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-
-class example():
-
-    def __init__(self):
-        self.client = SoftLayer.Client()
-
-    def getSubnets(self):
-        subnets = self.client[&#39;SoftLayer_Account&#39;].getSubnets()
-        for subnet in subnets:
-            print(&amp;quot;%s - %s/%s - %s&amp;quot; % 
-                (   subnet[&#39;id&#39;],
-                    subnet[&#39;gateway&#39;],
-                    subnet[&#39;cidr&#39;],
-                    subnet[&#39;networkVlanId&#39;]
-                )
-            )
-
-    def getIpInSubnet(self, subnet_id):
-        mask = &amp;quot;mask[virtualGuest,hardware]&amp;quot;
-        subnet = self.client[&#39;SoftLayer_Network_Subnet&#39;]
-        ips = subnet.getIpAddresses(id=subnet_id,mask=mask)
-        for ip in ips:
-            status = &amp;quot;Free&amp;quot;
-            if ip[&#39;subnet&#39;][&#39;subnetType&#39;] == &amp;quot;PRIMARY&amp;quot;:
-                status = &amp;quot;Reserved&amp;quot;
-            elif ip[&#39;isNetwork&#39;]:
-                status = &amp;quot;Network Ip&amp;quot;
-            elif ip[&#39;isGateway&#39;]:
-                status = &amp;quot;Gateway Ip&amp;quot;
-            try: 
-                status = ip[&#39;virtualGuest&#39;][&#39;fullyQualifiedDomainName&#39;]
-            except KeyError:
-                pass
-            try:
-                status = ip[&#39;hardware&#39;][&#39;fullyQualifiedDomainName&#39;]
-            except KeyError:
-                pass
-
-            try:
-                note = ip[&#39;note&#39;]
-            except KeyError:
-                note = &amp;quot;none&amp;quot;
-            print(&amp;quot;%s: %s - %s - %s&amp;quot; % (ip[&#39;id&#39;],ip[&#39;ipAddress&#39;],status, note))
-
-    def editNote(self, ip_id, note):
-        &amp;quot;&amp;quot;&amp;quot;
-            With editObject on SoftLayer_Network_Subnet_IpAddress you can only 
-            edit the note, everything else will get ignored silently.
-        &amp;quot;&amp;quot;&amp;quot;
-        ip = {
-            &#39;id&#39;: ip_id,
-            &#39;note&#39;: note,
-        }
-        self.client[&#39;SoftLayer_Network_Subnet_IpAddress&#39;].editObject(ip,id=ip_id)
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    # CHANGE ME
-    subnet_ip = 1234
-    # CHANGE ME
-    ip_id = 4567
-    main = example()
-    # List all subnets, find the ID of the one you want to work with
-    main.getSubnets()
-    # List all the IPs and their notes, find the id of the one you want to edit
-    main.getIpInSubnet(subnet_ip)
-    # Edit the note
-    main.editNote(ip_id,&amp;quot;Hello World22&amp;quot;)
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
