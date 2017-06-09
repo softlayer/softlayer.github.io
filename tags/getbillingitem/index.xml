@@ -6,7 +6,88 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 29 Jan 2016 00:00:00 UTC</updated>
+    <updated>Fri, 09 Jun 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Get bills by user</title>
+      <link>https://softlayer.github.io/python/billsByUser/</link>
+      <pubDate>Fri, 09 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/billsByUser/</guid>
+      <description>&lt;p&gt;This is a rough script, it doesn&amp;rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in &lt;a href=&#34;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&#34;&gt;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+Goes through the next invoice. Collections billing items by the user that orderd them.
+Prints out each user and how much they caused in billing, along with what they ordered.
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+class bills():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.VSManager(self.client)
+
+    def main(self):
+
+        &amp;quot;&amp;quot;&amp;quot;
+        Not all billing items have a user record, these are collected under the master account
+        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&amp;gt; taps orderItem for
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&amp;gt; taps order for 
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&amp;gt; taps userRecord for
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
+        &amp;quot;&amp;quot;&amp;quot;
+        mask=&amp;quot;mask[orderItem[order[id,userRecord[displayName,username]]]]&amp;quot;
+        billingItems = self.client[&#39;SoftLayer_Account&#39;].getNextInvoiceTopLevelBillingItems(mask=mask)
+
+        users = {&#39;masterUser&#39;: []}
+        for item in billingItems:
+            if &#39;orderItem&#39; in item:
+                username = item[&#39;orderItem&#39;][&#39;order&#39;][&#39;userRecord&#39;][&#39;username&#39;]
+                del item[&#39;orderItem&#39;]
+                if username not in users:
+                    users[username] = []
+                users[username].append(item)
+            else:
+                users[&#39;masterUser&#39;].append(item)
+
+
+        # prints everything out, and finds the sum of items.
+        for user in users:
+            servers = []
+            everything_else = []
+            total_cost = 0
+
+            for item in users[user]:
+
+                # this doens&#39;t include Tax fees, or setup fees because I&#39;m lazy
+                cost = float(item[&#39;recurringFee&#39;]) + float(item[&#39;oneTimeFee&#39;])
+                if &#39;hostName&#39; in item:
+                    fqdn = &amp;quot;%s.%s : %s $%s&amp;quot; % (item[&#39;hostName&#39;], item[&#39;domainName&#39;], item[&#39;description&#39;], cost)
+                    servers.append(fqdn)
+                else:
+                    item = &amp;quot;%s - $%s&amp;quot; % (item[&#39;description&#39;], cost)
+                    everything_else.append(item)
+                total_cost = total_cost + cost
+            print(&amp;quot;%s - %s&amp;quot; % (user , total_cost))
+            for server in servers:
+                print(&amp;quot;\t%s&amp;quot; % server)
+            for thing in everything_else:
+                print(&amp;quot;\t%s&amp;quot; % thing)
+
+
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = bills()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Find a billing item from a provisioned product</title>

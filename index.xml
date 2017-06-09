@@ -6,7 +6,117 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 01 Jun 2017 00:00:00 UTC</updated>
+    <updated>Fri, 09 Jun 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Get bills by user</title>
+      <link>https://softlayer.github.io/python/billsByUser/</link>
+      <pubDate>Fri, 09 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/billsByUser/</guid>
+      <description>&lt;p&gt;This is a rough script, it doesn&amp;rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in &lt;a href=&#34;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&#34;&gt;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+Goes through the next invoice. Collections billing items by the user that orderd them.
+Prints out each user and how much they caused in billing, along with what they ordered.
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+class bills():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.VSManager(self.client)
+
+    def main(self):
+
+        &amp;quot;&amp;quot;&amp;quot;
+        Not all billing items have a user record, these are collected under the master account
+        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&amp;gt; taps orderItem for
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&amp;gt; taps order for 
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&amp;gt; taps userRecord for
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
+        &amp;quot;&amp;quot;&amp;quot;
+        mask=&amp;quot;mask[orderItem[order[id,userRecord[displayName,username]]]]&amp;quot;
+        billingItems = self.client[&#39;SoftLayer_Account&#39;].getNextInvoiceTopLevelBillingItems(mask=mask)
+
+        users = {&#39;masterUser&#39;: []}
+        for item in billingItems:
+            if &#39;orderItem&#39; in item:
+                username = item[&#39;orderItem&#39;][&#39;order&#39;][&#39;userRecord&#39;][&#39;username&#39;]
+                del item[&#39;orderItem&#39;]
+                if username not in users:
+                    users[username] = []
+                users[username].append(item)
+            else:
+                users[&#39;masterUser&#39;].append(item)
+
+
+        # prints everything out, and finds the sum of items.
+        for user in users:
+            servers = []
+            everything_else = []
+            total_cost = 0
+
+            for item in users[user]:
+
+                # this doens&#39;t include Tax fees, or setup fees because I&#39;m lazy
+                cost = float(item[&#39;recurringFee&#39;]) + float(item[&#39;oneTimeFee&#39;])
+                if &#39;hostName&#39; in item:
+                    fqdn = &amp;quot;%s.%s : %s $%s&amp;quot; % (item[&#39;hostName&#39;], item[&#39;domainName&#39;], item[&#39;description&#39;], cost)
+                    servers.append(fqdn)
+                else:
+                    item = &amp;quot;%s - $%s&amp;quot; % (item[&#39;description&#39;], cost)
+                    everything_else.append(item)
+                total_cost = total_cost + cost
+            print(&amp;quot;%s - %s&amp;quot; % (user , total_cost))
+            for server in servers:
+                print(&amp;quot;\t%s&amp;quot; % server)
+            for thing in everything_else:
+                print(&amp;quot;\t%s&amp;quot; % thing)
+
+
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = bills()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Release notes: June 8, 2017</title>
+      <link>https://softlayer.github.io/release_notes/2017/20170608/</link>
+      <pubDate>Thu, 08 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/release_notes/2017/20170608/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Corrected an issue in the portal where VMware ESXI 5.5 was not showing the licensing cost disclaimer on the order summary page in quotes and at checkout.&lt;/li&gt;
+&lt;li&gt;Added additional Flex pricing information and external documentation links to the Cloud Object Storage S3 order page.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Pushed code that improves the performance of &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/createSnapshot&#34;&gt;SoftLayer_Network_Storage::createSnapshot&lt;/a&gt; on Endurance and Performance volumes.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;None&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: June 1, 2017</title>
@@ -406,64 +516,6 @@ pp getDetails
 &lt;li&gt;Changed SoftLayer to IBM Bluemix in a number of automated emails and tickets.&lt;/li&gt;
 &lt;li&gt;Mass Reboot and Migrate tickets now send out the contents of the ticket updates in emails. Previously they just included links to the ticket in the customer portal.&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Show storage on all Virtual Guests</title>
-      <link>https://softlayer.github.io/ruby/listVsiBlockDeviceSizes/</link>
-      <pubDate>Mon, 03 Apr 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/listVsiBlockDeviceSizes/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-# Create a SoftLayer API client object
-client = SoftLayer::Client.new()
-
-account_service = client[&#39;SoftLayer_Account&#39;]
-
-# We will retrieve the additional information for each VSI:
-mask = &#39;mask[id,hostname,blockDevices[id,mountType,diskImage[capacity]]]&#39;
-begin
-  # getVirtualGuests() will get all the VSIs that an account has.
-  result = account_service.object_mask(mask).getVirtualGuests
-  pp result
-rescue StandardError =&amp;gt; exception
-  puts &amp;quot;Unable to  get the VSIs: #{exception}&amp;quot;
-end
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Get Notifications</title>
-      <link>https://softlayer.github.io/ruby/getNotifications/</link>
-      <pubDate>Sun, 02 Apr 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/getNotifications/</guid>
-      <description>&lt;p&gt;Retrieves all notifications that were created on January 1, 2016.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
-
-theDate = &#39;01/01/2017 01:00:00&#39;
-theFilter = {
-                &#39;startDate&#39;=&amp;gt; { 
-                    &#39;operation&#39;=&amp;gt; &#39;greaterThanDate&#39;,
-                    &#39;options&#39;=&amp;gt; [
-                        {&#39;name&#39;=&amp;gt; &#39;date&#39;, &#39;value&#39; =&amp;gt; [theDate]}
-                    ]
-                }
-            }
-
-
-
-getresults = client[&#39;SoftLayer_Notification_Occurrence_Event&#39;].getAllObjects(filter=theFilter)
-pp getresults
-&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     
