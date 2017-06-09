@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Softlayer_network_component on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/classes/softlayer_network_component/</link>
+    <language>en-US</language>
+    <author>Enthusiastic Hugo User</author>
+    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
+    <updated>Fri, 09 Jun 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Tag Vlans</title>
+      <link>https://softlayer.github.io/python/vlanTagging/</link>
+      <pubDate>Fri, 09 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/vlanTagging/</guid>
+      <description>&lt;p&gt;A rough examples of how to add vlans to servers&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+
+
+@sldn{SoftLayer_Network_Component}
+@sldn{SoftLayer_Network_Component,getNetworkVlanTrunks}
+
+@manager{hardware}
+Goes through a list of servers, add the specified vlan to each one
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+
+class testVlanTag():
+    def __init__(self):
+        &amp;quot;&amp;quot;&amp;quot;SoftLayer Client&amp;quot;&amp;quot;&amp;quot;
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.HardwareManager(self.client)    
+
+    def addVlanTrunks(self, id, vlans):
+        &amp;quot;&amp;quot;&amp;quot;
+            Adds a vlan to a network component
+            @param id ID of SoftLayer_Network_Component you want to add vlan to
+            @param vlans dictionary of vlan nubmers you want to add
+            @sldn{SoftLayer_Network_Component,addNetworkVlanTrunks}
+            @sldn{SoftLayer_Network_Component,getNetworkVlanTrunks}
+        &amp;quot;&amp;quot;&amp;quot;
+        for vlanNumber in vlans:
+            print &amp;quot;Adding vlan %s to %s&amp;quot; % (vlanNumber,id)
+            result = self.client[&#39;Network_Component&#39;].addNetworkVlanTrunks([{&#39;vlanNumber&#39;:vlanNumber}],id=id)
+            vlan = self.client[&#39;Network_Component&#39;].getNetworkVlanTrunks(id=id)
+
+
+    def main(self):
+        &amp;quot;&amp;quot;&amp;quot;
+            Runs through a list of server ids and tags them with the proper vlan
+            Does both public and private interfaces
+        &amp;quot;&amp;quot;&amp;quot;
+        &amp;quot;&amp;quot;&amp;quot;comma seperated list of ids&amp;quot;&amp;quot;&amp;quot;
+        serverIds = [14274503]
+        &amp;quot;&amp;quot;&amp;quot;comma seperated list of public vlan nubmers to tag on each server&amp;quot;&amp;quot;&amp;quot;
+        publicVlanNumbers = [1125,1110]
+        &amp;quot;&amp;quot;&amp;quot;comma seperated list of private vlan nubmers to tag on each server&amp;quot;&amp;quot;&amp;quot;
+        privateVlanNumbers = [1110]
+
+        for sid in serverIds:
+            hardware = self.mgr.get_hardware(sid)
+            privateIP = hardware[&#39;primaryBackendIpAddress&#39;]
+            print &amp;quot;Private IP is: %s&amp;quot; % (privateIP) 
+            publicIP = hardware[&#39;primaryIpAddress&#39;]
+            print &amp;quot;Public IP is: %s&amp;quot; % (publicIP)
+
+            for component in hardware[&#39;networkComponents&#39;]:
+                try:
+                    if (component[&#39;primaryIpAddress&#39;] == publicIP):
+                        continue
+                        # self.addVlanTrunks(component[&#39;id&#39;],publicVlanNumbers)
+                    elif (component[&#39;primaryIpAddress&#39;] == privateIP):
+                        self.addVlanTrunks(component[&#39;id&#39;],privateVlanNumbers)
+                    # result = self.client[&#39;Network_Component&#39;].clearNetworkVlanTrunks(id=component[&#39;id&#39;])
+                    mask = &#39;networkVlan, networkVlanTrunks, uplinkComponent[networkVlanTrunks]&#39;
+                    nic = self.client[&#39;Network_Component&#39;].getObject(id=component[&#39;id&#39;], mask=mask)
+                except KeyError:
+                    continue
+
+            print &amp;quot;Done with %s &amp;quot; % (hardware[&#39;hostname&#39;])
+            print &amp;quot;=====================================&amp;quot;  
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = testVlanTag()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

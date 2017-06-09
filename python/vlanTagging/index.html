@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>Vlan - https://softlayer.github.io/</title>
-    <link rel="canonical" href="https://softlayer.github.io/tags/vlan/">
+    <title>Tag Vlans - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/python/vlanTagging/">
     
     <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
     <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
@@ -22,7 +22,7 @@
 	<link rel="stylesheet" type="text/css"
 						href="//fonts.googleapis.com/css?family=Lato" />
 
-    <link href="https://softlayer.github.io/tags/vlan/index.xml" rel="alternate" type="application/rss+xml" title="SoftLayer API Examples" />
+    
 	<script>
 		$(document).ready(function() {
 			$('table').addClass("table table-hover table-striped")
@@ -92,33 +92,119 @@ ga('send', 'pageview');
 
 <div class="container">
     <div class="row">
+    
+        <div class="col-md-3">
+            <div style="word-wrap: break-word;"> 
+                <h4>June 9, 2017<br></h4>
+            </div>
+        </div>
         <div class="col-md-9">
-            <div class="well well-sm">
-                <strong>Items with tag <code>vlan</code></strong>
-                <ul class="list-unstyled">
-                    
-                        <h3>python</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/vlanTagging/">Tag Vlans</a>
-                            <div class="meta">Some examles of how to add vlans to a server</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/networkTopology/">Network Topology</a>
-                            <div class="meta">Prints out a rough topology of your network. DC -&gt; Router -&gt; Vlan -&gt; Server, and includes gateways if applicable</div>
-                            </li>
-                            
-                        </ul>
-                    
-                </ul>
+
+                <strong>Classes <span class="fa fa-book"/></strong>
+                
+                    <a class="label label-primary" href="https://softlayer.github.io/classes/SoftLayer_Network_Component">SoftLayer_Network_Component</a>
+                
+                <br>
+                <strong>Tags <span class="fa fa-tags"/></strong>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/vlan">vlan</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/server">server</a>
+                          
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+		<div class="col-md-12">
+            <div class="well well-sm release-note" style="word-wrap: break-word;">
+				<h3>Tag Vlans<br> <small>Some examles of how to add vlans to a server</small></h3>
+				
+                
+				
+                <p>A rough examples of how to add vlans to servers</p>
+
+<pre><code class="language-python">&quot;&quot;&quot;
+@author Christopher Gallo
+
+
+@sldn{SoftLayer_Network_Component}
+@sldn{SoftLayer_Network_Component,getNetworkVlanTrunks}
+
+@manager{hardware}
+Goes through a list of servers, add the specified vlan to each one
+&quot;&quot;&quot;
+
+import SoftLayer
+
+class testVlanTag():
+    def __init__(self):
+        &quot;&quot;&quot;SoftLayer Client&quot;&quot;&quot;
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.HardwareManager(self.client)    
+
+    def addVlanTrunks(self, id, vlans):
+        &quot;&quot;&quot;
+            Adds a vlan to a network component
+            @param id ID of SoftLayer_Network_Component you want to add vlan to
+            @param vlans dictionary of vlan nubmers you want to add
+            @sldn{SoftLayer_Network_Component,addNetworkVlanTrunks}
+            @sldn{SoftLayer_Network_Component,getNetworkVlanTrunks}
+        &quot;&quot;&quot;
+        for vlanNumber in vlans:
+            print &quot;Adding vlan %s to %s&quot; % (vlanNumber,id)
+            result = self.client['Network_Component'].addNetworkVlanTrunks([{'vlanNumber':vlanNumber}],id=id)
+            vlan = self.client['Network_Component'].getNetworkVlanTrunks(id=id)
+
+
+    def main(self):
+        &quot;&quot;&quot;
+            Runs through a list of server ids and tags them with the proper vlan
+            Does both public and private interfaces
+        &quot;&quot;&quot;
+        &quot;&quot;&quot;comma seperated list of ids&quot;&quot;&quot;
+        serverIds = [14274503]
+        &quot;&quot;&quot;comma seperated list of public vlan nubmers to tag on each server&quot;&quot;&quot;
+        publicVlanNumbers = [1125,1110]
+        &quot;&quot;&quot;comma seperated list of private vlan nubmers to tag on each server&quot;&quot;&quot;
+        privateVlanNumbers = [1110]
+
+        for sid in serverIds:
+            hardware = self.mgr.get_hardware(sid)
+            privateIP = hardware['primaryBackendIpAddress']
+            print &quot;Private IP is: %s&quot; % (privateIP) 
+            publicIP = hardware['primaryIpAddress']
+            print &quot;Public IP is: %s&quot; % (publicIP)
+
+            for component in hardware['networkComponents']:
+                try:
+                    if (component['primaryIpAddress'] == publicIP):
+                        continue
+                        # self.addVlanTrunks(component['id'],publicVlanNumbers)
+                    elif (component['primaryIpAddress'] == privateIP):
+                        self.addVlanTrunks(component['id'],privateVlanNumbers)
+                    # result = self.client['Network_Component'].clearNetworkVlanTrunks(id=component['id'])
+                    mask = 'networkVlan, networkVlanTrunks, uplinkComponent[networkVlanTrunks]'
+                    nic = self.client['Network_Component'].getObject(id=component['id'], mask=mask)
+                except KeyError:
+                    continue
+
+            print &quot;Done with %s &quot; % (hardware['hostname'])
+            print &quot;=====================================&quot;  
+
+if __name__ == &quot;__main__&quot;:
+    main = testVlanTag()
+    main.main()
+</code></pre>
+
             </div>
         </div>
 
-        
-        <div class="col-md-3">
-        
+    </div>
+    <hr>
+    <div class="row">
+            
+        <div class="col-md-6">
+            
 <div class="panel panel-default">
     <div class="panel-heading" style="padding: 2px 15px;">
         <h4>More Documentation</h4>
@@ -144,6 +230,16 @@ ga('send', 'pageview');
 </div>
 
         </div>
+        <div class="col-md-6">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Tag%20Vlans&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2fvlanTagging%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+            </div>
+        </div>
+
     </div>
         <footer>
             <div class="row">
@@ -160,3 +256,5 @@ ga('send', 'pageview');
     <script src="https://softlayer.github.io/js/bootstrap.js"></script>
 </body>
 </html>
+
+/python/vlanTagging/

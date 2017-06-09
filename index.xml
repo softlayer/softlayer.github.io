@@ -90,6 +90,89 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     </item>
     
     <item>
+      <title>Tag Vlans</title>
+      <link>https://softlayer.github.io/python/vlanTagging/</link>
+      <pubDate>Fri, 09 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/vlanTagging/</guid>
+      <description>&lt;p&gt;A rough examples of how to add vlans to servers&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+
+
+@sldn{SoftLayer_Network_Component}
+@sldn{SoftLayer_Network_Component,getNetworkVlanTrunks}
+
+@manager{hardware}
+Goes through a list of servers, add the specified vlan to each one
+&amp;quot;&amp;quot;&amp;quot;
+
+import SoftLayer
+
+class testVlanTag():
+    def __init__(self):
+        &amp;quot;&amp;quot;&amp;quot;SoftLayer Client&amp;quot;&amp;quot;&amp;quot;
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.HardwareManager(self.client)    
+
+    def addVlanTrunks(self, id, vlans):
+        &amp;quot;&amp;quot;&amp;quot;
+            Adds a vlan to a network component
+            @param id ID of SoftLayer_Network_Component you want to add vlan to
+            @param vlans dictionary of vlan nubmers you want to add
+            @sldn{SoftLayer_Network_Component,addNetworkVlanTrunks}
+            @sldn{SoftLayer_Network_Component,getNetworkVlanTrunks}
+        &amp;quot;&amp;quot;&amp;quot;
+        for vlanNumber in vlans:
+            print &amp;quot;Adding vlan %s to %s&amp;quot; % (vlanNumber,id)
+            result = self.client[&#39;Network_Component&#39;].addNetworkVlanTrunks([{&#39;vlanNumber&#39;:vlanNumber}],id=id)
+            vlan = self.client[&#39;Network_Component&#39;].getNetworkVlanTrunks(id=id)
+
+
+    def main(self):
+        &amp;quot;&amp;quot;&amp;quot;
+            Runs through a list of server ids and tags them with the proper vlan
+            Does both public and private interfaces
+        &amp;quot;&amp;quot;&amp;quot;
+        &amp;quot;&amp;quot;&amp;quot;comma seperated list of ids&amp;quot;&amp;quot;&amp;quot;
+        serverIds = [14274503]
+        &amp;quot;&amp;quot;&amp;quot;comma seperated list of public vlan nubmers to tag on each server&amp;quot;&amp;quot;&amp;quot;
+        publicVlanNumbers = [1125,1110]
+        &amp;quot;&amp;quot;&amp;quot;comma seperated list of private vlan nubmers to tag on each server&amp;quot;&amp;quot;&amp;quot;
+        privateVlanNumbers = [1110]
+
+        for sid in serverIds:
+            hardware = self.mgr.get_hardware(sid)
+            privateIP = hardware[&#39;primaryBackendIpAddress&#39;]
+            print &amp;quot;Private IP is: %s&amp;quot; % (privateIP) 
+            publicIP = hardware[&#39;primaryIpAddress&#39;]
+            print &amp;quot;Public IP is: %s&amp;quot; % (publicIP)
+
+            for component in hardware[&#39;networkComponents&#39;]:
+                try:
+                    if (component[&#39;primaryIpAddress&#39;] == publicIP):
+                        continue
+                        # self.addVlanTrunks(component[&#39;id&#39;],publicVlanNumbers)
+                    elif (component[&#39;primaryIpAddress&#39;] == privateIP):
+                        self.addVlanTrunks(component[&#39;id&#39;],privateVlanNumbers)
+                    # result = self.client[&#39;Network_Component&#39;].clearNetworkVlanTrunks(id=component[&#39;id&#39;])
+                    mask = &#39;networkVlan, networkVlanTrunks, uplinkComponent[networkVlanTrunks]&#39;
+                    nic = self.client[&#39;Network_Component&#39;].getObject(id=component[&#39;id&#39;], mask=mask)
+                except KeyError:
+                    continue
+
+            print &amp;quot;Done with %s &amp;quot; % (hardware[&#39;hostname&#39;])
+            print &amp;quot;=====================================&amp;quot;  
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = testVlanTag()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Release notes: June 8, 2017</title>
       <link>https://softlayer.github.io/release_notes/2017/20170608/</link>
       <pubDate>Thu, 08 Jun 2017 00:00:00 UTC</pubDate>
@@ -482,39 +565,6 @@ pp getDetails
 
 &lt;ul&gt;
 &lt;li&gt;Fixed a bug causing customer ISO image templates to fail to transfer to new Datacenters.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: April 5, 2017</title>
-      <link>https://softlayer.github.io/release_notes/2017/20170405/</link>
-      <pubDate>Wed, 05 Apr 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2017/20170405/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed a bug to enforce correct cancellation order of volumes with replicas. Previously it was possible to cancel storage with replica, but the process would fail as the replica must be cancelled first. The portal will now direct to you first cancel the replica volume.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Updated the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest&#34;&gt;SoftLayer_Virtual_Guest&lt;/a&gt; service&amp;rsquo;s &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getCreateObjectOptions&#34;&gt;getCreateObjectOptions&lt;/a&gt; method to not show options that are no longer available, such as old operating systems that are no longer supported.&lt;/li&gt;
-&lt;li&gt;Added massReloadOperatingSystem and massFirmwareUpdate to the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server&#34;&gt;SoftLayer_Hardware_Server&lt;/a&gt; Service.&lt;/li&gt;
-&lt;li&gt;Fixed the error message returned when calling &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer_Notification_Virtual_Guest/createObject&#34;&gt;SoftLayer_User_Customer_Notification_Virtual_Guest::createObject &lt;/a&gt; with an invalid User.&lt;/li&gt;
-&lt;li&gt;Deprecated the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price/getRequiredCoreCount&#34;&gt;requiredCoreCount&lt;/a&gt; from being included by default on &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price&#34;&gt;SoftLayer_Product_Item_Price&lt;/a&gt; objects to improve API performance. If you have API requests that use &lt;code&gt;requiredCoreCount&lt;/code&gt; implicitly, please ensure it is included in object masks or move to using &lt;code&gt;capacityRestrictionType&lt;/code&gt;, &lt;code&gt;capacityRestrictionMin&lt;/code&gt;, and &lt;code&gt;capacityRestrictionMax&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an issue where ordering IP addresses sometimes failed when using the PayPal payment method or when attempting to order from a quote.&lt;/li&gt;
-&lt;li&gt;Changed SoftLayer to IBM Bluemix in a number of automated emails and tickets.&lt;/li&gt;
-&lt;li&gt;Mass Reboot and Migrate tickets now send out the contents of the ticket updates in emails. Previously they just included links to the ticket in the customer portal.&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
