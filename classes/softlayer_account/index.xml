@@ -6,7 +6,117 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 09 Jun 2017 00:00:00 UTC</updated>
+    <updated>Mon, 12 Jun 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Provision Times</title>
+      <link>https://softlayer.github.io/python/provisionTimes/</link>
+      <pubDate>Mon, 12 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/provisionTimes/</guid>
+      <description>&lt;p&gt;Goes through orders and prints out each transaction that provisioned a server or virtual server. Calculates provision time from the time the order was placed, till the time the transaction went to COMPLETE.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+from datetime import datetime
+
+class bcolors:
+    HEADER = &#39;\033[95m&#39;
+    OKBLUE = &#39;\033[94m&#39;
+    OKGREEN = &#39;\033[92m&#39;
+    WARNING = &#39;\033[93m&#39;
+    FAIL = &#39;\033[91m&#39;
+    ENDC = &#39;\033[0m&#39;
+    BOLD = &#39;\033[1m&#39;
+    UNDERLINE = &#39;\033[4m&#39;
+
+class example():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+    def main(self):
+        # Accounts with a large number of orders will want to use this filter.
+        startDate = &amp;quot;04/01/2017 01:00:00&amp;quot;
+        endDate = &amp;quot;06/12/2017 01:00:00&amp;quot;
+        theFilter1 = {
+            &#39;orders&#39;: {
+                &#39;createDate&#39;: {
+                    &#39;operation&#39;: &#39;betweenDate&#39;,
+                    &#39;options&#39;: [
+                        {&#39;name&#39;: &#39;startDate&#39;, &#39;value&#39;: [startDate]},
+                        {&#39;name&#39;: &#39;endDate&#39;, &#39;value&#39;: [endDate]}
+                    ]
+                }
+            }
+        }
+        mask = &amp;quot;mask[items[hostName, domainName, categoryCode, billingItem[id,provisionTransaction]]]&amp;quot;
+        items = 10
+        offset = 0
+        limit = 10
+        while items == 10:
+            orders = self.client[&#39;SoftLayer_Account&#39;].getOrders(filter=theFilter1, offset=offset, limit=limit, mask=mask)
+            items = len(orders)
+            offset = offset + limit
+            self.printOrderTimes(orders)
+
+    def printOrderTimes(self, orders):
+        for order in orders:
+            print(&amp;quot;Order: %s - %s &amp;quot; % (order[&#39;id&#39;], order[&#39;createDate&#39;]))
+            print(&amp;quot;\tFQDN, Status, transaction id, elapsed time&amp;quot;)
+            # pp(order)
+            createDate = order[&#39;createDate&#39;]
+            timeWarn = 600
+            timeRed = 1200
+            for item in order[&#39;items&#39;]:
+                if item[&#39;categoryCode&#39;] == &#39;server&#39;:
+                    # 1 hour
+                    timeWarn = 3600
+                    # 4 hours 
+                    timeRed = 14400
+                elif item[&#39;categoryCode&#39;] == &#39;guest_core&#39;:
+                    # 10 minutes
+                    timeWarn = 600
+                    # 20 minutes
+                    timeRed = 1200
+
+                if item[&#39;categoryCode&#39;] == &#39;server&#39; or item[&#39;categoryCode&#39;] == &#39;guest_core&#39;:
+
+                    try:
+                        transaction = item[&#39;billingItem&#39;][&#39;provisionTransaction&#39;]
+                    except KeyError:
+                        # Likely a canceled order
+                        continue
+
+                    #python timezones are weird and I don&#39;t want to deal with them. 
+                    t_s = createDate[:-6] 
+                    t_e = transaction[&#39;statusChangeDate&#39;][:-6] 
+
+
+                    FMT = &#39;%Y-%m-%dT%H:%M:%S&#39;
+                    tdelta = datetime.strptime(t_e,FMT) - datetime.strptime(t_s,FMT)
+                    fqdn = &amp;quot;%s.%s&amp;quot; % (item[&#39;hostName&#39;], item[&#39;domainName&#39;])
+                    seconds =  tdelta.total_seconds()
+                    if seconds &amp;gt; timeWarn and seconds &amp;lt; timeRed:
+                        color = bcolors.WARNING
+                    elif seconds &amp;gt;= timeRed:
+                        color = bcolors.FAIL
+                    else:
+                        color = bcolors.OKGREEN
+                    print(&amp;quot;\t%s%s, %s, %s, %s%s&amp;quot; % 
+                        (color,fqdn, transaction[&#39;transactionStatus&#39;][&#39;name&#39;], transaction[&#39;id&#39;], seconds ,bcolors.ENDC)
+                    )
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = example()
+    main.main()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Get bills by user</title>
@@ -1025,33 +1135,6 @@ try {
     die(&#39;Unable to get next invoice: &#39; . $e-&amp;gt;getMessage());
 }
 ?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Determining your next bill</title>
-      <link>https://softlayer.github.io/ruby/nextinvoice/</link>
-      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/nextinvoice/</guid>
-      <description>
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;# SoftLayer library will look to see if these global variables are set when making a connection
-# more information here: https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L58
-
-require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-client = SoftLayer::Client.new
-
-total_amount = client[&#39;Account&#39;].getNextInvoiceTotalAmount
-puts &amp;quot;Next invoice total amount: #{total_amount}&amp;quot;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;example-output&#34;&gt;Example Output&lt;/h2&gt;
-
-&lt;pre&gt;&lt;code&gt;Next invoice total amount: 250.26
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
