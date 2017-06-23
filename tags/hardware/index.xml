@@ -6,7 +6,80 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 30 Sep 2015 00:00:00 UTC</updated>
+    <updated>Fri, 23 Jun 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Router Model Map</title>
+      <link>https://softlayer.github.io/python/networkmapper/</link>
+      <pubDate>Fri, 23 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/networkmapper/</guid>
+      <description>&lt;p&gt;Prints out model numbers of networking equipment that is on route to your servers. Could be useful if merged with &lt;a href=&#34;https://softlayer.github.io/python/networktopology/&#34;&gt;https://softlayer.github.io/python/networktopology/&lt;/a&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+Finds the model number of all networking equipment that is on the way to servers on the account.
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+class networkMap():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+    def main(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        Goes through each server, and prints out what networking hardware is upstream
+        &amp;quot;&amp;quot;&amp;quot;
+        mask = &amp;quot;mask[id, fullyQualifiedDomainName]&amp;quot; 
+        servers = self.client[&#39;SoftLayer_Account&#39;].getHardware(mask=mask)
+        for server in servers:
+            print(&amp;quot;%s&amp;quot; % (server[&#39;fullyQualifiedDomainName&#39;]))
+            server_mask = &amp;quot;mask[backendNetworkComponents[networkHardware[hardwareChassis]]]&amp;quot; 
+            this_server = self.client[&#39;SoftLayer_Hardware_Server&#39;].getObject(id=server[&#39;id&#39;],mask=server_mask)
+            for component in this_server[&#39;backendNetworkComponents&#39;]:
+                print(&amp;quot;\t%s%s (%smbps) &amp;quot; % (component[&#39;name&#39;], component[&#39;port&#39;], component[&#39;speed&#39;]))
+                for uplink in component[&#39;networkHardware&#39;]:
+                    print(&amp;quot;\t\t%s - %s - %s&amp;quot; % (uplink[&#39;fullyQualifiedDomainName&#39;], uplink[&#39;hardwareChassis&#39;][&#39;name&#39;], uplink[&#39;hardwareChassis&#39;][&#39;hardwareFunction&#39;][&#39;description&#39;]))
+
+
+    def fromTheTop(self):
+        &amp;quot;&amp;quot;&amp;quot;
+        Goes through each DC, and prints out the hierarchy of networking gear
+        &amp;quot;&amp;quot;&amp;quot;
+        dc_mask=&amp;quot;mask[backendHardwareRouters]&amp;quot;
+        dcs = self.client[&#39;SoftLayer_Location_Datacenter&#39;].getDatacenters()
+
+        for dc in dcs:
+            print(&amp;quot;%s&amp;quot; % (dc[&#39;name&#39;]))
+            router_mask = &amp;quot;mask[hardwareChassis,downlinkHardware[hardwareChassis,downlinkHardware[hardwareChassis,downstreamServers[id,fullyQualifiedDomainName],id,fullyQualifiedDomainName]]]&amp;quot;
+            backend = self.client[&#39;SoftLayer_Location_Datacenter&#39;].getBackendHardwareRouters(id=dc[&#39;id&#39;],mask=router_mask)
+            for router in backend:
+                print(&amp;quot;\t%s - %s - %s &amp;quot; % (router[&#39;hardwareFunction&#39;][&#39;description&#39;], router[&#39;fullyQualifiedDomainName&#39;], router[&#39;hardwareChassis&#39;][&#39;name&#39;]))
+                # Can be used to print out info on the linecards of the BCR/FCR
+                # for component in router[&#39;components&#39;]:
+                    # print(&amp;quot;\t\t%s&amp;quot; % (component[&#39;hardwareComponentModel&#39;][&#39;longDescription&#39;]))
+                try:
+                    for down in router[&#39;downlinkHardware&#39;]:
+                        print(&amp;quot;\t\t%s - %s &amp;quot; % (down[&#39;fullyQualifiedDomainName&#39;],down[&#39;hardwareChassis&#39;][&#39;name&#39;]))
+                        for down_1 in down[&#39;downlinkHardware&#39;]:
+                            print(&amp;quot;\t\t\t%s - %s &amp;quot; % (down_1[&#39;fullyQualifiedDomainName&#39;],down_1[&#39;hardwareChassis&#39;][&#39;name&#39;]))
+                            for server in down_1[&#39;downstreamServers&#39;]:
+                                print(&amp;quot;\t\t\t\t%s&amp;quot; % server[&#39;fullyQualifiedDomainName&#39;])
+                except KeyError:
+                    print(&amp;quot;Skipping....&amp;quot;)
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = networkMap()
+    # main.main()
+    main.fromTheTop()
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>GetHardware with network components</title>

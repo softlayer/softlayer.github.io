@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>Locations - https://softlayer.github.io/</title>
-    <link rel="canonical" href="https://softlayer.github.io/tags/locations/">
+    <title>Router Model Map - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/python/networkmapper/">
     
     <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
     <link href="https://softlayer.github.io/css/font-awesome.css" rel="stylesheet">
@@ -22,7 +22,7 @@
 	<link rel="stylesheet" type="text/css"
 						href="//fonts.googleapis.com/css?family=Lato" />
 
-    <link href="https://softlayer.github.io/tags/locations/index.xml" rel="alternate" type="application/rss+xml" title="SoftLayer API Examples" />
+    
 	<script>
 		$(document).ready(function() {
 			$('table').addClass("table table-hover table-striped")
@@ -92,43 +92,115 @@ ga('send', 'pageview');
 
 <div class="container">
     <div class="row">
+    
+        <div class="col-md-3">
+            <div style="word-wrap: break-word;"> 
+                <h4>June 23, 2017<br></h4>
+            </div>
+        </div>
         <div class="col-md-9">
-            <div class="well well-sm">
-                <strong>Items with tag <code>locations</code></strong>
-                <ul class="list-unstyled">
-                    
-                        <h3>python</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/networkmapper/">Router Model Map</a>
-                            <div class="meta">Finds the model number of all networking equipment that is on the way to servers on the account.</div>
-                            </li>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/python/list_packages/">List Packages</a>
-                            <div class="meta">A handy script with a few examples on how to interact with packages</div>
-                            </li>
-                            
-                        </ul>
-                    
-                        <h3>ruby</h3>
-                        <ul>
-                            
-                            <li>
-                            <a href="https://softlayer.github.io/ruby/list_packages/">List Packages</a>
-                            <div class="meta">A handy script with a few examples on how to interact with packages</div>
-                            </li>
-                            
-                        </ul>
-                    
-                </ul>
+
+                <strong>Classes <span class="fa fa-book"/></strong>
+                
+                    <a class="label label-primary" href="https://softlayer.github.io/classes/softlayer_account">SoftLayer_Account</a>
+                
+                    <a class="label label-primary" href="https://softlayer.github.io/classes/softlayer_location_datacenter">SoftLayer_Location_Datacenter</a>
+                
+                    <a class="label label-primary" href="https://softlayer.github.io/classes/softlayer_network">SoftLayer_Network</a>
+                
+                <br>
+                <strong>Tags <span class="fa fa-tags"/></strong>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/network">network</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/locations">locations</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/hardware">hardware</a>
+                          
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+		<div class="col-md-12">
+            <div class="well well-sm release-note" style="word-wrap: break-word;">
+				<h3>Router Model Map<br> <small>Finds the model number of all networking equipment that is on the way to servers on the account.</small></h3>
+				
+                
+				
+                <p>Prints out model numbers of networking equipment that is on route to your servers. Could be useful if merged with <a href="https://softlayer.github.io/python/networktopology/">https://softlayer.github.io/python/networktopology/</a></p>
+
+<pre><code>&quot;&quot;&quot;
+@author Christopher Gallo
+Finds the model number of all networking equipment that is on the way to servers on the account.
+&quot;&quot;&quot;
+import SoftLayer
+from pprint import pprint as pp
+
+class networkMap():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+    def main(self):
+        &quot;&quot;&quot;
+        Goes through each server, and prints out what networking hardware is upstream
+        &quot;&quot;&quot;
+        mask = &quot;mask[id, fullyQualifiedDomainName]&quot; 
+        servers = self.client['SoftLayer_Account'].getHardware(mask=mask)
+        for server in servers:
+            print(&quot;%s&quot; % (server['fullyQualifiedDomainName']))
+            server_mask = &quot;mask[backendNetworkComponents[networkHardware[hardwareChassis]]]&quot; 
+            this_server = self.client['SoftLayer_Hardware_Server'].getObject(id=server['id'],mask=server_mask)
+            for component in this_server['backendNetworkComponents']:
+                print(&quot;\t%s%s (%smbps) &quot; % (component['name'], component['port'], component['speed']))
+                for uplink in component['networkHardware']:
+                    print(&quot;\t\t%s - %s - %s&quot; % (uplink['fullyQualifiedDomainName'], uplink['hardwareChassis']['name'], uplink['hardwareChassis']['hardwareFunction']['description']))
+
+
+    def fromTheTop(self):
+        &quot;&quot;&quot;
+        Goes through each DC, and prints out the hierarchy of networking gear
+        &quot;&quot;&quot;
+        dc_mask=&quot;mask[backendHardwareRouters]&quot;
+        dcs = self.client['SoftLayer_Location_Datacenter'].getDatacenters()
+
+        for dc in dcs:
+            print(&quot;%s&quot; % (dc['name']))
+            router_mask = &quot;mask[hardwareChassis,downlinkHardware[hardwareChassis,downlinkHardware[hardwareChassis,downstreamServers[id,fullyQualifiedDomainName],id,fullyQualifiedDomainName]]]&quot;
+            backend = self.client['SoftLayer_Location_Datacenter'].getBackendHardwareRouters(id=dc['id'],mask=router_mask)
+            for router in backend:
+                print(&quot;\t%s - %s - %s &quot; % (router['hardwareFunction']['description'], router['fullyQualifiedDomainName'], router['hardwareChassis']['name']))
+                # Can be used to print out info on the linecards of the BCR/FCR
+                # for component in router['components']:
+                    # print(&quot;\t\t%s&quot; % (component['hardwareComponentModel']['longDescription']))
+                try:
+                    for down in router['downlinkHardware']:
+                        print(&quot;\t\t%s - %s &quot; % (down['fullyQualifiedDomainName'],down['hardwareChassis']['name']))
+                        for down_1 in down['downlinkHardware']:
+                            print(&quot;\t\t\t%s - %s &quot; % (down_1['fullyQualifiedDomainName'],down_1['hardwareChassis']['name']))
+                            for server in down_1['downstreamServers']:
+                                print(&quot;\t\t\t\t%s&quot; % server['fullyQualifiedDomainName'])
+                except KeyError:
+                    print(&quot;Skipping....&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    main = networkMap()
+    # main.main()
+    main.fromTheTop()
+
+</code></pre>
+
             </div>
         </div>
 
-        
-        <div class="col-md-3">
-        
+    </div>
+    <hr>
+    <div class="row">
+            
+        <div class="col-md-6">
+            
 <div class="panel panel-default">
     <div class="panel-heading" style="padding: 2px 15px;">
         <h4>More Documentation</h4>
@@ -154,6 +226,16 @@ ga('send', 'pageview');
 </div>
 
         </div>
+        <div class="col-md-6">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Router%20Model%20Map&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2fnetworkmapper%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+            </div>
+        </div>
+
     </div>
         <footer>
             <div class="row">
@@ -170,3 +252,5 @@ ga('send', 'pageview');
     <script src="https://softlayer.github.io/js/bootstrap.js"></script>
 </body>
 </html>
+
+/python/networkmapper/
