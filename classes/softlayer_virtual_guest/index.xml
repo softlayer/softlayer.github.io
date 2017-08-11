@@ -6,7 +6,58 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 04 May 2017 00:00:00 UTC</updated>
+    <updated>Fri, 04 Aug 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Migrate a VSI between dedicated hosts</title>
+      <link>https://softlayer.github.io/python/migratededicatedinstance/</link>
+      <pubDate>Fri, 04 Aug 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/migratededicatedinstance/</guid>
+      <description>&lt;p&gt;This script will kick of an immediate migration of the Virtual Guest.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Ryan TIffany
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+destinationHostId = 987654
+vsiId = 1234567
+client = SoftLayer.Client()
+
+migrateGuest = client[&#39;SoftLayer_Virtual_Guest&#39;].migrateDedicatedHost(destinationHostId, id=vsiId)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Migrate a VSI between dedicated hosts</title>
+      <link>https://softlayer.github.io/ruby/migratededicatedinstance/</link>
+      <pubDate>Fri, 04 Aug 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/migratededicatedinstance/</guid>
+      <description>&lt;p&gt;This script will kick of an immediate migration of the Virtual Guest.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;
+=begin
+@author Ryan Tiffany
+=end
+
+require &#39;softlayer_api&#39; 
+require &#39;pp&#39; 
+
+# Connect to SoftLayer
+client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
+
+destinationHostId = 10001
+vsiId = 37167483
+
+migrateGuest = client[&#39;SoftLayer_Virtual_Guest&#39;].object_with_id(vsiId).migrateDedicatedHost(destinationHostId)
+pp migrateGuest
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Get Virtual Console Virtual Guest</title>
@@ -859,295 +910,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     # main.getUpgradeItemPrices(vsi_id,&#39;SoftLayer_Virtual_Guest&#39;)
     # main.upgradeVSI(vsi_id, True)
     main.getUpgradeInfo(vsi_id,&#39;SoftLayer_Virtual_Guest&#39; )
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Attach and Detach a Block Device to a Virtual_Guest</title>
-      <link>https://softlayer.github.io/python/attach_disk/</link>
-      <pubDate>Thu, 03 Mar 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/attach_disk/</guid>
-      <description>&lt;p&gt;Attaching a currently detached portable block device to a given guest. The disk image will need to be migrated to the host the guest is on, so make sure to check if that host has enough disk space (with checkHostDiskAvailability) before attaching. This is only required for guests with local storage guests. SAN based guests don&amp;rsquo;t need that step.&lt;/p&gt;
-
-&lt;p&gt;Running this on a disk that is already attached will move the disk to the new guest.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-from pprint import pprint as pp
-
-class example():
-
-    def __init__(self):
-
-        self.client = SoftLayer.Client()
-
-    def main(self, image_id, guest_id):
-        my_image = self.getMyImage(image_id)
-        size = my_image.get(&amp;quot;capacity&amp;quot;, 100)
-        &amp;quot;&amp;quot;&amp;quot;
-        SAN based guests will throw the following exception:
-        SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Public): This guest is SAN-based, and does not require host migration for disk attachment.
-        &amp;quot;&amp;quot;&amp;quot;
-        available = self.client[&#39;SoftLayer_Virtual_Guest&#39;].checkHostDiskAvailability(size,id=guest_id)
-        # This should be True. False means the host doesn&#39;t have enough disk space to attach
-        pp(available)
-
-        attach = self.client[&#39;SoftLayer_Virtual_Guest&#39;].attachDiskImage(image_id, id=guest_id)
-        print(&amp;quot;Attaching storage&amp;quot;)
-        pp(attach)
-
-    def getImages(self):
-
-        mask = &amp;quot;mask[type,blockDevices[guest]]&amp;quot;
-        images = self.client[&#39;SoftLayer_Account&#39;].getPortableStorageVolumes(mask=mask)
-
-        for image in images:
-            desc = image.get(&#39;description&#39;, &amp;quot;---&amp;quot;)
-            capacity = image.get(&#39;capacity&#39;, &amp;quot;0&amp;quot;)
-            print(&amp;quot;%s - %s (%s) - %s &amp;quot; % 
-                (image[&#39;id&#39;], image[&#39;type&#39;][&#39;keyName&#39;], capacity ,desc)
-            )
-            for disk in image[&#39;blockDevices&#39;]:
-                try:
-                    hostname = disk[&#39;guest&#39;][&#39;fullyQualifiedDomainName&#39;]
-                except KeyError:
-                    hostname = &amp;quot;None&amp;quot;
-                print(&amp;quot;\t%s&amp;quot; % hostname)
-
-    def getMyImage(self,imageId):
-        mask = &amp;quot;mask[blockDevices[guest],sourceDiskImage,type]&amp;quot;
-        image = self.client[&#39;SoftLayer_Virtual_Disk_Image&#39;].getObject(mask=mask,id=imageId)
-        pp(image)
-        return image
-
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    image_id = 12345
-    guest_id = 67890
-    main = example()
-    main.getImages()
-    main.main(image_id, guest_id)
-    # The new guest will only show up on the image once the migration transaction is completed
-    main.getMyImage(image_id)
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Manage Users</title>
-      <link>https://softlayer.github.io/python/manageusers/</link>
-      <pubDate>Tue, 01 Mar 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/manageusers/</guid>
-      <description>&lt;p&gt;Creates a user, sets up proper permissions, sets up devices access restrictions, creates API keys and orders the user a server.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;import SoftLayer.API
-from pprint import pprint as pp
-
-
-def create_user(username, password):
-    user_template = {
-        &#39;username&#39;: username,
-        &#39;firstName&#39;: &#39;API&#39;,
-        &#39;lastName&#39;: &#39;Learner&#39;,
-        &#39;email&#39;: &#39;someone@somewhere.com&#39;,
-        &#39;companyName&#39;: &#39;IBM&#39;,
-        &#39;address1&#39;: &#39;123 api road&#39;,
-        &#39;city&#39;: &#39;Houston&#39;,
-        &#39;country&#39;: &#39;US&#39;,
-        &#39;postalCode&#39;: &#39;TX 77002&#39;,
-        &#39;userStatusId&#39;: 1001,
-        &#39;timezoneId&#39;: 107
-    }
-    created_user = client[&#39;User_Customer&#39;].createObject(
-        user_template,
-        password,
-        password)
-    return created_user
-
-def get_permissions(_id):
-    permissions = client[&#39;User_Customer&#39;].getPermissions(id=_id)
-    return permissions
-
-def set_permissions(_id, permissions):
-    &amp;quot;&amp;quot;&amp;quot;
-    To get permissions correct, I take the existing permissions of a user
-    that I already have, and set my new user&#39;s permissions to be the same
-    with addBulkPortalPermission
-    &amp;quot;&amp;quot;&amp;quot;
-    return client[&#39;User_Customer&#39;].addBulkPortalPermission(
-        permissions, id=_id)
-
-def fix_permissions(user,permissions):
-    # I only want users to have access to this one host
-    virtualGuestId = 22334455
-    t = user[&#39;id&#39;]
-    set_permissions(user[&#39;id&#39;], permissions)
-    client[&#39;User_Customer&#39;].removeAllVirtualAccessForThisUser(id=t)
-    client[&#39;User_Customer&#39;].removeAllHardwareAccessForThisUser(id=t)
-    client[&#39;User_Customer&#39;].addApiAuthenticationKey(id=t)
-    client[&#39;User_Customer&#39;].addVirtualGuestAccess(virtualGuestId,id=t)
-
-def orderUserServer(user, apiKey):
-    &amp;quot;&amp;quot;&amp;quot;
-    Orders a server as the newly created user. 
-    &amp;quot;&amp;quot;&amp;quot;
-    hostname = user + &amp;quot;-lab-server&amp;quot;
-    guest = {}
-    guest[&#39;startCpus&#39;] = 1
-    guest[&#39;maxMemory&#39;] = 1024
-    guest[&#39;localDiskFlag&#39;] = False
-    guest[&#39;hostname&#39;] = hostname
-    guest[&#39;domain&#39;] = user + &amp;quot;.lablayer.info&amp;quot;
-    guest[&#39;hourlyBillingFlag&#39;] = True
-    guest[&#39;datacenter&#39;] = {}
-    guest[&#39;datacenter&#39;][&#39;name&#39;] = &#39;tok02&#39;
-    guest[&#39;blockDeviceTemplateGroup&#39;] = {&#39;globalIdentifier&#39;: &amp;quot;6c64f59a-edeb-4ba4-b992-d04972597357&amp;quot;}
-    userClient = SoftLayer.Client(
-        username = user,
-        api_key = apiKey )
-    result = userClient[&#39;Virtual_Guest&#39;].createObject(guest)
-    print &amp;quot;Added server id: %s  ( %s )&amp;quot; % (result[&#39;id&#39;],result[&#39;fullyQualifiedDomainName&#39;]) 
-    return
-   
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    import argparse
-    argsparse = argparse.ArgumentParser(description=&#39;Number of users&#39;)
-    argsparse.add_argument(&#39;--num-users&#39;, dest=&#39;num_users&#39;, type=int,
-                           help=&#39;Number of users to provision.&#39;)
-    argsparse.add_argument(&#39;--offset&#39;, dest=&amp;quot;offset&amp;quot;, type=int,
-                           default=1, help=&#39;Username offset&#39;)
-    argsparse.add_argument(&#39;--prefix&#39;,
-                           help=&#39;Username prefix&#39;, default=False)
-    args = argsparse.parse_args()
-
-    ##### CHANGE THESE ##########
-    template_user_id = 123456
-    password = &#39;APAsswordGoes!!!H3r3&#39; 
-
-    client = SoftLayer.Client()
-    
-    userPerms = client[&#39;User_Customer&#39;].getPermissions(id=template_user_id)
-   
-    start_user_num = args.offset
-
-    for i in range(args.num_users):
-        target_username = &#39;%s-%s&#39; % (args.prefix,start_user_num)
-        try:
-            new_user = create_user(target_username,password)
-            fix_permissions(new_user,userPerms)
-            client[&#39;User_Customer&#39;].addApiAuthenticationKey(id=new_user[&#39;id&#39;])
-
-        except SoftLayer.exceptions.SoftLayerAPIError as error:
-            &amp;quot;&amp;quot;&amp;quot;
-            If the user already exists, an exception is thrown. 
-            Just reset their permissions and continue on.
-            &amp;quot;&amp;quot;&amp;quot;
-            oFilter = {}
-            oFilter[&#39;users&#39;] = {}
-            oFilter[&#39;users&#39;][&#39;username&#39;] = {}
-            oFilter[&#39;users&#39;][&#39;username&#39;][&#39;operation&#39;] = target_username
-            new_user = client[&#39;Account&#39;].getUsers(filter=oFilter)[0]
-            fix_permissions(new_user,userPerms)
-
-        newApiKey = client[&#39;User_Customer&#39;].getApiAuthenticationKeys(id=new_user[&#39;id&#39;])
-        print &amp;quot;username = %s&amp;quot; % (newApiKey[0][&#39;user&#39;][&#39;username&#39;])
-        print &amp;quot;api_key =  %s&amp;quot; % (newApiKey[0][&#39;authenticationKey&#39;])
-        orderUserServer(newApiKey[0][&#39;user&#39;][&#39;username&#39;],newApiKey[0][&#39;authenticationKey&#39;])
-        start_user_num = start_user_num + 1
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Disable user, changes their password, cancels their servers, and removes any sshKeys&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;import SoftLayer.API
-from pprint import pprint as pp
-
-def get_target_users(prefix):
-    _filter = {
-        &#39;users&#39;: {
-            &#39;username&#39;: {
-                &#39;operation&#39;: &#39;*= %s&#39; % (prefix)
-            }
-        }
-    }
-    _mask = &amp;quot;mask[id,username]&amp;quot;
-    _users = client[&#39;Account&#39;].getUsers(filter=_filter, mask=_mask)
-    return _users
-
-def get_target_keys(prefix):
-    _filter = {
-        &#39;sshKeys&#39;: {
-            &#39;label&#39;: {
-                &#39;operation&#39;: &#39;*= %s&#39; % (prefix)
-            }
-        }
-    }
-
-    _mask = &amp;quot;mask[id,label]&amp;quot;
-    _users = client[&#39;Account&#39;].getSshKeys(filter=_filter, mask=_mask)
-    return _users
-
-def print_result(result, thing):
-    if result == True:
-        print &amp;quot;OK&amp;quot;
-    else:
-        print &amp;quot;ERROR: &amp;quot;
-        pp(thing)
-    return
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    import argparse
-    argsparse = argparse.ArgumentParser(description=&#39;Number of users&#39;)
-    argsparse.add_argument(&#39;--prefix&#39;,
-                           help=&#39;Username prefix&#39;, default=False)
-    argsparse.add_argument(&#39;--password&#39;,
-                           help=&#39;New Password&#39;, default=False)
- 
-    args = argsparse.parse_args()
-
-    client = SoftLayer.Client()
-  
-    users = get_target_users(args.prefix)
-
-    for user in users:
-        password =  args.password
-        print &#39;User: &#39; + user[&#39;username&#39;] + &#39; Password: &#39; + password 
-        # status 1021 disables the user
-        template = {
-            &#39;id&#39;: user[&#39;id&#39;],
-            &#39;userStatusId&#39;: 1021
-        }
-
-        # Cancel any servers the user created
-        servers = client[&#39;User_Customer&#39;].getVirtualGuests(id=user[&#39;id&#39;])
-        result = True
-        for virt in servers: 
-            # the &amp;quot;,&amp;quot; and the end of print removes the automatic newline
-            print(&amp;quot;\tCanceling host... &amp;quot; + virt[&#39;fullyQualifiedDomainName&#39;] + &amp;quot; (&amp;quot; + str(virt[&#39;id&#39;]) + &amp;quot;)\t&amp;quot;),
-            try:
-                result = client[&#39;Virtual_Guest&#39;].deleteObject(id=virt[&#39;id&#39;])
-                print_result(result,virt)
-            except SoftLayer.exceptions.SoftLayerAPIError as error:
-                print(&amp;quot;\tException, host might already be canceling...&amp;quot;)
-                pp(error)
-
-        print(&amp;quot;\tChanging password for...&amp;quot; + user[&#39;username&#39;] + &amp;quot; (&amp;quot; + str(user[&#39;id&#39;]) + &amp;quot;)\t&amp;quot;),
-        result = client[&#39;User_Customer&#39;].updatePassword(password, id=user[&#39;id&#39;])
-        print_result(result,user)
- 
-    sshkeys = get_target_keys(args.prefix)
-    print &#39;SSH Key Removal&#39;
-    for key in sshkeys:
-        print(&amp;quot;Deleting key... &amp;quot; + key[&#39;label&#39;] + &amp;quot; (&amp;quot; + str(key[&#39;id&#39;]) + &amp;quot;)\t&amp;quot;),
-        result = client[&#39;SoftLayer_Security_Ssh_Key&#39;].deleteObject(id=key[&#39;id&#39;])
-        print_result(result,key)
-
-    print &#39;Complete&#39;
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
