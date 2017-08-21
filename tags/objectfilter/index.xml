@@ -190,6 +190,146 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     </item>
     
     <item>
+      <title>Get bills by user</title>
+      <link>https://softlayer.github.io/python/billsbyuser/</link>
+      <pubDate>Fri, 09 Jun 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/billsbyuser/</guid>
+      <description>&lt;p&gt;This is a rough script, it doesn&amp;rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in &lt;a href=&#34;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&#34;&gt;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Example Output for billsByUser()&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;chris-cde - 840.0
+    123.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $345.0
+    234.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $495.0
+    chris.testing.com : 2 x 2.0 GHz Cores $0.0
+    4 Portable Private IP Addresses - $0.0
+    8 Portable Private IP Addresses - $0.0
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Example Output of upcoming_hourly()&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;ItemID  Info    Host    Domain  Hours   Hourly Cost Cost
+143131173   Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) jd-cos-testing-sjc03    secore.com  489 .309    151.101
+==&amp;gt; 143131179   64 GB RAM   291.933
+==&amp;gt; 143131183   1.00 TB SATA    17.604
+==&amp;gt; 143131185   1.00 TB SATA    17.604
+==&amp;gt; 143131189   10 Gbps Dual Public &amp;amp; Private Network Uplinks (Unbonded)    147.189
+TOTAL: 625.431
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Source&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+Goes through the next invoice. Collections billing items by the user that orderd them.
+Prints out each user and how much they caused in billing, along with what they ordered.
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+class bills():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+        self.mgr = SoftLayer.VSManager(self.client)
+
+    def billsByUser(self):
+
+        &amp;quot;&amp;quot;&amp;quot;
+        Not all billing items have a user record, these are collected under the master account
+        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&amp;gt; taps orderItem for
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&amp;gt; taps order for 
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&amp;gt; taps userRecord for
+        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
+        &amp;quot;&amp;quot;&amp;quot;
+        mask=&amp;quot;mask[orderItem[order[id,userRecord[displayName,username]]]]&amp;quot;
+        billingItems = self.client[&#39;SoftLayer_Account&#39;].getNextInvoiceTopLevelBillingItems(mask=mask)
+
+        users = {&#39;masterUser&#39;: []}
+        for item in billingItems:
+            if &#39;orderItem&#39; in item:
+                username = item[&#39;orderItem&#39;][&#39;order&#39;][&#39;userRecord&#39;][&#39;username&#39;]
+                del item[&#39;orderItem&#39;]
+                if username not in users:
+                    users[username] = []
+                users[username].append(item)
+            else:
+                users[&#39;masterUser&#39;].append(item)
+
+
+        # prints everything out, and finds the sum of items.
+        for user in users:
+            servers = []
+            everything_else = []
+            total_cost = 0
+
+            for item in users[user]:
+
+                # this doens&#39;t include Tax fees, or setup fees because I&#39;m lazy
+                cost = float(item[&#39;recurringFee&#39;]) + float(item[&#39;oneTimeFee&#39;])
+                if &#39;hostName&#39; in item:
+                    fqdn = &amp;quot;%s.%s : %s $%s&amp;quot; % (item[&#39;hostName&#39;], item[&#39;domainName&#39;], item[&#39;description&#39;], cost)
+                    servers.append(fqdn)
+                else:
+                    item = &amp;quot;%s - $%s&amp;quot; % (item[&#39;description&#39;], cost)
+                    everything_else.append(item)
+                total_cost = total_cost + cost
+            print(&amp;quot;%s - %s&amp;quot; % (user , total_cost))
+            for server in servers:
+                print(&amp;quot;\t%s&amp;quot; % server)
+            for thing in everything_else:
+                print(&amp;quot;\t%s&amp;quot; % thing)
+
+
+    def upcoming_hourly(self):
+    &amp;quot;&amp;quot;&amp;quot;
+    Filters upcoming billing items for only hourly WITH a hostname that contains the string &#39;test&#39;
+    Each hourly server will also have some children that need to be added for the total cost, those are included with the nonZeroNextInvoiceChildren property
+    NOTE: 
+    ObjectMask starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_item
+    ObjectFilter starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account
+    hourlyFlag needs to be 1 or 0.
+
+    &amp;quot;&amp;quot;&amp;quot;
+        mask=&amp;quot;mask[hourlyFlag,nonZeroNextInvoiceChildren]&amp;quot;
+        objectFilter =  {
+            &#39;nextInvoiceTopLevelBillingItems&#39;: {
+                &#39;hourlyFlag&#39;: {&#39;operation&#39;: 1},
+                &#39;hostName&#39;: {&#39;operation&#39;: &#39;*= test&#39;}
+            }
+        }
+        billingItems = self.client[&#39;SoftLayer_Account&#39;].getNextInvoiceTopLevelBillingItems(mask=mask, filter=objectFilter)
+        print(&amp;quot;ItemID\tInfo\tHost\tDomain\tHours\tHourly Cost\tCost&amp;quot;)
+        for item in billingItems:
+            itemId = item[&#39;id&#39;]
+            hostName = item[&#39;hostName&#39;]
+            domainName = item[&#39;domainName&#39;]
+            description = item[&#39;description&#39;]
+            hours = item[&#39;hoursUsed&#39;]
+            hourly_cost = item[&#39;hourlyRecurringFee&#39;]
+            cost = int(hours) * float(hourly_cost)
+            total_cost = cost
+            print(&amp;quot;%s\t%s\t%s\t%s\t%s\t%s\t%s&amp;quot; % (itemId, description, hostName,domainName, hours, hourly_cost, cost ))
+            for child in item[&#39;nonZeroNextInvoiceChildren&#39;]:
+                childId = child[&#39;id&#39;]
+                childDesc = child[&#39;description&#39;]
+                childCost = int(child[&#39;hoursUsed&#39;]) * float(child[&#39;hourlyRecurringFee&#39;])
+                total_cost = total_cost + childCost
+                print(&amp;quot;==&amp;gt; %s\t%s\t%s&amp;quot; % (childId,childDesc,childCost))
+            print(&amp;quot;TOTAL: %s&amp;quot; % (total_cost))
+
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main = bills()
+    main.billsByUser()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Get Notifications</title>
       <link>https://softlayer.github.io/ruby/getnotifications/</link>
       <pubDate>Sun, 02 Apr 2017 00:00:00 UTC</pubDate>
@@ -1118,143 +1258,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     main = example()
     main.main()
 
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Get top level billing items for all owned accounts</title>
-      <link>https://softlayer.github.io/php/get_invoice_top_level_items/</link>
-      <pubDate>Sun, 24 May 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/get_invoice_top_level_items/</guid>
-      <description>&lt;p&gt;With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the -&amp;gt;allOwnedAccounts bits&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-require_once __DIR__.&#39;/vendor/autoload.php&#39;;
-
-
-/**
-* This class structure is mostly used so this can be run as a script.
-* Most of the print statements use fancy bash color codes to make things pretty
-*/
-class topBillingItems
-{
-
-    function __construct() {
-        $this-&amp;gt;apiUsername = &#39;&#39;;
-        $this-&amp;gt;apiKey = &#39;&#39;;
-        $this-&amp;gt;startDate = new DateTime(&#39;2015-02-12T00:00:00&#39;, new DateTimeZone(&#39;CST&#39;));
-        $this-&amp;gt;endDate = new DateTime(&#39;2015-03-12T00:00:00&#39;, new DateTimeZone(&#39;CST&#39;));
-    }
-
-    /*!
-    * Will get all the brands on an account, THEN all of those brand&#39;s accounts,
-    * Then all of THEIR brands, then all of THEIR accounts. Then, go through each
-    * of the final tier accounts, and get all the invoices, then all the billing items.
-    *
-    */
-    function main() {
-
-        //The First Object Mask. Used to get all the front line brands, which will have the
-        //accounts that are actually buying things
-        $objectMask = new \SoftLayer\Common\ObjectMask();
-        $objectMask-&amp;gt;ownedBrands-&amp;gt;allOwnedAccounts-&amp;gt;ownedBrands;
-
-        $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
-        $client-&amp;gt;setObjectMask($objectMask);
-
-        $response = $client-&amp;gt;getObject();
-
-        //Start off with the main brand
-        foreach ($response-&amp;gt;ownedBrands as $brand) {
-            print &amp;quot;BRAND=\e[31m&amp;quot; . $brand-&amp;gt;keyName .  &amp;quot; ::&amp;quot; . $brand-&amp;gt;id . &amp;quot;\e[0m=\n&amp;quot;;
-
-            //Go into each of the top brands accounts
-            foreach ($brand-&amp;gt;allOwnedAccounts as $account) {
-                print &amp;quot;==\e[32m&amp;quot; . $account-&amp;gt;companyName .&amp;quot;\e[0m\n&amp;quot;;
-
-                //Go into each of those accounts brands...
-                foreach ($account-&amp;gt;ownedBrands as $brand1) {
-                    print &amp;quot;====\e[33m&amp;quot; . $brand1-&amp;gt;name .&amp;quot; ::&amp;quot; . $brand1-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
-                    $brandInvoice = $this-&amp;gt;getAllBrandAccounts($brand1-&amp;gt;id);
-
-                    //Go through each of the accounts on the brand
-                    foreach ($brandInvoice as $brandAccount) {
-
-                        //This is recursive and a very large data structure.
-                        //we unset it here so it doesn&#39;t get in the way later
-                        unset($brandAccount-&amp;gt;brand);
-                        $this-&amp;gt;workAccount($brandAccount);
-
-                    } //END foreach $brandInvoice
-                } //END foreach $account-&amp;gt;ownedBrands
-            } //END foreach $brand-&amp;gt;allOwnedAccounts
-        } //END foreach $response-&amp;gt;ownedBrands
-    }//END MAIN
-
-    function getAllBrandAccounts($brandId) {
-
-        //This filters out all invoices that are not in our date range.
-        //all based on the invoices createDate
-        $filter = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;operation = &#39;betweenDate&#39;;
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options = array();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0] = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;name = &#39;startDate&#39;;
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[0]-&amp;gt;value = array($this-&amp;gt;startDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1] = new stdClass();
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;name = &#39;endDate&#39;;
-        $filter-&amp;gt;allOwnedAccounts-&amp;gt;invoices-&amp;gt;createDate-&amp;gt;options[1]-&amp;gt;value = array($this-&amp;gt;endDate-&amp;gt;format(&#39;m/d/Y H:i:s&#39;));
-
-        //Mask for the front line brands, used to get all their accounts, and their invoices
-        $brandMask = new \SoftLayer\Common\ObjectMask();
-        $brandMask-&amp;gt;allOwnedAccounts-&amp;gt;invoices;
-
-        //From that brand, get all the brand&#39;s owned accounts, with their invoices from the current month
-        $brandClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Brand&#39;, $brandId, $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
-        $brandClient-&amp;gt;setObjectMask($brandMask);
-        $brandClient-&amp;gt;setObjectFilter($filter);
-        return $brandClient-&amp;gt;getAllOwnedAccounts();
-
-    }
-
-    function workAccount($account) {
-
-        print &amp;quot;=====\e[94m&amp;quot; . $account-&amp;gt;companyName .&amp;quot; ::&amp;quot; . $account-&amp;gt;id . &amp;quot;\e[0m\n&amp;quot;;
-        //Used to get all the actual line items from an invoice
-        $invoiceMask = new \SoftLayer\Common\ObjectMask();
-        $invoiceMask-&amp;gt;items;
-        $invoiceMask-&amp;gt;invoiceTotalAmount;
-        //Go through each of the accounts monthly invoices
-        foreach ($account-&amp;gt;invoices as $invoice) {
-            print &amp;quot;Created: &amp;quot; . $invoice-&amp;gt;createDate . &amp;quot; TYPE: &amp;quot; . $invoice-&amp;gt;typeCode .&amp;quot;\n&amp;quot;;
-
-            //Here we get the actual invoice and all the billing items inside of it
-            $bClient = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Billing_Invoice&#39;, $invoice-&amp;gt;id , $this-&amp;gt;apiUsername, $this-&amp;gt;apiKey);
-            $bClient-&amp;gt;setObjectMask($invoiceMask);
-            $bt = $bClient-&amp;gt;getObject();
-            print &amp;quot;====\e[42;90m&amp;quot; . $bt-&amp;gt;invoiceTotalAmount .&amp;quot;\e[0m\n&amp;quot;;
-
-            //Go through each item on the invoice and print out its decription + fee.
-            //There are a few other fields that could be billable, but these are the main ones.
-            foreach ($bt-&amp;gt;items as $lineItem) {
-                unset($lineItem-&amp;gt;invoice);
-                $fee = $lineItem-&amp;gt;recurringAfterTaxAmount + $lineItem-&amp;gt;oneTimeAfterTaxAmount;
-                print &amp;quot;====\e[35m&amp;quot; . $lineItem-&amp;gt;description . &amp;quot; =&amp;gt; &amp;quot; . $fee . &amp;quot;$ \e[0m\n&amp;quot;;
-            }
-
-        }//end invoice
-    }
-}
-
-$main = new topBillingItems();
-$main-&amp;gt;main();
-
-?&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>

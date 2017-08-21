@@ -122,6 +122,8 @@ ga('send', 'pageview');
                     <a class="label label-danger" href="https://softlayer.github.io/tags/getnextinvoicetotalamount">getnextinvoicetotalamount</a>
                 
                     <a class="label label-danger" href="https://softlayer.github.io/tags/usercustomer">usercustomer</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/objectfilter">objectfilter</a>
                           
         </div>
     </div>
@@ -135,7 +137,7 @@ ga('send', 'pageview');
 				
                 <p>This is a rough script, it doesn&rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in <a href="http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item</a></p>
 
-<p>Example Output</p>
+<p>Example Output for billsByUser()</p>
 
 <pre><code class="language-bash">chris-cde - 840.0
     123.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $345.0
@@ -143,6 +145,17 @@ ga('send', 'pageview');
     chris.testing.com : 2 x 2.0 GHz Cores $0.0
     4 Portable Private IP Addresses - $0.0
     8 Portable Private IP Addresses - $0.0
+</code></pre>
+
+<p>Example Output of upcoming_hourly()</p>
+
+<pre><code class="language-bash">ItemID  Info    Host    Domain  Hours   Hourly Cost Cost
+143131173   Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) jd-cos-testing-sjc03    secore.com  489 .309    151.101
+==&gt; 143131179   64 GB RAM   291.933
+==&gt; 143131183   1.00 TB SATA    17.604
+==&gt; 143131185   1.00 TB SATA    17.604
+==&gt; 143131189   10 Gbps Dual Public &amp; Private Network Uplinks (Unbonded)    147.189
+TOTAL: 625.431
 </code></pre>
 
 <p>Source</p>
@@ -162,7 +175,7 @@ class bills():
         self.client = SoftLayer.Client()
         self.mgr = SoftLayer.VSManager(self.client)
 
-    def main(self):
+    def billsByUser(self):
 
         &quot;&quot;&quot;
         Not all billing items have a user record, these are collected under the master account
@@ -211,11 +224,47 @@ class bills():
                 print(&quot;\t%s&quot; % thing)
 
 
+    def upcoming_hourly(self):
+    &quot;&quot;&quot;
+    Filters upcoming billing items for only hourly WITH a hostname that contains the string 'test'
+    Each hourly server will also have some children that need to be added for the total cost, those are included with the nonZeroNextInvoiceChildren property
+    NOTE: 
+    ObjectMask starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_item
+    ObjectFilter starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account
+    hourlyFlag needs to be 1 or 0.
+
+    &quot;&quot;&quot;
+        mask=&quot;mask[hourlyFlag,nonZeroNextInvoiceChildren]&quot;
+        objectFilter =  {
+            'nextInvoiceTopLevelBillingItems': {
+                'hourlyFlag': {'operation': 1},
+                'hostName': {'operation': '*= test'}
+            }
+        }
+        billingItems = self.client['SoftLayer_Account'].getNextInvoiceTopLevelBillingItems(mask=mask, filter=objectFilter)
+        print(&quot;ItemID\tInfo\tHost\tDomain\tHours\tHourly Cost\tCost&quot;)
+        for item in billingItems:
+            itemId = item['id']
+            hostName = item['hostName']
+            domainName = item['domainName']
+            description = item['description']
+            hours = item['hoursUsed']
+            hourly_cost = item['hourlyRecurringFee']
+            cost = int(hours) * float(hourly_cost)
+            total_cost = cost
+            print(&quot;%s\t%s\t%s\t%s\t%s\t%s\t%s&quot; % (itemId, description, hostName,domainName, hours, hourly_cost, cost ))
+            for child in item['nonZeroNextInvoiceChildren']:
+                childId = child['id']
+                childDesc = child['description']
+                childCost = int(child['hoursUsed']) * float(child['hourlyRecurringFee'])
+                total_cost = total_cost + childCost
+                print(&quot;==&gt; %s\t%s\t%s&quot; % (childId,childDesc,childCost))
+            print(&quot;TOTAL: %s&quot; % (total_cost))
 
 
 if __name__ == &quot;__main__&quot;:
     main = bills()
-    main.main()
+    main.billsByUser()
 </code></pre>
 
             </div>
