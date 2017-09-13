@@ -141,7 +141,9 @@ ga('send', 'pageview');
 				
                 
 				
-                <p>Example of how to build an order for a bare metal server.</p>
+                
+
+<p>Example of how to build an order for a bare metal server.</p>
 
 <ol>
 <li>Find the package that you want to order. listServerPackages() will filter out all that are not bare metal servers</li>
@@ -149,6 +151,7 @@ ga('send', 'pageview');
 <li>listAvailableVlans() if you want to place the server on a specific VLAN.</li>
 <li>listPartitionTemplates() will show what partition schemes you can apply to a disk.</li>
 <li>listRaidArrayTypes() shows what id numbers are for each RAID type.</li>
+<li>Custom partitions can ONLY be specified for CentOS or RHEL servers, and ONLY on the secondary drives <sup class="footnote-ref" id="fnref:1"><a rel="footnote" href="#fn:1">1</a></sup>. Trying to do the same for the primary controller will result in the default partitinoTemplate being applied. Custom partitions also require the arraySize be declared.</li>
 </ol>
 
 <pre><code class="language-python">&quot;&quot;&quot;
@@ -219,11 +222,20 @@ class ordering():
                         {
                             'arrayTypeId': 2,
                             'hardDrives': [0,1],
-                            'partitionTemplateId': 1
+                            'partitionTemplateId' : 1
                         },
                         {
                             'arrayTypeId': 9,
-                            'hardDrives': [2]
+                            'arraySize' : 2000,
+                            'hardDrives': [2],
+                            'partitions' : [
+                                {'name' : '/', 'size': 200, 'isGrow': 0},
+                                {'name' : '/boot', 'size': 100},
+                                {'name' : '/usr', 'size': 200},
+                                {'name' : '/mine', 'size': 200},
+                                {'name' : '/media', 'size': 1, 'isGrow': 1},
+                            ]
+
                         },
                         {
                             'arrayTypeId': 9,
@@ -401,6 +413,65 @@ if __name__ == &quot;__main__&quot;:
     main.main(package_id,location_id,pub_vlan_id,priv_vlan_id)
 
 </code></pre>
+
+<h2 id="exceptions-you-might-see">Exceptions you might see</h2>
+
+<ul>
+<li>SoftLayerAPIError(SoftLayer_Exception_Order_InvalidStorageGroups):</li>
+</ul>
+
+<blockquote>
+<p>Defining partitions on secondary storage groups is only allowed for CentOS and Red Hat operating systems.</p>
+
+<blockquote>
+<p>Chose the right operating system.</p>
+</blockquote>
+</blockquote>
+
+<ul>
+<li>SoftLayerAPIError(SoftLayer_Exception_Order_InvalidLocation):</li>
+</ul>
+
+<blockquote>
+<p>The location provided for this order is invalid.</p>
+
+<blockquote>
+<p>Choose a correct location, locations should be displayed in getServerPrices()</p>
+</blockquote>
+</blockquote>
+
+<ul>
+<li>SoftLayerAPIError(SoftLayer_Exception_Order_InvalidStorageGroups):</li>
+</ul>
+
+<blockquote>
+<p>Storage group #1 does not have a grow partition. Each storage group with partitions defined must have a grow partition.</p>
+
+<blockquote>
+<p>Make sure your partition has &lsquo;isGrow&rsquo; = 1 at some point.</p>
+</blockquote>
+</blockquote>
+
+<ul>
+<li>SoftLayerAPIError(SoftLayer_Exception_Order_InvalidStorageGroups):</li>
+</ul>
+
+<blockquote>
+<p>Storage group #1 with size (GB) is smaller than the total partitioned size (501GB).</p>
+
+<blockquote>
+<p>You forgot to assign an arraySize.</p>
+</blockquote>
+</blockquote>
+<div class="footnotes">
+
+<hr />
+
+<ol>
+<li id="fn:1"><a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group">https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group</a>
+ <a class="footnote-return" href="#fnref:1"><sup>[return]</sup></a></li>
+</ol>
+</div>
 
             </div>
         </div>
