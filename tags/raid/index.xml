@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-      <title>Filter on SoftLayer API Examples </title>
-    <link>https://softlayer.github.io/tags/filter/</link>
+      <title>Raid on SoftLayer API Examples </title>
+    <link>https://softlayer.github.io/tags/raid/</link>
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
@@ -278,63 +278,199 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     </item>
     
     <item>
-      <title>Look up an SSH key</title>
-      <link>https://softlayer.github.io/go/sshkey_lookup/</link>
-      <pubDate>Mon, 19 Sep 2016 00:00:00 UTC</pubDate>
+      <title>Ordering Raid</title>
+      <link>https://softlayer.github.io/ruby/orderingraid/</link>
+      <pubDate>Wed, 13 Sep 2017 00:00:00 UTC</pubDate>
       <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/go/sshkey_lookup/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
+      <guid>https://softlayer.github.io/ruby/orderingraid/</guid>
+      <description>
 
-import (
-    &amp;quot;fmt&amp;quot;
-    &amp;quot;log&amp;quot;
+&lt;p&gt;As a SoftLayer user, you have probably seen the beautiful RAID Configurator that greets you when you order a server on the SoftLayer website.&lt;/p&gt;
 
-    &amp;quot;github.com/softlayer/softlayer-go/filter&amp;quot;
-    &amp;quot;github.com/softlayer/softlayer-go/services&amp;quot;
-    &amp;quot;github.com/softlayer/softlayer-go/session&amp;quot;
-)
+&lt;p&gt;It allows you to do anything you like, from a straight RAID configuration involving all drives in a single disk array, to a much more intricate configuration with nearly any mix of disks and RAID types.&lt;/p&gt;
 
-// The key to look up
-const label = &amp;quot;Test Public Key&amp;quot;
+&lt;p&gt;However beautiful and practical the interface, sometimes you want to script this process, and the SoftLayer mantra of &amp;ldquo;Anything you can do in the Web interface, you can do on the API&amp;rdquo; also rings true in this case.&lt;/p&gt;
 
-func main() {
-    sess := session.New()
-    service := services.GetAccountService(sess)
+&lt;h2 id=&#34;single-raid-group&#34;&gt;Single RAID group&lt;/h2&gt;
 
-    keys, err := service.
-        Filter(filter.Build(
-            filter.Path(&amp;quot;sshKeys.label&amp;quot;).Eq(label))).
-        Mask(&amp;quot;id,label,key,fingerprint,notes&amp;quot;).
-        GetSshKeys()
+&lt;p&gt;If all your drives are the same and you simply want a single RAID group, be it RAID 0,1,5 or 10, you can achieve this by ordering the corresponding disk controller.&lt;/p&gt;
 
-    if err != nil {
-        log.Fatal(&amp;quot;Error retrieving SSH key: &amp;quot;, err)
-    }
+&lt;p&gt;When building your order template you will see that RAID-enabled servers are listed with multiple disk controllers. Here&amp;rsquo;s an example of the relevant price IDs from package 53 (Intel Xeon 3200 Series):&lt;/p&gt;
 
-    if len(keys) == 0 {
-        log.Fatal(&amp;quot;No ssh key found labeled &amp;quot;, label)
-    }
+&lt;pre&gt;&lt;code&gt;Category &amp;quot;Disk Controller&amp;quot;:
+     876 -- Non-RAID
+     877 -- RAID 0
+     878 -- RAID 1
+     879 -- RAID 5
+     880 -- RAID 10
+     22482 -- RAID
+&lt;/code&gt;&lt;/pre&gt;
 
-    if len(keys) &amp;gt; 1 {
-        log.Fatal(&amp;quot;More than one ssh key found labeled &amp;quot;, label)
-    }
+&lt;p&gt;So ordering an Intel 3260 server with RAID 10 through the API could look like this:&lt;/p&gt;
 
-    key := keys[0]
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;rubygems&#39;
+require &#39;softlayer_api&#39;
+ 
+$SL_API_USERNAME = &amp;quot; PLEASE SET ME &amp;quot;
+$SL_API_KEY = &amp;quot; PLEASE SET ME TOO &amp;quot;
+ 
+client = SoftLayer::Service.new(&amp;quot;SoftLayer_Product_Order&amp;quot;);
+ 
+order = {
+ :complexType =&amp;gt; &#39;SoftLayer_Container_Product_Order_Hardware_Server&#39;,
+ :quantity =&amp;gt; 1,
+ :hardware =&amp;gt; [{:hostname =&amp;gt; &#39;raidtest&#39;, :domain =&amp;gt; &#39;example.com&#39;}],
+ :location =&amp;gt; 168642, # San Jose 1
+ :packageId =&amp;gt; 53, # Intel Xeon 3200 Series
+ :prices =&amp;gt; [
+  {:id =&amp;gt; 2050}, # Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT
+  {:id =&amp;gt; 17438}, # -- Ubuntu Linux 12.04.0 LTS Precise Pangolin - Minimal Install (64 bit)
+  {:id =&amp;gt; 21004}, # 4 GB DDR3 Registered 1333
+  {:id =&amp;gt; 880}, # Disk controller -- RAID 10 
+  {:id =&amp;gt; 1257}, # First hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 728}, # 0 GB Bandwidth
+  {:id =&amp;gt; 898}, # 100 Mbps Private Network
+  {:id =&amp;gt; 906}, # Reboot / KVM over IP  
+  {:id =&amp;gt; 420}, # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
+  {:id =&amp;gt; 55}, # Host Ping
+  {:id =&amp;gt; 418}, # Nessus Vulnerability Assessment &amp;amp; Reporting
+  {:id =&amp;gt; 57}, # Notification -- Email and Ticket
+  {:id =&amp;gt; 58} # Response -- Automated Notification
+ ]
+}
+ 
+result = client.verifyOrder(order)
+## Uncomment when you are ready to order
+# client.placeOrder(order)
+&lt;/code&gt;&lt;/pre&gt;
 
-    fmt.Printf(&amp;quot;Public Key [%s] found:\n&amp;quot;, label)
+&lt;h2 id=&#34;multiple-raid-groups&#34;&gt;Multiple RAID groups&lt;/h2&gt;
 
-    fmt.Println(&amp;quot;\tID:&amp;quot;, *key.Id)
-    fmt.Println(&amp;quot;\tFingerprint:&amp;quot;, *key.Fingerprint)
-    fmt.Println(&amp;quot;\tKey:&amp;quot;, *key.Key)
+&lt;p&gt;When ordering multiple RAID groups you need to order the Disk Controller type called RAID, and specify your RAID groups in an attribute in the order template called storageGroups.
+storageGroups is of the type &lt;a href=&#34;https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group&#34;&gt;SoftLayer_Container_Product_Order_Storage_Group&lt;/a&gt; and the most important attributes can be explained as:&lt;/p&gt;
 
-    notes := &amp;quot;&amp;quot;
-    if key.Notes != nil {
-        notes = *key.Notes
-    }
+&lt;blockquote&gt;
+&lt;p&gt;arrayTypeId: Integer - Required
+Can be retrieved from &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Configuration_Storage_Group_Array_Type&#34;&gt;SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;1&lt;/a&gt;&lt;/sup&gt;
+hardDrives: Array of integers - Required
+Array of drives to take part in the given raid array. 0 = first drive, 1 = second drive, etc&lt;/p&gt;
 
-    fmt.Println(&amp;quot;\tNotes:&amp;quot;, notes)
+&lt;p&gt;hotSpareDrives: array of integers - Optional
+On raid types where hot spare is allowed, you can specify which drives to use as hot spare.
+Raid types that allow hot spare can be retrieved from &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Configuration_Storage_Group_Array_Type&#34;&gt;SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+
+&lt;p&gt;partitionTemplateId: integer - Optional
+To be used on the array where the operating system is to be installed.
+Partition Template IDs for the relevant operating system can be retrieved from
+&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Component_Partition_OperatingSystem/getPartitionTemplates&#34;&gt;SoftLayer_Hardware_Component_Partition_OperatingSystem::getPartitionTemplates&lt;/a&gt;
+use &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Component_Partition_OperatingSystem&#34;&gt;SoftLayer_Hardware_Component_Partition_OperatingSystem::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;3&lt;/a&gt;&lt;/sup&gt; to get a list of operating system groups that has partition templates&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Let&amp;rsquo;s say, for example, you want to have a server with a single SSD drive for the operating system, also hosting a large 12GB swap partition, and a separate RAID array with 3 striped 147GB SAS Drives.&lt;/p&gt;
+
+&lt;p&gt;The first thing we&amp;rsquo;ll need to do is specify the controller and drives we want in our order template.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;{:id =&amp;gt; 22482}, # Disk controller -- RAID
+{:id =&amp;gt; 13756}, # First hard drive -- 50GB SSD
+{:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
+{:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
+{:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To configure the RAID groups we need to populate storageGroups
+The disks will be addressed in the order of their placement and template, starting at disk 0.
+So for the first disk that we want to be on its own we will use arrayTypeId 9, which is JBOD, and specify partitionTemplateId 226 which specifies a 12GB Swap partition&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;{
+        :arrayTypeId =&amp;gt; 9, # JBOD -- Other types available from SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects
+        :hardDrives =&amp;gt; [0], # First Hard Drive (50GB SSD)
+        :partitionTemplateId =&amp;gt; 226 # Custom partition template - 12GB Swap
+},
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For the second group we specify arrayTypeId 1, which is RAID 0 - Striped&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;{
+        :arrayTypeId =&amp;gt; 1, # RAID 0 -- Other types available from SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects
+        :hardDrives =&amp;gt; [1,2,3] # Second, third and fourth hard drives (147GB SAS)
 }
 &lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;All together, the order will look like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;rubygems&#39;
+require &#39;softlayer_api&#39;
+ 
+$SL_API_USERNAME = &amp;quot; PLEASE SET ME &amp;quot;
+$SL_API_KEY = &amp;quot; PLEASE SET ME TOO &amp;quot;
+ 
+client = SoftLayer::Service.new(&amp;quot;SoftLayer_Product_Order&amp;quot;);
+ 
+order = {
+ :complexType =&amp;gt; &#39;SoftLayer_Container_Product_Order_Hardware_Server&#39;,
+ :quantity =&amp;gt; 1,
+ :hardware =&amp;gt; [{:hostname =&amp;gt; &#39;raidtest&#39;, :domain =&amp;gt; &#39;example.com&#39;}],
+ :location =&amp;gt; 168642, # San Jose 1
+ :packageId =&amp;gt; 53, # Intel Xeon 3200 Series
+ :prices =&amp;gt; [
+  {:id =&amp;gt; 2050}, # Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT
+  {:id =&amp;gt; 17438}, # -- Ubuntu Linux 12.04.0 LTS Precise Pangolin - Minimal Install (64 bit)
+  {:id =&amp;gt; 21004}, # 4 GB DDR3 Registered 1333
+  {:id =&amp;gt; 22482}, # Disk controller -- RAID
+  {:id =&amp;gt; 13756}, # First hard drive -- 50GB SSD
+  {:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 728}, # 0 GB Bandwidth
+  {:id =&amp;gt; 898}, # 100 Mbps Private Network
+  {:id =&amp;gt; 906}, # Reboot / KVM over IP  
+  {:id =&amp;gt; 420}, # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
+  {:id =&amp;gt; 55}, # Host Ping
+  {:id =&amp;gt; 418}, # Nessus Vulnerability Assessment &amp;amp; Reporting
+  {:id =&amp;gt; 57}, # Notification -- Email and Ticket
+  {:id =&amp;gt; 58} # Response -- Automated Notification
+ ],
+ 
+ :storageGroups =&amp;gt; [
+     { # RAID Array 1
+        :arrayTypeId =&amp;gt; 9, # JBOD
+        :hardDrives =&amp;gt; [0], # First Hard Drive (50GB SSD)
+        :partitionTemplateId =&amp;gt; 226 # Custom partition template - 12GB Swap
+     },
+     { # RAID Array 2
+        :arrayTypeId =&amp;gt; 1, # RAID 0
+        :hardDrives =&amp;gt; [1,2,3] # Second, third and fourth hard drives (147GB SAS)
+     }
+  ]
+}
+
+ 
+result = client.verifyOrder(order)
+## Uncomment when you&#39;re ready to order
+# client.placeOrder(order)
+Links and other useful information
+order_multiple_raid_groups.rb
+order_single_raid_group.rb
+get_package_options.rb (command line tool)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;//hansKristian&lt;/p&gt;
+&lt;div class=&#34;footnotes&#34;&gt;
+
+&lt;hr /&gt;
+
+&lt;ol&gt;
+&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
+ &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
+ &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
+ &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
 </description>
     </item>
     

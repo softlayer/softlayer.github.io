@@ -6,7 +6,276 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 12 Oct 2015 00:00:00 UTC</updated>
+    <updated>Wed, 13 Sep 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Advanced Bare Metal Server Ordering</title>
+      <link>https://softlayer.github.io/python/orderbaremetal/</link>
+      <pubDate>Wed, 13 Sep 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/orderbaremetal/</guid>
+      <description>&lt;p&gt;Example of how to build an order for a bare metal server.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Find the package that you want to order. listServerPackages() will filter out all that are not bare metal servers&lt;/li&gt;
+&lt;li&gt;Use getServerPrices() to find the item keyNames you want to include in your order. These price IDs can be included prices array directly, but I&amp;rsquo;ve included gatherPriceIds() to match up KeyNames to build a list of price ids. getServerPrices() will also show the locations available for ordering.&lt;/li&gt;
+&lt;li&gt;listAvailableVlans() if you want to place the server on a specific VLAN.&lt;/li&gt;
+&lt;li&gt;listPartitionTemplates() will show what partition schemes you can apply to a disk.&lt;/li&gt;
+&lt;li&gt;listRaidArrayTypes() shows what id numbers are for each RAID type.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+Places an order for a Bare Metal Server
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+
+
+class ordering():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+    def main(self, package_id, location_id, pub_vlan_id=&#39;&#39;, priv_vlan_id=&#39;&#39;):
+        &amp;quot;&amp;quot;&amp;quot;
+        Places an order for a Bare Metal Instance
+        &amp;quot;&amp;quot;&amp;quot;
+
+        &amp;quot;&amp;quot;&amp;quot;These items are required for all servers and have a 0$ cost, some can be upgraded&amp;quot;&amp;quot;&amp;quot;
+        required_items = [
+            &#39;AUTOMATED_NOTIFICATION&#39;,
+            &#39;MONITORING_HOST_PING&#39;,
+            &#39;NOTIFICATION_EMAIL_AND_TICKET&#39;,
+            &#39;REBOOT_KVM_OVER_IP&#39;,
+            &#39;NESSUS_VULNERABILITY_ASSESSMENT_REPORTING&#39;,
+            &#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#39;,
+            &#39;REDUNDANT_POWER_SUPPLY&#39;,
+        ]
+        &amp;quot;&amp;quot;&amp;quot;We need bandwidth, at least 1 ip, and the port speed &amp;quot;&amp;quot;&amp;quot;
+        network_items = [
+            &#39;BANDWIDTH_500_GB&#39;,
+            &#39;1_IP_ADDRESS&#39;,
+            &#39;1_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED&#39;,
+        ]
+        &amp;quot;&amp;quot;&amp;quot;A disk controller, a duplicate entry for each disk you want, in order, ram, OS and processor chip &amp;quot;&amp;quot;&amp;quot;
+        physical_items = [
+            &#39;DISK_CONTROLLER_RAID&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;RAM_128_GB_DDR3_1333_REG_2&#39;,
+            &#39;OS_VSPHERE_ENTERPRISE_PLUS_6_0&#39;,
+            &#39;INTEL_XEON_2620_2_00&#39;
+        ]
+
+        all_items = required_items + network_items + physical_items
+        prices = self.gatherPriceIds(package_id, all_items)
+        productOrder = {&#39;orderContainers&#39;: [
+                {&#39;hardware&#39;: 
+                    [
+                        {
+                            &#39;domain&#39;: u&#39;cgallo.com&#39;,
+                            &#39;hostname&#39;: u&#39;vmware-testing01&#39;,
+                            &#39;primaryBackendNetworkComponent&#39;: {&#39;networkVlanId&#39;: priv_vlan_id},
+                            &#39;primaryNetworkComponent&#39;: {&#39;networkVlanId&#39;: pub_vlan_id}
+                        }
+                    ],
+                    &#39;location&#39;: location_id,
+                    &#39;packageId&#39;: package_id,
+                    &#39;prices&#39;: prices,
+                    &#39;quantity&#39;: 1,
+                    &#39;storageGroups&#39; : [
+                        {
+                            &#39;arrayTypeId&#39;: 2,
+                            &#39;hardDrives&#39;: [0,1],
+                            &#39;partitionTemplateId&#39;: 1
+                        },
+                        {
+                            &#39;arrayTypeId&#39;: 9,
+                            &#39;hardDrives&#39;: [2]
+                        },
+                        {
+                            &#39;arrayTypeId&#39;: 9,
+                            &#39;hardDrives&#39;: [3]
+                        }
+                    ],
+                }
+            ]
+        }
+        pp(productOrder)
+        order = self.client[&#39;Product_Order&#39;].verifyOrder(productOrder)
+        # order = self.client[&#39;Product_Order&#39;].placeOrder(productOrder)
+        pp(order)
+
+
+    def listServerPackages(self):
+        mask = &amp;quot;mask[type]&amp;quot;
+        _filter = {
+            &#39;type&#39;: {
+                &#39;keyName&#39;: {&#39;operation&#39;: &#39;BARE_METAL_CPU&#39;},
+            },
+        }
+        result = self.client[&#39;Product_Package&#39;].getAllObjects(mask=mask, filter=_filter)
+
+        for product in result:
+            print(&amp;quot;%s - %s - %s - %s&amp;quot; % 
+                (product[&#39;id&#39;],
+                 product[&#39;name&#39;],
+                 product[&#39;keyName&#39;],
+                 product[&#39;type&#39;][&#39;keyName&#39;])
+            )
+            
+
+    def listPartitionTemplates(self):
+        mask = &amp;quot;mask[partitionTemplates[data]]&amp;quot;
+        result = self.client[&#39;SoftLayer_Hardware_Component_Partition_OperatingSystem&#39;].getAllObjects(mask=mask)
+        print(&amp;quot;OS Type, Notes&amp;quot;)
+        for os_type in result:
+            print(&amp;quot;%s - %s&amp;quot; % (os_type[&#39;description&#39;],os_type[&#39;notes&#39;]))
+            print(&amp;quot;\tTemplate id, Description&amp;quot;)
+            for template in os_type[&#39;partitionTemplates&#39;]:
+                print(&amp;quot;\t%s - %s &amp;quot; % (template[&#39;id&#39;],template[&#39;description&#39;]))
+                for partition in template[&#39;data&#39;]:
+                    print(&amp;quot;\t\t%s - %s %s&amp;quot; % 
+                        (partition[&#39;partitionName&#39;], 
+                         partition[&#39;partitionSize&#39;], 
+                         &#39;Grow&#39; if partition[&#39;isGrow&#39;] else &#39;&#39;)
+                    )
+
+    def listRaidArrayTypes(self):
+        result = self.client[&#39;SoftLayer_Configuration_Storage_Group_Array_Type&#39;].getAllObjects()
+        for raid in result:
+            print(&amp;quot;%s - %s - %s Min:%s Max:%s&amp;quot; % 
+                (raid[&#39;id&#39;], 
+                 raid[&#39;keyName&#39;], 
+                 raid[&#39;description&#39;], 
+                 raid[&#39;minimumDrives&#39;], 
+                 raid[&#39;maximumDrives&#39;])
+            ) 
+
+    def listAvailableVlans(self, dc_id):
+        mask = &amp;quot;mask[network,type,primaryRouter[datacenter]]&amp;quot;
+        _filter = {
+            &#39;networkVlans&#39; : {
+                &#39;primaryRouter&#39;: {
+                    &#39;datacenter&#39; : { &#39;id&#39;: {&#39;operation&#39;: dc_id} }
+                }
+            }
+        }
+        result = self.client[&#39;SoftLayer_Account&#39;].getNetworkVlans(mask=mask,filter=_filter)
+        for vlan in result:
+            print(&amp;quot;%s - VLAN: %s - Type: %s - %s &amp;quot; % 
+                (vlan[&#39;id&#39;], 
+                 vlan[&#39;vlanNumber&#39;],
+                 vlan[&#39;type&#39;][&#39;keyName&#39;], 
+                 vlan[&#39;primaryRouter&#39;][&#39;hostname&#39;])
+            )
+
+    def getServerPrices(self, package_id):
+        mask = &amp;quot;mask[regions,items[prices],activeServerItems[prices]]&amp;quot;
+        # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
+        result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=package_id)
+        print(&amp;quot;Location ID, Location Name&amp;quot;)
+        for location in result[&#39;regions&#39;]:
+            print(&amp;quot;%s - %s &amp;quot; % (location[&#39;location&#39;][&#39;location&#39;][&#39;id&#39;],location[&#39;description&#39;]))
+        print(&amp;quot;Price ID, description, Monthly Fee, KeyName&amp;quot;)
+        for item in result[&#39;items&#39;]:
+            for prices in item[&#39;prices&#39;]:
+                # only print the Default location price. 
+                # The ordering system will replace the default price id for you if ordering in a non-usa region.
+                if prices[&#39;locationGroupId&#39;] is &#39;&#39;:
+                    # Some software has core restrictions that effect prices
+                    if &#39;capacityRestrictionType&#39; in prices:
+                        cores = &amp;quot;%s - %s&amp;quot; % (
+                             prices[&#39;capacityRestrictionMinimum&#39;], 
+                             prices[&#39;capacityRestrictionMaximum&#39;])
+                        print(&amp;quot;%s, %s - %s cores, $%s, %s &amp;quot; % 
+                            (prices[&#39;id&#39;],
+                             item[&#39;description&#39;],
+                             cores,prices.get(&#39;recurringFee&#39;,&#39;?&#39;),
+                             item[&#39;keyName&#39;])
+                        )
+                    else:
+                        print(&amp;quot;%s, %s, $%s, %s &amp;quot; % 
+                            (prices[&#39;id&#39;],
+                              item[&#39;description&#39;],
+                              prices.get(&#39;recurringFee&#39;,&#39;?&#39;),
+                              item[&#39;keyName&#39;])
+                        )
+        print(&amp;quot;======= SERVER ITEMS =======&amp;quot;)
+        # serverItems = self.client[&#39;Product_Package&#39;].getActiveServerItems(id=package_id)
+        print(&amp;quot;Price ID, description, Monthly Fee, KeyName&amp;quot;)
+        for item in result[&#39;activeServerItems&#39;]:
+            for prices in item[&#39;prices&#39;]:
+                # only print the Default location price. 
+                # The ordering system will replace the default price id for you if ordering in a non-usa region.
+                if prices[&#39;locationGroupId&#39;] is &#39;&#39;:
+                    print(&amp;quot;%s, %s, $%s, %s &amp;quot; % 
+                        (prices[&#39;id&#39;],
+                         item[&#39;description&#39;],
+                         prices.get(&#39;recurringFee&#39;,&#39;?&#39;),
+                         item[&#39;keyName&#39;])
+                    )
+
+
+    def gatherPriceIds(self,package_id,keyNames):
+        # This wont work for prices that have core requirements
+        mask = &amp;quot;mask[items[prices],activeServerItems[prices]]&amp;quot;
+        items = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=package_id)
+
+        prices = []
+        sorted_items = {}
+
+        for item in items[&#39;items&#39;]:
+            for price in item[&#39;prices&#39;]:
+                if price[&#39;locationGroupId&#39;] is &#39;&#39;: 
+                    sorted_items[item[&#39;keyName&#39;]] = price[&#39;id&#39;]
+        for item in items[&#39;activeServerItems&#39;]:
+            for price in item[&#39;prices&#39;]:
+                if price[&#39;locationGroupId&#39;] is &#39;&#39;: 
+                    sorted_items[item[&#39;keyName&#39;]] = price[&#39;id&#39;]
+
+        for keyName in keyNames:
+            prices.append({&#39;id&#39;: int(sorted_items.get(keyName))})
+        return prices
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+
+    main = ordering()
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Step 1, find the processor type you want
+    269 - Quad E7-4800  Series (6 Drives) - 2U_QUAD_E74800_6_DRIVES : BARE_METAL_CPU
+    &amp;quot;&amp;quot;&amp;quot;
+    main.listServerPackages()
+    package_id = 263
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Step 2, collect all the pieces you want to order
+    getServerPrices will list out all the keyNames and cost of components
+    that can be ordered on a certain package. Will also list the DCs that this
+    server is available in.
+    &amp;quot;&amp;quot;&amp;quot;
+    main.getServerPrices(package_id)
+    location_id = 142776
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Step 3, customize and place the order
+    &amp;quot;&amp;quot;&amp;quot;
+    main.listAvailableVlans(location_id)
+    pub_vlan_id  = 2137279
+    priv_vlan_id = 2137281
+    main.listPartitionTemplates()
+    main.listRaidArrayTypes()
+    main.main(package_id,location_id,pub_vlan_id,priv_vlan_id)
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>List Packages</title>

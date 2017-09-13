@@ -6,7 +6,782 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 07 Sep 2017 00:00:00 UTC</updated>
+    <updated>Wed, 13 Sep 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Advanced Bare Metal Server Ordering</title>
+      <link>https://softlayer.github.io/python/orderbaremetal/</link>
+      <pubDate>Wed, 13 Sep 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/orderbaremetal/</guid>
+      <description>&lt;p&gt;Example of how to build an order for a bare metal server.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Find the package that you want to order. listServerPackages() will filter out all that are not bare metal servers&lt;/li&gt;
+&lt;li&gt;Use getServerPrices() to find the item keyNames you want to include in your order. These price IDs can be included prices array directly, but I&amp;rsquo;ve included gatherPriceIds() to match up KeyNames to build a list of price ids. getServerPrices() will also show the locations available for ordering.&lt;/li&gt;
+&lt;li&gt;listAvailableVlans() if you want to place the server on a specific VLAN.&lt;/li&gt;
+&lt;li&gt;listPartitionTemplates() will show what partition schemes you can apply to a disk.&lt;/li&gt;
+&lt;li&gt;listRaidArrayTypes() shows what id numbers are for each RAID type.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
+@author Christopher Gallo
+Places an order for a Bare Metal Server
+&amp;quot;&amp;quot;&amp;quot;
+import SoftLayer
+from pprint import pprint as pp
+
+
+
+class ordering():
+
+    def __init__(self):
+
+        self.client = SoftLayer.Client()
+
+    def main(self, package_id, location_id, pub_vlan_id=&#39;&#39;, priv_vlan_id=&#39;&#39;):
+        &amp;quot;&amp;quot;&amp;quot;
+        Places an order for a Bare Metal Instance
+        &amp;quot;&amp;quot;&amp;quot;
+
+        &amp;quot;&amp;quot;&amp;quot;These items are required for all servers and have a 0$ cost, some can be upgraded&amp;quot;&amp;quot;&amp;quot;
+        required_items = [
+            &#39;AUTOMATED_NOTIFICATION&#39;,
+            &#39;MONITORING_HOST_PING&#39;,
+            &#39;NOTIFICATION_EMAIL_AND_TICKET&#39;,
+            &#39;REBOOT_KVM_OVER_IP&#39;,
+            &#39;NESSUS_VULNERABILITY_ASSESSMENT_REPORTING&#39;,
+            &#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#39;,
+            &#39;REDUNDANT_POWER_SUPPLY&#39;,
+        ]
+        &amp;quot;&amp;quot;&amp;quot;We need bandwidth, at least 1 ip, and the port speed &amp;quot;&amp;quot;&amp;quot;
+        network_items = [
+            &#39;BANDWIDTH_500_GB&#39;,
+            &#39;1_IP_ADDRESS&#39;,
+            &#39;1_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED&#39;,
+        ]
+        &amp;quot;&amp;quot;&amp;quot;A disk controller, a duplicate entry for each disk you want, in order, ram, OS and processor chip &amp;quot;&amp;quot;&amp;quot;
+        physical_items = [
+            &#39;DISK_CONTROLLER_RAID&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;HARD_DRIVE_2_00_TB_SATA_2&#39;,
+            &#39;RAM_128_GB_DDR3_1333_REG_2&#39;,
+            &#39;OS_VSPHERE_ENTERPRISE_PLUS_6_0&#39;,
+            &#39;INTEL_XEON_2620_2_00&#39;
+        ]
+
+        all_items = required_items + network_items + physical_items
+        prices = self.gatherPriceIds(package_id, all_items)
+        productOrder = {&#39;orderContainers&#39;: [
+                {&#39;hardware&#39;: 
+                    [
+                        {
+                            &#39;domain&#39;: u&#39;cgallo.com&#39;,
+                            &#39;hostname&#39;: u&#39;vmware-testing01&#39;,
+                            &#39;primaryBackendNetworkComponent&#39;: {&#39;networkVlanId&#39;: priv_vlan_id},
+                            &#39;primaryNetworkComponent&#39;: {&#39;networkVlanId&#39;: pub_vlan_id}
+                        }
+                    ],
+                    &#39;location&#39;: location_id,
+                    &#39;packageId&#39;: package_id,
+                    &#39;prices&#39;: prices,
+                    &#39;quantity&#39;: 1,
+                    &#39;storageGroups&#39; : [
+                        {
+                            &#39;arrayTypeId&#39;: 2,
+                            &#39;hardDrives&#39;: [0,1],
+                            &#39;partitionTemplateId&#39;: 1
+                        },
+                        {
+                            &#39;arrayTypeId&#39;: 9,
+                            &#39;hardDrives&#39;: [2]
+                        },
+                        {
+                            &#39;arrayTypeId&#39;: 9,
+                            &#39;hardDrives&#39;: [3]
+                        }
+                    ],
+                }
+            ]
+        }
+        pp(productOrder)
+        order = self.client[&#39;Product_Order&#39;].verifyOrder(productOrder)
+        # order = self.client[&#39;Product_Order&#39;].placeOrder(productOrder)
+        pp(order)
+
+
+    def listServerPackages(self):
+        mask = &amp;quot;mask[type]&amp;quot;
+        _filter = {
+            &#39;type&#39;: {
+                &#39;keyName&#39;: {&#39;operation&#39;: &#39;BARE_METAL_CPU&#39;},
+            },
+        }
+        result = self.client[&#39;Product_Package&#39;].getAllObjects(mask=mask, filter=_filter)
+
+        for product in result:
+            print(&amp;quot;%s - %s - %s - %s&amp;quot; % 
+                (product[&#39;id&#39;],
+                 product[&#39;name&#39;],
+                 product[&#39;keyName&#39;],
+                 product[&#39;type&#39;][&#39;keyName&#39;])
+            )
+            
+
+    def listPartitionTemplates(self):
+        mask = &amp;quot;mask[partitionTemplates[data]]&amp;quot;
+        result = self.client[&#39;SoftLayer_Hardware_Component_Partition_OperatingSystem&#39;].getAllObjects(mask=mask)
+        print(&amp;quot;OS Type, Notes&amp;quot;)
+        for os_type in result:
+            print(&amp;quot;%s - %s&amp;quot; % (os_type[&#39;description&#39;],os_type[&#39;notes&#39;]))
+            print(&amp;quot;\tTemplate id, Description&amp;quot;)
+            for template in os_type[&#39;partitionTemplates&#39;]:
+                print(&amp;quot;\t%s - %s &amp;quot; % (template[&#39;id&#39;],template[&#39;description&#39;]))
+                for partition in template[&#39;data&#39;]:
+                    print(&amp;quot;\t\t%s - %s %s&amp;quot; % 
+                        (partition[&#39;partitionName&#39;], 
+                         partition[&#39;partitionSize&#39;], 
+                         &#39;Grow&#39; if partition[&#39;isGrow&#39;] else &#39;&#39;)
+                    )
+
+    def listRaidArrayTypes(self):
+        result = self.client[&#39;SoftLayer_Configuration_Storage_Group_Array_Type&#39;].getAllObjects()
+        for raid in result:
+            print(&amp;quot;%s - %s - %s Min:%s Max:%s&amp;quot; % 
+                (raid[&#39;id&#39;], 
+                 raid[&#39;keyName&#39;], 
+                 raid[&#39;description&#39;], 
+                 raid[&#39;minimumDrives&#39;], 
+                 raid[&#39;maximumDrives&#39;])
+            ) 
+
+    def listAvailableVlans(self, dc_id):
+        mask = &amp;quot;mask[network,type,primaryRouter[datacenter]]&amp;quot;
+        _filter = {
+            &#39;networkVlans&#39; : {
+                &#39;primaryRouter&#39;: {
+                    &#39;datacenter&#39; : { &#39;id&#39;: {&#39;operation&#39;: dc_id} }
+                }
+            }
+        }
+        result = self.client[&#39;SoftLayer_Account&#39;].getNetworkVlans(mask=mask,filter=_filter)
+        for vlan in result:
+            print(&amp;quot;%s - VLAN: %s - Type: %s - %s &amp;quot; % 
+                (vlan[&#39;id&#39;], 
+                 vlan[&#39;vlanNumber&#39;],
+                 vlan[&#39;type&#39;][&#39;keyName&#39;], 
+                 vlan[&#39;primaryRouter&#39;][&#39;hostname&#39;])
+            )
+
+    def getServerPrices(self, package_id):
+        mask = &amp;quot;mask[regions,items[prices],activeServerItems[prices]]&amp;quot;
+        # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
+        result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=package_id)
+        print(&amp;quot;Location ID, Location Name&amp;quot;)
+        for location in result[&#39;regions&#39;]:
+            print(&amp;quot;%s - %s &amp;quot; % (location[&#39;location&#39;][&#39;location&#39;][&#39;id&#39;],location[&#39;description&#39;]))
+        print(&amp;quot;Price ID, description, Monthly Fee, KeyName&amp;quot;)
+        for item in result[&#39;items&#39;]:
+            for prices in item[&#39;prices&#39;]:
+                # only print the Default location price. 
+                # The ordering system will replace the default price id for you if ordering in a non-usa region.
+                if prices[&#39;locationGroupId&#39;] is &#39;&#39;:
+                    # Some software has core restrictions that effect prices
+                    if &#39;capacityRestrictionType&#39; in prices:
+                        cores = &amp;quot;%s - %s&amp;quot; % (
+                             prices[&#39;capacityRestrictionMinimum&#39;], 
+                             prices[&#39;capacityRestrictionMaximum&#39;])
+                        print(&amp;quot;%s, %s - %s cores, $%s, %s &amp;quot; % 
+                            (prices[&#39;id&#39;],
+                             item[&#39;description&#39;],
+                             cores,prices.get(&#39;recurringFee&#39;,&#39;?&#39;),
+                             item[&#39;keyName&#39;])
+                        )
+                    else:
+                        print(&amp;quot;%s, %s, $%s, %s &amp;quot; % 
+                            (prices[&#39;id&#39;],
+                              item[&#39;description&#39;],
+                              prices.get(&#39;recurringFee&#39;,&#39;?&#39;),
+                              item[&#39;keyName&#39;])
+                        )
+        print(&amp;quot;======= SERVER ITEMS =======&amp;quot;)
+        # serverItems = self.client[&#39;Product_Package&#39;].getActiveServerItems(id=package_id)
+        print(&amp;quot;Price ID, description, Monthly Fee, KeyName&amp;quot;)
+        for item in result[&#39;activeServerItems&#39;]:
+            for prices in item[&#39;prices&#39;]:
+                # only print the Default location price. 
+                # The ordering system will replace the default price id for you if ordering in a non-usa region.
+                if prices[&#39;locationGroupId&#39;] is &#39;&#39;:
+                    print(&amp;quot;%s, %s, $%s, %s &amp;quot; % 
+                        (prices[&#39;id&#39;],
+                         item[&#39;description&#39;],
+                         prices.get(&#39;recurringFee&#39;,&#39;?&#39;),
+                         item[&#39;keyName&#39;])
+                    )
+
+
+    def gatherPriceIds(self,package_id,keyNames):
+        # This wont work for prices that have core requirements
+        mask = &amp;quot;mask[items[prices],activeServerItems[prices]]&amp;quot;
+        items = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=package_id)
+
+        prices = []
+        sorted_items = {}
+
+        for item in items[&#39;items&#39;]:
+            for price in item[&#39;prices&#39;]:
+                if price[&#39;locationGroupId&#39;] is &#39;&#39;: 
+                    sorted_items[item[&#39;keyName&#39;]] = price[&#39;id&#39;]
+        for item in items[&#39;activeServerItems&#39;]:
+            for price in item[&#39;prices&#39;]:
+                if price[&#39;locationGroupId&#39;] is &#39;&#39;: 
+                    sorted_items[item[&#39;keyName&#39;]] = price[&#39;id&#39;]
+
+        for keyName in keyNames:
+            prices.append({&#39;id&#39;: int(sorted_items.get(keyName))})
+        return prices
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+
+    main = ordering()
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Step 1, find the processor type you want
+    269 - Quad E7-4800  Series (6 Drives) - 2U_QUAD_E74800_6_DRIVES : BARE_METAL_CPU
+    &amp;quot;&amp;quot;&amp;quot;
+    main.listServerPackages()
+    package_id = 263
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Step 2, collect all the pieces you want to order
+    getServerPrices will list out all the keyNames and cost of components
+    that can be ordered on a certain package. Will also list the DCs that this
+    server is available in.
+    &amp;quot;&amp;quot;&amp;quot;
+    main.getServerPrices(package_id)
+    location_id = 142776
+
+    &amp;quot;&amp;quot;&amp;quot;
+    Step 3, customize and place the order
+    &amp;quot;&amp;quot;&amp;quot;
+    main.listAvailableVlans(location_id)
+    pub_vlan_id  = 2137279
+    priv_vlan_id = 2137281
+    main.listPartitionTemplates()
+    main.listRaidArrayTypes()
+    main.main(package_id,location_id,pub_vlan_id,priv_vlan_id)
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Object Storage Uploader</title>
+      <link>https://softlayer.github.io/python/swiftuploader/</link>
+      <pubDate>Wed, 13 Sep 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/swiftuploader/</guid>
+      <description>
+
+&lt;h2 id=&#34;overview&#34;&gt;Overview&lt;/h2&gt;
+
+&lt;p&gt;We’ve recently added the option to import customer-supplied Virtual Hard Disks (VHDs) to our object storage offering. This is a great option for our customers who may have special virtual machines that they have spent hours perfecting. Since learning to import these images can pose a slight challenge, especially for those unfamiliar with object storage (OpenStack Swift), I wrote this blog to share scripts that will streamline the process.&lt;/p&gt;
+
+&lt;h2 id=&#34;object-storage&#34;&gt;Object Storage&lt;/h2&gt;
+
+&lt;p&gt;SoftLayer’s object storage is an enhanced version of OpenStack Swift. Although we’ve added features to it, the API (on the whole) is still the same. Two requirements of particular importance to storing disk images are limitations and requirements on large files. Swift limits all files to be 5GB or less. To support larger files users need to create a manifest file that combines smaller files into one large file.&lt;/p&gt;
+
+&lt;p&gt;For example, to upload a 12GB VHD, the user is expected to segment the file into at least three files and then create a manifest that brings them back together.&lt;/p&gt;
+
+&lt;h2 id=&#34;easier-importing&#34;&gt;Easier Importing&lt;/h2&gt;
+
+&lt;p&gt;Since many people don’t have the time to learn the inner workings of Swift and would just like to get VHDs running on their servers, I have created a set scripts to simplify the process. They handle the authentication, file segmentation, and dynamic manifest creation for you, so you can get up and running quickly. You can easily access them here .&lt;/p&gt;
+
+&lt;p&gt;You can use a Bash script or a Python 3 script. Both do the same thing, but depending on your environment you may prefer one over the other.&lt;/p&gt;
+
+&lt;p&gt;But before we jump into the scripts, you’ll need to find your object storage username and password.&lt;/p&gt;
+
+&lt;p&gt;To get those, log in to &lt;a href=&#34;http://control.softlayer.com&#34;&gt;http://control.softlayer.com&lt;/a&gt;, go to Storage-&amp;gt;Object Storage, select your cluster (I would suggest Dallas 5 for your first tests), and then click “View Credentials” in the top left of the page. You will be presented with a modal window containing your username and API Key (or password) for object storage.&lt;/p&gt;
+
+&lt;h2 id=&#34;objectstorageuploader-sh-bash-edition&#34;&gt;ObjectStorageUploader.sh - Bash Edition&lt;/h2&gt;
+
+&lt;p&gt;The idea behind this script is to have as little user interaction as possible. By calling the script with the proper parameters, you are able to walk away and let it do its thing.&lt;/p&gt;
+
+&lt;p&gt;Simply place the bash script in your directory of VHDs. Call the script by passing in the image you want to upload, the location to upload it (container/filename), and your Swift username and password.&lt;/p&gt;
+
+&lt;p&gt;$ ./ObjectStorageUpload.sh myOS.vhd &amp;lsquo;myContainer/myOS.vhd&amp;rsquo; &amp;lsquo;SLOS1234-1:SL1234&amp;rsquo; &amp;lsquo;apikey&amp;rsquo;&lt;/p&gt;
+
+&lt;p&gt;It will begin the process of walking through the segments of the file and building up your object in object storage.&lt;/p&gt;
+
+&lt;h2 id=&#34;objectstorageuploader-py-python-3-edition&#34;&gt;ObjectStorageUploader.py - Python 3 Edition&lt;/h2&gt;
+
+&lt;p&gt;Before we begin, make sure you have installed the latest version of Python 3 located here: &lt;a href=&#34;https://www.python.org/downloads/&#34;&gt;https://www.python.org/downloads/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Any Python 3 release will work, but I have been using Python 3.4.0 for my testing.&lt;/p&gt;
+
+&lt;p&gt;The idea behind this script is to actually walk you through the process of uploading a file to Swift. Use this script via supplied parameters, in “interactive mode,” or a combination of the two. This is particularly handy for Windows users who are newer to scripting. Simply drop the script in the folder containing your VHDs, run it, and let it guide you through uploading the image to object storage.&lt;/p&gt;
+
+&lt;p&gt;To execute the script, place it in the directory where you store your VHDs and double click it. It will then prompt you to select the file you want to upload.&lt;/p&gt;
+
+&lt;p&gt;After selecting your file, you will be asked for your Swift username and password. Authentication will be attempted and, if successful, the list of containers in your cluster will be presented.&lt;/p&gt;
+
+&lt;p&gt;Select the container you want to upload to and the script will begin uploading the VHD to object storage.&lt;/p&gt;
+
+&lt;p&gt;If you prefer the command line arguments approach, you can pass in arguments to this script too. The signature is slightly different since all the opinions are optional.&lt;/p&gt;
+
+&lt;p&gt;$ python ObjectStorageUpload.py -f myOS.vhd -t &amp;lsquo;myContainer/myOS.vhd&amp;rsquo; -u &amp;lsquo;SLOS1234-1:SL1234&amp;rsquo;&lt;/p&gt;
+
+&lt;h2 id=&#34;importing-uploaded-vhd-as-image-templates&#34;&gt;Importing Uploaded VHD as Image Templates&lt;/h2&gt;
+
+&lt;p&gt;Now that your image is in object storage you can import your VHD into the SoftLayer template, so you can use it to provision a new virtual server!&lt;/p&gt;
+
+&lt;p&gt;Go to your image templates page in the portal and click the “Import Image” tab. Select the Swift account, cluster, container, and file that you uploaded. Give your new template a name and some notes. Make sure to fill out the Operating System information properly as this is used when setting up your new server, and finally click “Import.”&lt;/p&gt;
+
+&lt;p&gt;Lastly, you will be emailed after the VHD has been processed by our system.&lt;/p&gt;
+
+&lt;p&gt;-Adam Shaw&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;# ================================================================================
+#     ObjectStorageUploader.py
+#     © Copyright IBM Corporation 2014.
+#     LICENSE: MIT (http://opensource.org/licenses/MIT)    
+# ================================================================================
+
+import argparse
+import os
+import math
+import http.client
+from urllib.parse import urlparse
+from urllib.parse import quote
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&amp;quot;-f&amp;quot;, &amp;quot;--file&amp;quot;, help=&amp;quot;file to upload to SWIFT&amp;quot;)
+    parser.add_argument(&amp;quot;-u&amp;quot;, &amp;quot;--username&amp;quot;, help=&amp;quot;SWIFT username&amp;quot;)
+    parser.add_argument(&amp;quot;-p&amp;quot;, &amp;quot;--password&amp;quot;, help=&amp;quot;SWIFT password (SoftLayer API key)&amp;quot;)
+    parser.add_argument(&amp;quot;-c&amp;quot;, &amp;quot;--cluster&amp;quot;, help=&amp;quot;SWIFT cluster to use (default: dal05.objectstorage.softlayer.net)&amp;quot;)
+    parser.add_argument(&amp;quot;-t&amp;quot;, &amp;quot;--target&amp;quot;, help=&amp;quot;location on SWIFT cluster to store file (container/filename.vhd)&amp;quot;)
+    args = parser.parse_args()
+
+    if not args.file:
+        filename = select_file()
+    else:
+        filename = args.file
+
+    if not args.username:
+        swift_user_name, swift_password = get_swift_credentials()
+    else:
+        swift_user_name = args.username
+        swift_password = args.password
+
+    if not args.cluster:
+        storage_url, auth_token = authenticate_swift(
+            swift_user_name,
+            swift_password,
+            &amp;quot;dal05.objectstorage.softlayer.net&amp;quot;
+        )
+    else:
+        storage_url, auth_token = authenticate_swift(
+            swift_user_name,
+            swift_password,
+            args.cluster
+        )
+
+    if not args.target:
+        container = select_container(storage_url, auth_token)
+        swift_target_path = &amp;quot;{}/{}&amp;quot;.format(container, quote(filename))
+    else:
+        swift_target_path = args.target
+
+    upload_file(filename, swift_target_path, storage_url, auth_token)
+
+
+def select_file():
+    current_path = (os.path.dirname(os.path.realpath(__file__)))
+    print(&amp;quot;Files in {}&amp;quot;.format(current_path))
+    files = get_file_list(current_path)
+    return prompt_for_choice(files, &amp;quot;Select file for upload:&amp;quot;)
+
+
+def get_file_list(path):
+    files = []
+    for file in os.listdir(path):
+        if os.path.isfile(file):
+            files.append(file)
+    return files
+
+
+def prompt_for_choice(list, prompt_label):
+    for i, item in enumerate(list):
+        if len(item):
+            print(&amp;quot;{}) {}&amp;quot;.format(i, item))
+    selected_index = input(prompt_label)
+    if selected_index.isdigit():
+        if 0 &amp;lt;= int(selected_index) &amp;lt; len(list):
+            print()
+            return list[int(selected_index)]
+
+    print(&amp;quot;Invalid Input: {}&amp;quot;.format(selected_index))
+    return prompt_for_choice(list, prompt_label)
+
+
+def get_swift_credentials():
+    swift_user_name = input(&amp;quot;Swift Username:&amp;quot;)
+    swift_password = input(&amp;quot;Swift Password:&amp;quot;)
+    return swift_user_name, swift_password
+
+
+def authenticate_swift(swift_user_name, swift_password, selected_endpoint=&amp;quot;&amp;quot;):
+    if selected_endpoint == &amp;quot;&amp;quot;:
+        swift_endpoints = [
+            &amp;quot;dal05.objectstorage.softlayer.net&amp;quot;,
+            &amp;quot;sng01.objectstorage.softlayer.net&amp;quot;,
+            &amp;quot;ams01.objectstorage.softlayer.net&amp;quot;,
+        ]
+        selected_endpoint = prompt_for_choice(
+            swift_endpoints,
+            &amp;quot;Select Object Storage Endpoint:&amp;quot;
+        )
+
+    print(&amp;quot;Authenticating...&amp;quot;)
+    headers = {
+        &amp;quot;X-Storage-User&amp;quot;: swift_user_name,
+        &amp;quot;X-Storage-Pass&amp;quot;: swift_password
+    }
+    try:
+        response = object_storage_request(
+            selected_endpoint,
+            &amp;quot;/auth/v1.0/&amp;quot;,
+            headers
+        )
+    except Exception:
+        swift_user_name, swift_password = get_swift_credentials()
+        return authenticate_swift(swift_user_name, swift_password)
+    print(&amp;quot;Success!&amp;quot;)
+
+    storage_url = response.getheader(&amp;quot;X-Storage-Url&amp;quot;)
+    auth_token = response.getheader(&amp;quot;X-Auth-Token&amp;quot;)
+
+    return storage_url, auth_token
+
+
+def select_container(storage_url, auth_token):
+    url_tuple = urlparse(storage_url)
+
+    headers = {&amp;quot;X-Auth-Token&amp;quot;: auth_token}
+    try:
+        response = object_storage_request(
+            url_tuple.netloc,
+            url_tuple.path,
+            headers
+        )
+    except Exception:
+        swift_user_name, swift_password = get_swift_credentials()
+        storage_url, auth_token = authenticate_swift(swift_user_name, swift_password)
+        return select_container(storage_url, auth_token)
+
+    containers = response.read().decode(&amp;quot;utf-8&amp;quot;).split(&amp;quot;\n&amp;quot;)
+    return prompt_for_choice(containers, &amp;quot;Select Container:&amp;quot;)
+
+
+def object_storage_request(server, path, headers, method=&amp;quot;GET&amp;quot;, data=&amp;quot;&amp;quot;):
+    connection = http.client.HTTPConnection(server)
+    connection.request(method, path, data, headers)
+    response = connection.getresponse()
+
+    if 200 &amp;lt;= response.getcode() &amp;lt; 300:
+        return response
+
+    print(&amp;quot;Error {}: {}&amp;quot;.format(response.status, response.reason))
+    raise Exception(response.status, response.reason)
+
+
+def upload_file(filename, swift_target_path, storage_url, auth_token):
+    url_tuple = urlparse(storage_url)
+    headers = {&amp;quot;X-Auth-Token&amp;quot;: auth_token}
+
+    file_size = os.path.getsize(filename)
+    block_size = 1048576
+    chunk_size = 5 * block_size
+    chunks = math.ceil(file_size / chunk_size)
+
+    print(&amp;quot;Reading in file&amp;quot;)
+    file = open(filename, &#39;rb&#39;)
+    print(&amp;quot;Uploading {} to \&amp;quot;{}\&amp;quot;&amp;quot;.format(filename, swift_target_path))
+    for i in range(0, chunks):
+        data = file.read(chunk_size)
+        print(&amp;quot;Uploading part {} of {}&amp;quot;.format(i + 1, chunks))
+        chunk_name = &amp;quot;chunk-{0:0&amp;gt;5}&amp;quot;.format(i)
+        object_storage_request(
+            url_tuple.netloc,
+            &amp;quot;{}/{}/{}&amp;quot;.format(url_tuple.path, swift_target_path, chunk_name),
+            headers,
+            &amp;quot;PUT&amp;quot;,
+            data
+        )
+
+    try:
+        print(&amp;quot;Writing manifest file&amp;quot;)
+        headers = {
+            &amp;quot;X-Auth-Token&amp;quot;: auth_token,
+            &amp;quot;X-Object-Manifest&amp;quot;: swift_target_path,
+            &amp;quot;Content-Length&amp;quot;: 0,
+        }
+        object_storage_request(
+            url_tuple.netloc,
+            &amp;quot;{}/{}&amp;quot;.format(url_tuple.path, swift_target_path),
+            headers,
+            &amp;quot;PUT&amp;quot;
+        )
+    except Exception:
+        return
+
+    print(&amp;quot;File Uploaded!&amp;quot;)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main()
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;#!/bin/bash
+# ================================================================================
+#     ObjectStorageUploader.sh
+#     © Copyright IBM Corporation 2014.
+#     LICENSE: MIT (http://opensource.org/licenses/MIT)    
+# ================================================================================
+
+#./objectstorageupload.sh dsl-4.4.10.iso &#39;myContainer/file.vhd&#39; &#39;SLOS1234-1:SL1234&#39; &#39;apikey&#39;
+
+fileToUpload=$1
+swiftTargetPath=$2
+swiftUsername=$3
+swiftPassword=$4
+
+swiftEndpoint=&#39;https://dal05.objectstorage.softlayer.net/auth/v1.0/&#39;
+
+apiResponse=$(curl -X GET -H &amp;quot;X-Storage-User: $swiftUsername&amp;quot; -H &amp;quot;X-Storage-Pass: $swiftPassword&amp;quot; -s -i $swiftEndpoint)
+swiftAuthToken=$(echo &amp;quot;$apiResponse&amp;quot; | grep &amp;quot;X-Auth-Token:&amp;quot; | sed &#39;s/X-Auth-Token: //g&#39; | tr -d &#39;\r&#39;)
+swiftStorageUrl=$(echo &amp;quot;$apiResponse&amp;quot; | grep &amp;quot;X-Storage-Url:&amp;quot; | sed &#39;s/X-Storage-Url: //g&#39; | tr -d &#39;\r&#39;)
+
+fileSize=$(wc -c $fileToUpload | awk &#39;{print $1}&#39;)
+blockSize=1048576
+let chunkSize=2048 #2GB chunks
+let chunks=($fileSize/$blockSize+$chunkSize-1)/$chunkSize;
+
+for ((i=0; i&amp;lt;chunks; i++))
+do
+   printf -v chunkName &amp;quot;chunk-%05d&amp;quot; $i
+   let skipChunk=$i*chunkSize
+
+   dd if=$fileToUpload bs=$blockSize count=$chunkSize skip=$skipChunk | curl -X PUT -H &amp;quot;X-Auth-Token: $swiftAuthToken&amp;quot; --data-binary @- &amp;quot;$swiftStorageUrl/$swiftTargetPath/$chunkName&amp;quot;
+done
+
+curl -X PUT -H &amp;quot;X-Auth-Token: $swiftAuthToken&amp;quot; -H &amp;quot;X-Object-Manifest: $swiftTargetPath&amp;quot; -H &amp;quot;Content-Length: 0&amp;quot; $swiftStorageUrl/$swiftTargetPath
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Originally from &lt;a href=&#34;https://sldn.softlayer.com/blog/ashaw/object-storage-uploader&#34;&gt;SLDN&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Ordering Raid</title>
+      <link>https://softlayer.github.io/ruby/orderingraid/</link>
+      <pubDate>Wed, 13 Sep 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/ruby/orderingraid/</guid>
+      <description>
+
+&lt;p&gt;As a SoftLayer user, you have probably seen the beautiful RAID Configurator that greets you when you order a server on the SoftLayer website.&lt;/p&gt;
+
+&lt;p&gt;It allows you to do anything you like, from a straight RAID configuration involving all drives in a single disk array, to a much more intricate configuration with nearly any mix of disks and RAID types.&lt;/p&gt;
+
+&lt;p&gt;However beautiful and practical the interface, sometimes you want to script this process, and the SoftLayer mantra of &amp;ldquo;Anything you can do in the Web interface, you can do on the API&amp;rdquo; also rings true in this case.&lt;/p&gt;
+
+&lt;h2 id=&#34;single-raid-group&#34;&gt;Single RAID group&lt;/h2&gt;
+
+&lt;p&gt;If all your drives are the same and you simply want a single RAID group, be it RAID 0,1,5 or 10, you can achieve this by ordering the corresponding disk controller.&lt;/p&gt;
+
+&lt;p&gt;When building your order template you will see that RAID-enabled servers are listed with multiple disk controllers. Here&amp;rsquo;s an example of the relevant price IDs from package 53 (Intel Xeon 3200 Series):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Category &amp;quot;Disk Controller&amp;quot;:
+     876 -- Non-RAID
+     877 -- RAID 0
+     878 -- RAID 1
+     879 -- RAID 5
+     880 -- RAID 10
+     22482 -- RAID
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So ordering an Intel 3260 server with RAID 10 through the API could look like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;rubygems&#39;
+require &#39;softlayer_api&#39;
+ 
+$SL_API_USERNAME = &amp;quot; PLEASE SET ME &amp;quot;
+$SL_API_KEY = &amp;quot; PLEASE SET ME TOO &amp;quot;
+ 
+client = SoftLayer::Service.new(&amp;quot;SoftLayer_Product_Order&amp;quot;);
+ 
+order = {
+ :complexType =&amp;gt; &#39;SoftLayer_Container_Product_Order_Hardware_Server&#39;,
+ :quantity =&amp;gt; 1,
+ :hardware =&amp;gt; [{:hostname =&amp;gt; &#39;raidtest&#39;, :domain =&amp;gt; &#39;example.com&#39;}],
+ :location =&amp;gt; 168642, # San Jose 1
+ :packageId =&amp;gt; 53, # Intel Xeon 3200 Series
+ :prices =&amp;gt; [
+  {:id =&amp;gt; 2050}, # Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT
+  {:id =&amp;gt; 17438}, # -- Ubuntu Linux 12.04.0 LTS Precise Pangolin - Minimal Install (64 bit)
+  {:id =&amp;gt; 21004}, # 4 GB DDR3 Registered 1333
+  {:id =&amp;gt; 880}, # Disk controller -- RAID 10 
+  {:id =&amp;gt; 1257}, # First hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 728}, # 0 GB Bandwidth
+  {:id =&amp;gt; 898}, # 100 Mbps Private Network
+  {:id =&amp;gt; 906}, # Reboot / KVM over IP  
+  {:id =&amp;gt; 420}, # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
+  {:id =&amp;gt; 55}, # Host Ping
+  {:id =&amp;gt; 418}, # Nessus Vulnerability Assessment &amp;amp; Reporting
+  {:id =&amp;gt; 57}, # Notification -- Email and Ticket
+  {:id =&amp;gt; 58} # Response -- Automated Notification
+ ]
+}
+ 
+result = client.verifyOrder(order)
+## Uncomment when you are ready to order
+# client.placeOrder(order)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;multiple-raid-groups&#34;&gt;Multiple RAID groups&lt;/h2&gt;
+
+&lt;p&gt;When ordering multiple RAID groups you need to order the Disk Controller type called RAID, and specify your RAID groups in an attribute in the order template called storageGroups.
+storageGroups is of the type &lt;a href=&#34;https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group&#34;&gt;SoftLayer_Container_Product_Order_Storage_Group&lt;/a&gt; and the most important attributes can be explained as:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;arrayTypeId: Integer - Required
+Can be retrieved from &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Configuration_Storage_Group_Array_Type&#34;&gt;SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;1&lt;/a&gt;&lt;/sup&gt;
+hardDrives: Array of integers - Required
+Array of drives to take part in the given raid array. 0 = first drive, 1 = second drive, etc&lt;/p&gt;
+
+&lt;p&gt;hotSpareDrives: array of integers - Optional
+On raid types where hot spare is allowed, you can specify which drives to use as hot spare.
+Raid types that allow hot spare can be retrieved from &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Configuration_Storage_Group_Array_Type&#34;&gt;SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+
+&lt;p&gt;partitionTemplateId: integer - Optional
+To be used on the array where the operating system is to be installed.
+Partition Template IDs for the relevant operating system can be retrieved from
+&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Component_Partition_OperatingSystem/getPartitionTemplates&#34;&gt;SoftLayer_Hardware_Component_Partition_OperatingSystem::getPartitionTemplates&lt;/a&gt;
+use &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Component_Partition_OperatingSystem&#34;&gt;SoftLayer_Hardware_Component_Partition_OperatingSystem::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;3&lt;/a&gt;&lt;/sup&gt; to get a list of operating system groups that has partition templates&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Let&amp;rsquo;s say, for example, you want to have a server with a single SSD drive for the operating system, also hosting a large 12GB swap partition, and a separate RAID array with 3 striped 147GB SAS Drives.&lt;/p&gt;
+
+&lt;p&gt;The first thing we&amp;rsquo;ll need to do is specify the controller and drives we want in our order template.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;{:id =&amp;gt; 22482}, # Disk controller -- RAID
+{:id =&amp;gt; 13756}, # First hard drive -- 50GB SSD
+{:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
+{:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
+{:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To configure the RAID groups we need to populate storageGroups
+The disks will be addressed in the order of their placement and template, starting at disk 0.
+So for the first disk that we want to be on its own we will use arrayTypeId 9, which is JBOD, and specify partitionTemplateId 226 which specifies a 12GB Swap partition&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;{
+        :arrayTypeId =&amp;gt; 9, # JBOD -- Other types available from SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects
+        :hardDrives =&amp;gt; [0], # First Hard Drive (50GB SSD)
+        :partitionTemplateId =&amp;gt; 226 # Custom partition template - 12GB Swap
+},
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For the second group we specify arrayTypeId 1, which is RAID 0 - Striped&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;{
+        :arrayTypeId =&amp;gt; 1, # RAID 0 -- Other types available from SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects
+        :hardDrives =&amp;gt; [1,2,3] # Second, third and fourth hard drives (147GB SAS)
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;All together, the order will look like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;rubygems&#39;
+require &#39;softlayer_api&#39;
+ 
+$SL_API_USERNAME = &amp;quot; PLEASE SET ME &amp;quot;
+$SL_API_KEY = &amp;quot; PLEASE SET ME TOO &amp;quot;
+ 
+client = SoftLayer::Service.new(&amp;quot;SoftLayer_Product_Order&amp;quot;);
+ 
+order = {
+ :complexType =&amp;gt; &#39;SoftLayer_Container_Product_Order_Hardware_Server&#39;,
+ :quantity =&amp;gt; 1,
+ :hardware =&amp;gt; [{:hostname =&amp;gt; &#39;raidtest&#39;, :domain =&amp;gt; &#39;example.com&#39;}],
+ :location =&amp;gt; 168642, # San Jose 1
+ :packageId =&amp;gt; 53, # Intel Xeon 3200 Series
+ :prices =&amp;gt; [
+  {:id =&amp;gt; 2050}, # Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT
+  {:id =&amp;gt; 17438}, # -- Ubuntu Linux 12.04.0 LTS Precise Pangolin - Minimal Install (64 bit)
+  {:id =&amp;gt; 21004}, # 4 GB DDR3 Registered 1333
+  {:id =&amp;gt; 22482}, # Disk controller -- RAID
+  {:id =&amp;gt; 13756}, # First hard drive -- 50GB SSD
+  {:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
+  {:id =&amp;gt; 728}, # 0 GB Bandwidth
+  {:id =&amp;gt; 898}, # 100 Mbps Private Network
+  {:id =&amp;gt; 906}, # Reboot / KVM over IP  
+  {:id =&amp;gt; 420}, # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
+  {:id =&amp;gt; 55}, # Host Ping
+  {:id =&amp;gt; 418}, # Nessus Vulnerability Assessment &amp;amp; Reporting
+  {:id =&amp;gt; 57}, # Notification -- Email and Ticket
+  {:id =&amp;gt; 58} # Response -- Automated Notification
+ ],
+ 
+ :storageGroups =&amp;gt; [
+     { # RAID Array 1
+        :arrayTypeId =&amp;gt; 9, # JBOD
+        :hardDrives =&amp;gt; [0], # First Hard Drive (50GB SSD)
+        :partitionTemplateId =&amp;gt; 226 # Custom partition template - 12GB Swap
+     },
+     { # RAID Array 2
+        :arrayTypeId =&amp;gt; 1, # RAID 0
+        :hardDrives =&amp;gt; [1,2,3] # Second, third and fourth hard drives (147GB SAS)
+     }
+  ]
+}
+
+ 
+result = client.verifyOrder(order)
+## Uncomment when you&#39;re ready to order
+# client.placeOrder(order)
+Links and other useful information
+order_multiple_raid_groups.rb
+order_single_raid_group.rb
+get_package_options.rb (command line tool)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;//hansKristian&lt;/p&gt;
+&lt;div class=&#34;footnotes&#34;&gt;
+
+&lt;hr /&gt;
+
+&lt;ol&gt;
+&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
+ &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
+ &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
+ &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: September 7, 2017</title>
@@ -349,120 +1124,6 @@ client = SoftLayer.Client()
 
 migrateGuest = client[&#39;SoftLayer_Virtual_Guest&#39;].migrateDedicatedHost(destinationHostId, id=vsiId)
 &lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Migrate a VSI between dedicated hosts</title>
-      <link>https://softlayer.github.io/ruby/migratededicatedinstance/</link>
-      <pubDate>Fri, 04 Aug 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/migratededicatedinstance/</guid>
-      <description>&lt;p&gt;This script will kick of an immediate migration of the Virtual Guest.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;
-=begin
-@author Ryan Tiffany
-=end
-
-require &#39;softlayer_api&#39; 
-require &#39;pp&#39; 
-
-# Connect to SoftLayer
-client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
-
-destinationHostId = 10001
-vsiId = 37167483
-
-migrateGuest = client[&#39;SoftLayer_Virtual_Guest&#39;].object_with_id(vsiId).migrateDedicatedHost(destinationHostId)
-pp migrateGuest
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Show user accounts with and without two-factor enabled</title>
-      <link>https://softlayer.github.io/python/externalbindingusers/</link>
-      <pubDate>Fri, 04 Aug 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/externalbindingusers/</guid>
-      <description>&lt;p&gt;To get a list of users &lt;em&gt;with&lt;/em&gt; Two-Factor authentication enabled.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
-@author Ryan TIffany
-&amp;quot;&amp;quot;&amp;quot;
-
-import SoftLayer
-from pprint import pprint as pp 
-
-client = SoftLayer.Client()
-mask = mask&amp;quot;[id,username,firstName,lastName,externalBindingCount,externalBindings]&amp;quot;
-theFilter = {
-&#39;users&#39;: {
-	&#39;externalBindings&#39;:{
-		&#39;active&#39;:{
-			&#39;operation&#39;:&#39;1&#39;
-		}}}
-}
-
-getUsers = client[&#39;SoftLayer_Account&#39;].getUsers(filter=theFilter, mask=mask)
-pp(getUsers)
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;To get a list of users &lt;em&gt;without&lt;/em&gt; Two-Factor authentication enabled.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
-@author Ryan TIffany
-&amp;quot;&amp;quot;&amp;quot;
-
-import SoftLayer
-from pprint import pprint as pp 
-
-client = SoftLayer.Client()
-mask = mask&amp;quot;[id,username,firstName,lastName,externalBindingCount,externalBindings]&amp;quot;
-theFilter = {
-&#39;users&#39;: {
-	&#39;externalBindings&#39;:{
-		&#39;active&#39;:{
-			&#39;operation&#39;:&#39;0&#39;
-		}}}
-}
-
-getUsers = client[&#39;SoftLayer_Account&#39;].getUsers(filter=theFilter, mask=mask)
-pp(getUsers)
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: August 3, 2017</title>
-      <link>https://softlayer.github.io/release_notes/2017/20170803/</link>
-      <pubDate>Thu, 03 Aug 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2017/20170803/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Added the new &lt;a href=&#34;https://www.ibm.com/blogs/bluemix/2017/08/maximize-control-ibm-bluemix-virtual-servers/&#34;&gt;Dedicated Host&lt;/a&gt; offering to the catalog. A dedicated host is a physical server with workload capacity entirely dedicated to a single client’s use.&lt;/li&gt;
-&lt;li&gt;Corrected an issue where customers were unable to attach more than one dedicated host to a ticket.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Exposed the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_DedicatedHost&#34;&gt;SoftLayer_Virtual_DedicatedHost&lt;/a&gt; Service. This allows you to interact with the new Dedicated Host offering.&lt;/li&gt;
-&lt;li&gt;Added the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer/addBulkDedicatedHostAccess&#34;&gt;addBulkDedicatedHostAccess&lt;/a&gt; method to the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_User_Customer&#34;&gt;SoftLayer_User_Customer&lt;/a&gt; service.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
 </description>
     </item>
     

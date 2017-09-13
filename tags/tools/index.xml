@@ -6,7 +6,316 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 17 Jul 2017 00:00:00 UTC</updated>
+    <updated>Wed, 13 Sep 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Object Storage Uploader</title>
+      <link>https://softlayer.github.io/python/swiftuploader/</link>
+      <pubDate>Wed, 13 Sep 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/swiftuploader/</guid>
+      <description>
+
+&lt;h2 id=&#34;overview&#34;&gt;Overview&lt;/h2&gt;
+
+&lt;p&gt;We’ve recently added the option to import customer-supplied Virtual Hard Disks (VHDs) to our object storage offering. This is a great option for our customers who may have special virtual machines that they have spent hours perfecting. Since learning to import these images can pose a slight challenge, especially for those unfamiliar with object storage (OpenStack Swift), I wrote this blog to share scripts that will streamline the process.&lt;/p&gt;
+
+&lt;h2 id=&#34;object-storage&#34;&gt;Object Storage&lt;/h2&gt;
+
+&lt;p&gt;SoftLayer’s object storage is an enhanced version of OpenStack Swift. Although we’ve added features to it, the API (on the whole) is still the same. Two requirements of particular importance to storing disk images are limitations and requirements on large files. Swift limits all files to be 5GB or less. To support larger files users need to create a manifest file that combines smaller files into one large file.&lt;/p&gt;
+
+&lt;p&gt;For example, to upload a 12GB VHD, the user is expected to segment the file into at least three files and then create a manifest that brings them back together.&lt;/p&gt;
+
+&lt;h2 id=&#34;easier-importing&#34;&gt;Easier Importing&lt;/h2&gt;
+
+&lt;p&gt;Since many people don’t have the time to learn the inner workings of Swift and would just like to get VHDs running on their servers, I have created a set scripts to simplify the process. They handle the authentication, file segmentation, and dynamic manifest creation for you, so you can get up and running quickly. You can easily access them here .&lt;/p&gt;
+
+&lt;p&gt;You can use a Bash script or a Python 3 script. Both do the same thing, but depending on your environment you may prefer one over the other.&lt;/p&gt;
+
+&lt;p&gt;But before we jump into the scripts, you’ll need to find your object storage username and password.&lt;/p&gt;
+
+&lt;p&gt;To get those, log in to &lt;a href=&#34;http://control.softlayer.com&#34;&gt;http://control.softlayer.com&lt;/a&gt;, go to Storage-&amp;gt;Object Storage, select your cluster (I would suggest Dallas 5 for your first tests), and then click “View Credentials” in the top left of the page. You will be presented with a modal window containing your username and API Key (or password) for object storage.&lt;/p&gt;
+
+&lt;h2 id=&#34;objectstorageuploader-sh-bash-edition&#34;&gt;ObjectStorageUploader.sh - Bash Edition&lt;/h2&gt;
+
+&lt;p&gt;The idea behind this script is to have as little user interaction as possible. By calling the script with the proper parameters, you are able to walk away and let it do its thing.&lt;/p&gt;
+
+&lt;p&gt;Simply place the bash script in your directory of VHDs. Call the script by passing in the image you want to upload, the location to upload it (container/filename), and your Swift username and password.&lt;/p&gt;
+
+&lt;p&gt;$ ./ObjectStorageUpload.sh myOS.vhd &amp;lsquo;myContainer/myOS.vhd&amp;rsquo; &amp;lsquo;SLOS1234-1:SL1234&amp;rsquo; &amp;lsquo;apikey&amp;rsquo;&lt;/p&gt;
+
+&lt;p&gt;It will begin the process of walking through the segments of the file and building up your object in object storage.&lt;/p&gt;
+
+&lt;h2 id=&#34;objectstorageuploader-py-python-3-edition&#34;&gt;ObjectStorageUploader.py - Python 3 Edition&lt;/h2&gt;
+
+&lt;p&gt;Before we begin, make sure you have installed the latest version of Python 3 located here: &lt;a href=&#34;https://www.python.org/downloads/&#34;&gt;https://www.python.org/downloads/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Any Python 3 release will work, but I have been using Python 3.4.0 for my testing.&lt;/p&gt;
+
+&lt;p&gt;The idea behind this script is to actually walk you through the process of uploading a file to Swift. Use this script via supplied parameters, in “interactive mode,” or a combination of the two. This is particularly handy for Windows users who are newer to scripting. Simply drop the script in the folder containing your VHDs, run it, and let it guide you through uploading the image to object storage.&lt;/p&gt;
+
+&lt;p&gt;To execute the script, place it in the directory where you store your VHDs and double click it. It will then prompt you to select the file you want to upload.&lt;/p&gt;
+
+&lt;p&gt;After selecting your file, you will be asked for your Swift username and password. Authentication will be attempted and, if successful, the list of containers in your cluster will be presented.&lt;/p&gt;
+
+&lt;p&gt;Select the container you want to upload to and the script will begin uploading the VHD to object storage.&lt;/p&gt;
+
+&lt;p&gt;If you prefer the command line arguments approach, you can pass in arguments to this script too. The signature is slightly different since all the opinions are optional.&lt;/p&gt;
+
+&lt;p&gt;$ python ObjectStorageUpload.py -f myOS.vhd -t &amp;lsquo;myContainer/myOS.vhd&amp;rsquo; -u &amp;lsquo;SLOS1234-1:SL1234&amp;rsquo;&lt;/p&gt;
+
+&lt;h2 id=&#34;importing-uploaded-vhd-as-image-templates&#34;&gt;Importing Uploaded VHD as Image Templates&lt;/h2&gt;
+
+&lt;p&gt;Now that your image is in object storage you can import your VHD into the SoftLayer template, so you can use it to provision a new virtual server!&lt;/p&gt;
+
+&lt;p&gt;Go to your image templates page in the portal and click the “Import Image” tab. Select the Swift account, cluster, container, and file that you uploaded. Give your new template a name and some notes. Make sure to fill out the Operating System information properly as this is used when setting up your new server, and finally click “Import.”&lt;/p&gt;
+
+&lt;p&gt;Lastly, you will be emailed after the VHD has been processed by our system.&lt;/p&gt;
+
+&lt;p&gt;-Adam Shaw&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;# ================================================================================
+#     ObjectStorageUploader.py
+#     © Copyright IBM Corporation 2014.
+#     LICENSE: MIT (http://opensource.org/licenses/MIT)    
+# ================================================================================
+
+import argparse
+import os
+import math
+import http.client
+from urllib.parse import urlparse
+from urllib.parse import quote
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&amp;quot;-f&amp;quot;, &amp;quot;--file&amp;quot;, help=&amp;quot;file to upload to SWIFT&amp;quot;)
+    parser.add_argument(&amp;quot;-u&amp;quot;, &amp;quot;--username&amp;quot;, help=&amp;quot;SWIFT username&amp;quot;)
+    parser.add_argument(&amp;quot;-p&amp;quot;, &amp;quot;--password&amp;quot;, help=&amp;quot;SWIFT password (SoftLayer API key)&amp;quot;)
+    parser.add_argument(&amp;quot;-c&amp;quot;, &amp;quot;--cluster&amp;quot;, help=&amp;quot;SWIFT cluster to use (default: dal05.objectstorage.softlayer.net)&amp;quot;)
+    parser.add_argument(&amp;quot;-t&amp;quot;, &amp;quot;--target&amp;quot;, help=&amp;quot;location on SWIFT cluster to store file (container/filename.vhd)&amp;quot;)
+    args = parser.parse_args()
+
+    if not args.file:
+        filename = select_file()
+    else:
+        filename = args.file
+
+    if not args.username:
+        swift_user_name, swift_password = get_swift_credentials()
+    else:
+        swift_user_name = args.username
+        swift_password = args.password
+
+    if not args.cluster:
+        storage_url, auth_token = authenticate_swift(
+            swift_user_name,
+            swift_password,
+            &amp;quot;dal05.objectstorage.softlayer.net&amp;quot;
+        )
+    else:
+        storage_url, auth_token = authenticate_swift(
+            swift_user_name,
+            swift_password,
+            args.cluster
+        )
+
+    if not args.target:
+        container = select_container(storage_url, auth_token)
+        swift_target_path = &amp;quot;{}/{}&amp;quot;.format(container, quote(filename))
+    else:
+        swift_target_path = args.target
+
+    upload_file(filename, swift_target_path, storage_url, auth_token)
+
+
+def select_file():
+    current_path = (os.path.dirname(os.path.realpath(__file__)))
+    print(&amp;quot;Files in {}&amp;quot;.format(current_path))
+    files = get_file_list(current_path)
+    return prompt_for_choice(files, &amp;quot;Select file for upload:&amp;quot;)
+
+
+def get_file_list(path):
+    files = []
+    for file in os.listdir(path):
+        if os.path.isfile(file):
+            files.append(file)
+    return files
+
+
+def prompt_for_choice(list, prompt_label):
+    for i, item in enumerate(list):
+        if len(item):
+            print(&amp;quot;{}) {}&amp;quot;.format(i, item))
+    selected_index = input(prompt_label)
+    if selected_index.isdigit():
+        if 0 &amp;lt;= int(selected_index) &amp;lt; len(list):
+            print()
+            return list[int(selected_index)]
+
+    print(&amp;quot;Invalid Input: {}&amp;quot;.format(selected_index))
+    return prompt_for_choice(list, prompt_label)
+
+
+def get_swift_credentials():
+    swift_user_name = input(&amp;quot;Swift Username:&amp;quot;)
+    swift_password = input(&amp;quot;Swift Password:&amp;quot;)
+    return swift_user_name, swift_password
+
+
+def authenticate_swift(swift_user_name, swift_password, selected_endpoint=&amp;quot;&amp;quot;):
+    if selected_endpoint == &amp;quot;&amp;quot;:
+        swift_endpoints = [
+            &amp;quot;dal05.objectstorage.softlayer.net&amp;quot;,
+            &amp;quot;sng01.objectstorage.softlayer.net&amp;quot;,
+            &amp;quot;ams01.objectstorage.softlayer.net&amp;quot;,
+        ]
+        selected_endpoint = prompt_for_choice(
+            swift_endpoints,
+            &amp;quot;Select Object Storage Endpoint:&amp;quot;
+        )
+
+    print(&amp;quot;Authenticating...&amp;quot;)
+    headers = {
+        &amp;quot;X-Storage-User&amp;quot;: swift_user_name,
+        &amp;quot;X-Storage-Pass&amp;quot;: swift_password
+    }
+    try:
+        response = object_storage_request(
+            selected_endpoint,
+            &amp;quot;/auth/v1.0/&amp;quot;,
+            headers
+        )
+    except Exception:
+        swift_user_name, swift_password = get_swift_credentials()
+        return authenticate_swift(swift_user_name, swift_password)
+    print(&amp;quot;Success!&amp;quot;)
+
+    storage_url = response.getheader(&amp;quot;X-Storage-Url&amp;quot;)
+    auth_token = response.getheader(&amp;quot;X-Auth-Token&amp;quot;)
+
+    return storage_url, auth_token
+
+
+def select_container(storage_url, auth_token):
+    url_tuple = urlparse(storage_url)
+
+    headers = {&amp;quot;X-Auth-Token&amp;quot;: auth_token}
+    try:
+        response = object_storage_request(
+            url_tuple.netloc,
+            url_tuple.path,
+            headers
+        )
+    except Exception:
+        swift_user_name, swift_password = get_swift_credentials()
+        storage_url, auth_token = authenticate_swift(swift_user_name, swift_password)
+        return select_container(storage_url, auth_token)
+
+    containers = response.read().decode(&amp;quot;utf-8&amp;quot;).split(&amp;quot;\n&amp;quot;)
+    return prompt_for_choice(containers, &amp;quot;Select Container:&amp;quot;)
+
+
+def object_storage_request(server, path, headers, method=&amp;quot;GET&amp;quot;, data=&amp;quot;&amp;quot;):
+    connection = http.client.HTTPConnection(server)
+    connection.request(method, path, data, headers)
+    response = connection.getresponse()
+
+    if 200 &amp;lt;= response.getcode() &amp;lt; 300:
+        return response
+
+    print(&amp;quot;Error {}: {}&amp;quot;.format(response.status, response.reason))
+    raise Exception(response.status, response.reason)
+
+
+def upload_file(filename, swift_target_path, storage_url, auth_token):
+    url_tuple = urlparse(storage_url)
+    headers = {&amp;quot;X-Auth-Token&amp;quot;: auth_token}
+
+    file_size = os.path.getsize(filename)
+    block_size = 1048576
+    chunk_size = 5 * block_size
+    chunks = math.ceil(file_size / chunk_size)
+
+    print(&amp;quot;Reading in file&amp;quot;)
+    file = open(filename, &#39;rb&#39;)
+    print(&amp;quot;Uploading {} to \&amp;quot;{}\&amp;quot;&amp;quot;.format(filename, swift_target_path))
+    for i in range(0, chunks):
+        data = file.read(chunk_size)
+        print(&amp;quot;Uploading part {} of {}&amp;quot;.format(i + 1, chunks))
+        chunk_name = &amp;quot;chunk-{0:0&amp;gt;5}&amp;quot;.format(i)
+        object_storage_request(
+            url_tuple.netloc,
+            &amp;quot;{}/{}/{}&amp;quot;.format(url_tuple.path, swift_target_path, chunk_name),
+            headers,
+            &amp;quot;PUT&amp;quot;,
+            data
+        )
+
+    try:
+        print(&amp;quot;Writing manifest file&amp;quot;)
+        headers = {
+            &amp;quot;X-Auth-Token&amp;quot;: auth_token,
+            &amp;quot;X-Object-Manifest&amp;quot;: swift_target_path,
+            &amp;quot;Content-Length&amp;quot;: 0,
+        }
+        object_storage_request(
+            url_tuple.netloc,
+            &amp;quot;{}/{}&amp;quot;.format(url_tuple.path, swift_target_path),
+            headers,
+            &amp;quot;PUT&amp;quot;
+        )
+    except Exception:
+        return
+
+    print(&amp;quot;File Uploaded!&amp;quot;)
+
+if __name__ == &amp;quot;__main__&amp;quot;:
+    main()
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;#!/bin/bash
+# ================================================================================
+#     ObjectStorageUploader.sh
+#     © Copyright IBM Corporation 2014.
+#     LICENSE: MIT (http://opensource.org/licenses/MIT)    
+# ================================================================================
+
+#./objectstorageupload.sh dsl-4.4.10.iso &#39;myContainer/file.vhd&#39; &#39;SLOS1234-1:SL1234&#39; &#39;apikey&#39;
+
+fileToUpload=$1
+swiftTargetPath=$2
+swiftUsername=$3
+swiftPassword=$4
+
+swiftEndpoint=&#39;https://dal05.objectstorage.softlayer.net/auth/v1.0/&#39;
+
+apiResponse=$(curl -X GET -H &amp;quot;X-Storage-User: $swiftUsername&amp;quot; -H &amp;quot;X-Storage-Pass: $swiftPassword&amp;quot; -s -i $swiftEndpoint)
+swiftAuthToken=$(echo &amp;quot;$apiResponse&amp;quot; | grep &amp;quot;X-Auth-Token:&amp;quot; | sed &#39;s/X-Auth-Token: //g&#39; | tr -d &#39;\r&#39;)
+swiftStorageUrl=$(echo &amp;quot;$apiResponse&amp;quot; | grep &amp;quot;X-Storage-Url:&amp;quot; | sed &#39;s/X-Storage-Url: //g&#39; | tr -d &#39;\r&#39;)
+
+fileSize=$(wc -c $fileToUpload | awk &#39;{print $1}&#39;)
+blockSize=1048576
+let chunkSize=2048 #2GB chunks
+let chunks=($fileSize/$blockSize+$chunkSize-1)/$chunkSize;
+
+for ((i=0; i&amp;lt;chunks; i++))
+do
+   printf -v chunkName &amp;quot;chunk-%05d&amp;quot; $i
+   let skipChunk=$i*chunkSize
+
+   dd if=$fileToUpload bs=$blockSize count=$chunkSize skip=$skipChunk | curl -X PUT -H &amp;quot;X-Auth-Token: $swiftAuthToken&amp;quot; --data-binary @- &amp;quot;$swiftStorageUrl/$swiftTargetPath/$chunkName&amp;quot;
+done
+
+curl -X PUT -H &amp;quot;X-Auth-Token: $swiftAuthToken&amp;quot; -H &amp;quot;X-Object-Manifest: $swiftTargetPath&amp;quot; -H &amp;quot;Content-Length: 0&amp;quot; $swiftStorageUrl/$swiftTargetPath
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Originally from &lt;a href=&#34;https://sldn.softlayer.com/blog/ashaw/object-storage-uploader&#34;&gt;SLDN&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>IBM Bluemix for AWS professionals</title>
