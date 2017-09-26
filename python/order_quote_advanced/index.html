@@ -137,50 +137,44 @@ from pprint import pprint as pp
 class example():
 
     def __init__(self):
-
         self.client = SoftLayer.Client()
-        self.mgr = SoftLayer.OrderingManager(self.client)
 
-
-    def orderQuote(self, quote_id):
+    def orderQuote(self, quote_id, dc_id = None, image_id = None, private_vlan = None, public_vlan = None):
         # If you have more than 1 server in the quote, you will need to append
-        # 
+        # a copy of this for each VSI, with hostnames changed as needed
         guests = {
             'hostname': 'quotetest', 
             'domain': 'example.com'
-
         }
-        
+        if public_vlan:
+            guests.update({
+                'primaryNetworkComponent': {
+                    &quot;networkVlan&quot;: {&quot;id&quot;: int(public_vlan)}}})
+        if private_vlan:
+            guests.update({
+                &quot;primaryBackendNetworkComponent&quot;: {
+                    &quot;networkVlan&quot;: {&quot;id&quot;: int(private_vlan)}}})
+
         quote = self.client['Billing_Order_Quote']
         quote_container = quote.getRecalculatedOrderContainer(id=quote_id)
-        container = quote_container['orderContainers'][0]
 
+        container = quote_container
         container['quantity'] = 1
         container['virtualGuests'] = []
         container['virtualGuests'].append(guests)
 
-        # SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Order_MismatchedQuantity): The number of servers (2) does not match the order quantity (1).
-        # the hardware variable was getting filled out for some reason, even though there were no hardware on this quote.
-        container['hardware'] = None
+        # container['provisionScripts'] = ['https://gist.githubusercontent.com/myscript.py']
+        # container['sshKeys'] = [{'sshKeyIds': [660791]} ]
 
+        if image_id is not None:
+            container['imageTemplateId'] = image_id
 
-        container['presetId'] = None
-        container['provisionScripts'] = ['https://gist.githubusercontent.com/myscript.py']
-        # http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-        # The order of containers passed in needs to match the order they are assigned to either hardware or virtualGuests
-        container['sshKeys'] = [{'sshKeyIds': [1234]} ]
+        if dc_id is not None:
+            container['location'] = dc_id
 
-        # Edit this ID to change the location of the order.
-        # this is AMS03
-        container['location'] = 814994
-        result = self.client['Product_Order'].verifyOrder(container)
+        # result = self.client['Product_Order'].verifyOrder(container)
+        result = self.client['Product_Order'].placeOrder(container)
         pp(result)
-
-    def getOrderContainer(self,quote_id):
-        quote = self.client['Billing_Order_Quote']
-        container = quote.getRecalculatedOrderContainer(id=quote_id)
-        return container['orderContainers'][0]
-
 
     def listQuotes(self):
         quotes = self.client['SoftLayer_Account'].getActiveQuotes()
@@ -194,16 +188,42 @@ class example():
         keys = self.client['SoftLayer_Account'].getSshKeys()
         pp(keys)
 
+    def listImageTemplates(self):
+        mask = &quot;mask[id,name,note]&quot;
+        imageTemplates = self.client['SoftLayer_Account'].getPrivateBlockDeviceTemplateGroups(mask=mask)
+        print(&quot;ID - Name - Note&quot;)
+        for template in imageTemplates:
+            try:
+                print(&quot;%s - %s - %s&quot; % (template['id'], template['name'], template['note']))
+            except KeyError:
+                print(&quot;%s - %s - %s&quot; % (template['id'], template['name'], 'None'))
+
+    def listVlansInLocation(self, location_id):
+        mask = &quot;mask[id,vlanNumber,primaryRouter[hostname,datacenter[id,name]]]&quot;
+        objfilter2 = { &quot;networkVlans&quot;:    
+                        {&quot;primaryRouter&quot;: 
+                            {&quot;datacenter&quot;: { &quot;id&quot; : {&quot;operation&quot;:location_id} } }
+                        }
+                    }
+        subnets = self.client['SoftLayer_Account'].getNetworkVlans(mask=mask,filter=objfilter2)
+        for subnet in subnets:
+            print(&quot;%s, %s, %s&quot; % ( subnet['id'], subnet['vlanNumber'], subnet['primaryRouter']['hostname']))
+
+
 if __name__ == &quot;__main__&quot;:
-    quote_id = 1942633
+    quote_id = 1234
     main = example()
-    # main.main()
+    # main.listImageTemplates()
     # main.listQuotes()
-    # quote = main.getOrderContainer(quote_id)
-    # pp(quote)
     # main.listLocations()
+    dal13 = 1854895
+    ams03 = 814994
+    dal09 = 449494
     # main.listSshKeys()
-    main.orderQuote(quote_id)
+    # main.listVlansInLocation(dal13)
+    backend_vlan = 1400000 # 123, bcr06a.dal09
+    front_vlan = 1400001 # 456, fcr06a.dal09
+    main.orderQuote(quote_id, dc_id=dal09, private_vlan=backend_vlan,public_vlan=front_vlan )
 
 </code></pre>
 
