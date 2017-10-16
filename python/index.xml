@@ -1362,8 +1362,15 @@ class example():
     def main(self):
 
         mask = &amp;quot;&amp;quot;&amp;quot;
-            mask[attachedNetworkGateway[publicVlan,privateVlan],hardware[fullyQualifiedDomainName],
-            network,networkSpace,primaryRouter[hostname],primarySubnet,subnets[networkIdentifier],virtualGuests[fullyQualifiedDomainName]
+            mask[
+                attachedNetworkGateway[publicVlan,privateVlan],
+                hardware[fullyQualifiedDomainName,frontendNetworkComponents[uplinkComponent], backendNetworkComponents[uplinkComponent]],
+                network,
+                networkSpace,
+                primaryRouter[hostname],
+                primarySubnet,
+                subnets[networkIdentifier],
+                virtualGuests[fullyQualifiedDomainName]
             ]
         &amp;quot;&amp;quot;&amp;quot;
         orderedVlans = {}
@@ -1417,80 +1424,114 @@ class example():
                                 if len(orderedVlans[dc][router][vlan][vlanInner][&#39;hardware&#39;]):
                                     print(&amp;quot;\t\t\t  ==SERVERS==&amp;quot;)
                                     for hardware in orderedVlans[dc][router][vlan][vlanInner][&#39;hardware&#39;]:
-                                        print(&amp;quot;\t\t\t\t%s&amp;quot; % hardware[&#39;fullyQualifiedDomainName&#39;])
+                                        self.printServer(hardware)
                                 if len(orderedVlans[dc][router][vlan][vlanInner][&#39;virtualGuests&#39;]):
                                     print(&amp;quot;\t\t\t  ==VIRTUAL SERVERS==&amp;quot;)
                                     for virtualGuest in orderedVlans[dc][router][vlan][vlanInner][&#39;virtualGuests&#39;]:
-                                        print(&amp;quot;\t\t\t\t%s&amp;quot; % virtualGuest[&#39;fullyQualifiedDomainName&#39;])
+                                        self.printServer(virtualGuest)
                                 if len(orderedVlans[dc][router][vlan][vlanInner][&#39;subnets&#39;]):
                                     print(&amp;quot;\t\t\t  ==SUBNETS==&amp;quot;)
                                     for subnet in orderedVlans[dc][router][vlan][vlanInner][&#39;subnets&#39;]:
                                         print(&amp;quot;\t\t\t\t%s&amp;quot; % subnet[&#39;networkIdentifier&#39;])
                     else:
                         print(&amp;quot;\t\tVLAN: %s&amp;quot; % vlan )
-
                     if len(orderedVlans[dc][router][vlan][&#39;hardware&#39;]):
                         print(&amp;quot;\t\t  ==SERVERS==&amp;quot;)
                         for hardware in orderedVlans[dc][router][vlan][&#39;hardware&#39;]:
-                            print(&amp;quot;\t\t\t%s&amp;quot; % hardware[&#39;fullyQualifiedDomainName&#39;])
+                            self.printServer(hardware)
                     if len(orderedVlans[dc][router][vlan][&#39;virtualGuests&#39;]):
                         print(&amp;quot;\t\t  ==VIRTUAL SERVERS==&amp;quot;)
                         for vm in orderedVlans[dc][router][vlan][&#39;virtualGuests&#39;]:
-                            print(&amp;quot;\t\t\t%s&amp;quot; % vm[&#39;fullyQualifiedDomainName&#39;])
+                            self.printServer(vm)
                     if len(orderedVlans[dc][router][vlan][&#39;subnets&#39;]):
                         print(&amp;quot;\t\t  ==SUBNETS==&amp;quot;)
                         for subnet in orderedVlans[dc][router][vlan][&#39;subnets&#39;]:
                             print(&amp;quot;\t\t\t%s&amp;quot; % subnet[&#39;networkIdentifier&#39;])
 
+    def printServer(self, server):
+        print(&amp;quot;\t\t\t%s&amp;quot; % server[&#39;fullyQualifiedDomainName&#39;])
+        # pp(server)
+        if &#39;frontendNetworkComponents&#39;  in server:
+            for eth in server[&#39;frontendNetworkComponents&#39;]:
+                switch = eth[&#39;uplinkComponent&#39;][&#39;hardware&#39;][&#39;hostname&#39;]
+                switch_port = eth[&#39;uplinkComponent&#39;][&#39;port&#39;]
+                print(&amp;quot;\t\t\t\teth%s =&amp;gt; %s:%s &amp;quot; % (eth[&#39;port&#39;],switch,switch_port))
+        if &#39;backendNetworkComponents&#39;  in server:
+            for eth in server[&#39;backendNetworkComponents&#39;]:
+                switch = eth[&#39;uplinkComponent&#39;][&#39;hardware&#39;][&#39;hostname&#39;]
+                switch_port = eth[&#39;uplinkComponent&#39;][&#39;port&#39;]
+                print(&amp;quot;\t\t\t\teth%s =&amp;gt; %s:%s &amp;quot; % (eth[&#39;port&#39;],switch,switch_port))
+
 
 if __name__ == &amp;quot;__main__&amp;quot;:
     main = example()
     main.main()
-
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Example Output:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;DC: sjc03
     Router: bcr02a
-        VLAN: 904
+        VLAN: 1253
+          ==SERVERS==
+            jd-centos-6-5.secore.com
+                eth1 =&amp;gt; fcs421a.sr01.sjc03:19
+                eth3 =&amp;gt; fcs421b.sr01.sjc03:19
+                eth0 =&amp;gt; bcs421a.sr01.sjc03:19
+                eth0 =&amp;gt; bms421.sr01.sjc03:19
+                eth2 =&amp;gt; bcs421b.sr01.sjc03:19
           ==VIRTUAL SERVERS==
-            jrh-jump.poc.engineering
+            CW-SJC.softlayer.com
           ==SUBNETS==
-            10.168.140.0
-    Router: bcr01a
-        GATEWAY VLAN: 1436
-            VLAN: 1440
+            10.168.30.0
+            10.168.174.128
+            10.168.174.192
+        GATEWAY VLAN: 1310
+            VLAN: 1288
               ==SERVERS==
-                jd-test-5600-srv.secore.com
-                jd-cos-testing-sjc03.secore.com
+            kramvcs-esx0.vmonic.local
+                eth1 =&amp;gt; fcs422a.sr01.sjc03:37
+                eth3 =&amp;gt; fcs422b.sr01.sjc03:37
+                eth0 =&amp;gt; bcs422a.sr01.sjc03:37
+                eth0 =&amp;gt; bms422.sr01.sjc03:37
+                eth2 =&amp;gt; bcs422b.sr01.sjc03:37
+            kramvcs-esx1.vmonic.local
+                eth1 =&amp;gt; fcs422a.sr01.sjc03:40
+                eth3 =&amp;gt; fcs422b.sr01.sjc03:40
+                eth0 =&amp;gt; bcs422a.sr01.sjc03:40
+                eth0 =&amp;gt; bms422.sr01.sjc03:40
+                eth2 =&amp;gt; bcs422b.sr01.sjc03:40
+              ==VIRTUAL SERVERS==
+            kramjump.seteam.net
+            kramvcsveeam.vmonic.local
+            zerto.kramVCS.vmonic.local
               ==SUBNETS==
-                10.161.111.64
+                10.168.117.128
+                10.168.137.128
+                10.168.212.128
+                10.168.212.192
+                10.169.200.64
           ==SERVERS==
-            jd-5600-test.secore.com
+            jd-5600-1u-test-2.secore.com
+                eth1 =&amp;gt; fcs377a.sr01.sjc03:11
+                eth3 =&amp;gt; fcs377b.sr01.sjc03:11
+                eth0 =&amp;gt; bcs377a.sr01.sjc03:11
+                eth0 =&amp;gt; bms377.sr01.sjc03:11
+                eth2 =&amp;gt; bcs377b.sr01.sjc03:11
+            jd-5600-test-sjc03-2.secore.com
+                eth1 =&amp;gt; fcs487a.sr01.sjc03:20
+                eth3 =&amp;gt; fcs487b.sr01.sjc03:20
+                eth0 =&amp;gt; bcs487a.sr01.sjc03:20
+                eth0 =&amp;gt; bms487.sr01.sjc03:20
+                eth2 =&amp;gt; bcs487b.sr01.sjc03:20
+            jd-5600-1u-test-1.secore.com
+                eth1 =&amp;gt; fcs390a.sr01.sjc03:6
+                eth3 =&amp;gt; fcs390b.sr01.sjc03:6
+                eth0 =&amp;gt; bcs390a.sr01.sjc03:6
+                eth0 =&amp;gt; bms390.sr01.sjc03:6
+                eth2 =&amp;gt; bcs390b.sr01.sjc03:6
           ==SUBNETS==
-            10.161.110.0
-    Router: fcr02a
-        VLAN: 857
-          ==VIRTUAL SERVERS==
-            jrh-jump.poc.engineering
-          ==SUBNETS==
-            169.44.183.224
-    Router: fcr01a
-        VLAN: 1296
-          ==SERVERS==
-            jd-test-5600-srv.secore.com
-            jd-cos-testing-sjc03.secore.com
-          ==SUBNETS==
-            169.45.115.16
-            2607:f0d0:2601:00cc:0000:0000:0000:0000
-        VLAN: 1273
-          ==SERVERS==
-            jd-5600-test.secore.com
-          ==SUBNETS==
-            169.44.136.64
-            2607:f0d0:2601:0065:0000:0000:0000:0000
-            2607:f0d0:2601:00ac:0000:0000:0000:0000
+            10.168.63.0
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
