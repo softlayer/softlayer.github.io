@@ -6,7 +6,60 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 04 Aug 2017 00:00:00 UTC</updated>
+    <updated>Mon, 30 Oct 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Create a new virtual server and attach Security Groups</title>
+      <link>https://softlayer.github.io/python/createvsiwithsecgroup/</link>
+      <pubDate>Mon, 30 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/createvsiwithsecgroup/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+from __future__ import print_function
+import SoftLayer
+from SoftLayer.managers.vs import VSManager
+
+def create_vsi():
+    #Create a client to the SoftLayer_Account API service.
+    #Note: currently set without the user ID and API key since
+    #it will by default use the values set in the CLI
+    #to use other values use SoftLayer.Client(sl_username, sl_api_key)
+    client = SoftLayer.Client()
+    vsi_mgr = VSManager(client)
+
+   # common values
+    datacenter = &#39;wdc07&#39; 
+    domain = &#39;cde.services&#39; 
+    os_code = &#39;UBUNTU_LATEST_64&#39;
+    local_disk = True 
+    hourly = True 
+    dedicated = False 
+    nic_speed = 1000 
+    disks = [100] 
+    private = False 
+    ssh_keys = [972047] 
+    public_security_groups = [43507]
+    private_security_groups = [43511]
+
+    # server properties
+    hostname = &#39;sgvsi&#39;
+    cpus = 2
+    memory = 2048
+
+    result = vsi_mgr.create_instance(hostname=hostname, domain=domain,
+                                     cpus=cpus, memory=memory, datacenter=datacenter,
+                                     os_code=os_code, local_disk=local_disk,
+                                     hourly=hourly, dedicated=dedicated,
+                                     disks=disks, nic_speed=nic_speed, private=private,
+                                     ssh_keys=ssh_keys, public_security_groups=public_security_groups,
+                                     private_security_groups=private_security_groups)
+    print(result)
+
+if __name__ == &#39;__main__&#39;:
+    create_vsi()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Migrate a VSI between dedicated hosts</title>
@@ -802,139 +855,6 @@ pp item
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;To detach the disk simply change &lt;code&gt;attachDiskImage(disk_id)&lt;/code&gt; to &lt;code&gt;detachDiskImage(disk_id)&lt;/code&gt;.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Upgrade Hardware and Virtual Servers</title>
-      <link>https://softlayer.github.io/python/upgrade_examples/</link>
-      <pubDate>Tue, 22 Mar 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/upgrade_examples/</guid>
-      <description>&lt;pre&gt;&lt;code&gt;import SoftLayer
-from pprint import pprint as pp
-
-class example():
-
-    def __init__(self):
-        self.client = SoftLayer.Client()
-
-    &amp;quot;&amp;quot;&amp;quot;
-    Prints out what can be upgraded on a server by category.
-    &amp;quot;&amp;quot;&amp;quot;
-    def getUpgradeItemPrices(self, hardware_id, service=&#39;SoftLayer_Hardware_Server&#39;):
-        result = self.client[service].getUpgradeItemPrices(id=hardware_id)
-        last_id = 0
-        for item in result:
-            now_id = item[&#39;categories&#39;][0][&#39;id&#39;]
-            if now_id != last_id:
-                print(&amp;quot;%s (%s)&amp;quot; % (item[&#39;categories&#39;][0][&#39;name&#39;], item[&#39;categories&#39;][0][&#39;id&#39;]))
-            last_id = now_id
-            print(&amp;quot;\t %s (%s)&amp;quot; % (item[&#39;item&#39;][&#39;description&#39;], item[&#39;id&#39;]))
-
-
-    &amp;quot;&amp;quot;&amp;quot;
-    Get the available maintenance windows that exist for a server.
-    &amp;quot;now&amp;quot; is still always an option
-    &amp;quot;&amp;quot;&amp;quot;
-    def getUpgradeTimes(self, hardware_id, beginDate, endDate):
-        # getLocation doesn&#39;t return an id that is useful for getMaintenanceWindows
-        # Needs to be the datacenter ID, not the location id...
-        _mask = &amp;quot;mask[datacenter]&amp;quot;
-        server = self.client[&#39;SoftLayer_Hardware_Server&#39;].getObject(id=hardware_id,mask=_mask)
-        pp(server)
-        location_id = server[&#39;datacenter&#39;][&#39;id&#39;]
-        provision_service = self.client[&#39;SoftLayer_Provisioning_Maintenance_Window&#39;]
-        windows = provision_service.getMaintenanceWindows(beginDate, endDate, location_id, 1)
-        pp(windows)
-
-
-    &amp;quot;&amp;quot;&amp;quot;
-    Upgrades the network speed 1Gbps (price id = 274)
-    MAINTENANCE_WINDOW requires both the time, AND the id of the maintenance window. Virtual Server upgrades do not require the ID, just bare metal.
-    &amp;quot;&amp;quot;&amp;quot;
-    def upgradeServer(self, hardware_id, place_order=False):
-        product_client = self.client[&#39;SoftLayer_Product_Order&#39;]
-        upgrade = {
-            &#39;complexType&#39; : &#39;SoftLayer_Container_Product_Order_Hardware_Server_Upgrade&#39;,
-            &#39;hardware&#39; : [{&#39;id&#39; : hardware_id}],
-            &#39;properties&#39; : [
-                {
-                    &#39;name&#39; : &#39;MAINTENANCE_WINDOW&#39;, 
-                    &#39;value&#39; : &#39;2016-03-30T00:00:00-06:00&#39;
-                },
-                {
-                    &#39;name&#39; : &#39;MAINTENANCE_WINDOW_ID&#39;, 
-                    &#39;value&#39; : 7
-                }
-            ],
-            &#39;prices&#39;: [{&#39;id&#39; : 274}]
-        }
-        pp(upgrade)
-        print(&amp;quot;Verifying Order....&amp;quot;)
-        result = product_client.verifyOrder(upgrade)
-        pp(result)
-        if place_order:
-            print(&amp;quot;PLACING ORDER....&amp;quot;)
-            place_result = product_client.placeOrder(upgrade)
-            pp(place_result)
-
-
-    &amp;quot;&amp;quot;&amp;quot;
-    Adds a 10G disk (price id = 2255) to the second (id=82) and third (id=92)
-    disk slots on the VSI. The price for both is the same, you just need to specify
-    the propery category for each disk.
-    &amp;quot;&amp;quot;&amp;quot;
-    def upgradeVSI(self, vsi_id, place_order=False):
-        product_client = self.client[&#39;SoftLayer_Product_Order&#39;]
-        upgrade = {
-            &#39;complexType&#39; : &#39;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#39;,
-            &#39;virtualGuests&#39; : [{&#39;id&#39; : vsi_id}],
-            &#39;properties&#39; : [
-                {
-                    &#39;name&#39; : &#39;MAINTENANCE_WINDOW&#39;, 
-                    &#39;value&#39; : &#39;2016-03-23 16:00:00&#39;
-                }
-            ],
-            &#39;prices&#39;: [
-                {
-                    &#39;categories&#39; : [{&#39;id&#39; : 82}],
-                    &#39;id&#39; : 2255
-                },
-                {
-                    &#39;categories&#39; : [{&#39;id&#39; : 92}],
-                    &#39;id&#39; : 2255
-                }
-            ]
-        }
-        pp(upgrade)
-        print(&amp;quot;Verifying Order....&amp;quot;)
-        result = product_client.verifyOrder(upgrade)
-        pp(result)
-        if place_order:
-            print(&amp;quot;PLACING ORDER....&amp;quot;)
-            place_result = product_client.placeOrder(upgrade)
-            pp(place_result)
-
-
-    &amp;quot;&amp;quot;&amp;quot;
-    Gets some information about any current upgrade requests for a server
-    &amp;quot;&amp;quot;&amp;quot;
-    def getUpgradeInfo(self, hardware_id, service=&#39;SoftLayer_Hardware_Server&#39;):
-        result = self.client[service].getUpgradeRequest(id=hardware_id)
-        pp(result)
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = example()
-    server_id = 662657
-    # main.getUpgradeItemPrices(server_id)
-    # main.getUpgradeTimes(server_id, &#39;2016-03-30 00:00:00&#39;, &#39;2016-03-31 20:00:00&#39;)
-    # main.upgradeServer(server_id, True)
-    vsi_id = 13106845
-    # main.getUpgradeItemPrices(vsi_id,&#39;SoftLayer_Virtual_Guest&#39;)
-    # main.upgradeVSI(vsi_id, True)
-    main.getUpgradeInfo(vsi_id,&#39;SoftLayer_Virtual_Guest&#39; )
-&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     

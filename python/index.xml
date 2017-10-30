@@ -6,7 +6,359 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Wed, 13 Sep 2017 00:00:00 UTC</updated>
+    <updated>Mon, 30 Oct 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Create a new virtual server and attach Security Groups</title>
+      <link>https://softlayer.github.io/python/createvsiwithsecgroup/</link>
+      <pubDate>Mon, 30 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/createvsiwithsecgroup/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+from __future__ import print_function
+import SoftLayer
+from SoftLayer.managers.vs import VSManager
+
+def create_vsi():
+    #Create a client to the SoftLayer_Account API service.
+    #Note: currently set without the user ID and API key since
+    #it will by default use the values set in the CLI
+    #to use other values use SoftLayer.Client(sl_username, sl_api_key)
+    client = SoftLayer.Client()
+    vsi_mgr = VSManager(client)
+
+   # common values
+    datacenter = &#39;wdc07&#39; 
+    domain = &#39;cde.services&#39; 
+    os_code = &#39;UBUNTU_LATEST_64&#39;
+    local_disk = True 
+    hourly = True 
+    dedicated = False 
+    nic_speed = 1000 
+    disks = [100] 
+    private = False 
+    ssh_keys = [972047] 
+    public_security_groups = [43507]
+    private_security_groups = [43511]
+
+    # server properties
+    hostname = &#39;sgvsi&#39;
+    cpus = 2
+    memory = 2048
+
+    result = vsi_mgr.create_instance(hostname=hostname, domain=domain,
+                                     cpus=cpus, memory=memory, datacenter=datacenter,
+                                     os_code=os_code, local_disk=local_disk,
+                                     hourly=hourly, dedicated=dedicated,
+                                     disks=disks, nic_speed=nic_speed, private=private,
+                                     ssh_keys=ssh_keys, public_security_groups=public_security_groups,
+                                     private_security_groups=private_security_groups)
+    print(result)
+
+if __name__ == &#39;__main__&#39;:
+    create_vsi()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Add, list, and remove security group rules</title>
+      <link>https://softlayer.github.io/python/securitygroup_rule_ops/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_rule_ops/</guid>
+      <description>
+
+&lt;h2 id=&#34;adding-a-rule-to-a-security-group&#34;&gt;Adding a rule to a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+direction = &#39;ingress&#39;
+ethertype = &#39;IPv4&#39;
+remote_ip = &#39;169.148.34.0/24&#39;
+protocol = &#39;tcp&#39;
+port_min = 22
+port_max = 22
+try:
+    result = net_mgr.add_securitygroup_rule(sg_id,
+                                            direction=direction,
+                                            ethertype=ethertype,
+                                            remote_ip=remote_ip,
+                                            protocol=protocol,
+                                            port_min=port_min,
+                                            port_max=port_max)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to add a rule to the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;listing-rules-in-a-security-group&#34;&gt;Listing rules in a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+try:
+    result = net_mgr.list_securitygroup_rules(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to list rules in the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;removing-a-rule-from-a-security-group&#34;&gt;Removing a rule from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+rule_id = 475879
+try:
+    result = net_mgr.remove_securitygroup_rule(sg_id, rule_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to remove rule from the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;remove-all-rules-from-a-security-group&#34;&gt;Remove all rules from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+try:
+    rules = net_mgr.list_securitygroup_rules(sg_id)
+    rules = [rule[&#39;id&#39;] for rule in rules]
+    result = net_mgr.remove_securitygroup_rules(sg_id, rules)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to remove rules from the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create, list, get, and delete security groups</title>
+      <link>https://softlayer.github.io/python/securitygroup_ops/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_ops/</guid>
+      <description>
+
+&lt;h2 id=&#34;creating-a-security-group&#34;&gt;Creating a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+name = &#39;pythonCreatedGroupExample&#39;
+description = &#39;Security Group created via python&#39;
+try:
+    result = net_mgr.create_securitygroup(name=name, description=description)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to create a new security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;deleting-a-security-group&#34;&gt;Deleting a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 12045
+try:
+    result = net_mgr.delete_securitygroup(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to delete security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;getting-a-security-group&#34;&gt;Getting a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 12045
+try:
+    result = net_mgr.get_securitygroup(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to get security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;list-all-security-groups-in-account&#34;&gt;List all security groups in account&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+result = net_mgr.list_securitygroups()
+pp(result)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>VSIs and security groups</title>
+      <link>https://softlayer.github.io/python/securitygroup_vsis/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_vsis/</guid>
+      <description>
+
+&lt;h2 id=&#34;creating-a-vsi-with-security-groups&#34;&gt;Creating a VSI with security groups&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the VSManager
+client = SoftLayer.Client()
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+ssh_sg_id = 576973
+
+# Allow only HTTP on the public interface of the VSI
+public_groups = [http_sg_id]
+
+# Allow HTTP and SSH on the private interface of the VSI
+private_groups = [http_sg_id, ssh_sg_id]
+
+# If we didn&#39;t want to set any security groups on an interface
+# (which allows all traffic), we don&#39;t set the associated
+# creation kwarg
+
+create_kwargs = {
+    &#39;hostname&#39;: &#39;sg-vsi&#39;,
+    &#39;domain&#39;: &#39;mycompany.com&#39;,
+    &#39;os_code&#39;: &#39;UBUNTU_LATEST_64&#39;,
+    &#39;datacenter&#39;: &#39;dal13&#39;,
+    &#39;cpus&#39;: 1,
+    &#39;memory&#39;: 1024,
+    &#39;hourly&#39;: True,
+    &#39;disks&#39;: (&#39;100&#39;,),
+    &#39;public_security_groups&#39;: public_groups,
+    &#39;private_security_groups&#39;: private_groups,
+}
+
+try:
+    vsi = vs_mgr.create_instance(**create_kwargs)
+    pp(vsi)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to create VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;attach-an-existing-vsi-to-security-groups&#34;&gt;Attach an existing VSI to security groups&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager and VSManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+vsi_id = 4018735
+private_interface = False
+port_number = 0 if private_interface else 1
+network_component_mask = &#39;networkComponents[id, port]&#39;
+
+try:
+    vsi_components = vs_mgr.get_instance(vsi_id, mask=network_component_mask)
+    component_to_attach = [comp for comp in vsi_components[&#39;networkComponents&#39;]
+                           if comp[&#39;port&#39;] == port_number][0]
+    result = net_mgr.attach_securitygroup_component(http_sg_id,
+                                                    component_to_attach[&#39;id&#39;])
+    pp(result)
+    
+    # If this is the first time the server is being associated with security groups,
+    # a reboot is required for the security group to take effect on the VSI
+    client[&#39;Virtual_Guest&#39;].rebootSoft(id=vsi_id)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to associate VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;detach-a-vsi-from-a-security-group&#34;&gt;Detach a VSI from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager and VSManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+vsi_id = 4018735
+private_interface = False
+port_number = 0 if private_interface else 1
+network_component_mask = &#39;networkComponents[id, port]&#39;
+
+try:
+    vsi_components = vs_mgr.get_instance(vsi_id, mask=network_component_mask)
+    component_to_detach = [comp for comp in vsi_components[&#39;networkComponents&#39;]
+                           if comp[&#39;port&#39;] == port_number][0]
+    net_mgr.detach_securitygroup_component(http_sg_id,
+                                           component_to_detach[&#39;id&#39;])
+    
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to disassociate VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Advanced Bare Metal Server Ordering</title>
@@ -890,37 +1242,6 @@ if __name__ == &amp;quot;__main__&amp;quot;:
     </item>
     
     <item>
-      <title>Create a Security group</title>
-      <link>https://softlayer.github.io/python/createsecuritygroup/</link>
-      <pubDate>Tue, 20 Jun 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/createsecuritygroup/</guid>
-      <description>
-
-&lt;h2 id=&#34;creating-a-security-group&#34;&gt;Creating a Security Group&lt;/h2&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-# For nice debug output:
-from pprint import pprint as pp
-# Create an object template to create the item.
-objectTemplate = {
-	&#39;accountId&#39;: YOUR_ACCOUNT_ID,
-    &#39;name&#39;: &#39;pythonCreatedGroupExample&#39;,
-    &#39;description&#39;: &#39;Sec Group created via python&#39;
-} 
-client = SoftLayer.Client()
-try:
-    result = client[&#39;SoftLayer_Network_SecurityGroup&#39;].createObjects([objectTemplate])
-    pp(result)
-except SoftLayer.SoftLayerAPIError as e:
-    pp(&#39;Failed ... Unable to create a new SecGroup  faultCode=%s, faultString=%s&#39;
-        % (e.faultCode, e.faultString))
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
       <title>Provision Times</title>
       <link>https://softlayer.github.io/python/provisiontimes/</link>
       <pubDate>Mon, 12 Jun 2017 00:00:00 UTC</pubDate>
@@ -1287,501 +1608,6 @@ mask = &amp;quot;mask[consoleIpAddressRecord[ipAddress[ipAddress],port],operatin
 
 getDetails = client[&#39;SoftLayer_Virtual_Guest&#39;].getObject(mask=mask,id=31678643)
 pp(getDetails)
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Reloading a server with a custom partition scheme</title>
-      <link>https://softlayer.github.io/python/reloadcustompartition/</link>
-      <pubDate>Wed, 29 Mar 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/reloadcustompartition/</guid>
-      <description>&lt;p&gt;The following code allows you to reload a Bare Metal server with a custom partitioning scheme. You simply need to change the serverId and the partitions to suit your needs. Note that one partition must be marked as the &amp;lsquo;grow&amp;rsquo; partition.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-from pprint import pprint as pp
-
-class example():
-
-    def __init__(self):
-        self.client = SoftLayer.Client()
-
-    def main(self):
-        serverId = 1154505
-        config = {
-        &amp;quot;upgradeHardDriveFirmware&amp;quot;: &amp;quot;0&amp;quot;,
-        &amp;quot;upgradeBios&amp;quot;: &amp;quot;0&amp;quot;,
-        &amp;quot;hardDrives&amp;quot;: [
-            {
-                &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Hardware_Component_HardDrive&amp;quot;,
-                &amp;quot;partitions&amp;quot;: [
-                    { &amp;quot;name&amp;quot;: &amp;quot;/boot&amp;quot;, &amp;quot;minimumSize&amp;quot;: &amp;quot;.25&amp;quot;},
-                    { &amp;quot;name&amp;quot;: &amp;quot;/swap0&amp;quot;, &amp;quot;minimumSize&amp;quot;: &amp;quot;20&amp;quot;},
-                    { &amp;quot;name&amp;quot;: &amp;quot;/&amp;quot;, &amp;quot;minimumSize&amp;quot;: &amp;quot;200&amp;quot;},
-                    { &amp;quot;name&amp;quot;: &amp;quot;/tmp&amp;quot;, &amp;quot;minimumSize&amp;quot;: &amp;quot;200&amp;quot;},
-                    { &amp;quot;name&amp;quot;: &amp;quot;/var&amp;quot;, &amp;quot;minimumSize&amp;quot;: &amp;quot;200&amp;quot;},
-                    { &amp;quot;name&amp;quot;: &amp;quot;/remove&amp;quot;, &amp;quot;minimumSize&amp;quot;: &amp;quot;1&amp;quot;, &amp;quot;grow&amp;quot;: &amp;quot;1&amp;quot;}
-                ]
-            }
-        ]
-     }
-
-        output = self.client[&#39;Hardware_Server&#39;].reloadOperatingSystem(&#39;FORCE&#39;, config, id=serverId)
-
-        pp(config)
-        print &amp;quot;RESULT\n&amp;quot;
-        pp(output)
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = example()
-    main.main()
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Network Topology</title>
-      <link>https://softlayer.github.io/python/networktopology/</link>
-      <pubDate>Fri, 17 Mar 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/networktopology/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
-@author Christopher Gallo
-&amp;quot;&amp;quot;&amp;quot;
-import SoftLayer
-from pprint import pprint as pp
-
-class example():
-
-    def __init__(self):
-
-        self.client = SoftLayer.Client()
-
-
-    def main(self):
-
-        mask = &amp;quot;&amp;quot;&amp;quot;
-            mask[
-                attachedNetworkGateway[publicVlan,privateVlan],
-                hardware[fullyQualifiedDomainName,frontendNetworkComponents[uplinkComponent], backendNetworkComponents[uplinkComponent]],
-                network,
-                networkSpace,
-                primaryRouter[hostname],
-                primarySubnet,
-                subnets[networkIdentifier],
-                virtualGuests[fullyQualifiedDomainName]
-            ]
-        &amp;quot;&amp;quot;&amp;quot;
-        orderedVlans = {}
-        result = self.client[&#39;SoftLayer_Account&#39;].getNetworkVlans(mask=mask)
-
-        &amp;quot;&amp;quot;&amp;quot;
-        This bit builds a nicely structured object of the network topology
-        &amp;quot;&amp;quot;&amp;quot;
-        for vlan in result:
-            vlanNumber = vlan[&#39;vlanNumber&#39;]
-            router,dc  = vlan[&#39;primaryRouter&#39;][&#39;hostname&#39;].split(&amp;quot;.&amp;quot;)
-            if dc not in orderedVlans:
-                orderedVlans[dc] = {}
-            if router not in orderedVlans[dc]:
-                orderedVlans[dc][router] = {}
-
-
-            toAppend = {
-                &#39;hardware&#39;: vlan[&#39;hardware&#39;],
-                &#39;virtualGuests&#39;: vlan[&#39;virtualGuests&#39;],
-                &#39;subnets&#39;: vlan[&#39;subnets&#39;]
-
-            }
-
-            if &#39;attachedNetworkGateway&#39; in vlan:
-                if vlan[&#39;networkSpace&#39;] == &#39;PUBLIC&#39;:
-                    gatewayVlan = vlan[&#39;attachedNetworkGateway&#39;][&#39;publicVlan&#39;][&#39;vlanNumber&#39;]
-                elif vlan[&#39;networkSpace&#39;] == &#39;PRIVATE&#39;:
-                    gatewayVlan = vlan[&#39;attachedNetworkGateway&#39;][&#39;privateVlan&#39;][&#39;vlanNumber&#39;]
-                if gatewayVlan not in orderedVlans[dc][router]:
-                    orderedVlans[dc][router][gatewayVlan] = {}
-                orderedVlans[dc][router][gatewayVlan][vlanNumber] = toAppend
-                orderedVlans[dc][router][gatewayVlan][&#39;gateway&#39;] = True
-            else:
-                orderedVlans[dc][router][vlanNumber] = toAppend
-
-        &amp;quot;&amp;quot;&amp;quot;
-        This bit prints out everything nicely-ish.
-        &amp;quot;&amp;quot;&amp;quot;
-        for dc in orderedVlans:
-            print(&amp;quot;DC: %s&amp;quot; % dc)
-            for router in orderedVlans[dc]:
-                print(&amp;quot;\tRouter: %s&amp;quot; % router)
-                for vlan in orderedVlans[dc][router]:
-                    if &#39;gateway&#39; in orderedVlans[dc][router][vlan]:
-                        print(&amp;quot;\t\tGATEWAY VLAN: %s&amp;quot; % vlan )
-                        for vlanInner in orderedVlans[dc][router][vlan]:
-
-                            if isinstance(vlanInner, int):
-                                print(&amp;quot;\t\t\tVLAN: %s&amp;quot; % vlanInner )
-                                if len(orderedVlans[dc][router][vlan][vlanInner][&#39;hardware&#39;]):
-                                    print(&amp;quot;\t\t\t  ==SERVERS==&amp;quot;)
-                                    for hardware in orderedVlans[dc][router][vlan][vlanInner][&#39;hardware&#39;]:
-                                        self.printServer(hardware)
-                                if len(orderedVlans[dc][router][vlan][vlanInner][&#39;virtualGuests&#39;]):
-                                    print(&amp;quot;\t\t\t  ==VIRTUAL SERVERS==&amp;quot;)
-                                    for virtualGuest in orderedVlans[dc][router][vlan][vlanInner][&#39;virtualGuests&#39;]:
-                                        self.printServer(virtualGuest)
-                                if len(orderedVlans[dc][router][vlan][vlanInner][&#39;subnets&#39;]):
-                                    print(&amp;quot;\t\t\t  ==SUBNETS==&amp;quot;)
-                                    for subnet in orderedVlans[dc][router][vlan][vlanInner][&#39;subnets&#39;]:
-                                        print(&amp;quot;\t\t\t\t%s&amp;quot; % subnet[&#39;networkIdentifier&#39;])
-                    else:
-                        print(&amp;quot;\t\tVLAN: %s&amp;quot; % vlan )
-                    if len(orderedVlans[dc][router][vlan][&#39;hardware&#39;]):
-                        print(&amp;quot;\t\t  ==SERVERS==&amp;quot;)
-                        for hardware in orderedVlans[dc][router][vlan][&#39;hardware&#39;]:
-                            self.printServer(hardware)
-                    if len(orderedVlans[dc][router][vlan][&#39;virtualGuests&#39;]):
-                        print(&amp;quot;\t\t  ==VIRTUAL SERVERS==&amp;quot;)
-                        for vm in orderedVlans[dc][router][vlan][&#39;virtualGuests&#39;]:
-                            self.printServer(vm)
-                    if len(orderedVlans[dc][router][vlan][&#39;subnets&#39;]):
-                        print(&amp;quot;\t\t  ==SUBNETS==&amp;quot;)
-                        for subnet in orderedVlans[dc][router][vlan][&#39;subnets&#39;]:
-                            print(&amp;quot;\t\t\t%s&amp;quot; % subnet[&#39;networkIdentifier&#39;])
-
-    def printServer(self, server):
-        print(&amp;quot;\t\t\t%s&amp;quot; % server[&#39;fullyQualifiedDomainName&#39;])
-        # pp(server)
-        if &#39;frontendNetworkComponents&#39;  in server:
-            for eth in server[&#39;frontendNetworkComponents&#39;]:
-                switch = eth[&#39;uplinkComponent&#39;][&#39;hardware&#39;][&#39;hostname&#39;]
-                switch_port = eth[&#39;uplinkComponent&#39;][&#39;port&#39;]
-                print(&amp;quot;\t\t\t\teth%s =&amp;gt; %s:%s &amp;quot; % (eth[&#39;port&#39;],switch,switch_port))
-        if &#39;backendNetworkComponents&#39;  in server:
-            for eth in server[&#39;backendNetworkComponents&#39;]:
-                switch = eth[&#39;uplinkComponent&#39;][&#39;hardware&#39;][&#39;hostname&#39;]
-                switch_port = eth[&#39;uplinkComponent&#39;][&#39;port&#39;]
-                print(&amp;quot;\t\t\t\teth%s =&amp;gt; %s:%s &amp;quot; % (eth[&#39;port&#39;],switch,switch_port))
-
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = example()
-    main.main()
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Output:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;DC: sjc03
-    Router: bcr02a
-        VLAN: 1253
-          ==SERVERS==
-            jd-centos-6-5.secore.com
-                eth1 =&amp;gt; fcs421a.sr01.sjc03:19
-                eth3 =&amp;gt; fcs421b.sr01.sjc03:19
-                eth0 =&amp;gt; bcs421a.sr01.sjc03:19
-                eth0 =&amp;gt; bms421.sr01.sjc03:19
-                eth2 =&amp;gt; bcs421b.sr01.sjc03:19
-          ==VIRTUAL SERVERS==
-            CW-SJC.softlayer.com
-          ==SUBNETS==
-            10.168.30.0
-            10.168.174.128
-            10.168.174.192
-        GATEWAY VLAN: 1310
-            VLAN: 1288
-              ==SERVERS==
-            kramvcs-esx0.vmonic.local
-                eth1 =&amp;gt; fcs422a.sr01.sjc03:37
-                eth3 =&amp;gt; fcs422b.sr01.sjc03:37
-                eth0 =&amp;gt; bcs422a.sr01.sjc03:37
-                eth0 =&amp;gt; bms422.sr01.sjc03:37
-                eth2 =&amp;gt; bcs422b.sr01.sjc03:37
-            kramvcs-esx1.vmonic.local
-                eth1 =&amp;gt; fcs422a.sr01.sjc03:40
-                eth3 =&amp;gt; fcs422b.sr01.sjc03:40
-                eth0 =&amp;gt; bcs422a.sr01.sjc03:40
-                eth0 =&amp;gt; bms422.sr01.sjc03:40
-                eth2 =&amp;gt; bcs422b.sr01.sjc03:40
-              ==VIRTUAL SERVERS==
-            kramjump.seteam.net
-            kramvcsveeam.vmonic.local
-            zerto.kramVCS.vmonic.local
-              ==SUBNETS==
-                10.168.117.128
-                10.168.137.128
-                10.168.212.128
-                10.168.212.192
-                10.169.200.64
-          ==SERVERS==
-            jd-5600-1u-test-2.secore.com
-                eth1 =&amp;gt; fcs377a.sr01.sjc03:11
-                eth3 =&amp;gt; fcs377b.sr01.sjc03:11
-                eth0 =&amp;gt; bcs377a.sr01.sjc03:11
-                eth0 =&amp;gt; bms377.sr01.sjc03:11
-                eth2 =&amp;gt; bcs377b.sr01.sjc03:11
-            jd-5600-test-sjc03-2.secore.com
-                eth1 =&amp;gt; fcs487a.sr01.sjc03:20
-                eth3 =&amp;gt; fcs487b.sr01.sjc03:20
-                eth0 =&amp;gt; bcs487a.sr01.sjc03:20
-                eth0 =&amp;gt; bms487.sr01.sjc03:20
-                eth2 =&amp;gt; bcs487b.sr01.sjc03:20
-            jd-5600-1u-test-1.secore.com
-                eth1 =&amp;gt; fcs390a.sr01.sjc03:6
-                eth3 =&amp;gt; fcs390b.sr01.sjc03:6
-                eth0 =&amp;gt; bcs390a.sr01.sjc03:6
-                eth0 =&amp;gt; bms390.sr01.sjc03:6
-                eth2 =&amp;gt; bcs390b.sr01.sjc03:6
-          ==SUBNETS==
-            10.168.63.0
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Endurance Storage Replication</title>
-      <link>https://softlayer.github.io/python/endurancereplication/</link>
-      <pubDate>Tue, 21 Feb 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/endurancereplication/</guid>
-      <description>&lt;p&gt;Some good starting reading.&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-replication&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-replication&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;For more information on the magic of storage ordering see the following&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;This example should touch on all the basics of dealing with endurance storage replication volumes. This example uses the SoftLayer-python File manager a little bit for ordering&lt;/p&gt;
-
-&lt;p&gt;TO authorize hosts that are NOT virtual guests, see the allowAccessFrom* methods in&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Graceful vs Immediate failover&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Failback is always immediate.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
-@package examples 
-@author Christopher Gallo
-&amp;quot;&amp;quot;&amp;quot;
-
-import SoftLayer
-import logging
-from pprint import pprint as pp
-
-class example():
-
-    def __init__(self):
-        &amp;quot;&amp;quot;&amp;quot;
-        If you need debugging, uncomment these. be prepared for a lot of XML
-        &amp;quot;&amp;quot;&amp;quot;
-        # logger = logging.getLogger()
-        # logger.addHandler(logging.StreamHandler())
-        # logger.setLevel(3)
-        self.client = SoftLayer.Client()
-        self.storage = self.client[&#39;SoftLayer_Network_Storage&#39;]
-        self.mgr = SoftLayer.FileStorageManager(self.client)
-        # Broken up like this to look &#39;good&#39; on softlayer.github.io
-        self.objectMask = &amp;quot;mask[&amp;quot;
-            &amp;quot;id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], &amp;quot;
-            &amp;quot;serviceResourceBackendIpAddress, activeTransactionCount, &amp;quot;
-            &amp;quot;fileNetworkMountAddress, snapshots[id,createDate], hourlySchedule, &amp;quot; 
-            &amp;quot;allowedReplicationVirtualGuests[hostname], allowedVirtualGuests[hostname], &amp;quot;
-            &amp;quot;replicationStatus, replicationPartners]&amp;quot;
-
-    def orderStorage(self):
-        &amp;quot;&amp;quot;&amp;quot;
-        This will order endurance storage in HOU02 with 20G in size, and the 0.25IOPS/GB tier
-        0.25, 2, 4 and 10 iops/g are tiers available. 
-        &amp;quot;&amp;quot;&amp;quot;
-        result = self.mgr.order_file_volume(
-            storage_type=&amp;quot;storage_service_enterprise&amp;quot;,
-            location = &amp;quot;hou02&amp;quot;,
-            size = 20,
-            tier_level = 0.25
-            )
-        pp(result)
-
-    def orderSnapshot(self, volume_id):
-        result = self.mgr.order_snapshot_space(
-            volume_id=volume_id,
-            capacity=20,
-            tier = 0.25,
-            upgrade=False)
-        pp(result)
-
-    def orderReplicant(self, volume_id, schedule):
-        &amp;quot;&amp;quot;&amp;quot;
-        Same as other ordering methods, schedule is 
-        &amp;quot;HOURLY&amp;quot;, &amp;quot;DAILY&amp;quot; or &amp;quot;WEEKLY&amp;quot;
-        &amp;quot;&amp;quot;&amp;quot;
-        result = self.mgr.order_replicant_volume(
-            volume_id=volume_id,
-            snapshot_schedule=schedule,
-            location = &amp;quot;dal06&amp;quot;,
-            tier = 0.25
-        )
-        pp(result)
-
-
-
-    def listStoragePrices(self):
-        &amp;quot;&amp;quot;&amp;quot;
-        222 - Performance - PERFORMANCE_STORAGE_SERVICE
-        240 - Endurance - CODENAME_PRIME_STORAGE
-        If you feel like building the pricing object yourself, start here.
-        &amp;quot;&amp;quot;&amp;quot;
-        mask = &amp;quot;mask[items[prices[pricingLocationGroup,categories],attributes]]&amp;quot;
-        # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
-        result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=240)
-        for item in result[&#39;items&#39;]:
-            print(&amp;quot;%s - %s - %s&amp;quot; % 
-                (str(item[&#39;id&#39;]), item[&#39;description&#39;], item[&#39;keyName&#39;]) 
-            # pp(item)
-            for prices in item[&#39;prices&#39;]:
-                if prices[&#39;locationGroupId&#39;] is  &#39;&#39;:
-                    print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;])
-                # pp(prices)
-
-    def listStorage(self):
-    &amp;quot;&amp;quot;&amp;quot;
-    Super complicated objectFilter. Mostly here as an example of how to do an IN filter.
-    Returns all storage that is in DAL06, HOU02, is NOT NAS, and is Endurance_File_Storage
-    &amp;quot;&amp;quot;&amp;quot;
-        objectFilter = {
-            &#39;nasNetworkStorage&#39;: {
-                &#39;serviceResource&#39;: {
-                    &#39;type&#39;: {
-                        &#39;type&#39;: {&#39;operation&#39;: &#39;!~ NAS&#39;}
-                    },
-                    &#39;datacenter&#39;: {
-                        &#39;name&#39;: {
-                            &#39;operation&#39;: &#39;in&#39;,
-                            &#39;options&#39;: [{
-                                &#39;name&#39;: &#39;data&#39;,
-                                &#39;value&#39;: [&#39;dal06&#39;,&#39;hou02&#39;]
-                            }]
-                        }
-                    }
-                },
-                &#39;storageType&#39;: {
-                    &#39;keyName&#39;: {&#39;operation&#39;: &#39;ENDURANCE_FILE_STORAGE&#39;}
-                }
-            }
-        }
-        result = self.client[&#39;Account&#39;].getNasNetworkStorage(
-            mask=self.objectMask,filter=objectFilter)
-        pp(result)
-
-    def authHost(self, volume_id, host_id):
-    &amp;quot;&amp;quot;&amp;quot;
-    each host that needs to mount the volume needs to be authorized.
-    host and volume need to be in the same DC
-    &amp;quot;&amp;quot;&amp;quot;
-        guest = {
-            &#39;id&#39;: host_id
-        }
-        self.storage.allowAccessFromVirtualGuest(guest, id=volume_id)
-
-    def authReplicant(self, volume_id, host_id):
-    &amp;quot;&amp;quot;&amp;quot;
-    each host that needs to mount the REPLICANT needs to be authorized.
-    host and volume need to be in the same DC
-    &amp;quot;&amp;quot;&amp;quot;
-        guest = {
-            &#39;id&#39;: host_id
-        }
-        self.storage.allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
-
-    def createSnapSchedule(self, volume_id):
-        # HOURLY, 24 copies, first minute of the hour. 
-        self.storage.enableSnapshots(&#39;HOURLY&#39;, 24, 1, 0, 0, id=volume_id)
-
-    def manualSnap(self, volume_id):
-        self.storage.createSnapshot(&#39;Manual SNAP&#39;, id=volume_id)
-
-    def getReplicantId(self, volume_id):
-        &amp;quot;&amp;quot;&amp;quot;
-        there might be more than 1 replicant id in this list if there are more 
-        than 1 replicant targets. Or none of course.
-        &amp;quot;&amp;quot;&amp;quot;
-        result = self.storage.getReplicationPartners(id=volume_id)
-        return result[0][&#39;id&#39;]
-        
-
-    def houIsDown(self, volume_id, now=False):
-
-        replicate_to = main.getReplicantId(volume_id)
-        if now:
-            self.storage.immediateFailoverToReplicant(replicate_to, id=volume_id)
-        else
-            self.storage.failoverToReplicant(replicate_to, id=volume_id)
-
-    def houIsBack(self, volume_id):
-        self.storage.failbackFromReplicant(id=volume_id,now=False)
-
-    def volumeStatus(self, volume_id):
-        result = self.storage.getObject(mask=self.objectMask, id=volume_id)
-        pp(result)
-
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-&amp;quot;&amp;quot;&amp;quot;
-Covers each of the steps required to create a storage volume, and then fail it over.
-The ordering methods will need to be slightly modified for block storage. 
-everything else should be good as is.
-
-&amp;quot;&amp;quot;&amp;quot;
-
-    host_a = 25206857
-    host_b = 28630647
-    main = example()
-    main.listStorage()
-    ### First we need to order a storage volume, and get its ID.
-    # main.orderStorage()
-    volume_id = 20017773
-
-    ### Then we need to order snapshot space
-    # main.orderSnapshot(volume_id)
-
-    ### Then create a snapshot schedule.
-    # main.createSnapSchedule(volume_id)
-
-    ### Then Allow our host to access the volume
-    # main.authHost(volume_id, [host_a])
-
-    ### Create a manual snapshot for fun 
-    # main.manualSnap(volume_id)
-
-    ### Order replication space.
-    # main.orderReplicant(volume_id, &#39;HOURLY&#39;)
-
-    ### Allow our vm to access replicant volume
-    # main.authReplicant(volume_id,host_b)
-
-    ### Failover to replicant
-    # main.houIsDown(volume_id)
-
-    ### Failback to main
-    # main.houIsBack(volume_id)
-
-    ### Get some status
-    # main.volumeStatus(volume_id)
-
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>

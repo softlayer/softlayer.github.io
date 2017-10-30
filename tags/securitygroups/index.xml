@@ -6,7 +6,359 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 02 Oct 2017 00:00:00 UTC</updated>
+    <updated>Mon, 30 Oct 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Create a new virtual server and attach Security Groups</title>
+      <link>https://softlayer.github.io/python/createvsiwithsecgroup/</link>
+      <pubDate>Mon, 30 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/createvsiwithsecgroup/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+from __future__ import print_function
+import SoftLayer
+from SoftLayer.managers.vs import VSManager
+
+def create_vsi():
+    #Create a client to the SoftLayer_Account API service.
+    #Note: currently set without the user ID and API key since
+    #it will by default use the values set in the CLI
+    #to use other values use SoftLayer.Client(sl_username, sl_api_key)
+    client = SoftLayer.Client()
+    vsi_mgr = VSManager(client)
+
+   # common values
+    datacenter = &#39;wdc07&#39; 
+    domain = &#39;cde.services&#39; 
+    os_code = &#39;UBUNTU_LATEST_64&#39;
+    local_disk = True 
+    hourly = True 
+    dedicated = False 
+    nic_speed = 1000 
+    disks = [100] 
+    private = False 
+    ssh_keys = [972047] 
+    public_security_groups = [43507]
+    private_security_groups = [43511]
+
+    # server properties
+    hostname = &#39;sgvsi&#39;
+    cpus = 2
+    memory = 2048
+
+    result = vsi_mgr.create_instance(hostname=hostname, domain=domain,
+                                     cpus=cpus, memory=memory, datacenter=datacenter,
+                                     os_code=os_code, local_disk=local_disk,
+                                     hourly=hourly, dedicated=dedicated,
+                                     disks=disks, nic_speed=nic_speed, private=private,
+                                     ssh_keys=ssh_keys, public_security_groups=public_security_groups,
+                                     private_security_groups=private_security_groups)
+    print(result)
+
+if __name__ == &#39;__main__&#39;:
+    create_vsi()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Add, list, and remove security group rules</title>
+      <link>https://softlayer.github.io/python/securitygroup_rule_ops/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_rule_ops/</guid>
+      <description>
+
+&lt;h2 id=&#34;adding-a-rule-to-a-security-group&#34;&gt;Adding a rule to a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+direction = &#39;ingress&#39;
+ethertype = &#39;IPv4&#39;
+remote_ip = &#39;169.148.34.0/24&#39;
+protocol = &#39;tcp&#39;
+port_min = 22
+port_max = 22
+try:
+    result = net_mgr.add_securitygroup_rule(sg_id,
+                                            direction=direction,
+                                            ethertype=ethertype,
+                                            remote_ip=remote_ip,
+                                            protocol=protocol,
+                                            port_min=port_min,
+                                            port_max=port_max)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to add a rule to the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;listing-rules-in-a-security-group&#34;&gt;Listing rules in a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+try:
+    result = net_mgr.list_securitygroup_rules(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to list rules in the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;removing-a-rule-from-a-security-group&#34;&gt;Removing a rule from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+rule_id = 475879
+try:
+    result = net_mgr.remove_securitygroup_rule(sg_id, rule_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to remove rule from the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;remove-all-rules-from-a-security-group&#34;&gt;Remove all rules from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+try:
+    rules = net_mgr.list_securitygroup_rules(sg_id)
+    rules = [rule[&#39;id&#39;] for rule in rules]
+    result = net_mgr.remove_securitygroup_rules(sg_id, rules)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to remove rules from the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create, list, get, and delete security groups</title>
+      <link>https://softlayer.github.io/python/securitygroup_ops/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_ops/</guid>
+      <description>
+
+&lt;h2 id=&#34;creating-a-security-group&#34;&gt;Creating a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+name = &#39;pythonCreatedGroupExample&#39;
+description = &#39;Security Group created via python&#39;
+try:
+    result = net_mgr.create_securitygroup(name=name, description=description)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to create a new security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;deleting-a-security-group&#34;&gt;Deleting a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 12045
+try:
+    result = net_mgr.delete_securitygroup(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to delete security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;getting-a-security-group&#34;&gt;Getting a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 12045
+try:
+    result = net_mgr.get_securitygroup(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to get security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;list-all-security-groups-in-account&#34;&gt;List all security groups in account&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+result = net_mgr.list_securitygroups()
+pp(result)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>VSIs and security groups</title>
+      <link>https://softlayer.github.io/python/securitygroup_vsis/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_vsis/</guid>
+      <description>
+
+&lt;h2 id=&#34;creating-a-vsi-with-security-groups&#34;&gt;Creating a VSI with security groups&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the VSManager
+client = SoftLayer.Client()
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+ssh_sg_id = 576973
+
+# Allow only HTTP on the public interface of the VSI
+public_groups = [http_sg_id]
+
+# Allow HTTP and SSH on the private interface of the VSI
+private_groups = [http_sg_id, ssh_sg_id]
+
+# If we didn&#39;t want to set any security groups on an interface
+# (which allows all traffic), we don&#39;t set the associated
+# creation kwarg
+
+create_kwargs = {
+    &#39;hostname&#39;: &#39;sg-vsi&#39;,
+    &#39;domain&#39;: &#39;mycompany.com&#39;,
+    &#39;os_code&#39;: &#39;UBUNTU_LATEST_64&#39;,
+    &#39;datacenter&#39;: &#39;dal13&#39;,
+    &#39;cpus&#39;: 1,
+    &#39;memory&#39;: 1024,
+    &#39;hourly&#39;: True,
+    &#39;disks&#39;: (&#39;100&#39;,),
+    &#39;public_security_groups&#39;: public_groups,
+    &#39;private_security_groups&#39;: private_groups,
+}
+
+try:
+    vsi = vs_mgr.create_instance(**create_kwargs)
+    pp(vsi)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to create VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;attach-an-existing-vsi-to-security-groups&#34;&gt;Attach an existing VSI to security groups&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager and VSManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+vsi_id = 4018735
+private_interface = False
+port_number = 0 if private_interface else 1
+network_component_mask = &#39;networkComponents[id, port]&#39;
+
+try:
+    vsi_components = vs_mgr.get_instance(vsi_id, mask=network_component_mask)
+    component_to_attach = [comp for comp in vsi_components[&#39;networkComponents&#39;]
+                           if comp[&#39;port&#39;] == port_number][0]
+    result = net_mgr.attach_securitygroup_component(http_sg_id,
+                                                    component_to_attach[&#39;id&#39;])
+    pp(result)
+    
+    # If this is the first time the server is being associated with security groups,
+    # a reboot is required for the security group to take effect on the VSI
+    client[&#39;Virtual_Guest&#39;].rebootSoft(id=vsi_id)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to associate VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;detach-a-vsi-from-a-security-group&#34;&gt;Detach a VSI from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager and VSManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+vsi_id = 4018735
+private_interface = False
+port_number = 0 if private_interface else 1
+network_component_mask = &#39;networkComponents[id, port]&#39;
+
+try:
+    vsi_components = vs_mgr.get_instance(vsi_id, mask=network_component_mask)
+    component_to_detach = [comp for comp in vsi_components[&#39;networkComponents&#39;]
+                           if comp[&#39;port&#39;] == port_number][0]
+    net_mgr.detach_securitygroup_component(http_sg_id,
+                                           component_to_detach[&#39;id&#39;])
+    
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to disassociate VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Add, get, edit and remove Security Group rules</title>
@@ -329,37 +681,6 @@ objectTemplate = {
 createGroup = client[&#39;SoftLayer_Network_SecurityGroup&#39;].createObjects([objectTemplate])
 
 pp createGroup
-&lt;/code&gt;&lt;/pre&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Create a Security group</title>
-      <link>https://softlayer.github.io/python/createsecuritygroup/</link>
-      <pubDate>Tue, 20 Jun 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/createsecuritygroup/</guid>
-      <description>
-
-&lt;h2 id=&#34;creating-a-security-group&#34;&gt;Creating a Security Group&lt;/h2&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-# For nice debug output:
-from pprint import pprint as pp
-# Create an object template to create the item.
-objectTemplate = {
-	&#39;accountId&#39;: YOUR_ACCOUNT_ID,
-    &#39;name&#39;: &#39;pythonCreatedGroupExample&#39;,
-    &#39;description&#39;: &#39;Sec Group created via python&#39;
-} 
-client = SoftLayer.Client()
-try:
-    result = client[&#39;SoftLayer_Network_SecurityGroup&#39;].createObjects([objectTemplate])
-    pp(result)
-except SoftLayer.SoftLayerAPIError as e:
-    pp(&#39;Failed ... Unable to create a new SecGroup  faultCode=%s, faultString=%s&#39;
-        % (e.faultCode, e.faultString))
-
 &lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>

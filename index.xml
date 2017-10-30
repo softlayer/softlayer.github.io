@@ -6,7 +6,359 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Thu, 12 Oct 2017 00:00:00 UTC</updated>
+    <updated>Mon, 30 Oct 2017 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Create a new virtual server and attach Security Groups</title>
+      <link>https://softlayer.github.io/python/createvsiwithsecgroup/</link>
+      <pubDate>Mon, 30 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/createvsiwithsecgroup/</guid>
+      <description>&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
+from __future__ import print_function
+import SoftLayer
+from SoftLayer.managers.vs import VSManager
+
+def create_vsi():
+    #Create a client to the SoftLayer_Account API service.
+    #Note: currently set without the user ID and API key since
+    #it will by default use the values set in the CLI
+    #to use other values use SoftLayer.Client(sl_username, sl_api_key)
+    client = SoftLayer.Client()
+    vsi_mgr = VSManager(client)
+
+   # common values
+    datacenter = &#39;wdc07&#39; 
+    domain = &#39;cde.services&#39; 
+    os_code = &#39;UBUNTU_LATEST_64&#39;
+    local_disk = True 
+    hourly = True 
+    dedicated = False 
+    nic_speed = 1000 
+    disks = [100] 
+    private = False 
+    ssh_keys = [972047] 
+    public_security_groups = [43507]
+    private_security_groups = [43511]
+
+    # server properties
+    hostname = &#39;sgvsi&#39;
+    cpus = 2
+    memory = 2048
+
+    result = vsi_mgr.create_instance(hostname=hostname, domain=domain,
+                                     cpus=cpus, memory=memory, datacenter=datacenter,
+                                     os_code=os_code, local_disk=local_disk,
+                                     hourly=hourly, dedicated=dedicated,
+                                     disks=disks, nic_speed=nic_speed, private=private,
+                                     ssh_keys=ssh_keys, public_security_groups=public_security_groups,
+                                     private_security_groups=private_security_groups)
+    print(result)
+
+if __name__ == &#39;__main__&#39;:
+    create_vsi()
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Add, list, and remove security group rules</title>
+      <link>https://softlayer.github.io/python/securitygroup_rule_ops/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_rule_ops/</guid>
+      <description>
+
+&lt;h2 id=&#34;adding-a-rule-to-a-security-group&#34;&gt;Adding a rule to a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+direction = &#39;ingress&#39;
+ethertype = &#39;IPv4&#39;
+remote_ip = &#39;169.148.34.0/24&#39;
+protocol = &#39;tcp&#39;
+port_min = 22
+port_max = 22
+try:
+    result = net_mgr.add_securitygroup_rule(sg_id,
+                                            direction=direction,
+                                            ethertype=ethertype,
+                                            remote_ip=remote_ip,
+                                            protocol=protocol,
+                                            port_min=port_min,
+                                            port_max=port_max)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to add a rule to the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;listing-rules-in-a-security-group&#34;&gt;Listing rules in a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+try:
+    result = net_mgr.list_securitygroup_rules(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to list rules in the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;removing-a-rule-from-a-security-group&#34;&gt;Removing a rule from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+rule_id = 475879
+try:
+    result = net_mgr.remove_securitygroup_rule(sg_id, rule_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to remove rule from the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;remove-all-rules-from-a-security-group&#34;&gt;Remove all rules from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 123045
+try:
+    rules = net_mgr.list_securitygroup_rules(sg_id)
+    rules = [rule[&#39;id&#39;] for rule in rules]
+    result = net_mgr.remove_securitygroup_rules(sg_id, rules)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to remove rules from the security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Create, list, get, and delete security groups</title>
+      <link>https://softlayer.github.io/python/securitygroup_ops/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_ops/</guid>
+      <description>
+
+&lt;h2 id=&#34;creating-a-security-group&#34;&gt;Creating a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+name = &#39;pythonCreatedGroupExample&#39;
+description = &#39;Security Group created via python&#39;
+try:
+    result = net_mgr.create_securitygroup(name=name, description=description)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to create a new security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;deleting-a-security-group&#34;&gt;Deleting a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 12045
+try:
+    result = net_mgr.delete_securitygroup(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to delete security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;getting-a-security-group&#34;&gt;Getting a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+sg_id = 12045
+try:
+    result = net_mgr.get_securitygroup(sg_id)
+    pp(result)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to get security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;list-all-security-groups-in-account&#34;&gt;List all security groups in account&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+
+result = net_mgr.list_securitygroups()
+pp(result)
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>VSIs and security groups</title>
+      <link>https://softlayer.github.io/python/securitygroup_vsis/</link>
+      <pubDate>Wed, 18 Oct 2017 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/securitygroup_vsis/</guid>
+      <description>
+
+&lt;h2 id=&#34;creating-a-vsi-with-security-groups&#34;&gt;Creating a VSI with security groups&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the VSManager
+client = SoftLayer.Client()
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+ssh_sg_id = 576973
+
+# Allow only HTTP on the public interface of the VSI
+public_groups = [http_sg_id]
+
+# Allow HTTP and SSH on the private interface of the VSI
+private_groups = [http_sg_id, ssh_sg_id]
+
+# If we didn&#39;t want to set any security groups on an interface
+# (which allows all traffic), we don&#39;t set the associated
+# creation kwarg
+
+create_kwargs = {
+    &#39;hostname&#39;: &#39;sg-vsi&#39;,
+    &#39;domain&#39;: &#39;mycompany.com&#39;,
+    &#39;os_code&#39;: &#39;UBUNTU_LATEST_64&#39;,
+    &#39;datacenter&#39;: &#39;dal13&#39;,
+    &#39;cpus&#39;: 1,
+    &#39;memory&#39;: 1024,
+    &#39;hourly&#39;: True,
+    &#39;disks&#39;: (&#39;100&#39;,),
+    &#39;public_security_groups&#39;: public_groups,
+    &#39;private_security_groups&#39;: private_groups,
+}
+
+try:
+    vsi = vs_mgr.create_instance(**create_kwargs)
+    pp(vsi)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to create VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;attach-an-existing-vsi-to-security-groups&#34;&gt;Attach an existing VSI to security groups&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager and VSManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+vsi_id = 4018735
+private_interface = False
+port_number = 0 if private_interface else 1
+network_component_mask = &#39;networkComponents[id, port]&#39;
+
+try:
+    vsi_components = vs_mgr.get_instance(vsi_id, mask=network_component_mask)
+    component_to_attach = [comp for comp in vsi_components[&#39;networkComponents&#39;]
+                           if comp[&#39;port&#39;] == port_number][0]
+    result = net_mgr.attach_securitygroup_component(http_sg_id,
+                                                    component_to_attach[&#39;id&#39;])
+    pp(result)
+    
+    # If this is the first time the server is being associated with security groups,
+    # a reboot is required for the security group to take effect on the VSI
+    client[&#39;Virtual_Guest&#39;].rebootSoft(id=vsi_id)
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to associate VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;detach-a-vsi-from-a-security-group&#34;&gt;Detach a VSI from a security group&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
+# For nice debug output
+from pprint import pprint as pp
+
+# Create a client for use with the NetworkManager and VSManager
+client = SoftLayer.Client()
+net_mgr = SoftLayer.NetworkManager(client)
+vs_mgr = SoftLayer.VSManager(client)
+
+http_sg_id = 384757
+vsi_id = 4018735
+private_interface = False
+port_number = 0 if private_interface else 1
+network_component_mask = &#39;networkComponents[id, port]&#39;
+
+try:
+    vsi_components = vs_mgr.get_instance(vsi_id, mask=network_component_mask)
+    component_to_detach = [comp for comp in vsi_components[&#39;networkComponents&#39;]
+                           if comp[&#39;port&#39;] == port_number][0]
+    net_mgr.detach_securitygroup_component(http_sg_id,
+                                           component_to_detach[&#39;id&#39;])
+    
+except SoftLayer.SoftLayerAPIError as e:
+    pp(&#39;Failed... Unable to disassociate VSI with security group: faultCode=%s, faultString=%s&#39;
+       % (e.faultCode, e.faultString))
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: October 12, 2017</title>
@@ -1086,289 +1438,6 @@ curl -X PUT -H &amp;quot;X-Auth-Token: $swiftAuthToken&amp;quot; -H &amp;quot;X-
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Originally from &lt;a href=&#34;https://sldn.softlayer.com/blog/ashaw/object-storage-uploader&#34;&gt;SLDN&lt;/a&gt;&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Ordering Raid</title>
-      <link>https://softlayer.github.io/ruby/orderingraid/</link>
-      <pubDate>Wed, 13 Sep 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/orderingraid/</guid>
-      <description>
-
-&lt;p&gt;As a SoftLayer user, you have probably seen the beautiful RAID Configurator that greets you when you order a server on the SoftLayer website.&lt;/p&gt;
-
-&lt;p&gt;It allows you to do anything you like, from a straight RAID configuration involving all drives in a single disk array, to a much more intricate configuration with nearly any mix of disks and RAID types.&lt;/p&gt;
-
-&lt;p&gt;However beautiful and practical the interface, sometimes you want to script this process, and the SoftLayer mantra of &amp;ldquo;Anything you can do in the Web interface, you can do on the API&amp;rdquo; also rings true in this case.&lt;/p&gt;
-
-&lt;h2 id=&#34;single-raid-group&#34;&gt;Single RAID group&lt;/h2&gt;
-
-&lt;p&gt;If all your drives are the same and you simply want a single RAID group, be it RAID 0,1,5 or 10, you can achieve this by ordering the corresponding disk controller.&lt;/p&gt;
-
-&lt;p&gt;When building your order template you will see that RAID-enabled servers are listed with multiple disk controllers. Here&amp;rsquo;s an example of the relevant price IDs from package 53 (Intel Xeon 3200 Series):&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;Category &amp;quot;Disk Controller&amp;quot;:
-     876 -- Non-RAID
-     877 -- RAID 0
-     878 -- RAID 1
-     879 -- RAID 5
-     880 -- RAID 10
-     22482 -- RAID
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;So ordering an Intel 3260 server with RAID 10 through the API could look like this:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;rubygems&#39;
-require &#39;softlayer_api&#39;
- 
-$SL_API_USERNAME = &amp;quot; PLEASE SET ME &amp;quot;
-$SL_API_KEY = &amp;quot; PLEASE SET ME TOO &amp;quot;
- 
-client = SoftLayer::Service.new(&amp;quot;SoftLayer_Product_Order&amp;quot;);
- 
-order = {
- :complexType =&amp;gt; &#39;SoftLayer_Container_Product_Order_Hardware_Server&#39;,
- :quantity =&amp;gt; 1,
- :hardware =&amp;gt; [{:hostname =&amp;gt; &#39;raidtest&#39;, :domain =&amp;gt; &#39;example.com&#39;}],
- :location =&amp;gt; 168642, # San Jose 1
- :packageId =&amp;gt; 53, # Intel Xeon 3200 Series
- :prices =&amp;gt; [
-  {:id =&amp;gt; 2050}, # Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT
-  {:id =&amp;gt; 17438}, # -- Ubuntu Linux 12.04.0 LTS Precise Pangolin - Minimal Install (64 bit)
-  {:id =&amp;gt; 21004}, # 4 GB DDR3 Registered 1333
-  {:id =&amp;gt; 880}, # Disk controller -- RAID 10 
-  {:id =&amp;gt; 1257}, # First hard drive -- 147GB SA-SCSI 10K RPM
-  {:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
-  {:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
-  {:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
-  {:id =&amp;gt; 728}, # 0 GB Bandwidth
-  {:id =&amp;gt; 898}, # 100 Mbps Private Network
-  {:id =&amp;gt; 906}, # Reboot / KVM over IP  
-  {:id =&amp;gt; 420}, # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
-  {:id =&amp;gt; 55}, # Host Ping
-  {:id =&amp;gt; 418}, # Nessus Vulnerability Assessment &amp;amp; Reporting
-  {:id =&amp;gt; 57}, # Notification -- Email and Ticket
-  {:id =&amp;gt; 58} # Response -- Automated Notification
- ]
-}
- 
-result = client.verifyOrder(order)
-## Uncomment when you are ready to order
-# client.placeOrder(order)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;multiple-raid-groups&#34;&gt;Multiple RAID groups&lt;/h2&gt;
-
-&lt;p&gt;When ordering multiple RAID groups you need to order the Disk Controller type called RAID, and specify your RAID groups in an attribute in the order template called storageGroups.
-storageGroups is of the type &lt;a href=&#34;https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group&#34;&gt;SoftLayer_Container_Product_Order_Storage_Group&lt;/a&gt; and the most important attributes can be explained as:&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;arrayTypeId: Integer - Required
-Can be retrieved from &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Configuration_Storage_Group_Array_Type&#34;&gt;SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;1&lt;/a&gt;&lt;/sup&gt;
-hardDrives: Array of integers - Required
-Array of drives to take part in the given raid array. 0 = first drive, 1 = second drive, etc&lt;/p&gt;
-
-&lt;p&gt;hotSpareDrives: array of integers - Optional
-On raid types where hot spare is allowed, you can specify which drives to use as hot spare.
-Raid types that allow hot spare can be retrieved from &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Configuration_Storage_Group_Array_Type&#34;&gt;SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
-
-&lt;p&gt;partitionTemplateId: integer - Optional
-To be used on the array where the operating system is to be installed.
-Partition Template IDs for the relevant operating system can be retrieved from
-&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Component_Partition_OperatingSystem/getPartitionTemplates&#34;&gt;SoftLayer_Hardware_Component_Partition_OperatingSystem::getPartitionTemplates&lt;/a&gt;
-use &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Component_Partition_OperatingSystem&#34;&gt;SoftLayer_Hardware_Component_Partition_OperatingSystem::getAllObjects&lt;/a&gt;&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;3&lt;/a&gt;&lt;/sup&gt; to get a list of operating system groups that has partition templates&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Let&amp;rsquo;s say, for example, you want to have a server with a single SSD drive for the operating system, also hosting a large 12GB swap partition, and a separate RAID array with 3 striped 147GB SAS Drives.&lt;/p&gt;
-
-&lt;p&gt;The first thing we&amp;rsquo;ll need to do is specify the controller and drives we want in our order template.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;{:id =&amp;gt; 22482}, # Disk controller -- RAID
-{:id =&amp;gt; 13756}, # First hard drive -- 50GB SSD
-{:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
-{:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
-{:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;To configure the RAID groups we need to populate storageGroups
-The disks will be addressed in the order of their placement and template, starting at disk 0.
-So for the first disk that we want to be on its own we will use arrayTypeId 9, which is JBOD, and specify partitionTemplateId 226 which specifies a 12GB Swap partition&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;{
-        :arrayTypeId =&amp;gt; 9, # JBOD -- Other types available from SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects
-        :hardDrives =&amp;gt; [0], # First Hard Drive (50GB SSD)
-        :partitionTemplateId =&amp;gt; 226 # Custom partition template - 12GB Swap
-},
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;For the second group we specify arrayTypeId 1, which is RAID 0 - Striped&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;{
-        :arrayTypeId =&amp;gt; 1, # RAID 0 -- Other types available from SoftLayer_Configuration_Storage_Group_Array_Type::getAllObjects
-        :hardDrives =&amp;gt; [1,2,3] # Second, third and fourth hard drives (147GB SAS)
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;All together, the order will look like this:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;rubygems&#39;
-require &#39;softlayer_api&#39;
- 
-$SL_API_USERNAME = &amp;quot; PLEASE SET ME &amp;quot;
-$SL_API_KEY = &amp;quot; PLEASE SET ME TOO &amp;quot;
- 
-client = SoftLayer::Service.new(&amp;quot;SoftLayer_Product_Order&amp;quot;);
- 
-order = {
- :complexType =&amp;gt; &#39;SoftLayer_Container_Product_Order_Hardware_Server&#39;,
- :quantity =&amp;gt; 1,
- :hardware =&amp;gt; [{:hostname =&amp;gt; &#39;raidtest&#39;, :domain =&amp;gt; &#39;example.com&#39;}],
- :location =&amp;gt; 168642, # San Jose 1
- :packageId =&amp;gt; 53, # Intel Xeon 3200 Series
- :prices =&amp;gt; [
-  {:id =&amp;gt; 2050}, # Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT
-  {:id =&amp;gt; 17438}, # -- Ubuntu Linux 12.04.0 LTS Precise Pangolin - Minimal Install (64 bit)
-  {:id =&amp;gt; 21004}, # 4 GB DDR3 Registered 1333
-  {:id =&amp;gt; 22482}, # Disk controller -- RAID
-  {:id =&amp;gt; 13756}, # First hard drive -- 50GB SSD
-  {:id =&amp;gt; 1256}, # Second hard drive -- 147GB SA-SCSI 10K RPM
-  {:id =&amp;gt; 825}, # Third hard drive -- 147GB SA-SCSI 10K RPM
-  {:id =&amp;gt; 825}, # Fourth hard drive -- 147GB SA-SCSI 10K RPM
-  {:id =&amp;gt; 728}, # 0 GB Bandwidth
-  {:id =&amp;gt; 898}, # 100 Mbps Private Network
-  {:id =&amp;gt; 906}, # Reboot / KVM over IP  
-  {:id =&amp;gt; 420}, # Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account
-  {:id =&amp;gt; 55}, # Host Ping
-  {:id =&amp;gt; 418}, # Nessus Vulnerability Assessment &amp;amp; Reporting
-  {:id =&amp;gt; 57}, # Notification -- Email and Ticket
-  {:id =&amp;gt; 58} # Response -- Automated Notification
- ],
- 
- :storageGroups =&amp;gt; [
-     { # RAID Array 1
-        :arrayTypeId =&amp;gt; 9, # JBOD
-        :hardDrives =&amp;gt; [0], # First Hard Drive (50GB SSD)
-        :partitionTemplateId =&amp;gt; 226 # Custom partition template - 12GB Swap
-     },
-     { # RAID Array 2
-        :arrayTypeId =&amp;gt; 1, # RAID 0
-        :hardDrives =&amp;gt; [1,2,3] # Second, third and fourth hard drives (147GB SAS)
-     }
-  ]
-}
-
- 
-result = client.verifyOrder(order)
-## Uncomment when you&#39;re ready to order
-# client.placeOrder(order)
-Links and other useful information
-order_multiple_raid_groups.rb
-order_single_raid_group.rb
-get_package_options.rb (command line tool)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;//hansKristian&lt;/p&gt;
-&lt;div class=&#34;footnotes&#34;&gt;
-
-&lt;hr /&gt;
-
-&lt;ol&gt;
-&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
- &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
- &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;li id=&#34;fn:1&#34;&gt;These getAllObjects() calls don&amp;rsquo;t show up in the documentation on SLDN, however they do still work.
- &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: September 7, 2017</title>
-      <link>https://softlayer.github.io/release_notes/2017/20170907/</link>
-      <pubDate>Thu, 07 Sep 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2017/20170907/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Exposed the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_MassDataMigration_Request&#34;&gt;SoftLayer_Network_Storage_MassDataMigration_Request&lt;/a&gt;, &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_MassDataMigration_Request_KeyContact&#34;&gt;SoftLayer_Network_Storage_MassDataMigration_Request_KeyContact&lt;/a&gt;, and &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_MassDataMigration_Request_Status&#34;&gt;SoftLayer_Network_Storage_MassDataMigration_Request_Statu&lt;/a&gt; for interacting with the &lt;a href=&#34;https://console.bluemix.net/docs/infrastructure/mass-data-migration/index.html#ibm-bluemix-mass-data-migration&#34;&gt;Mass Data Migration&lt;/a&gt; offering.&lt;/li&gt;
-&lt;li&gt;Fixed an issue with the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/softlayer_billing_currency_exchangerate/getallcurrencyexchangerates&#34;&gt;SoftLayer_Billing_Currency_ExchangeRate::getAllCurrencyExchangeRates&lt;/a&gt; method. When customers would supply the current days date, the call would not return any exchange rate information.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed a bug with ISO importing. The fix now allows import transactions to complete even without a Software Description set on the ISO.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: August 24, 2017</title>
-      <link>https://softlayer.github.io/release_notes/2017/20170824/</link>
-      <pubDate>Thu, 24 Aug 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2017/20170824/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;None&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed a bug where cancellation tickets were not being closed after the cancellation had completed.&lt;/li&gt;
-&lt;li&gt;Corrected an issue where Security Groups were not being properly applied to the private network of Windows VSI provisions.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: August 17, 2017</title>
-      <link>https://softlayer.github.io/release_notes/2017/20170817/</link>
-      <pubDate>Thu, 17 Aug 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2017/20170817/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed an issue on the order form where Dedicated Host Instance orders were not showing all size options available in some Datacenters.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Corrected a bug where using &lt;a href=&#34;http://sldn.softlayer.com/reference/services/softlayer_virtual_guest/createobject&#34;&gt;SoftLayer_Virtual_Guest::createObject&lt;/a&gt; to order a dedicated host instance with SAN disks would error out with &lt;code&gt;Unable to find a price for block device 0&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Pushed code to handle active/active clustering for the Cloud Load Balancing offering.&lt;/li&gt;
-&lt;/ul&gt;
 </description>
     </item>
     
