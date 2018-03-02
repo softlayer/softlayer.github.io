@@ -1,155 +1,23 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-      <title>Addbulkportalpermissions on SoftLayer API Examples </title>
+    <title>Addbulkportalpermissions on SoftLayer API</title>
     <link>https://softlayer.github.io/tags/addbulkportalpermissions/</link>
-    <language>en-US</language>
-    <author>Enthusiastic Hugo User</author>
-    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 19 Sep 2016 00:00:00 UTC</updated>
+    <description>Recent content in Addbulkportalpermissions on SoftLayer API</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 19 Sep 2016 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://softlayer.github.io/tags/addbulkportalpermissions/index.xml" rel="self" type="application/rss+xml" />
+    
     
     <item>
       <title>Manage (Create, Add Permissions, Delete) User</title>
       <link>https://softlayer.github.io/go/user_customer_manage/</link>
-      <pubDate>Mon, 19 Sep 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Mon, 19 Sep 2016 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/go/user_customer_manage/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;package main
-
-import (
-    &amp;quot;fmt&amp;quot;
-    &amp;quot;log&amp;quot;
-
-    &amp;quot;github.com/softlayer/softlayer-go/datatypes&amp;quot;
-    &amp;quot;github.com/softlayer/softlayer-go/services&amp;quot;
-    &amp;quot;github.com/softlayer/softlayer-go/session&amp;quot;
-    &amp;quot;github.com/softlayer/softlayer-go/sl&amp;quot;
-)
-
-var sess *session.Session
-
-func main() {
-    sess = session.New()
-
-    newUser := datatypes.User_Customer{
-        Username:     sl.String(&amp;quot;johnsmith&amp;quot;),
-        FirstName:    sl.String(&amp;quot;John&amp;quot;),
-        LastName:     sl.String(&amp;quot;Smith&amp;quot;),
-        Email:        sl.String(&amp;quot;johnsmith@example.com&amp;quot;),
-        CompanyName:  sl.String(&amp;quot;Example Co.&amp;quot;),
-        Address1:     sl.String(&amp;quot;123 Oak St.&amp;quot;),
-        City:         sl.String(&amp;quot;Champaign&amp;quot;),
-        State:        sl.String(&amp;quot;IL&amp;quot;),
-        Country:      sl.String(&amp;quot;US&amp;quot;),
-        TimezoneId:   getTimezoneID(&amp;quot;EST&amp;quot;),
-        UserStatusId: getUserStatusID(&amp;quot;ACTIVE&amp;quot;),
-    }
-
-    password := &amp;quot;password&amp;quot;
-
-    userID, err := createUser(&amp;amp;newUser, password)
-    if err != nil {
-        log.Fatal(&amp;quot;Could not create user:&amp;quot;, err)
-    }
-
-    fmt.Printf(&amp;quot;New user ID: %d\n&amp;quot;, userID)
-
-    // For permissions, it&#39;s sufficient to send just the keynames to SoftLayer
-    permissions := []datatypes.User_Customer_CustomerPermission_Permission{
-        {KeyName: sl.String(&amp;quot;TICKET_ADD&amp;quot;)},
-        {KeyName: sl.String(&amp;quot;TICKET_VIEW&amp;quot;)},
-        {KeyName: sl.String(&amp;quot;SERVER_ADD&amp;quot;)},
-        {KeyName: sl.String(&amp;quot;VIRTUAL_GUEST_VIEW&amp;quot;)},
-    }
-
-    err = addUserPermissions(userID, permissions)
-    if err != nil {
-        log.Fatal(&amp;quot;Could not add user permissions:&amp;quot;, err)
-    }
-
-    fmt.Println(&amp;quot;Portal permissions added&amp;quot;)
-
-    err = deleteUser(userID)
-    if err != nil {
-        log.Fatal(&amp;quot;Could not delete user:&amp;quot;, err)
-    }
-
-    fmt.Printf(&amp;quot;User %d deleted&amp;quot;, userID)
-
-}
-
-func createUser(user *datatypes.User_Customer, password string) (int, error) {
-    // Create the user, specifying the portal password (3rd argument - VPN
-    // password - is optional, and not specified here)
-    obj, err := services.GetUserCustomerService(sess).
-        CreateObject(
-            user,
-            &amp;amp;password,
-            nil)
-
-    if err != nil {
-        return -1, err
-    }
-
-    return *obj.Id, nil
-}
-
-func addUserPermissions(userID int, permissions []datatypes.User_Customer_CustomerPermission_Permission) error {
-    _, err := services.GetUserCustomerService(sess).
-        Id(userID).
-        AddBulkPortalPermission(permissions)
-
-    return err
-}
-
-// Delete user is accomplished by setting the user&#39;s status to CANCEL_PENDING
-func deleteUser(userID int) error {
-    _, err := services.GetUserCustomerService(sess).
-        Id(userID).
-        EditObject(&amp;amp;datatypes.User_Customer{
-            UserStatusId: getUserStatusID(&amp;quot;CANCEL_PENDING&amp;quot;),
-        })
-
-    return err
-}
-
-// helper function to get a user status ID from a keyname (e.g., ACTIVE)
-func getUserStatusID(key string) *int {
-    statuses, err := services.GetUserCustomerStatusService(sess).GetAllObjects()
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    for _, status := range statuses {
-        if *status.KeyName == key {
-            return status.Id
-        }
-    }
-
-    log.Fatal(&amp;quot;Unable to locate user status matching [%s]&amp;quot;, key)
-
-    return nil
-}
-
-// helper function to get a timezone ID from a keyname (e.g., EST)
-func getTimezoneID(key string) *int {
-    timezones, err := services.GetLocaleTimezoneService(sess).GetAllObjects()
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    for _, tz := range timezones {
-        if *tz.ShortName == key {
-            return tz.Id
-        }
-    }
-
-    log.Fatal(&amp;quot;Unable to locate timezone matching [%s]&amp;quot;, key)
-
-    return nil
-}
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description>package main import ( &amp;quot;fmt&amp;quot; &amp;quot;log&amp;quot; &amp;quot;github.com/softlayer/softlayer-go/datatypes&amp;quot; &amp;quot;github.com/softlayer/softlayer-go/services&amp;quot; &amp;quot;github.com/softlayer/softlayer-go/session&amp;quot; &amp;quot;github.com/softlayer/softlayer-go/sl&amp;quot; ) var sess *session.Session func main() { sess = session.New() newUser := datatypes.User_Customer{ Username: sl.String(&amp;quot;johnsmith&amp;quot;), FirstName: sl.String(&amp;quot;John&amp;quot;), LastName: sl.String(&amp;quot;Smith&amp;quot;), Email: sl.String(&amp;quot;johnsmith@example.com&amp;quot;), CompanyName: sl.String(&amp;quot;Example Co.&amp;quot;), Address1: sl.String(&amp;quot;123 Oak St.&amp;quot;), City: sl.String(&amp;quot;Champaign&amp;quot;), State: sl.String(&amp;quot;IL&amp;quot;), Country: sl.String(&amp;quot;US&amp;quot;), TimezoneId: getTimezoneID(&amp;quot;EST&amp;quot;), UserStatusId: getUserStatusID(&amp;quot;ACTIVE&amp;quot;), } password := &amp;quot;password&amp;quot; userID, err := createUser(&amp;amp;newUser, password) if err != nil { log.Fatal(&amp;quot;Could not create user:&amp;quot;, err) } fmt.Printf(&amp;quot;New user ID: %d\n&amp;quot;, userID) // For permissions, it&#39;s sufficient to send just the keynames to SoftLayer permissions := []datatypes.</description>
     </item>
     
   </channel>

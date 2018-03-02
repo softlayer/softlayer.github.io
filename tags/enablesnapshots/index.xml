@@ -1,361 +1,57 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-      <title>Enablesnapshots on SoftLayer API Examples </title>
+    <title>Enablesnapshots on SoftLayer API</title>
     <link>https://softlayer.github.io/tags/enablesnapshots/</link>
-    <language>en-US</language>
-    <author>Enthusiastic Hugo User</author>
-    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Tue, 21 Feb 2017 00:00:00 UTC</updated>
+    <description>Recent content in Enablesnapshots on SoftLayer API</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 21 Feb 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://softlayer.github.io/tags/enablesnapshots/index.xml" rel="self" type="application/rss+xml" />
+    
     
     <item>
       <title>Endurance Storage Replication</title>
-      <link>https://softlayer.github.io/python/endurancereplication/</link>
-      <pubDate>Tue, 21 Feb 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/endurancereplication/</guid>
-      <description>&lt;p&gt;Some good starting reading.&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-replication&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-replication&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&#34;&gt;https://knowledgelayer.softlayer.com/procedure/endurance-snapshots&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;For more information on the magic of storage ordering see the following&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&#34;&gt;https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;This example should touch on all the basics of dealing with endurance storage replication volumes. This example uses the SoftLayer-python File manager a little bit for ordering&lt;/p&gt;
-
-&lt;p&gt;TO authorize hosts that are NOT virtual guests, see the allowAccessFrom* methods in&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Graceful vs Immediate failover&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/immediateFailoverToReplicant&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Failback is always immediate.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;&amp;quot;&amp;quot;&amp;quot;
-@package examples 
-@author Christopher Gallo
-&amp;quot;&amp;quot;&amp;quot;
-
-import SoftLayer
-import logging
-from pprint import pprint as pp
-
-class example():
-
-    def __init__(self):
-        &amp;quot;&amp;quot;&amp;quot;
-        If you need debugging, uncomment these. be prepared for a lot of XML
-        &amp;quot;&amp;quot;&amp;quot;
-        # logger = logging.getLogger()
-        # logger.addHandler(logging.StreamHandler())
-        # logger.setLevel(3)
-        self.client = SoftLayer.Client()
-        self.storage = self.client[&#39;SoftLayer_Network_Storage&#39;]
-        self.mgr = SoftLayer.FileStorageManager(self.client)
-        # Broken up like this to look &#39;good&#39; on softlayer.github.io
-        self.objectMask = &amp;quot;mask[&amp;quot;
-            &amp;quot;id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], &amp;quot;
-            &amp;quot;serviceResourceBackendIpAddress, activeTransactionCount, &amp;quot;
-            &amp;quot;fileNetworkMountAddress, snapshots[id,createDate], hourlySchedule, &amp;quot; 
-            &amp;quot;allowedReplicationVirtualGuests[hostname], allowedVirtualGuests[hostname], &amp;quot;
-            &amp;quot;replicationStatus, replicationPartners]&amp;quot;
-
-    def orderStorage(self):
-        &amp;quot;&amp;quot;&amp;quot;
-        This will order endurance storage in HOU02 with 20G in size, and the 0.25IOPS/GB tier
-        0.25, 2, 4 and 10 iops/g are tiers available. 
-        &amp;quot;&amp;quot;&amp;quot;
-        result = self.mgr.order_file_volume(
-            storage_type=&amp;quot;storage_service_enterprise&amp;quot;,
-            location = &amp;quot;hou02&amp;quot;,
-            size = 20,
-            tier_level = 0.25
-            )
-        pp(result)
-
-    def orderSnapshot(self, volume_id):
-        result = self.mgr.order_snapshot_space(
-            volume_id=volume_id,
-            capacity=20,
-            tier = 0.25,
-            upgrade=False)
-        pp(result)
-
-    def orderReplicant(self, volume_id, schedule):
-        &amp;quot;&amp;quot;&amp;quot;
-        Same as other ordering methods, schedule is 
-        &amp;quot;HOURLY&amp;quot;, &amp;quot;DAILY&amp;quot; or &amp;quot;WEEKLY&amp;quot;
-        &amp;quot;&amp;quot;&amp;quot;
-        result = self.mgr.order_replicant_volume(
-            volume_id=volume_id,
-            snapshot_schedule=schedule,
-            location = &amp;quot;dal06&amp;quot;,
-            tier = 0.25
-        )
-        pp(result)
-
-
-
-    def listStoragePrices(self):
-        &amp;quot;&amp;quot;&amp;quot;
-        222 - Performance - PERFORMANCE_STORAGE_SERVICE
-        240 - Endurance - CODENAME_PRIME_STORAGE
-        If you feel like building the pricing object yourself, start here.
-        &amp;quot;&amp;quot;&amp;quot;
-        mask = &amp;quot;mask[items[prices[pricingLocationGroup,categories],attributes]]&amp;quot;
-        # locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)
-        result = self.client[&#39;Product_Package&#39;].getObject(mask=mask,id=240)
-        for item in result[&#39;items&#39;]:
-            print(&amp;quot;%s - %s - %s&amp;quot; % 
-                (str(item[&#39;id&#39;]), item[&#39;description&#39;], item[&#39;keyName&#39;]) 
-            # pp(item)
-            for prices in item[&#39;prices&#39;]:
-                if prices[&#39;locationGroupId&#39;] is  &#39;&#39;:
-                    print &amp;quot;\t&amp;quot; + str(prices[&#39;id&#39;])
-                # pp(prices)
-
-    def listStorage(self):
-    &amp;quot;&amp;quot;&amp;quot;
-    Super complicated objectFilter. Mostly here as an example of how to do an IN filter.
-    Returns all storage that is in DAL06, HOU02, is NOT NAS, and is Endurance_File_Storage
-    &amp;quot;&amp;quot;&amp;quot;
-        objectFilter = {
-            &#39;nasNetworkStorage&#39;: {
-                &#39;serviceResource&#39;: {
-                    &#39;type&#39;: {
-                        &#39;type&#39;: {&#39;operation&#39;: &#39;!~ NAS&#39;}
-                    },
-                    &#39;datacenter&#39;: {
-                        &#39;name&#39;: {
-                            &#39;operation&#39;: &#39;in&#39;,
-                            &#39;options&#39;: [{
-                                &#39;name&#39;: &#39;data&#39;,
-                                &#39;value&#39;: [&#39;dal06&#39;,&#39;hou02&#39;]
-                            }]
-                        }
-                    }
-                },
-                &#39;storageType&#39;: {
-                    &#39;keyName&#39;: {&#39;operation&#39;: &#39;ENDURANCE_FILE_STORAGE&#39;}
-                }
-            }
-        }
-        result = self.client[&#39;Account&#39;].getNasNetworkStorage(
-            mask=self.objectMask,filter=objectFilter)
-        pp(result)
-
-    def authHost(self, volume_id, host_id):
-    &amp;quot;&amp;quot;&amp;quot;
-    each host that needs to mount the volume needs to be authorized.
-    host and volume need to be in the same DC
-    &amp;quot;&amp;quot;&amp;quot;
-        guest = {
-            &#39;id&#39;: host_id
-        }
-        self.storage.allowAccessFromVirtualGuest(guest, id=volume_id)
-
-    def authReplicant(self, volume_id, host_id):
-    &amp;quot;&amp;quot;&amp;quot;
-    each host that needs to mount the REPLICANT needs to be authorized.
-    host and volume need to be in the same DC
-    &amp;quot;&amp;quot;&amp;quot;
-        guest = {
-            &#39;id&#39;: host_id
-        }
-        self.storage.allowAccessToReplicantFromVirtualGuest(guest, id=volume_id)
-
-    def createSnapSchedule(self, volume_id):
-        # HOURLY, 24 copies, first minute of the hour. 
-        self.storage.enableSnapshots(&#39;HOURLY&#39;, 24, 1, 0, 0, id=volume_id)
-
-    def manualSnap(self, volume_id):
-        self.storage.createSnapshot(&#39;Manual SNAP&#39;, id=volume_id)
-
-    def getReplicantId(self, volume_id):
-        &amp;quot;&amp;quot;&amp;quot;
-        there might be more than 1 replicant id in this list if there are more 
-        than 1 replicant targets. Or none of course.
-        &amp;quot;&amp;quot;&amp;quot;
-        result = self.storage.getReplicationPartners(id=volume_id)
-        return result[0][&#39;id&#39;]
-        
-
-    def houIsDown(self, volume_id, now=False):
-
-        replicate_to = main.getReplicantId(volume_id)
-        if now:
-            self.storage.immediateFailoverToReplicant(replicate_to, id=volume_id)
-        else
-            self.storage.failoverToReplicant(replicate_to, id=volume_id)
-
-    def houIsBack(self, volume_id):
-        self.storage.failbackFromReplicant(id=volume_id,now=False)
-
-    def volumeStatus(self, volume_id):
-        result = self.storage.getObject(mask=self.objectMask, id=volume_id)
-        pp(result)
-
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-&amp;quot;&amp;quot;&amp;quot;
-Covers each of the steps required to create a storage volume, and then fail it over.
-The ordering methods will need to be slightly modified for block storage. 
-everything else should be good as is.
-
-&amp;quot;&amp;quot;&amp;quot;
-
-    host_a = 25206857
-    host_b = 28630647
-    main = example()
-    main.listStorage()
-    ### First we need to order a storage volume, and get its ID.
-    # main.orderStorage()
-    volume_id = 20017773
-
-    ### Then we need to order snapshot space
-    # main.orderSnapshot(volume_id)
-
-    ### Then create a snapshot schedule.
-    # main.createSnapSchedule(volume_id)
-
-    ### Then Allow our host to access the volume
-    # main.authHost(volume_id, [host_a])
-
-    ### Create a manual snapshot for fun 
-    # main.manualSnap(volume_id)
-
-    ### Order replication space.
-    # main.orderReplicant(volume_id, &#39;HOURLY&#39;)
-
-    ### Allow our vm to access replicant volume
-    # main.authReplicant(volume_id,host_b)
-
-    ### Failover to replicant
-    # main.houIsDown(volume_id)
-
-    ### Failback to main
-    # main.houIsBack(volume_id)
-
-    ### Get some status
-    # main.volumeStatus(volume_id)
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <link>https://softlayer.github.io/python/EnduranceReplication/</link>
+      <pubDate>Tue, 21 Feb 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/python/EnduranceReplication/</guid>
+      <description>Some good starting reading.
+ https://knowledgelayer.softlayer.com/procedure/endurance-replication https://knowledgelayer.softlayer.com/procedure/endurance-snapshots http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/enableSnapshots  For more information on the magic of storage ordering see the following
+ https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/file.py https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/managers/storage_utils.py  This example should touch on all the basics of dealing with endurance storage replication volumes. This example uses the SoftLayer-python File manager a little bit for ordering
+TO authorize hosts that are NOT virtual guests, see the allowAccessFrom* methods in
+ http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/  Graceful vs Immediate failover</description>
     </item>
     
     <item>
       <title>Create a snapshot schedule</title>
-      <link>https://softlayer.github.io/php/enablesnapshots/</link>
-      <pubDate>Tue, 23 Aug 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/php/enablesnapshots/</guid>
-      <description>&lt;p&gt;This method is not valid for Legacy iSCSI Storage Volumes. You need to have already purchased snapshot space for the script to work properly.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-/* You can use the getenv() module to pull your exported Username
-and API key to keep from having to store them in your files */
-
-require_once &#39;./vendor/autoload.php&#39;;
-$apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;);
-$apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;);
-$storage_id = 11657445;
-
-$scheduleType = &#39;WEEKLY&#39;;
-$retentionCount = &#39;20&#39;;
-$minute = &#39;1&#39;;
-$hour = &#39;13&#39;;
-$dayOfWeek = &#39;SUNDAY&#39;;
-
-try {
-  $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Network_Storage&#39;, $storage_id, $apiUsername, $apiKey);
-  $response = $client-&amp;gt;enableSnapshots($scheduleType, $retentionCount, $minute, $hour, $dayOfWeek);
-
-  print_r($response);
-
- } catch(Exception $e) {
-     echo &#39;Cannot compute. Error is: &#39; . $e-&amp;gt;getMessage();
-}
-
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <link>https://softlayer.github.io/php/enableSnapshots/</link>
+      <pubDate>Tue, 23 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/php/enableSnapshots/</guid>
+      <description>This method is not valid for Legacy iSCSI Storage Volumes. You need to have already purchased snapshot space for the script to work properly.
+&amp;lt;?php /* You can use the getenv() module to pull your exported Username and API key to keep from having to store them in your files */ require_once &#39;./vendor/autoload.php&#39;; $apiUsername = getenv(&#39;SOFTLAYER_USERNAME&#39;); $apiKey = getenv(&#39;SOFTLAYER_API_KEY&#39;); $storage_id = 11657445; $scheduleType = &#39;WEEKLY&#39;; $retentionCount = &#39;20&#39;; $minute = &#39;1&#39;; $hour = &#39;13&#39;; $dayOfWeek = &#39;SUNDAY&#39;; try { $client = \SoftLayer\SoapClient::getClient(&#39;SoftLayer_Network_Storage&#39;, $storage_id, $apiUsername, $apiKey); $response = $client-&amp;gt;enableSnapshots($scheduleType, $retentionCount, $minute, $hour, $dayOfWeek); print_r($response); } catch(Exception $e) { echo &#39;Cannot compute.</description>
     </item>
     
     <item>
       <title>Create a snapshot schedule</title>
-      <link>https://softlayer.github.io/python/enablesnapshots/</link>
-      <pubDate>Tue, 23 Aug 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/enablesnapshots/</guid>
-      <description>&lt;p&gt;This method is not valid for Legacy iSCSI Storage Volumes. You need to have already purchased snapshot space for the script to work properly.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-
-client = SoftLayer.Client()
-storageId = 11657445
-
-# Define parameters for snapshot
-scheduleType = &#39;WEEKLY&#39;
-retentionCount = &#39;20&#39;
-minute = &#39;1&#39;
-hour = &#39;13&#39;
-dayOfWeek = &#39;SUNDAY&#39;
-
-try:
-    result = client[&#39;SoftLayer_Network_Storage&#39;].enableSnapshots(scheduleType, retentionCount, minute, hour, dayOfWeek, id=storageId)
-    print (result)
-except SoftLayer.SoftLayerAPIError as e:
-    print(&amp;quot;Error: &amp;quot;
-          % (e.faultCode, e.faultString))
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <link>https://softlayer.github.io/python/enableSnapshots/</link>
+      <pubDate>Tue, 23 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/python/enableSnapshots/</guid>
+      <description>This method is not valid for Legacy iSCSI Storage Volumes. You need to have already purchased snapshot space for the script to work properly.
+import SoftLayer client = SoftLayer.Client() storageId = 11657445 # Define parameters for snapshot scheduleType = &#39;WEEKLY&#39; retentionCount = &#39;20&#39; minute = &#39;1&#39; hour = &#39;13&#39; dayOfWeek = &#39;SUNDAY&#39; try: result = client[&#39;SoftLayer_Network_Storage&#39;].enableSnapshots(scheduleType, retentionCount, minute, hour, dayOfWeek, id=storageId) print (result) except SoftLayer.SoftLayerAPIError as e: print(&amp;quot;Error: &amp;quot; % (e.</description>
     </item>
     
     <item>
       <title>Create a snapshot schedule</title>
-      <link>https://softlayer.github.io/ruby/enablesnapshots/</link>
-      <pubDate>Tue, 23 Aug 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/ruby/enablesnapshots/</guid>
-      <description>&lt;p&gt;This method is not valid for Legacy iSCSI Storage Volumes. You need to have already purchased snapshot space for the script to work properly.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-# Credentials to the API are read from a configuration file by default.
-# See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44
-client = SoftLayer::Client.new(:timeout =&amp;gt; 120)
-
-storageId = 11657445
-
-# Define parameters for snapshot
-scheduleType = &#39;WEEKLY&#39;
-retentionCount = &#39;20&#39;
-minute = &#39;1&#39;
-hour = &#39;13&#39;
-dayOfWeek = &#39;SUNDAY&#39;
-
-snap = client[&#39;SoftLayer_Network_Storage&#39;]
-enable = snap.object_with_id(storageId).enableSnapshots(scheduleType, retentionCount, minute, hour, dayOfWeek)
-pp enable 
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <link>https://softlayer.github.io/ruby/enableSnapshots/</link>
+      <pubDate>Tue, 23 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/ruby/enableSnapshots/</guid>
+      <description>This method is not valid for Legacy iSCSI Storage Volumes. You need to have already purchased snapshot space for the script to work properly.
+require &#39;softlayer_api&#39; require &#39;pp&#39; # Credentials to the API are read from a configuration file by default. # See https://github.com/softlayer/softlayer-ruby/blob/master/lib/softlayer/Config.rb#L11-L44 client = SoftLayer::Client.new(:timeout =&amp;gt; 120) storageId = 11657445 # Define parameters for snapshot scheduleType = &#39;WEEKLY&#39; retentionCount = &#39;20&#39; minute = &#39;1&#39; hour = &#39;13&#39; dayOfWeek = &#39;SUNDAY&#39; snap = client[&#39;SoftLayer_Network_Storage&#39;] enable = snap.</description>
     </item>
     
   </channel>

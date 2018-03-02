@@ -1,482 +1,712 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-      <title>Softlayer_billing_item on SoftLayer API Examples </title>
+    <title>Softlayer_billing_item on SoftLayer API</title>
     <link>https://softlayer.github.io/classes/softlayer_billing_item/</link>
-    <language>en-US</language>
-    <author>Enthusiastic Hugo User</author>
-    <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Mon, 12 Jun 2017 00:00:00 UTC</updated>
+    <description>Recent content in Softlayer_billing_item on SoftLayer API</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 12 Feb 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://softlayer.github.io/classes/softlayer_billing_item/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>SoftLayer_Billing_Item</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/</link>
+      <pubDate>Mon, 12 Feb 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/</guid>
+      <description>SoftLayer_Billing_Item Service Datatype   Description Every individual item that a SoftLayer customer is billed for is recorded in the SoftLayer_Billing_Item data type. Billing items range from server chassis to hard drives to control panels, bandwidth quota upgrades and port upgrade charges. Softlayer [[SoftLayer_Billing_Invoice|invoices]] are generated from the cost of a customer&amp;rsquo;s billing items. Billing items are copied from the product catalog as they&amp;rsquo;re ordered by customers to create a reference between an account and the billable items they own.</description>
+    </item>
     
     <item>
       <title>Provision Times</title>
-      <link>https://softlayer.github.io/python/provisiontimes/</link>
-      <pubDate>Mon, 12 Jun 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/provisiontimes/</guid>
-      <description>&lt;p&gt;Goes through orders and prints out each transaction that provisioned a server or virtual server. Calculates provision time from the time the order was placed, till the time the transaction went to COMPLETE.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;Order: 15866609 - 2017-06-09T10:42:04-06:00
-    FQDN, Status, transaction id, elapsed time
-    sgtest.cdetest.info, COMPLETE, 57090965, 383.0
-Order: 15861187 - 2017-06-09T09:07:49-06:00
-    FQDN, Status, transaction id, elapsed time
-    jumpbox.cdetest.info, COMPLETE, 57080823, 774.0
-Order: 15860993 - 2017-06-09T08:53:22-06:00
-    FQDN, Status, transaction id, elapsed time
-Order: 15853891 - 2017-06-09T04:47:32-06:00
-    FQDN, Status, transaction id, elapsed time
-    d1.cdetest.info, COMPLETE, 57055133, 2148.0
-    d2.cdetest.info, COMPLETE, 57055135, 2159.0
-    d3.cdetest.info, COMPLETE, 57055137, 2155.0
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
-@author Christopher Gallo
-&amp;quot;&amp;quot;&amp;quot;
-import SoftLayer
-from pprint import pprint as pp
-from datetime import datetime
-
-class bcolors:
-    HEADER = &#39;\033[95m&#39;
-    OKBLUE = &#39;\033[94m&#39;
-    OKGREEN = &#39;\033[92m&#39;
-    WARNING = &#39;\033[93m&#39;
-    FAIL = &#39;\033[91m&#39;
-    ENDC = &#39;\033[0m&#39;
-    BOLD = &#39;\033[1m&#39;
-    UNDERLINE = &#39;\033[4m&#39;
-
-class example():
-
-    def __init__(self):
-
-        self.client = SoftLayer.Client()
-
-    def main(self):
-        # Accounts with a large number of orders will want to use this filter.
-        startDate = &amp;quot;04/01/2017 01:00:00&amp;quot;
-        endDate = &amp;quot;06/12/2017 01:00:00&amp;quot;
-        theFilter1 = {
-            &#39;orders&#39;: {
-                &#39;createDate&#39;: {
-                    &#39;operation&#39;: &#39;betweenDate&#39;,
-                    &#39;options&#39;: [
-                        {&#39;name&#39;: &#39;startDate&#39;, &#39;value&#39;: [startDate]},
-                        {&#39;name&#39;: &#39;endDate&#39;, &#39;value&#39;: [endDate]}
-                    ]
-                }
-            }
-        }
-        mask = &amp;quot;mask[items[hostName, domainName, categoryCode, billingItem[id,provisionTransaction]]]&amp;quot;
-        items = 10
-        offset = 0
-        limit = 10
-        while items == 10:
-            orders = self.client[&#39;SoftLayer_Account&#39;].getOrders(filter=theFilter1, offset=offset, limit=limit, mask=mask)
-            items = len(orders)
-            offset = offset + limit
-            self.printOrderTimes(orders)
-
-    def printOrderTimes(self, orders):
-        for order in orders:
-            print(&amp;quot;Order: %s - %s &amp;quot; % (order[&#39;id&#39;], order[&#39;createDate&#39;]))
-            print(&amp;quot;\tFQDN, Status, transaction id, elapsed time&amp;quot;)
-            # pp(order)
-            createDate = order[&#39;createDate&#39;]
-            timeWarn = 600
-            timeRed = 1200
-            for item in order[&#39;items&#39;]:
-                if item[&#39;categoryCode&#39;] == &#39;server&#39;:
-                    # 1 hour
-                    timeWarn = 3600
-                    # 4 hours 
-                    timeRed = 14400
-                elif item[&#39;categoryCode&#39;] == &#39;guest_core&#39;:
-                    # 10 minutes
-                    timeWarn = 600
-                    # 20 minutes
-                    timeRed = 1200
-
-                if item[&#39;categoryCode&#39;] == &#39;server&#39; or item[&#39;categoryCode&#39;] == &#39;guest_core&#39;:
-
-                    try:
-                        transaction = item[&#39;billingItem&#39;][&#39;provisionTransaction&#39;]
-                    except KeyError:
-                        # Likely a canceled order
-                        continue
-
-                    #python timezones are weird and I don&#39;t want to deal with them. 
-                    t_s = createDate[:-6] 
-                    t_e = transaction[&#39;statusChangeDate&#39;][:-6] 
-
-
-                    FMT = &#39;%Y-%m-%dT%H:%M:%S&#39;
-                    tdelta = datetime.strptime(t_e,FMT) - datetime.strptime(t_s,FMT)
-                    fqdn = &amp;quot;%s.%s&amp;quot; % (item[&#39;hostName&#39;], item[&#39;domainName&#39;])
-                    seconds =  tdelta.total_seconds()
-                    if seconds &amp;gt; timeWarn and seconds &amp;lt; timeRed:
-                        color = bcolors.WARNING
-                    elif seconds &amp;gt;= timeRed:
-                        color = bcolors.FAIL
-                    else:
-                        color = bcolors.OKGREEN
-                    print(&amp;quot;\t%s%s, %s, %s, %s%s&amp;quot; % 
-                        (color,fqdn, transaction[&#39;transactionStatus&#39;][&#39;name&#39;], transaction[&#39;id&#39;], seconds ,bcolors.ENDC)
-                    )
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = example()
-    main.main()
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <link>https://softlayer.github.io/python/provisionTimes/</link>
+      <pubDate>Mon, 12 Jun 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/python/provisionTimes/</guid>
+      <description>Goes through orders and prints out each transaction that provisioned a server or virtual server. Calculates provision time from the time the order was placed, till the time the transaction went to COMPLETE.
+Order: 15866609 - 2017-06-09T10:42:04-06:00 FQDN, Status, transaction id, elapsed time sgtest.cdetest.info, COMPLETE, 57090965, 383.0 Order: 15861187 - 2017-06-09T09:07:49-06:00 FQDN, Status, transaction id, elapsed time jumpbox.cdetest.info, COMPLETE, 57080823, 774.0 Order: 15860993 - 2017-06-09T08:53:22-06:00 FQDN, Status, transaction id, elapsed time Order: 15853891 - 2017-06-09T04:47:32-06:00 FQDN, Status, transaction id, elapsed time d1.</description>
     </item>
     
     <item>
       <title>Get bills by user</title>
-      <link>https://softlayer.github.io/python/billsbyuser/</link>
-      <pubDate>Fri, 09 Jun 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/billsbyuser/</guid>
-      <description>&lt;p&gt;This is a rough script, it doesn&amp;rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in &lt;a href=&#34;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&#34;&gt;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;Example Output for billsByUser()&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;chris-cde - 840.0
-    123.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $345.0
-    234.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $495.0
-    chris.testing.com : 2 x 2.0 GHz Cores $0.0
-    4 Portable Private IP Addresses - $0.0
-    8 Portable Private IP Addresses - $0.0
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Output of upcoming_hourly()&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;ItemID  Info    Host    Domain  Hours   Hourly Cost Cost
-143131173   Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) jd-cos-testing-sjc03    secore.com  489 .309    151.101
-==&amp;gt; 143131179   64 GB RAM   291.933
-==&amp;gt; 143131183   1.00 TB SATA    17.604
-==&amp;gt; 143131185   1.00 TB SATA    17.604
-==&amp;gt; 143131189   10 Gbps Dual Public &amp;amp; Private Network Uplinks (Unbonded)    147.189
-TOTAL: 625.431
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Source&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;&amp;quot;&amp;quot;&amp;quot;
-@author Christopher Gallo
-Goes through the next invoice. Collections billing items by the user that orderd them.
-Prints out each user and how much they caused in billing, along with what they ordered.
-&amp;quot;&amp;quot;&amp;quot;
-import SoftLayer
-from pprint import pprint as pp
-
-class bills():
-
-    def __init__(self):
-
-        self.client = SoftLayer.Client()
-        self.mgr = SoftLayer.VSManager(self.client)
-
-    def billsByUser(self):
-
-        &amp;quot;&amp;quot;&amp;quot;
-        Not all billing items have a user record, these are collected under the master account
-        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&amp;gt; taps orderItem for
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&amp;gt; taps order for 
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&amp;gt; taps userRecord for
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
-        &amp;quot;&amp;quot;&amp;quot;
-        mask=&amp;quot;mask[orderItem[order[id,userRecord[displayName,username]]]]&amp;quot;
-        billingItems = self.client[&#39;SoftLayer_Account&#39;].getNextInvoiceTopLevelBillingItems(mask=mask)
-
-        users = {&#39;masterUser&#39;: []}
-        for item in billingItems:
-            if &#39;orderItem&#39; in item:
-                username = item[&#39;orderItem&#39;][&#39;order&#39;][&#39;userRecord&#39;][&#39;username&#39;]
-                del item[&#39;orderItem&#39;]
-                if username not in users:
-                    users[username] = []
-                users[username].append(item)
-            else:
-                users[&#39;masterUser&#39;].append(item)
-
-
-        # prints everything out, and finds the sum of items.
-        for user in users:
-            servers = []
-            everything_else = []
-            total_cost = 0
-
-            for item in users[user]:
-
-                # this doens&#39;t include Tax fees, or setup fees because I&#39;m lazy
-                cost = float(item[&#39;recurringFee&#39;]) + float(item[&#39;oneTimeFee&#39;])
-                if &#39;hostName&#39; in item:
-                    fqdn = &amp;quot;%s.%s : %s $%s&amp;quot; % (item[&#39;hostName&#39;], item[&#39;domainName&#39;], item[&#39;description&#39;], cost)
-                    servers.append(fqdn)
-                else:
-                    item = &amp;quot;%s - $%s&amp;quot; % (item[&#39;description&#39;], cost)
-                    everything_else.append(item)
-                total_cost = total_cost + cost
-            print(&amp;quot;%s - %s&amp;quot; % (user , total_cost))
-            for server in servers:
-                print(&amp;quot;\t%s&amp;quot; % server)
-            for thing in everything_else:
-                print(&amp;quot;\t%s&amp;quot; % thing)
-
-
-    def upcoming_hourly(self):
-    &amp;quot;&amp;quot;&amp;quot;
-    Filters upcoming billing items for only hourly WITH a hostname that contains the string &#39;test&#39;
-    Each hourly server will also have some children that need to be added for the total cost, those are included with the nonZeroNextInvoiceChildren property
-    NOTE: 
-    ObjectMask starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_item
-    ObjectFilter starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account
-    hourlyFlag needs to be 1 or 0.
-
-    &amp;quot;&amp;quot;&amp;quot;
-        mask=&amp;quot;mask[hourlyFlag,nonZeroNextInvoiceChildren]&amp;quot;
-        objectFilter =  {
-            &#39;nextInvoiceTopLevelBillingItems&#39;: {
-                &#39;hourlyFlag&#39;: {&#39;operation&#39;: 1},
-                &#39;hostName&#39;: {&#39;operation&#39;: &#39;*= test&#39;}
-            }
-        }
-        billingItems = self.client[&#39;SoftLayer_Account&#39;].getNextInvoiceTopLevelBillingItems(mask=mask, filter=objectFilter)
-        print(&amp;quot;ItemID\tInfo\tHost\tDomain\tHours\tHourly Cost\tCost&amp;quot;)
-        for item in billingItems:
-            itemId = item[&#39;id&#39;]
-            hostName = item[&#39;hostName&#39;]
-            domainName = item[&#39;domainName&#39;]
-            description = item[&#39;description&#39;]
-            hours = item[&#39;hoursUsed&#39;]
-            hourly_cost = item[&#39;hourlyRecurringFee&#39;]
-            cost = int(hours) * float(hourly_cost)
-            total_cost = cost
-            print(&amp;quot;%s\t%s\t%s\t%s\t%s\t%s\t%s&amp;quot; % (itemId, description, hostName,domainName, hours, hourly_cost, cost ))
-            for child in item[&#39;nonZeroNextInvoiceChildren&#39;]:
-                childId = child[&#39;id&#39;]
-                childDesc = child[&#39;description&#39;]
-                childCost = int(child[&#39;hoursUsed&#39;]) * float(child[&#39;hourlyRecurringFee&#39;])
-                total_cost = total_cost + childCost
-                print(&amp;quot;==&amp;gt; %s\t%s\t%s&amp;quot; % (childId,childDesc,childCost))
-            print(&amp;quot;TOTAL: %s&amp;quot; % (total_cost))
-
-
-if __name__ == &amp;quot;__main__&amp;quot;:
-    main = bills()
-    main.billsByUser()
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <link>https://softlayer.github.io/python/billsByUser/</link>
+      <pubDate>Fri, 09 Jun 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/python/billsByUser/</guid>
+      <description>This is a rough script, it doesn&amp;rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item
+Example Output for billsByUser()
+chris-cde - 840.0 123.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $345.0 234.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $495.0 chris.testing.com : 2 x 2.0 GHz Cores $0.0 4 Portable Private IP Addresses - $0.</description>
     </item>
     
     <item>
       <title>Cancel an item or service</title>
       <link>https://softlayer.github.io/python/cancel_service/</link>
-      <pubDate>Mon, 08 Feb 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Mon, 08 Feb 2016 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/python/cancel_service/</guid>
-      <description>&lt;p&gt;In the following example we are retrieving the Billing Item of a Virtual Guest with the ID of 12345678 and passing that ID to &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;cancelService&lt;/a&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-from pprint import pprint as pp
-
-client = SoftLayer.Client()
-mask = &amp;quot;mask[id]&amp;quot;
-billingId = client[&#39;SoftLayer_Virtual_Guest&#39;].getBillingItem(mask=mask,id=12345678)
-cancelItem = client[&#39;SoftLayer_Billing_Item&#39;].cancelService(id = billingId[&#39;id&#39;])
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description>In the following example we are retrieving the Billing Item of a Virtual Guest with the ID of 12345678 and passing that ID to cancelService.
+import SoftLayer from pprint import pprint as pp client = SoftLayer.Client() mask = &amp;quot;mask[id]&amp;quot; billingId = client[&#39;SoftLayer_Virtual_Guest&#39;].getBillingItem(mask=mask,id=12345678) cancelItem = client[&#39;SoftLayer_Billing_Item&#39;].cancelService(id = billingId[&#39;id&#39;])  </description>
     </item>
     
     <item>
       <title>Cancel an item or service</title>
       <link>https://softlayer.github.io/php/cancelservice/</link>
-      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/php/cancelservice/</guid>
-      <description>&lt;p&gt;In order to cancel an item or service you must know the billing item ID. In the following example we are retrieving the billing item ID for our Virtual Guest with ID &amp;lsquo;15690533&amp;rsquo;:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;&amp;lt;?php
-
-require_once &#39;./vendor/autoload.php&#39;;
-$apiUsername = &#39;&#39;;
-$apiKey = &#39;&#39;;
-$itemId = &#39;15690533&#39;; # ID of the service or item you want to get the billing ID of
-$invokeService = &#39;SoftLayer_Virtual_Guest&#39;;
-
-try {
-     $billingItemClient = \SoftLayer\SoapClient::getClient($invokeService, $itemId, $apiUsername, $apiKey);
-     $result = $billingItemClient-&amp;gt;getBillingItem();
-     print_r($result);
-
- } catch(Exception $e) {
-     echo &#39;Unable to get billing ID from the item: &#39; . $e-&amp;gt;getMessage();
- }
-
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Once we have the billing item ID we can plug it in to the cancelservice code:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;&amp;lt;?php
-
-require_once &#39;./vendor/autoload.php&#39;;
-$apiUsername = &#39;&#39;;
-$apiKey = &#39;&#39;;
-$billingitemId = &#39;1234567&#39;; # Billing ID of the service or item you want to cancel obtained from the previous example
-$billingItemService = &#39;SoftLayer_Billing_Item&#39;;
-
-try {
-     $billingItemClient = \SoftLayer\SoapClient::getClient($billingItemService, $itemId, $apiUsername, $apiKey);
-     $result = $billingItemClient-&amp;gt;cancelService();
-     print_r($result);
-
- } catch(Exception $e) {
-     echo &#39;Unable to cancel the item: &#39; . $e-&amp;gt;getMessage();
- }
-
-?&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description>In order to cancel an item or service you must know the billing item ID. In the following example we are retrieving the billing item ID for our Virtual Guest with ID &amp;lsquo;15690533&amp;rsquo;:
+&amp;lt;?php require_once &#39;./vendor/autoload.php&#39;; $apiUsername = &#39;&#39;; $apiKey = &#39;&#39;; $itemId = &#39;15690533&#39;; # ID of the service or item you want to get the billing ID of $invokeService = &#39;SoftLayer_Virtual_Guest&#39;; try { $billingItemClient = \SoftLayer\SoapClient::getClient($invokeService, $itemId, $apiUsername, $apiKey); $result = $billingItemClient-&amp;gt;getBillingItem(); print_r($result); } catch(Exception $e) { echo &#39;Unable to get billing ID from the item: &#39; .</description>
     </item>
     
     <item>
       <title>Cancel an item or service</title>
       <link>https://softlayer.github.io/ruby/cancelservice/</link>
-      <pubDate>Fri, 29 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Fri, 29 Jan 2016 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/ruby/cancelservice/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-ruby&#34;&gt;require &#39;softlayer_api&#39; # Requires softlayer_api &amp;gt;= 3.2
-require &#39;pp&#39; # used to display results
-
-# Create a client
-client = SoftLayer::Client.new
-
-# add your servers&#39; id, can be found with the following script: https://softlayer.github.io/ruby/list_instances/
-id_of_virtual_server_to_cancel = FILL_IN_YOUR_SERVERS_ID
-begin
-   # Substitute :Virtual_Guest for :Hardware_Server if you want to cancel a bare metal server
-   item = client[:Virtual_Guest].object_mask(&amp;quot;mask[billingItem[id]]&amp;quot;).object_with_id(id_of_virtual_server_to_cancel).getObject
-   rescue XMLRPC::FaultException # error will be triggered if item doesn&#39;t exist
-   item = false
-end
-#
-# # Then invoke [cancelService](http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService) or [cancelItem](http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem)
-if item and item[&#39;billingItem&#39;] and client[:Billing_Item].object_with_id(item[&#39;billingItem&#39;][&#39;id&#39;]).cancelService()
-   puts &amp;quot;Cancelled service of #{id_of_virtual_server_to_cancel}&amp;quot;
- else
-   puts &amp;quot;#{id_of_virtual_server_to_cancel} Doesn&#39;t exist or is already cancelled&amp;quot;
- end
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description>require &#39;softlayer_api&#39; # Requires softlayer_api &amp;gt;= 3.2 require &#39;pp&#39; # used to display results # Create a client client = SoftLayer::Client.new # add your servers&#39; id, can be found with the following script: https://softlayer.github.io/ruby/list_instances/ id_of_virtual_server_to_cancel = FILL_IN_YOUR_SERVERS_ID begin # Substitute :Virtual_Guest for :Hardware_Server if you want to cancel a bare metal server item = client[:Virtual_Guest].object_mask(&amp;quot;mask[billingItem[id]]&amp;quot;).object_with_id(id_of_virtual_server_to_cancel).getObject rescue XMLRPC::FaultException # error will be triggered if item doesn&#39;t exist item = false end # # # Then invoke [cancelService](http://sldn.</description>
     </item>
     
     <item>
       <title>Associate a Billing ID with the service or item it corresponds to in the SoftLayer catalog</title>
       <link>https://softlayer.github.io/perl/getassociatedid/</link>
-      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Wed, 06 Jan 2016 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/perl/getassociatedid/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;# https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/1234321/getAssociatedBillingItem
-my $objectMask = {
-   &#39;id&#39; =&amp;gt;&#39;&#39;
-};
-$billing_client-&amp;gt;setObjectMask($objectMask);
-$result = $billing_client-&amp;gt;getAssociatedParent();
-print Dumper($result-&amp;gt;result);
-
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description># https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/1234321/getAssociatedBillingItem my $objectMask = { &#39;id&#39; =&amp;gt;&#39;&#39; }; $billing_client-&amp;gt;setObjectMask($objectMask); $result = $billing_client-&amp;gt;getAssociatedParent(); print Dumper($result-&amp;gt;result);  </description>
     </item>
     
     <item>
       <title>Cancel item</title>
       <link>https://softlayer.github.io/perl/cancelitem/</link>
-      <pubDate>Wed, 06 Jan 2016 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Wed, 06 Jan 2016 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/perl/cancelitem/</guid>
-      <description>&lt;pre&gt;&lt;code class=&#34;language-perl&#34;&gt;#!/usr/bin/perl
-use lib &amp;quot;/path/to/softlayer-api-perl-client/&amp;quot;;
-use SoftLayer::API::SOAP;
-use Data::Dumper;
-
-my $api_username = &amp;quot;a&amp;quot;;
-my $api_key = &amp;quot;x&amp;quot;;
-
-#Canel service
-# https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;BILLING_ID&amp;gt;/cancelService
-my $billing_id = $result-&amp;gt;result-&amp;gt;{&#39;id&#39;};
-my $billing_client = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Billing_Item&#39;, $billing_id, $api_username, $api_key);
-$result = $billing_client-&amp;gt;cancelService();
-print Dumper($result-&amp;gt;result);
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description>#!/usr/bin/perl use lib &amp;quot;/path/to/softlayer-api-perl-client/&amp;quot;; use SoftLayer::API::SOAP; use Data::Dumper; my $api_username = &amp;quot;a&amp;quot;; my $api_key = &amp;quot;x&amp;quot;; #Canel service # https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;BILLING_ID&amp;gt;/cancelService my $billing_id = $result-&amp;gt;result-&amp;gt;{&#39;id&#39;}; my $billing_client = SoftLayer::API::SOAP-&amp;gt;new(&#39;SoftLayer_Billing_Item&#39;, $billing_id, $api_username, $api_key); $result = $billing_client-&amp;gt;cancelService(); print Dumper($result-&amp;gt;result);  </description>
     </item>
     
     <item>
       <title>Cancel an item or service</title>
       <link>https://softlayer.github.io/rest/cancel_service/</link>
-      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Wed, 30 Dec 2015 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/rest/cancel_service/</guid>
-      <description>
-
-&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;&lt;code&gt;SoftLayer_Billing_Item::cancelService()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;URL: SoftLayer_Billing_Item/cancelService&lt;/p&gt;
-
-&lt;p&gt;Example CURL:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id/cancelService
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Response:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;true
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;note&#34;&gt;Note&lt;/h3&gt;
-
-&lt;p&gt;If you are wanting to use the REST API to cancel a Bare Metal server you cannot use the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService&#34;&gt;cancelService&lt;/a&gt; call but rather you will need to utilize the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem&#34;&gt;cancelItem&lt;/a&gt; call. This call and provide a cancellation reason.&lt;/p&gt;
-</description>
+      <description>Operation: GET
+Method: SoftLayer_Billing_Item::cancelService()
+URL: SoftLayer_Billing_Item/cancelService
+Example CURL:
+curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id/cancelService  Example Response:
+true  Note If you are wanting to use the REST API to cancel a Bare Metal server you cannot use the cancelService call but rather you will need to utilize the cancelItem call. This call and provide a cancellation reason.</description>
     </item>
     
     <item>
       <title>Find provisioned product from a billing item</title>
       <link>https://softlayer.github.io/rest/find_product_from_billing/</link>
-      <pubDate>Wed, 30 Dec 2015 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
+      <pubDate>Wed, 30 Dec 2015 00:00:00 +0000</pubDate>
+      
       <guid>https://softlayer.github.io/rest/find_product_from_billing/</guid>
-      <description>&lt;p&gt;Operation: &lt;code&gt;GET&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Method: &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/getAssociatedParent&#34;&gt;&lt;code&gt;SoftLayer_Billing_Item::getAssociatedParent()&lt;/code&gt;&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;URL: SoftLayer_Billing_Item/getAssociatedParent&lt;/p&gt;
-
-&lt;p&gt;Example CURL:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id&amp;gt;/getAssociatedParent?objectMask=mask\[categoryCode,id,description\]
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Example Response:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;[
-    {
-        &amp;quot;categoryCode&amp;quot;: &amp;quot;storage_service_enterprise&amp;quot;,
-        &amp;quot;description&amp;quot;: &amp;quot;Endurance Storage&amp;quot;,
-        &amp;quot;id&amp;quot;: 1234321
-    }
-]
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description>Operation: GET
+Method: SoftLayer_Billing_Item::getAssociatedParent()
+URL: SoftLayer_Billing_Item/getAssociatedParent
+Example CURL:
+curl -su userid:api_key https://api.softlayer.com/rest/v3/SoftLayer_Billing_Item/&amp;lt;billing_item_id&amp;gt;/getAssociatedParent?objectMask=mask\[categoryCode,id,description\]  Example Response:
+[ { &amp;quot;categoryCode&amp;quot;: &amp;quot;storage_service_enterprise&amp;quot;, &amp;quot;description&amp;quot;: &amp;quot;Endurance Storage&amp;quot;, &amp;quot;id&amp;quot;: 1234321 } ]  </description>
+    </item>
+    
+    <item>
+      <title>SoftLayer_Billing_Item</title>
+      <link>https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Item/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Item/</guid>
+      <description>SoftLayer_Billing_Item Datatype   Description Every individual item that a SoftLayer customer is billed for is recorded in the SoftLayer_Billing_Item data type. Billing items range from server chassis to hard drives to control panels, bandwidth quota upgrades and port upgrade charges. Softlayer [[SoftLayer_Billing_Invoice|invoices]] are generated from the cost of a customer&amp;rsquo;s billing items. Billing items are copied from the product catalog as they&amp;rsquo;re ordered by customers to create a reference between an account and the billable items they own.</description>
+    </item>
+    
+    <item>
+      <title>SoftLayer_Billing_Item</title>
+      <link>https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Item/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Item/</guid>
+      <description>SoftLayer_Billing_Item Service Datatype   Description Every individual item that a SoftLayer customer is billed for is recorded in the SoftLayer_Billing_Item data type. Billing items range from server chassis to hard drives to control panels, bandwidth quota upgrades and port upgrade charges. Softlayer [[SoftLayer_Billing_Invoice|invoices]] are generated from the cost of a customer&amp;rsquo;s billing items. Billing items are copied from the product catalog as they&amp;rsquo;re ordered by customers to create a reference between an account and the billable items they own.</description>
+    </item>
+    
+    <item>
+      <title>cancelItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/cancelItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/cancelItem/</guid>
+      <description>SoftLayer_Billing_Item::cancelItem Overview Cancel the resource or service for a billing Item. By default the billing item will be cancelled immediately and reclaim of the resource will begin shortly. Setting the &amp;ldquo;cancelImmediately&amp;rdquo; property to false will delay the cancellation until the next bill date.
+ The reason parameter could be from the list below: &amp;ldquo;No longer needed&amp;rdquo; &amp;ldquo;Business closing down&amp;rdquo; &amp;ldquo;Server / Upgrade Costs&amp;rdquo; &amp;ldquo;Migrating to larger server&amp;rdquo; &amp;ldquo;Migrating to smaller server&amp;rdquo; &amp;ldquo;Migrating to a different SoftLayer datacenter&amp;rdquo; &amp;ldquo;Network performance / latency&amp;rdquo; &amp;ldquo;Support response / timing&amp;rdquo; &amp;ldquo;Sales process / upgrades&amp;rdquo; &amp;ldquo;Moving to competitor&amp;rdquo;  Parameters    Name Type Description     cancelImmediately boolean This will trigger an immediate cancellation with a reclaim of the resource   cancelAssociatedBillingItems boolean This only applies to servers and virtual servers and will   reason string The cancellation reason.</description>
+    </item>
+    
+    <item>
+      <title>cancelService</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/cancelService/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/cancelService/</guid>
+      <description>SoftLayer_Billing_Item::cancelService Overview Cancel the resource or service (excluding bare metal servers) for a billing Item. The billing item will be cancelled immediately and reclaim of the resource will begin shortly.
+Parameters    Name Type Description      Required Headers  authenticate SoftLayer_Billing_ItemInitParameters  Optional Headers Return Values boolean</description>
+    </item>
+    
+    <item>
+      <title>cancelServiceOnAnniversaryDate</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/cancelServiceOnAnniversaryDate/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/cancelServiceOnAnniversaryDate/</guid>
+      <description>SoftLayer_Billing_Item::cancelServiceOnAnniversaryDate Overview Cancel the resource or service for a billing Item
+Parameters    Name Type Description      Required Headers  authenticate SoftLayer_Billing_ItemInitParameters  Optional Headers Return Values boolean</description>
+    </item>
+    
+    <item>
+      <title>getAccount</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAccount/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAccount/</guid>
+      <description>SoftLayer_Billing_Item::getAccount Overview Retrieve the account that a billing item belongs to.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Account</description>
+    </item>
+    
+    <item>
+      <title>getActiveAgreement</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAgreement/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAgreement/</guid>
+      <description>SoftLayer_Billing_Item::getActiveAgreement Overview Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Account_Agreement</description>
+    </item>
+    
+    <item>
+      <title>getActiveAgreementFlag</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAgreementFlag/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAgreementFlag/</guid>
+      <description>SoftLayer_Billing_Item::getActiveAgreementFlag Overview Retrieve a flag indicating that the billing item is under an active agreement.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Account_Agreement</description>
+    </item>
+    
+    <item>
+      <title>getActiveAssociatedChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAssociatedChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAssociatedChildren/</guid>
+      <description>SoftLayer_Billing_Item::getActiveAssociatedChildren Overview Retrieve a billing item&amp;rsquo;s active associated child billing items. This includes &amp;ldquo;floating&amp;rdquo; items that are not necessarily child items of this billing item.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getActiveAssociatedGuestDiskBillingItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAssociatedGuestDiskBillingItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveAssociatedGuestDiskBillingItems/</guid>
+      <description>SoftLayer_Billing_Item::getActiveAssociatedGuestDiskBillingItems Overview Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getActiveBundledItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveBundledItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveBundledItems/</guid>
+      <description>SoftLayer_Billing_Item::getActiveBundledItems Overview Retrieve a Billing Item&amp;rsquo;s active bundled billing items.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getActiveCancellationItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveCancellationItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveCancellationItem/</guid>
+      <description>SoftLayer_Billing_Item::getActiveCancellationItem Overview Retrieve a service cancellation request item that corresponds to the billing item.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item_Cancellation_Request_Item</description>
+    </item>
+    
+    <item>
+      <title>getActiveChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveChildren/</guid>
+      <description>SoftLayer_Billing_Item::getActiveChildren Overview Retrieve a Billing Item&amp;rsquo;s active child billing items.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getActiveFlag</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveFlag/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveFlag/</guid>
+      <description>SoftLayer_Billing_Item::getActiveFlag Overview Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values boolean</description>
+    </item>
+    
+    <item>
+      <title>getActiveSparePoolAssociatedGuestDiskBillingItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveSparePoolAssociatedGuestDiskBillingItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveSparePoolAssociatedGuestDiskBillingItems/</guid>
+      <description>SoftLayer_Billing_Item::getActiveSparePoolAssociatedGuestDiskBillingItems Overview Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getActiveSparePoolBundledItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveSparePoolBundledItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getActiveSparePoolBundledItems/</guid>
+      <description>SoftLayer_Billing_Item::getActiveSparePoolBundledItems Overview Retrieve a Billing Item&amp;rsquo;s spare pool bundled billing items.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getAssociatedBillingItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedBillingItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedBillingItem/</guid>
+      <description>SoftLayer_Billing_Item::getAssociatedBillingItem Overview Retrieve a billing item&amp;rsquo;s associated parent. This is to be used for billing items that are &amp;ldquo;floating&amp;rdquo;, and therefore are not child items of any parent billing item. If it is desired to associate an item to another, populate this with the SoftLayer_Billing_Item ID of that associated parent item.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item</description>
+    </item>
+    
+    <item>
+      <title>getAssociatedBillingItemHistory</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedBillingItemHistory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedBillingItemHistory/</guid>
+      <description>SoftLayer_Billing_Item::getAssociatedBillingItemHistory Overview Retrieve a history of billing items which a billing item has been associated with.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item_Association_History[]</description>
+    </item>
+    
+    <item>
+      <title>getAssociatedChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedChildren/</guid>
+      <description>SoftLayer_Billing_Item::getAssociatedChildren Overview Retrieve a Billing Item&amp;rsquo;s associated child billing items. This includes &amp;ldquo;floating&amp;rdquo; items that are not necessarily child billing items of this billing item.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getAssociatedParent</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedParent/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAssociatedParent/</guid>
+      <description>SoftLayer_Billing_Item::getAssociatedParent Overview Retrieve a billing item&amp;rsquo;s associated parent billing item. This object will be the same as the parent billing item if parentId is set.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getAvailableMatchingVlans</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAvailableMatchingVlans/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getAvailableMatchingVlans/</guid>
+      <description>SoftLayer_Billing_Item::getAvailableMatchingVlans Overview Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Network_Vlan[]</description>
+    </item>
+    
+    <item>
+      <title>getBandwidthAllocation</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBandwidthAllocation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBandwidthAllocation/</guid>
+      <description>SoftLayer_Billing_Item::getBandwidthAllocation Overview Retrieve the bandwidth allocation for a billing item.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Network_Bandwidth_Version1_Allocation</description>
+    </item>
+    
+    <item>
+      <title>getBillableChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBillableChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBillableChildren/</guid>
+      <description>SoftLayer_Billing_Item::getBillableChildren Overview Retrieve a billing item&amp;rsquo;s recurring child items that have once been billed and are scheduled to be billed in the future.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getBundleItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBundleItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBundleItems/</guid>
+      <description>SoftLayer_Billing_Item::getBundleItems Overview Retrieve a Billing Item&amp;rsquo;s bundled billing items
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Product_Item_Bundles[]</description>
+    </item>
+    
+    <item>
+      <title>getBundledItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBundledItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getBundledItems/</guid>
+      <description>SoftLayer_Billing_Item::getBundledItems Overview Retrieve a Billing Item&amp;rsquo;s bundled billing items&amp;rsquo;
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getCanceledChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCanceledChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCanceledChildren/</guid>
+      <description>SoftLayer_Billing_Item::getCanceledChildren Overview Retrieve a Billing Item&amp;rsquo;s active child billing items.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getCancellationReason</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCancellationReason/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCancellationReason/</guid>
+      <description>SoftLayer_Billing_Item::getCancellationReason Overview Retrieve the billing item&amp;rsquo;s cancellation reason.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item_Cancellation_Reason</description>
+    </item>
+    
+    <item>
+      <title>getCancellationRequests</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCancellationRequests/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCancellationRequests/</guid>
+      <description>SoftLayer_Billing_Item::getCancellationRequests Overview Retrieve this will return any cancellation requests that are associated with this billing item.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item_Cancellation_Request[]</description>
+    </item>
+    
+    <item>
+      <title>getCategory</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCategory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getCategory/</guid>
+      <description>SoftLayer_Billing_Item::getCategory Overview Retrieve the item category to which the billing item&amp;rsquo;s item belongs.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Product_Item_Category</description>
+    </item>
+    
+    <item>
+      <title>getChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getChildren/</guid>
+      <description>SoftLayer_Billing_Item::getChildren Overview Retrieve a Billing Item&amp;rsquo;s child billing items&amp;rsquo;
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getChildrenWithActiveAgreement</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getChildrenWithActiveAgreement/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getChildrenWithActiveAgreement/</guid>
+      <description>SoftLayer_Billing_Item::getChildrenWithActiveAgreement Overview Retrieve a Billing Item&amp;rsquo;s active child billing items.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getDowngradeItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getDowngradeItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getDowngradeItems/</guid>
+      <description>SoftLayer_Billing_Item::getDowngradeItems Overview Retrieve for product items which have a downgrade path defined, this will return those product items.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Product_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getFilteredNextInvoiceChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getFilteredNextInvoiceChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getFilteredNextInvoiceChildren/</guid>
+      <description>SoftLayer_Billing_Item::getFilteredNextInvoiceChildren Overview Retrieve a Billing Item&amp;rsquo;s associated child billing items, excluding some items with a $0.00 recurring fee.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getHourlyFlag</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getHourlyFlag/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getHourlyFlag/</guid>
+      <description>SoftLayer_Billing_Item::getHourlyFlag Overview Retrieve a flag that will reflect whether this billing item is billed on an hourly basis or not.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values boolean</description>
+    </item>
+    
+    <item>
+      <title>getInvoiceItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getInvoiceItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getInvoiceItem/</guid>
+      <description>SoftLayer_Billing_Item::getInvoiceItem Overview Retrieve invoice items associated with this billing item
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Invoice_Item</description>
+    </item>
+    
+    <item>
+      <title>getInvoiceItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getInvoiceItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getInvoiceItems/</guid>
+      <description>SoftLayer_Billing_Item::getInvoiceItems Overview Retrieve all invoice items associated with the billing item
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Invoice_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getItem/</guid>
+      <description>SoftLayer_Billing_Item::getItem Overview Retrieve the entry in the SoftLayer product catalog that a billing item is based upon.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Product_Item</description>
+    </item>
+    
+    <item>
+      <title>getLocation</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getLocation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getLocation/</guid>
+      <description>SoftLayer_Billing_Item::getLocation Overview Retrieve the location of the billing item. Some billing items have physical properties such as the server itself. For items such as these, we provide location information.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Location</description>
+    </item>
+    
+    <item>
+      <title>getNextInvoiceChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceChildren/</guid>
+      <description>SoftLayer_Billing_Item::getNextInvoiceChildren Overview Retrieve a Billing Item&amp;rsquo;s child billing items and associated items&amp;rsquo;
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getNextInvoiceTotalOneTimeAmount</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalOneTimeAmount/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalOneTimeAmount/</guid>
+      <description>SoftLayer_Billing_Item::getNextInvoiceTotalOneTimeAmount Overview Retrieve a Billing Item&amp;rsquo;s total, including any child billing items if they exist.&amp;rsquo;
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values float</description>
+    </item>
+    
+    <item>
+      <title>getNextInvoiceTotalOneTimeTaxAmount</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalOneTimeTaxAmount/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalOneTimeTaxAmount/</guid>
+      <description>SoftLayer_Billing_Item::getNextInvoiceTotalOneTimeTaxAmount Overview Retrieve a Billing Item&amp;rsquo;s total, including any child billing items if they exist.&amp;rsquo;
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values float</description>
+    </item>
+    
+    <item>
+      <title>getNextInvoiceTotalRecurringAmount</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalRecurringAmount/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalRecurringAmount/</guid>
+      <description>SoftLayer_Billing_Item::getNextInvoiceTotalRecurringAmount Overview Retrieve a Billing Item&amp;rsquo;s total, including any child billing items and associated billing items if they exist.&amp;rsquo;
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values float</description>
+    </item>
+    
+    <item>
+      <title>getNextInvoiceTotalRecurringTaxAmount</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalRecurringTaxAmount/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNextInvoiceTotalRecurringTaxAmount/</guid>
+      <description>SoftLayer_Billing_Item::getNextInvoiceTotalRecurringTaxAmount Overview Retrieve this is deprecated and will always be zero. Because tax is calculated in real-time, previewing the next recurring invoice is pre-tax only.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values float</description>
+    </item>
+    
+    <item>
+      <title>getNonZeroNextInvoiceChildren</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNonZeroNextInvoiceChildren/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getNonZeroNextInvoiceChildren/</guid>
+      <description>SoftLayer_Billing_Item::getNonZeroNextInvoiceChildren Overview Retrieve a Billing Item&amp;rsquo;s associated child billing items, excluding ALL items with a $0.00 recurring fee.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item[]</description>
+    </item>
+    
+    <item>
+      <title>getObject</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getObject/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getObject/</guid>
+      <description>SoftLayer_Billing_Item::getObject Overview getObject retrieves the SoftLayer_Billing_Item object whose ID number corresponds to the ID number of the init parameter passed to the SoftLayer_Billing_Item service. You can only retrieve billing items tied to the account that your portal user is assigned to. Billing items are an account&amp;rsquo;s items of billable items. There are &amp;ldquo;parent&amp;rdquo; billing items and &amp;ldquo;child&amp;rdquo; billing items. The server billing item is generally referred to as a parent billing item.</description>
+    </item>
+    
+    <item>
+      <title>getOrderItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getOrderItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getOrderItem/</guid>
+      <description>SoftLayer_Billing_Item::getOrderItem Overview Retrieve a billing item&amp;rsquo;s original order item. Simply a reference to the original order from which this billing item was created.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Order_Item</description>
+    </item>
+    
+    <item>
+      <title>getOriginalLocation</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getOriginalLocation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getOriginalLocation/</guid>
+      <description>SoftLayer_Billing_Item::getOriginalLocation Overview Retrieve the original physical location for this billing item&amp;ndash;may differ from current.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Location</description>
+    </item>
+    
+    <item>
+      <title>getPackage</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getPackage/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getPackage/</guid>
+      <description>SoftLayer_Billing_Item::getPackage Overview Retrieve the package under which this billing item was sold. A Package is the general grouping of products as seen on our order forms.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Product_Package</description>
+    </item>
+    
+    <item>
+      <title>getParent</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getParent/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getParent/</guid>
+      <description>SoftLayer_Billing_Item::getParent Overview Retrieve a billing item&amp;rsquo;s parent item. If a billing item has no parent item then this value is null.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item</description>
+    </item>
+    
+    <item>
+      <title>getParentVirtualGuestBillingItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getParentVirtualGuestBillingItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getParentVirtualGuestBillingItem/</guid>
+      <description>SoftLayer_Billing_Item::getParentVirtualGuestBillingItem Overview Retrieve a billing item&amp;rsquo;s parent item. If a billing item has no parent item then this value is null.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Item_Virtual_Guest</description>
+    </item>
+    
+    <item>
+      <title>getPendingCancellationFlag</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getPendingCancellationFlag/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getPendingCancellationFlag/</guid>
+      <description>SoftLayer_Billing_Item::getPendingCancellationFlag Overview Retrieve this flag indicates whether a billing item is scheduled to be canceled or not.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values boolean</description>
+    </item>
+    
+    <item>
+      <title>getPendingOrderItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getPendingOrderItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getPendingOrderItem/</guid>
+      <description>SoftLayer_Billing_Item::getPendingOrderItem Overview Retrieve the new order item that will replace this billing item.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Billing_Order_Item</description>
+    </item>
+    
+    <item>
+      <title>getProvisionTransaction</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getProvisionTransaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getProvisionTransaction/</guid>
+      <description>SoftLayer_Billing_Item::getProvisionTransaction Overview Retrieve provisioning transaction for this billing item
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Provisioning_Version1_Transaction</description>
+    </item>
+    
+    <item>
+      <title>getServiceBillingItemsByCategory</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getServiceBillingItemsByCategory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getServiceBillingItemsByCategory/</guid>
+      <description>SoftLayer_Billing_Item::getServiceBillingItemsByCategory Overview This service returns billing items of a specified category code. This service should be used to retrieve billing items that you wish to cancel. Some billing items can be canceled via [[SoftLayer_Security_Certificate_Request|service cancellation]] service.
+In order to find billing items for cancellation, use [[SoftLayer_Product_Item_Category::getValidCancelableServiceItemCategories|product categories]] service to retrieve category codes that are eligible for cancellation.
+Parameters    Name Type Description     categoryCode string The category code of billing items you wish to retrieve.</description>
+    </item>
+    
+    <item>
+      <title>getSoftwareDescription</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getSoftwareDescription/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getSoftwareDescription/</guid>
+      <description>SoftLayer_Billing_Item::getSoftwareDescription Overview Retrieve a friendly description of software component
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Software_Description</description>
+    </item>
+    
+    <item>
+      <title>getUpgradeItem</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getUpgradeItem/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getUpgradeItem/</guid>
+      <description>SoftLayer_Billing_Item::getUpgradeItem Overview Retrieve billing items whose product item has an upgrade path defined in our system will return the next product item in the upgrade path.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter SoftLayer_ObjectMask  Return Values SoftLayer_Product_Item</description>
+    </item>
+    
+    <item>
+      <title>getUpgradeItems</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getUpgradeItems/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/getUpgradeItems/</guid>
+      <description>SoftLayer_Billing_Item::getUpgradeItems Overview Retrieve billing items whose product item has an upgrade path defined in our system will return all the product items in the upgrade path.
+Parameters    Name Type Description      Required Headers  SoftLayer_Billing_ItemInitParameters authenticate  Optional Headers  SoftLayer_Billing_ItemObjectMask SoftLayer_Billing_ItemObjectFilter resultLimit SoftLayer_ObjectMask  Return Values SoftLayer_Product_Item[]</description>
+    </item>
+    
+    <item>
+      <title>removeAssociationId</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/removeAssociationId/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/removeAssociationId/</guid>
+      <description> SoftLayer_Billing_Item::removeAssociationId Overview Remove the association from a billing item.
+Parameters    Name Type Description      Required Headers  authenticate SoftLayer_Billing_ItemInitParameters  Optional Headers Return Values boolean
+associatedMethods  SoftLayer_Billing_Item::setAssociationId  </description>
+    </item>
+    
+    <item>
+      <title>setAssociationId</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/setAssociationId/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/setAssociationId/</guid>
+      <description>SoftLayer_Billing_Item::setAssociationId Overview Set an associated billing item to an orphan billing item. Associations allow you to tie an &amp;ldquo;orphaned&amp;rdquo; billing item, any non-server billing item that doesn&amp;rsquo;t have a parent item such as secondary IP subnets or StorageLayer accounts, to a server billing item. You may only set an association for an orphan to a server. You cannot associate a server to an orphan if the either the server or orphan billing items have a cancellation date set.</description>
+    </item>
+    
+    <item>
+      <title>voidCancelService</title>
+      <link>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/voidCancelService/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://softlayer.github.io/reference/services/SoftLayer_Billing_Item/voidCancelService/</guid>
+      <description>SoftLayer_Billing_Item::voidCancelService Overview Void a previously made cancellation for a service
+Parameters    Name Type Description      Required Headers  authenticate SoftLayer_Billing_ItemInitParameters  Optional Headers Return Values boolean</description>
     </item>
     
   </channel>
