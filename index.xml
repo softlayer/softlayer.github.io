@@ -6,7 +6,448 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 09 Mar 2018 00:00:00 UTC</updated>
+    <updated>Mon, 12 Mar 2018 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Understanding and building an order using the Softlayer order CLI</title>
+      <link>https://softlayer.github.io/article/understanding-ordering/</link>
+      <pubDate>Mon, 12 Mar 2018 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/article/understanding-ordering/</guid>
+      <description>
+
+&lt;p&gt;In version 5.4.0 of &lt;a href=&#34;https://github.com/softlayer/softlayer-python&#34;&gt;softlayer-python&lt;/a&gt;, there is a new slcli command for placing IaaS cloud server orders using the API. This command can also be used to place orders for products that are normally ordered through the IBM Cloud infrastructure customer portal. There are multiple helpers to assist you in creating a specific order. In these examples, you will learn how to:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Build an order
+
+&lt;ol&gt;
+&lt;li&gt;Understand the order structure&lt;/li&gt;
+&lt;li&gt;Search for server packages&lt;/li&gt;
+&lt;li&gt;Identify categories of items&lt;/li&gt;
+&lt;li&gt;Verify the order&lt;/li&gt;
+&lt;li&gt;Place the order&lt;/li&gt;
+&lt;/ol&gt;&lt;/li&gt;
+&lt;li&gt;Place an order programmatically using Python.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;build-an-order&#34;&gt;Build an order&lt;/h2&gt;
+
+&lt;h3 id=&#34;step-1-understand-the-order-structure&#34;&gt;Step 1: Understand the order structure&lt;/h3&gt;
+
+&lt;p&gt;In the SoftLayer API, an order can consist of multiple order containers. For simplicity, the order CLI only works with one order container, so in these examples and explanations, the terms “order container” and “order” are synonymous.&lt;/p&gt;
+
+&lt;p&gt;A package is the first component to look for when placing an order. Packages are divided among the different top-level products available for ordering in SoftLayer. Some example packages are &lt;em&gt;CLOUD_SERVER&lt;/em&gt; for VSIs, &lt;em&gt;BARE_METAL_SERVER&lt;/em&gt; for bare metal servers, and &lt;em&gt;STORAGE_AS_A_SERVICE_STAAS&lt;/em&gt; for Storage-as-a-Service. Within a package, there are items that are subdivided into categories. Some packages have presets for your convenience and others require that you specify items individually.  If a package’s category is required, an item from that category must be chosen to order the package.  Depending on the category, items within the category are mutually exclusive (for example, you can’t order both 8 GB and 16 GB of RAM for a VSI). Finally, each order must have an associated location (datacenter).&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://softlayer.github.io/img/articles/Order_Structure.png&#34; alt=&#34;packages&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;When using the order CLI, we build an order from the top (package) to the bottom (items). You can use the slcli order package-list to find the package you want to order. A &amp;ndash;keyword option is provided to perform some simple searching for filtering out packages, making it easier to find the package you need. For this example we will build a bare metal server order.&lt;/p&gt;
+
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;$ slcli order package-list --help
+Usage: slcli order package-list &lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;OPTIONS&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;
+
+  List packages that can be ordered via the placeOrder API.
+
+  Example:
+      &lt;span style=&#34;color:#75715e&#34;&gt;# List out all packages for ordering
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      slcli order package-list
+
+  Keywords can also be used &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; some simple filtering functionality to help
+  find a package easier.
+
+  Example:
+     &lt;span style=&#34;color:#75715e&#34;&gt;# List out all packages with &amp;#34;server&amp;#34; in the name
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;      slcli order package-list --keyword server
+
+Options:
+  --keyword TEXT  A word &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;or string&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; used to filter package names.
+  -h, --help      Show this message and exit.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;step-2-search-for-server-packages&#34;&gt;Step 2: Search for server packages&lt;/h3&gt;
+
+&lt;p&gt;We can use the “server” keyword to search for server packages:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order package-list --keyword &amp;#34;Bare Metal&amp;#34;
+:.....................:.....................:
+:         name        :       keyName       :
+:.....................:.....................:
+: Bare Metal Instance : BARE_METAL_INSTANCE :
+:  Bare Metal Server  :  BARE_METAL_SERVER  :
+:.....................:.....................:&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;We will be using the &lt;em&gt;BARE_METAL_SERVER&lt;/em&gt; package for this order. Bare metal servers offer preset configurations, so we will find and use one for our order. The preset-list command needs a package keyname (&lt;em&gt;BARE_METAL_SERVER&lt;/em&gt;) for listing the presets. There is also a &amp;ndash;keyword option for filtering the returned presets if needed.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order preset-list BARE_METAL_SERVER
+:.............................................:...............................................:.................................................................:
+:                     name                    :                    keyName                    :                           description                           :
+:.............................................:...............................................:.................................................................:
+:         S1270 32GB 1X1TBSATA NORAID         :          S1270_32GB_1X1TBSATA_NORAID          :      Single Xeon 1270, 32GB Ram, 1x1TB SATA disks, Non-RAID     :
+:         S1270 32GB 2X960GBSSD NORAID        :          S1270_32GB_2X960GBSSD_NORAID         :     Single Xeon 1270, 32GB Ram, 2x960GB SSD disks, Non-RAID     :
+:         D2690 128GB 2X600GBSAS RAID1        :         D2690_128GB_2X600GBSAS_RAID1_2        :       Dual Xeon 2690, 128GB Ram, 2x600GB SAS disks, RAID1       :
+:        D2690 256GB 4X600GBSAS RAID10        :     D2690_256GB_4X600GBSAS_RAID10_RAID_10     :       Dual Xeon 2690, 256GB Ram, 4x600GB SAS disks, RAID10      :
+:        D2620v4 64GB 1X1TBSATA NORAID        :         D2620V4_64GB_1X1TBSATA_NORAID         :      Dual Xeon 2620v4, 64GB Ram, 1x1TB SATA disks, Non-RAID     :
+:     D2620 128GB 2X1T SATA RAID 1xM60 GPU    :     D2620_128GB_2X1TB_SATA_RAID_1_M60_GPU1    : Dual Xeon 2620, 128GB Ram, 2X1TB SATA disks, RAID 1   1xM60 GPU :
+:    D2690 256GB 2x4TB SATA RAID1 2xM60 GPU   : D2690_256GB_2X4TB_SATA_RAID1_2XM60_GPU_RAID_1 :        Dual Xeon 2690, 256GB Ram, 2X4TB SATA disk, RAID 1       :
+:       D2690v4 128GB 2X600GB SAS RAID 1      :        D2690V4_128GB_2X600GB_SAS_RAID_1       :      Dual Xeon 2690v4, 128GB Ram, 2x600GB SAS disks, RAID1      :
+:        D2620v4 64GB 2X1TB SATA RAID 1       :         D2620V4_64GB_2X1TB_SATA_RAID_1        :       Dual Xeon 2620v4, 64GB Ram, 2x1TB SATA disks, RAID1       :
+: D2620v4 128GB 2X800GB SSD RAID 1 K80 GPU(2) :   D2620V4_128GB_2X800GB_SSD_RAID_1_K80_GPU2   :      Dual Xeon 2620v4, 128GB Ram, 2x800GB SSD disks, RAID1      :
+:  D2690v4 128GB 2X4TB SATA RAID 1 K2 GPU(2)  :    D2690V4_128GB_2X4TB_SATA_RAID_1_K2_GPU2    :            D2690v4 128GB 2x4TB SATA RAID 1 K2 GPU(2)            :
+:      D2690v4 256GB 4X600GB SAS RAID 10      :       D2690V4_256GB_4X600GB_SAS_RAID_10       :     Dual Xeon 2690v4, 256GB Ram, 4x600GB SAS disks, RAID 10     :
+:.............................................:...............................................:.................................................................:&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;step-3-identify-categories-of-items&#34;&gt;Step 3: Identify categories of items&lt;/h3&gt;
+
+&lt;p&gt;For this example, we will use the &lt;em&gt;S1270_32GB_1X1TBSATA_NORAID&lt;/em&gt; preset. Now let’s find the categories of items we need to set for a bare metal order.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli order category-list BARE_METAL_SERVER
+:........................................:.......................:............:
+:                  name                  :      categoryCode     : isRequired :
+:........................................:.......................:............:
+:                 Server                 :         server        :     Y      :
+:        New Cloud Customer Setup        :   new_customer_setup  :     N      :
+:               Surcharges               :        premium        :     N      :
+:            Operating System            :           os          :     Y      :
+:                  RAM                   :          ram          :     Y      :
+:            Disk Controller             :    disk_controller    :     Y      :
+:            First Hard Drive            :         disk0         :     Y      :
+:           Second Hard Drive            :         disk1         :     N      :
+:            Third Hard Drive            :         disk2         :     N      :
+:           Fourth Hard Drive            :         disk3         :     N      :
+:            Public Bandwidth            :       bandwidth       :     Y      :
+:           Uplink Port Speeds           :       port_speed      :     Y      :
+:           Remote Management            :   remote_management   :     Y      :
+:          Primary IP Addresses          :    pri_ip_addresses   :     Y      :
+:     Public Secondary IP Addresses      :    sec_ip_addresses   :     N      :
+:              Power Supply              :      power_supply     :     N      :
+:      Public Static IPv6 Addresses      : static_ipv6_addresses :     N      :
+:         Primary IPv6 Addresses         :   pri_ipv6_addresses  :     N      :
+:                 EVault                 :         evault        :     N      :
+:        Graphics Processing Unit        :          gpu0         :     N      :
+:   Secondary Graphics Processing Unit   :          gpu1         :     N      :
+:                 Other                  :         other         :     N      :
+:    VPN Management - Private Network    :     vpn_management    :     Y      :
+: Vulnerability Assessments &amp;amp; Management : vulnerability_scanner :     N      :
+:........................................:.......................:............:&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This is a minimal order, so we are only specifying items that are required for the order. To find the items we’re required to fill, we can use the &amp;ndash;required option on the category-list command.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order category-list BARE_METAL_SERVER --required
+:..................................:...................:............:
+:               name               :    categoryCode   : isRequired :
+:..................................:...................:............:
+:              Server              :       server      :     Y      :
+:         Operating System         :         os        :     Y      :
+:               RAM                :        ram        :     Y      :
+:         Disk Controller          :  disk_controller  :     Y      :
+:         First Hard Drive         :       disk0       :     Y      :
+:         Public Bandwidth         :     bandwidth     :     Y      :
+:        Uplink Port Speeds        :     port_speed    :     Y      :
+:        Remote Management         : remote_management :     Y      :
+:       Primary IP Addresses       :  pri_ip_addresses :     Y      :
+: VPN Management - Private Network :   vpn_management  :     Y      :
+:..................................:...................:............:&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Most of these categories are already covered for us by the preset (Server, RAM, and Disk Controller, First Hard Drive). If you’re ever unsure of the required categories you may be missing in your order, you can use the place command with the &amp;ndash;verify flag, and if any categories are missing, they will be printed out for you.&lt;/p&gt;
+
+&lt;p&gt;We can now select the rest of our items for our order using the item-list command. There are typically a lot of items to choose from in a package, so it is suggested to use the &amp;ndash;category option to only retrieve the items from the category you are interested in.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order item-list BARE_METAL_SERVER --category os
+:.....................................................:..................................................................:
+:                       keyName                       :                           description                            :
+:.....................................................:..................................................................:
+:       OS_RHEL_5_32_BIT_PER_PROCESSOR_LICENSING      : Red Hat Enterprise Linux 5.x (32 bit) (per-processor licensing)  :
+:       OS_RHEL_6_64_BIT_PER_PROCESSOR_LICENSING      : Red Hat Enterprise Linux 6.x (64 bit) (per-processor licensing)  :
+:                OS_FREEBSD_9_X_64_BIT                :                       FreeBSD 9.x (64 bit)                       :
+:          OS_WINDOWS_2012_R2_FULL_STD_64_BIT         :         Windows Server 2012 R2 Standard Edition (64 bit)         :
+:                OS_FREEBSD_10_X_64_BIT               :                      FreeBSD 10.x (64 bit)                       :
+:                 OS_CENTOS_7_X_64_BIT                :                       CentOS 7.x (64 bit)                        :
+:          OS_WINDOWS_2008_FULL_STD_64_BIT_R2         :         Windows Server 2008 R2 Standard Edition (64bit)          :
+:                 OS_CENTOS_6_X_32_BIT                :                       CentOS 6.x (32 bit)                        :
+:           OS_WINDOWS_2012_FULL_STD_64_BIT           :          Windows Server 2012 Standard Edition (64 bit)           :
+:     OS_UBUNTU_12_04_LTS_PRECISE_PANGOLIN_64_BIT     :         Ubuntu Linux 12.04 LTS Precise Pangolin (64 bit)         :
+:                OS_FREEBSD_10_X_32_BIT               :                      FreeBSD 10.x (32 bit)                       :
+:                  OS_RHEL_7_1_64_BIT                 : Red Hat Enterprise Linux 7.x (64 bit)  (per-processor licensing) :
+:       OS_UBUNTU_16_04_LTS_XENIAL_XERUS_64_BIT       :           Ubuntu Linux 16.04 LTS Xenial Xerus (64 bit)           :
+:                 OS_CENTOS_6_X_64_BIT                :                       CentOS 6.x (64 bit)                        :
+:            OS_CENTOS_7_X_MINIMAL_64_BIT_2           :              CentOS 7.x - Minimal Install (64 bit)               :
+:     OS_UBUNTU_12_04_LTS_PRECISE_PANGOLIN_32_BIT     :         Ubuntu Linux 12.04 LTS Precise Pangolin (32 bit)         :
+:                OS_NO_OPERATING_SYSTEM               :                       No Operating System                        :
+:             OS_CENTOS_6_X_MINIMAL_64_BIT            :              CentOS 6.x - Minimal Install (64 bit)               :
+:               OS_FREEBSD_9_X_32_BIT_2               :                       FreeBSD 9.x (32 bit)                       :
+:        OS_UBUNTU_14_04_LTS_TRUSTY_TAHR_32_BIT       :           Ubuntu Linux 14.04 LTS Trusty Tahr (32 bit)            :
+: OS_WINDOWS_SERVER_2012_STANDARD_EDITION_64_BIT_CORE :         Windows Server 2012 R2 Standard Edition (64 bit)         :
+:        OS_WINDOWS_2008_FULL_WEB_64_BIT_R2_SP1       :            Windows Server 2008 R2 Web Edition (64bit)            :
+:       OS_RHEL_5_64_BIT_PER_PROCESSOR_LICENSING      : Red Hat Enterprise Linux 5.x (64 bit) (per-processor licensing)  :
+:       OS_RHEL_6_32_BIT_PER_PROCESSOR_LICENSING      : Red Hat Enterprise Linux 6.x (32 bit) (per-processor licensing)  :
+:        OS_UBUNTU_14_04_LTS_TRUSTY_TAHR_64_BIT       :           Ubuntu Linux 14.04 LTS Trusty Tahr (64 bit)            :
+:           OS_WINDOWS_2016_FULL_STD_64_BIT           :          Windows Server 2016 Standard Edition (64 bit)           :
+:                OS_FREEBSD_11_X_64_BIT               :                      FreeBSD 11.x (64 bit)                       :
+:.....................................................:..................................................................:&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$slcli order item-list BARE_METAL_SERVER --category bandwidth
+:.....................................:.......................................:
+:               keyName               :              description              :
+:.....................................:.......................................:
+:            BANDWIDTH_0_GB           :             0 GB Bandwidth            :
+:           BANDWIDTH_500_GB          :            500 GB Bandwidth           :
+: BANDWIDTH_UNLIMITED_100_MBPS_UPLINK : Unlimited Bandwidth (100 Mbps Uplink) :
+:          BANDWIDTH_1000_GB          :           1000 GB Bandwidth           :
+:          BANDWIDTH_5000_GB          :           5000 GB Bandwidth           :
+:          BANDWIDTH_10000_GB         :           10000 GB Bandwidth          :
+:           BANDWIDTH_0_GB_2          :             0 GB Bandwidth            :
+:          BANDWIDTH_20000_GB         :           20000 GB Bandwidth          :
+:.....................................:.......................................:&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order item-list BARE_METAL_SERVER --category port_speed
+:......................................................:..........................................................:
+:                       keyName                        :                       description                        :
+:......................................................:..........................................................:
+:            1_GBPS_PRIVATE_NETWORK_UPLINK             :              1 Gbps Private Network Uplink               :
+:           100_MBPS_PRIVATE_NETWORK_UPLINK            :             100 Mbps Private Network Uplink              :
+:   10_GBPS_REDUNDANT_PUBLIC_PRIVATE_NETWORK_UPLINKS   :    10 Gbps Redundant Public &amp;amp; Private Network Uplinks    :
+:    10_GBPS_DUAL_PRIVATE_NETWORK_UPLINKS_UNBONDED     :     10 Gbps Dual Private Network Uplinks (Unbonded)      :
+:        10_MBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS        :         10 Mbps Public &amp;amp; Private Network Uplinks         :
+:        1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS         :         1 Gbps Public &amp;amp; Private Network Uplinks          :
+:            10_MBPS_PRIVATE_NETWORK_UPLINK            :              10 Mbps Private Network Uplink              :
+:      10_GBPS_REDUNDANT_PRIVATE_NETWORK_UPLINKS       :        10 Gbps Redundant Private Network Uplinks         :
+:       100_MBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS        :        100 Mbps Public &amp;amp; Private Network Uplinks         :
+:    1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED    :    1 Gbps Public &amp;amp; Private Network Uplinks (Unbonded)    :
+: 10_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED : 10 Gbps Dual Public &amp;amp; Private Network Uplinks (Unbonded) :
+:......................................................:..........................................................:&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order item-list BARE_METAL_SERVER --category remote_management
+:....................:......................:
+:      keyName       :     description      :
+:....................:......................:
+: REBOOT_KVM_OVER_IP : Reboot / KVM over IP :
+:....................:......................:&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order item-list BARE_METAL_SERVER --category pri_ip_addresses
+:..............:..............:
+:   keyName    : description  :
+:..............:..............:
+: 1_IP_ADDRESS : 1 IP Address :
+:..............:..............:&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order item-list BARE_METAL_SERVER --category vpn_management
+:.....................................................:.......................................................:
+:                       keyName                       :                      description                      :
+:.....................................................:.......................................................:
+: UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT : Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account :
+:.....................................................:.......................................................:&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Some of these categories only have 1 item, so there isn’t much choice for those items. For this order, we will use the following items:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;OS_CENTOS_7_X_64_BIT&lt;/li&gt;
+&lt;li&gt;BANDWIDTH_0_GB_2&lt;/li&gt;
+&lt;li&gt;1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&lt;/li&gt;
+&lt;li&gt;REBOOT_KVM_OVER_IP, 1_IP_ADDRESS&lt;/li&gt;
+&lt;li&gt;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;step-4-verify-the-order&#34;&gt;Step 4: Verify the order&lt;/h3&gt;
+
+&lt;p&gt;Now that we know the details of the bare metal server we will be ordering, we can try verifying the order we want to make. The place command takes in all the information for the order, and will attempt to verify the order (if &amp;ndash;verify is specified) or place the order. We need the following information to verify our order:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Package (BARE_METAL_SERVER)&lt;/li&gt;
+&lt;li&gt;Location (DALLAS13)&lt;/li&gt;
+&lt;li&gt;Billing term (hourly)&lt;/li&gt;
+&lt;li&gt;Preset (S1270_32GB_1X1TBSATA_NORAID)&lt;/li&gt;
+&lt;li&gt;Type (SoftLayer_Container_Product_Order_Hardware_Server)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;em&gt;Note&lt;/em&gt;: The type information is used by the order API to determine the data that is needed in the order. For bare metal servers, this type is SoftLayer_Container_Product_Order_Hardware_Server. These types can be found on &lt;a href=&#34;https://softlayer.github.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server&#34;&gt;SLDN&lt;/a&gt; and will typically begin with SoftLayer_Container_Product_Order.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order place --verify --billing hourly BARE_METAL_SERVER DALLAS13 --preset S1270_32GB_1X1TBSATA_NORAID BANDWIDTH_0_GB_2 1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS REBOOT_KVM_OVER_IP 1_IP_ADDRESS UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT OS_CENTOS_7_X_64_BIT --complex-type SoftLayer_Container_Product_Order_Hardware_Server
+:.....................................................:.......................................................:......:
+:                       keyName                       :                      description                      : cost :
+:.....................................................:.......................................................:......:
+:                   BANDWIDTH_0_GB_2                  :                     0 GB Bandwidth                    :  0   :
+:        1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS        :        1 Gbps Public &amp;amp; Private Network Uplinks        : .04  :
+:                  REBOOT_KVM_OVER_IP                 :                  Reboot / KVM over IP                 :  0   :
+:                     1_IP_ADDRESS                    :                      1 IP Address                     :  0   :
+: UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT : Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account :  0   :
+:                 OS_CENTOS_7_X_64_BIT                :                  CentOS 7.x (64 bit)                  :  0   :
+:               DISK_CONTROLLER_NONRAID               :                        Non-RAID                       :  0   :
+:              HARD_DRIVE_1_00_TB_SATA_2              :                      1.00 TB SATA                     : .036 :
+:             INTEL_SINGLE_XEON_1270_3_50             :    Single Intel Xeon E3-1270 v3 (4 Cores, 3.50 GHz)   : .173 :
+:              RAM_32_GB_DDR3_1333_REG_2              :                       32 GB RAM                       : .356 :
+:.....................................................:.......................................................:......:&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The output will show you each item being ordered, along with the cost associated with that item. If the order passes verification, that means there are no conflicting items, and all required categories have an item specified in the order.&lt;/p&gt;
+
+&lt;h3 id=&#34;step-5-place-the-order&#34;&gt;Step 5: Place the order&lt;/h3&gt;
+
+&lt;p&gt;The next step is to place the order.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order place --billing hourly BARE_METAL_SERVER DALLAS13 --preset S1270_32GB_1X1TBSATA_NORAID BANDWIDTH_0_GB_2 1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS REBOOT_KVM_OVER_IP 1_IP_ADDRESS UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT OS_CENTOS_7_X_64_BIT --complex-type SoftLayer_Container_Product_Order_Hardware_Server
+
+This action will incur charges on your account. Continue? [y/N]: y
+
+SoftLayerAPIError(SoftLayer_Exception_Order_InvalidData): Invalid data on the order for property: hardware. Hostname and domain are not set properly.&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In the order placement, extra data is required based on the complex type. In this case, Bare Metal servers need extra hardware data to specify the hostname and domain of the server. This is specified using the &amp;ndash;extras option. Extras are specified as a JSON-encoded string. According to the error message, we need to specify a hardware property in our extras with the hostname and domain of the server. The structure of the JSON will be:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;{
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hardware&amp;#34;&lt;/span&gt;: [
+        {    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hostname&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;lt;yourhostname&amp;gt;&amp;#34;&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;domain&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;lt;yourdomain&amp;gt;&amp;#34;&lt;/span&gt;
+        }
+    ]
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Now we can place the order with the extra data needed.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order place --billing hourly BARE_METAL_SERVER DALLAS13 \
+    --preset S1270_32GB_1X1TBSATA_NORAID BANDWIDTH_0_GB_2 \
+    1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS \
+    REBOOT_KVM_OVER_IP \
+    1_IP_ADDRESS  \
+    UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT \
+    OS_CENTOS_7_X_64_BIT  \
+    --complex-type SoftLayer_Container_Product_Order_Hardware_Server  \
+    --extras &amp;#39;{&amp;#34;hardware&amp;#34;: [{&amp;#34;hostname&amp;#34;: &amp;#34;test-demo&amp;#34;, &amp;#34;domain&amp;#34;: &amp;#34;softlayer.com&amp;#34;}]}&amp;#39;
+
+This action will incur charges on your account. Continue? [y/N]: y
+
+:.........:...........................:
+:    name : value                     :
+:.........:...........................:
+:      id : 21924753                  :
+: created : 2018-01-03T10:08:03-06:00 :
+:  status : PENDING_APPROVAL          :
+:.........:...........................:&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;We now have ordered a bare metal server!&lt;/p&gt;
+
+&lt;h2 id=&#34;place-an-order-programmatically-with-python&#34;&gt;Place an order programmatically with Python&lt;/h2&gt;
+
+&lt;p&gt;Now that we have used the CLI to build an order with the package and items that we want, we can convert this order to Python code and programmatically place the order.&lt;/p&gt;
+
+&lt;h3 id=&#34;safety-of-item-keynames&#34;&gt;Safety of item keynames&lt;/h3&gt;
+
+&lt;p&gt;Using item keynames is a more hardened way of placing orders. Item IDs may change, and orders placed with hard-coded IDs may not continually work. Keynames will allow orders to consistently work, because price IDs for the order are dynamically retrieved for you.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Note&lt;/em&gt;: If an item is removed from the ordering catalog due to deprecation, orders will still need to be updated to use the keyname of a more current item.&lt;/p&gt;
+
+&lt;h3 id=&#34;converting-from-cli-calls-to-python-code&#34;&gt;Converting from CLI calls to Python code&lt;/h3&gt;
+
+&lt;p&gt;If we take our previous example for creating a bare metal server on the CLI, we can very easily convert this over to Python code. As of version 3.4.0 of softlayer-python, functions have been added to the ordering manager for verifying and placing orders.&lt;/p&gt;
+
+&lt;p&gt;Here is the place order command from before:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ slcli order place --billing hourly BARE_METAL_SERVER DALLAS13 --preset S1270_32GB_1X1TBSATA_NORAID BANDWIDTH_0_GB_2 1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS REBOOT_KVM_OVER_IP 1_IP_ADDRESS UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT OS_CENTOS_7_X_64_BIT --complex-type SoftLayer_Container_Product_Order_Hardware_Server --extras &amp;#39;{&amp;#34;hardware&amp;#34;: [{&amp;#34;hostname&amp;#34;: &amp;#34;test-demo&amp;#34;, &amp;#34;domain&amp;#34;: &amp;#34;softlayer.com&amp;#34;}]}&amp;#39;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The function for place_order on the ordering manager has arguments that are like the data given to the place order command:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;place_order&lt;/span&gt;(self, package_keyname, location, item_keynames, complex_type&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, hourly&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, preset_keyname&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, extras&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, quantity&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;):&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The Python code for placing the order is similar to the place order command:
+import SoftLayer&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;package &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;BARE_METAL_SERVER&amp;#39;&lt;/span&gt;
+location &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;DALLAS13&amp;#39;&lt;/span&gt;
+extras &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hardware&amp;#39;&lt;/span&gt;: [{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hostname&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;test-demo&amp;#39;&lt;/span&gt;,
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;domain&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;softlayer.com&amp;#39;&lt;/span&gt;}]}
+preset &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;S1270_32GB_1X1TBSATA_NORAID&amp;#39;&lt;/span&gt;
+items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;BANDWIDTH_0_GB_2&amp;#39;&lt;/span&gt;,
+         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&amp;#39;&lt;/span&gt;,
+         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;REBOOT_KVM_OVER_IP&amp;#39;&lt;/span&gt;,
+         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;1_IP_ADDRESS&amp;#39;&lt;/span&gt;,
+         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&amp;#39;&lt;/span&gt;,
+         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;OS_CENTOS_7_X_64_BIT&amp;#39;&lt;/span&gt;]
+complex_type &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Container_Product_Order_Hardware_Server&amp;#39;&lt;/span&gt;
+
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+order_mgr &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;OrderingManager(client)
+order_mgr&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verify_order(package, location, items,
+                       hourly&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, preset_keyname&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;preset,
+                       complex_type&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;complex_type,
+                       extras&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;extras)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;If you want to programmatically verify your order rather than placing it, substitute verify_order() for place_order(). Both functions use the arguments the same way.&lt;/p&gt;
+
+&lt;h3 id=&#34;converting-existing-python-code-to-use-keynames&#34;&gt;Converting existing Python code to use keynames&lt;/h3&gt;
+
+&lt;p&gt;If you already place orders via Python code using hard-coded IDs, you can use this code snippet to do a one-time retrieval of the keynames from the IDs.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+
+package_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;200&lt;/span&gt;
+keyname_mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[keyName]&amp;#39;&lt;/span&gt;
+package &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getObject(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;keyname_mask)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Package:&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(package[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;])
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;)
+
+
+prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [&lt;span style=&#34;color:#ae81ff&#34;&gt;1800&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;274&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;906&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;21&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;420&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;44988&lt;/span&gt;]
+keyname_mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[keyName, prices[id]]&amp;#39;&lt;/span&gt;
+keynames &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Items:&amp;#34;&lt;/span&gt;)
+pkg_items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItems(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id,
+                                               mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;keyname_mask)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; price &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; prices:
+    pkg_item &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [i &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; pkg_items
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; price &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; [p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; p &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; i[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;]]][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(pkg_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;])&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>VSI Flavors</title>
+      <link>https://softlayer.github.io/article/VSIFlavors/</link>
+      <pubDate>Mon, 12 Mar 2018 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/article/VSIFlavors/</guid>
+      <description>
+
+&lt;p&gt;The introduction of Flavors to VSI ordering significantly changes how VSIs are ordered, and the old style of ordering will eventually become unsupported. This page will hopefully explain what changes need to be made to any scripts that order VSIs.&lt;/p&gt;
+
+&lt;p&gt;Support for flavors has been added to the &lt;a href=&#34;https://github.com/softlayer/softlayer-python&#34;&gt;SLCLI&lt;/a&gt;, so make sure you have at least version 5.4.0.&lt;/p&gt;
+
+&lt;h1 id=&#34;getting-a-flavor-list&#34;&gt;Getting a Flavor List&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/getCreateObjectOptions/&#34;&gt;SoftLayer_Virtual_Guest::getCreateObjectOptions&lt;/a&gt; is where you can find out the flavor listing, along with all other options you might want to supply to &lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/createObject&#34;&gt;SoftLayer_Virtual_Guest::createObject&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;In the response from getCreateObjectOptions, will be a key &amp;ldquo;flavors&amp;rdquo;, with an array of different flavors and some information about their configuration.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;$ curl -g -u ${SLAUTH} &amp;#34;https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest/getCreateObjectOptions&amp;#34; | python -m json.tool
+
+
+{ommitted}
+    &amp;#34;flavors&amp;#34;: [
+        {
+            &amp;#34;flavor&amp;#34;: {
+                &amp;#34;keyName&amp;#34;: &amp;#34;B1_1X2X25&amp;#34;,
+                &amp;#34;name&amp;#34;: &amp;#34;B1.1x2x25&amp;#34;,
+                &amp;#34;configuration&amp;#34;: [
+                    {
+                        &amp;#34;category&amp;#34;: {
+                            &amp;#34;name&amp;#34;: &amp;#34;First Disk&amp;#34;
+                        },
+                        &amp;#34;price&amp;#34;: {
+                            &amp;#34;hourlyRecurringFee&amp;#34;: &amp;#34;0&amp;#34;,
+                            &amp;#34;item&amp;#34;: {
+                                &amp;#34;description&amp;#34;: &amp;#34;25 GB (SAN)&amp;#34;
+                            }
+                        }
+                    },
+                    {
+                        &amp;#34;category&amp;#34;: {
+                            &amp;#34;name&amp;#34;: &amp;#34;RAM&amp;#34;
+                        },
+                        &amp;#34;price&amp;#34;: {
+                            &amp;#34;hourlyRecurringFee&amp;#34;: &amp;#34;.03&amp;#34;,
+                            &amp;#34;item&amp;#34;: {
+                                &amp;#34;description&amp;#34;: &amp;#34;2 GB&amp;#34;
+                            }
+                        }
+                    },
+                    {
+                        &amp;#34;category&amp;#34;: {
+                            &amp;#34;name&amp;#34;: &amp;#34;Computing Instance&amp;#34;
+                        },
+                        &amp;#34;price&amp;#34;: {
+                            &amp;#34;hourlyRecurringFee&amp;#34;: &amp;#34;.023&amp;#34;,
+                            &amp;#34;item&amp;#34;: {
+                                &amp;#34;description&amp;#34;: &amp;#34;1 x 2.0 GHz Core&amp;#34;
+                            }
+                        }
+                    }
+                ],
+                &amp;#34;totalMinimumHourlyFee&amp;#34;: &amp;#34;0.053&amp;#34;,
+                &amp;#34;totalMinimumRecurringFee&amp;#34;: &amp;#34;35.17&amp;#34;
+            },
+            &amp;#34;template&amp;#34;: {
+                &amp;#34;id&amp;#34;: null,
+                &amp;#34;supplementalCreateObjectOptions&amp;#34;: {
+                    &amp;#34;flavorKeyName&amp;#34;: &amp;#34;B1_1X2X25&amp;#34;
+                }
+            }
+        },
+{ommitted}&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The same information can be retrieved from the SLCLI as well.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli vs create-options&lt;/pre&gt;&lt;/div&gt;
+&lt;h1 id=&#34;ordering-a-flavor&#34;&gt;Ordering a Flavor&lt;/h1&gt;
+
+&lt;p&gt;Basically, instead of specifying a CPU, Memory, and Disk specifically, you remove those options and instead add a new &amp;ldquo;&lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest_SupplementalCreateObjectOptions/&#34;&gt;supplementalCreateObjectOptions&lt;/a&gt;&amp;rdquo; field that has the flavor. Here is a &lt;a href=&#34;https://console.bluemix.net/docs/vsi/vsi_provision_api.html#api-rest-public&#34;&gt;REST Example&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;And here is how to use the SLCLI for ordering&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli vs create --os=UBUNTU_LATEST_64 \
+    --flavor=BL1_2X4X100  \
+    --billing=hourly  \
+    --domain=softlayer.com  \
+    --hostname=sldn-testing  \
+    --datacenter=hou02&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Release Notes March 9, 2018</title>
@@ -56,78 +497,57 @@
 &lt;h2 id=&#34;find-the-dc-name&#34;&gt;Find the DC name&lt;/h2&gt;
 
 &lt;p&gt;Lets start by finding the datacenter we want to order in.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getRegions.json?objectMask=mask\[description,keyname\]&#39; | python -m json.tool
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getRegions.json?objectMask=mask\[description,keyname\]&amp;#39; | python -m json.tool&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Keep track of the KeyName of the location you want to order from.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;[{&amp;quot;description&amp;quot;: &amp;quot;HOU02 - Houston&amp;quot;, &amp;quot;keyname&amp;quot;: &amp;quot;HOUSTON02&amp;quot; }]
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;[{&amp;#34;description&amp;#34;: &amp;#34;HOU02 - Houston&amp;#34;, &amp;#34;keyname&amp;#34;: &amp;#34;HOUSTON02&amp;#34; }]&lt;/pre&gt;&lt;/div&gt;
 &lt;h2 id=&#34;find-the-correct-router-optional&#34;&gt;Find the correct router (optional)&lt;/h2&gt;
 
 &lt;p&gt;If you want the new VLAN to be behind a specific router, you need to find the ID of that router.&lt;/p&gt;
 
 &lt;p&gt;To get a list of all the routers your account currently has VLANs on, you can use&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &amp;quot;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getRouters?objectMask=mask\[hostname,id\]&amp;quot; | python -m json.tool
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code&gt;[{ &amp;quot;hostname&amp;quot;: &amp;quot;bcr02a.hou02&amp;quot;, &amp;quot;id&amp;quot;: 112661 },]
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#34;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getRouters?objectMask=mask\[hostname,id\]&amp;#34; | python -m json.tool&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;[{ &amp;#34;hostname&amp;#34;: &amp;#34;bcr02a.hou02&amp;#34;, &amp;#34;id&amp;#34;: 112661 },]&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;If you have a Vyatta or other device you want this VLAN to be accessible to, you can find the Vyattas router and just use that.&lt;/p&gt;
 
 &lt;p&gt;This will list all Gateway devices and their routers&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &amp;quot;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getNetworkGateways?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&amp;quot; | python -m json.tool
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#34;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getNetworkGateways?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&amp;#34; | python -m json.tool&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;This will list a specific gateway device and its routers&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &amp;quot;https://api.softlayer.com/rest/v3.1/SoftLayer_Network_Gateway/172123/getObject?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&amp;quot; | python -m json.tool
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#34;https://api.softlayer.com/rest/v3.1/SoftLayer_Network_Gateway/172123/getObject?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&amp;#34; | python -m json.tool&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Which will output something like this. For Public VLANs, you will want the ID of the frontend router, for Private, the backend router. If there are 2 routers, use the id from the router labeled A&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
-    &amp;quot;id&amp;quot;: 172123,
-    &amp;quot;name&amp;quot;: &amp;quot;houstonvpndemo&amp;quot;,
-    &amp;quot;members&amp;quot;: [
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;{
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;172123&lt;/span&gt;,
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;houstonvpndemo&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;members&amp;#34;&lt;/span&gt;: [
         {
-            &amp;quot;hardwareId&amp;quot;: 149607,
-            &amp;quot;id&amp;quot;: 201323,
-            &amp;quot;networkGatewayId&amp;quot;: 172123,
-            &amp;quot;hardware&amp;quot;: {
-                &amp;quot;fullyQualifiedDomainName&amp;quot;: &amp;quot;houstonvpndemo.example.com&amp;quot;,
-                &amp;quot;id&amp;quot;: 149607,
-                &amp;quot;backendRouters&amp;quot;: [
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hardwareId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;149607&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;201323&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;networkGatewayId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;172123&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hardware&amp;#34;&lt;/span&gt;: {
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;fullyQualifiedDomainName&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;houstonvpndemo.example.com&amp;#34;&lt;/span&gt;,
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;149607&lt;/span&gt;,
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;backendRouters&amp;#34;&lt;/span&gt;: [
                     {
-                        &amp;quot;hostname&amp;quot;: &amp;quot;bcr02a.hou02&amp;quot;,
-                        &amp;quot;id&amp;quot;: 112661
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hostname&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;bcr02a.hou02&amp;#34;&lt;/span&gt;,
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;112661&lt;/span&gt;
                     },
                     {
-                        &amp;quot;hostname&amp;quot;: &amp;quot;bcr02b.hou02&amp;quot;,
-                        &amp;quot;id&amp;quot;: 112660
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hostname&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;bcr02b.hou02&amp;#34;&lt;/span&gt;,
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;112660&lt;/span&gt;
                     }
                 ],
-                &amp;quot;frontendRouters&amp;quot;: [
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;frontendRouters&amp;#34;&lt;/span&gt;: [
                     {
-                        &amp;quot;hostname&amp;quot;: &amp;quot;fcr02a.hou02&amp;quot;,
-                        &amp;quot;id&amp;quot;: 112561
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hostname&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;fcr02a.hou02&amp;#34;&lt;/span&gt;,
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;112561&lt;/span&gt;
                     },
                     {
-                        &amp;quot;hostname&amp;quot;: &amp;quot;fcr02b.hou02&amp;quot;,
-                        &amp;quot;id&amp;quot;: 112560
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;hostname&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;fcr02b.hou02&amp;#34;&lt;/span&gt;,
+                        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;112560&lt;/span&gt;
                     }
                 ]
             }
         }
         ]
-    }
-&lt;/code&gt;&lt;/pre&gt;
-
+    }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;For this example, we are going to use &amp;ldquo;fcr02a.hou02&amp;rdquo;, or id=112561&lt;/p&gt;
 
 &lt;h2 id=&#34;find-the-price-ids&#34;&gt;Find the price IDs&lt;/h2&gt;
@@ -137,77 +557,62 @@
 &lt;h4 id=&#34;find-the-package&#34;&gt;Find the package&lt;/h4&gt;
 
 &lt;p&gt;This will get all packages that are NOT bluemix services.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;amp;objectFilter=\{&amp;quot;type&amp;quot;:\{&amp;quot;keyName&amp;quot;:\{&amp;quot;operation&amp;quot;:&amp;quot;!=BLUEMIX_SERVICE&amp;quot;\}\}\}&#39;
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;amp;objectFilter=\{&amp;#34;type&amp;#34;:\{&amp;#34;keyName&amp;#34;:\{&amp;#34;operation&amp;#34;:&amp;#34;!=BLUEMIX_SERVICE&amp;#34;\}\}\}&amp;#39;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;One of the results is going to be NETWORK_VLAN, which is what we want.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
-    &amp;quot;id&amp;quot;: 571,
-    &amp;quot;isActive&amp;quot;: 1,
-    &amp;quot;keyName&amp;quot;: &amp;quot;NETWORK_VLAN&amp;quot;,
-    &amp;quot;name&amp;quot;: &amp;quot;Network VLAN&amp;quot;,
-    &amp;quot;type&amp;quot;: {
-        &amp;quot;id&amp;quot;: 495,
-        &amp;quot;keyName&amp;quot;: &amp;quot;ADDITIONAL_SERVICES_NETWORK_VLAN&amp;quot;,
-        &amp;quot;name&amp;quot;: &amp;quot;Network VLAN&amp;quot;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;{
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;571&lt;/span&gt;,
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;isActive&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;NETWORK_VLAN&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Network VLAN&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;type&amp;#34;&lt;/span&gt;: {
+        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;495&lt;/span&gt;,
+        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ADDITIONAL_SERVICES_NETWORK_VLAN&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Network VLAN&amp;#34;&lt;/span&gt;
     }
-}
-&lt;/code&gt;&lt;/pre&gt;
-
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Since packages ids can change, it is a good idea to look these up in the future based on their keyName. &lt;em&gt;This object filter starts at keyName, the one above starts at type&lt;/em&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;amp;objectFilter=\{&amp;quot;keyName&amp;quot;:\{&amp;quot;operation&amp;quot;:&amp;quot;NETWORK_VLAN&amp;quot;\}\}&#39;
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;amp;objectFilter=\{&amp;#34;keyName&amp;#34;:\{&amp;#34;operation&amp;#34;:&amp;#34;NETWORK_VLAN&amp;#34;\}\}&amp;#39;&lt;/pre&gt;&lt;/div&gt;
 &lt;h4 id=&#34;find-the-price-ids-1&#34;&gt;Find the price ids&lt;/h4&gt;
 
 &lt;p&gt;From the above example, we know we need to get the items from package 571&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getItems.json?objectMask=mask\[id,keyName,itemCategory,prices\[id,locationGroupId\]\]&#39; | python -m json.tool
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getItems.json?objectMask=mask\[id,keyName,itemCategory,prices\[id,locationGroupId\]\]&amp;#39; | python -m json.tool&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;The result should be similar to this. If a price has multiple ids, use the one iwth a locationGroupId = null&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;[
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;[
     {
-        &amp;quot;id&amp;quot;:1072, 
-        &amp;quot;keyName&amp;quot;:&amp;quot;PRIVATE_NETWORK_VLAN&amp;quot;
-        &amp;quot;itemCategory&amp;quot;: {
-            &amp;quot;categoryCode&amp;quot;: &amp;quot;network_vlan&amp;quot;,
-            &amp;quot;id&amp;quot;: 113,
-            &amp;quot;name&amp;quot;: &amp;quot;Network Vlan&amp;quot;,
-            &amp;quot;quantityLimit&amp;quot;: 0,
-            &amp;quot;sortOrder&amp;quot;: null
+        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;:&lt;span style=&#34;color:#ae81ff&#34;&gt;1072&lt;/span&gt;, 
+        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;:&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;PRIVATE_NETWORK_VLAN&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;itemCategory&amp;#34;&lt;/span&gt;: {
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;network_vlan&amp;#34;&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;113&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Network Vlan&amp;#34;&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;quantityLimit&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;sortOrder&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;
         }
-        &amp;quot;prices&amp;quot;: [
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;prices&amp;#34;&lt;/span&gt;: [
             {
-                &amp;quot;id&amp;quot;: 2019,
-                &amp;quot;locationGroupId&amp;quot;: null
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;2019&lt;/span&gt;,
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;locationGroupId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;
             }
         ]
     },
     {
-        &amp;quot;id&amp;quot;:583, 
-        &amp;quot;keyName&amp;quot;:&amp;quot;8_STATIC_PUBLIC_IP_ADDRESSES&amp;quot;
-        &amp;quot;itemCategory&amp;quot;: {
-            &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-            &amp;quot;id&amp;quot;: 53,
-            &amp;quot;name&amp;quot;: &amp;quot;Public Secondary Static IP Addresses&amp;quot;,
-            &amp;quot;quantityLimit&amp;quot;: 0,
-            &amp;quot;sortOrder&amp;quot;: 35
+        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;:&lt;span style=&#34;color:#ae81ff&#34;&gt;583&lt;/span&gt;, 
+        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;:&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;8_STATIC_PUBLIC_IP_ADDRESSES&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;itemCategory&amp;#34;&lt;/span&gt;: {
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Public Secondary Static IP Addresses&amp;#34;&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;quantityLimit&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;,
+            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;sortOrder&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;35&lt;/span&gt;
         }
-        &amp;quot;prices&amp;quot;: [
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;prices&amp;#34;&lt;/span&gt;: [
             {
-                &amp;quot;id&amp;quot;: 36696,
-                &amp;quot;locationGroupId&amp;quot;: null
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;36696&lt;/span&gt;,
+                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;locationGroupId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;
             }
         ]
     }
-]
-&lt;/code&gt;&lt;/pre&gt;
-
+]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h4 id=&#34;answer-the-ip-useage-questions&#34;&gt;Answer the IP useage questions&lt;/h4&gt;
 
 &lt;p&gt;&lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Product_Item_Category/getQuestions/&#34;&gt;getQuestions&lt;/a&gt;&lt;/p&gt;
@@ -215,10 +620,7 @@
 &lt;p&gt;When ordering a new subnet of IP space, a few questions need to be answered for our records.&lt;/p&gt;
 
 &lt;p&gt;ID 53 is from the above item category id.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Item_Category/53/getQuestions.json&#39; | python -m json.tool
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Item_Category/53/getQuestions.json&amp;#39; | python -m json.tool&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;That will return a long list of questions you need to answer, which we will have to add when we make our order.&lt;/p&gt;
 
 &lt;h2 id=&#34;placeing-the-order&#34;&gt;Placeing the order&lt;/h2&gt;
@@ -226,96 +628,84 @@
 &lt;p&gt;Now that we have all the required information, we can build an order object.&lt;/p&gt;
 
 &lt;h4 id=&#34;order-json&#34;&gt;order.json&lt;/h4&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
-  &amp;quot;parameters&amp;quot;: [
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;{
+  &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;parameters&amp;#34;&lt;/span&gt;: [
     {
-      &amp;quot;location&amp;quot;: &amp;quot;HOUSTON02&amp;quot;,
-      &amp;quot;routerId&amp;quot;: 112661,
-      &amp;quot;packageId&amp;quot;: 571,
-      &amp;quot;prices&amp;quot;: [
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;location&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;HOUSTON02&amp;#34;&lt;/span&gt;,
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;routerId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;112661&lt;/span&gt;,
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;packageId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;571&lt;/span&gt;,
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;prices&amp;#34;&lt;/span&gt;: [
         {
-          &amp;quot;id&amp;quot;: 2019 
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;2019&lt;/span&gt; 
         },
         {
-          &amp;quot;id&amp;quot;: 36696 
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;36696&lt;/span&gt; 
         }
       ],
-      &amp;quot;quantity&amp;quot;: 1,
-      &amp;quot;name&amp;quot;: &amp;quot;myNewVlan&amp;quot;,
-      &amp;quot;complexType&amp;quot;: &amp;quot;SoftLayer_Container_Product_Order_Network_Vlan&amp;quot;,
-      &amp;quot;itemCategoryQuestionAnswers&amp;quot;: [
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;quantity&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;myNewVlan&amp;#34;&lt;/span&gt;,
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Network_Vlan&amp;#34;&lt;/span&gt;,
+      &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;itemCategoryQuestionAnswers&amp;#34;&lt;/span&gt;: [
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 14,
-          &amp;quot;answer&amp;quot;: 4 
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;14&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt; 
         },
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 15,
-          &amp;quot;answer&amp;quot;: 8 
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;15&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;8&lt;/span&gt; 
         },
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 16,
-          &amp;quot;answer&amp;quot;: &amp;quot;For more machines&amp;quot;
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;16&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;For more machines&amp;#34;&lt;/span&gt;
         },
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 9,
-          &amp;quot;answer&amp;quot;: &amp;quot;Chris&amp;quot;
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;9&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Chris&amp;#34;&lt;/span&gt;
         },
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 10,
-          &amp;quot;answer&amp;quot;: &amp;quot;Developer&amp;quot;
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Developer&amp;#34;&lt;/span&gt;
         },
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 11,
-          &amp;quot;answer&amp;quot;: &amp;quot;chris@company.com&amp;quot;
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;11&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;chris@company.com&amp;#34;&lt;/span&gt;
         },
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 12,
-          &amp;quot;answer&amp;quot;: &amp;quot;1234567890&amp;quot;  
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;12&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;1234567890&amp;#34;&lt;/span&gt;  
         },
         {
-          &amp;quot;categoryId&amp;quot;: 53,
-          &amp;quot;categoryCode&amp;quot;: &amp;quot;static_sec_ip_addresses&amp;quot;,
-          &amp;quot;questionId&amp;quot;: 13,
-          &amp;quot;answer&amp;quot;: true  
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;53&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;static_sec_ip_addresses&amp;#34;&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;questionId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;13&lt;/span&gt;,
+          &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;answer&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;true&lt;/span&gt;  
         }
       ]
     }
   ]
-}
-&lt;/code&gt;&lt;/pre&gt;
-
+}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;After you create your order container file, then we should use &lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Product_Order/verifyOrder/&#34;&gt;verifyOrder&lt;/a&gt; to make sure our data is ok.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY  --data @order.json  &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/verifyOrder&#39;
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY  --data @order.json  &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/verifyOrder&amp;#39;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;If you get back a json object, then it should be ok to order.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY -X POST  --data @order.json  &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/placeOrder&#39;
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY -X POST  --data @order.json  &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/placeOrder&amp;#39;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;If successful, you should get a large json object as a reciept when done. This will have your orderId on it, so you can look it up if needed.&lt;/p&gt;
 
 &lt;p&gt;My order id was 23530337, so I will use the &lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Billing_Order/getObject/&#34;&gt;SoftLayer_Billing_Order&lt;/a&gt; setvice to view it.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY  &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order/23530337/getObject&#39;
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY  &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order/23530337/getObject&amp;#39;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
     <item>
@@ -579,20 +969,15 @@ If you start to experience connection errors on the transition date, the best co
 &lt;h2 id=&#34;getting-subjects&#34;&gt;Getting Subjects&lt;/h2&gt;
 
 &lt;p&gt;Standard support tickets&amp;rsquo; titles must be selected from a pre-determined list of ticket subjects, defined in the &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Ticket_Subject&#34;&gt;SoftLayer_Ticket_Subject&lt;/a&gt; service. The following example will output all of the Ticket Subjects:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-client = SoftLayer.Client()
-def getSubjects(self):
-    mask = &amp;quot;mask[group]&amp;quot;
-    subjects = client.call(&#39;SoftLayer_Ticket_Subject&#39;, &#39;getAllObjects&#39;, mask=mask)
-    print(&amp;quot;|Subject Id | Subject Name | Group Name |&amp;quot;)
-    print(&amp;quot;| --- | --- | --- |&amp;quot;)
-    for subject in subjects:
-        print(&amp;quot;|%s| %s| %s|&amp;quot; % (subject[&#39;id&#39;], subject[&#39;name&#39;], subject[&#39;group&#39;][&#39;name&#39;]))
-
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getSubjects&lt;/span&gt;(self):
+    mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[group]&amp;#34;&lt;/span&gt;
+    subjects &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Ticket_Subject&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getAllObjects&amp;#39;&lt;/span&gt;, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;|Subject Id | Subject Name | Group Name |&amp;#34;&lt;/span&gt;)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;| --- | --- | --- |&amp;#34;&lt;/span&gt;)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; subject &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; subjects:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;|&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;| &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;| &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;|&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (subject[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], subject[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;], subject[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;group&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;]))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h3 id=&#34;subjects&#34;&gt;Subjects&lt;/h3&gt;
 
 &lt;table&gt;
@@ -778,43 +1163,35 @@ def getSubjects(self):
 &lt;h2 id=&#34;creating-tickets&#34;&gt;Creating Tickets&lt;/h2&gt;
 
 &lt;p&gt;Once you have the Ticket Subject ID you can pass it to &lt;a href=&#34;http://sldn.softlayer.com/reference/services/SoftLayer_Ticket/createStandardTicket&#34;&gt;createStandardTicket&lt;/a&gt;. In the following example we are opening a ticket under the subject Hardware Issue (ID 1021).&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;
-import SoftLayer
-client = SoftLayer.Client()
-currentUser = client[&#39;Account&#39;].getCurrentUser()
-new_ticket = {
-       &#39;subjectId&#39;: 1021,
-       &#39;assignedUserId&#39;: currentUser[&#39;id&#39;]
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+currentUser &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Account&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getCurrentUser()
+new_ticket &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+       &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;subjectId&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1021&lt;/span&gt;,
+       &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;assignedUserId&amp;#39;&lt;/span&gt;: currentUser[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
 }
-created_ticket = client.call(&#39;SoftLayer_Ticket&#39;, &#39;createStandardTicket&#39;, new_ticket, &amp;quot;Content of the ticket goes here&amp;quot;)
-
-&lt;/code&gt;&lt;/pre&gt;
-
+created_ticket &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Ticket&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;createStandardTicket&amp;#39;&lt;/span&gt;, new_ticket, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Content of the ticket goes here&amp;#34;&lt;/span&gt;)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h3 id=&#34;full-example&#34;&gt;Full Example&lt;/h3&gt;
 
 &lt;p&gt;createStandardTicket takes a few arguments that can be used to create a ticket. Anything that isn&amp;rsquo;t an argument to createStandardTicket should be passed in as the ticket template object.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import SoftLayer
-client = SoftLayer.Client()
-def createTicket(self):
-    current_user = client.call(&#39;SoftLayer_Account&#39;, &#39;getCurrentUser&#39;)
-    body = &amp;quot;I&#39;m testing API ticket creation. Please close this ticket if you see it. Thanks.&amp;quot;
-    serverId = 1317535
-    serverPass = &#39;12345&#39;
-    # http://sldn.softlayer.com/reference/datatypes/SoftLayer_Ticket
-    new_ticket = {
-        &#39;subjectId&#39;: 1021,
-        &#39;assignedUserId&#39;: current_user[&#39;id&#39;],
-        &#39;title&#39;: &#39;TESTING TICKET 003&#39;,
-        &#39;priority&#39;: 4
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;createTicket&lt;/span&gt;(self):
+    current_user &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Account&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getCurrentUser&amp;#39;&lt;/span&gt;)
+    body &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;I&amp;#39;m testing API ticket creation. Please close this ticket if you see it. Thanks.&amp;#34;&lt;/span&gt;
+    serverId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1317535&lt;/span&gt;
+    serverPass &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;12345&amp;#39;&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Ticket&lt;/span&gt;
+    new_ticket &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;subjectId&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1021&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;assignedUserId&amp;#39;&lt;/span&gt;: current_user[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;title&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;TESTING TICKET 003&amp;#39;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;priority&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;
     }
-    # parameter list is from, need to be in order http://sldn.softlayer.com/reference/services/softlayer_ticket/createStandardTicket
-    created_ticket = client.call(&#39;SoftLayer_Ticket&#39;, &#39;createStandardTicket&#39;, 
-        new_ticket, body, serverId, serverPass, None, None, None, &#39;HARDWARE&#39;)
-    pp(created_ticket)
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+    &lt;span style=&#34;color:#75715e&#34;&gt;# parameter list is from, need to be in order http://sldn.softlayer.com/reference/services/softlayer_ticket/createStandardTicket&lt;/span&gt;
+    created_ticket &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Ticket&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;createStandardTicket&amp;#39;&lt;/span&gt;, 
+        new_ticket, body, serverId, serverPass, None, None, None, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;HARDWARE&amp;#39;&lt;/span&gt;)
+    pp(created_ticket)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
     <item>
@@ -830,10 +1207,7 @@ def createTicket(self):
 &lt;p&gt;Building a package still requires a few steps however.&lt;/p&gt;
 
 &lt;h3 id=&#34;1-find-the-package-name&#34;&gt;1. Find the package name&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code&gt;slcli order package-list
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli order package-list&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;The most common packages are the following:&lt;/p&gt;
 
 &lt;table&gt;
@@ -923,10 +1297,7 @@ def createTicket(self):
 &lt;p&gt;Once we have selected a package we need to find out where we can order this package.&lt;/p&gt;
 
 &lt;h3 id=&#34;2-package-locations&#34;&gt;2. Package locations&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code&gt;slcli order package-locations BARE_METAL_SERVER
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli order package-locations BARE_METAL_SERVER&lt;/pre&gt;&lt;/div&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -966,33 +1337,21 @@ def createTicket(self):
 &lt;h3 id=&#34;3-items-and-categories&#34;&gt;3. Items and Categories&lt;/h3&gt;
 
 &lt;p&gt;Every package has certain item categories that need to be included in an order. You can find these with&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;slcli order category-list BARE_METAL_SERVER
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli order category-list BARE_METAL_SERVER&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Then find the actual items in the category.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;slcli order item-list BARE_METAL_SERVER
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli order item-list BARE_METAL_SERVER&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Create a list of items you want to order. If you want multiple disks (or GPU), you should have 1 item in your list per disk you want to add. Disks are attached in order that they appear on the order form.&lt;/p&gt;
 
 &lt;h4 id=&#34;presets&#34;&gt;Presets&lt;/h4&gt;
 
 &lt;p&gt;BARE_METAL_SERVER orders require a preset. These can be ordered hourly.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;slcli order preset-list BARE_METAL_SERVER
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;slcli order preset-list BARE_METAL_SERVER&lt;/pre&gt;&lt;/div&gt;
 &lt;h3 id=&#34;4-getting-ready-to-order&#34;&gt;4. Getting ready to order.&lt;/h3&gt;
 
 &lt;p&gt;The last thing to note is the &amp;ndash;extras and &amp;ndash;complex-type options.&lt;/p&gt;
 
 &lt;p&gt;&amp;ndash;Extras are going to match up to things like Vlans, subnets, ssh keys etc. Basically anything in the order container that ISN&amp;rsquo;T prices. Supported fields correstpond to the SoftLayer_Container_Product_Order data type. Needs to be valid JSON&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;--extras &#39;{&amp;quot;hardware&amp;quot;: [{&amp;quot;hostname&amp;quot; : &amp;quot;testOrder1&amp;quot;, &amp;quot;domain&amp;quot;: &amp;quot;cgallo.com&amp;quot;}], &amp;quot;sshKeys&amp;quot; : [87634], &amp;quot;tags&amp;quot;: &amp;quot;cgallo, test&amp;quot;}&#39;
-&lt;/code&gt;&lt;/pre&gt;
-
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;--extras &amp;#39;{&amp;#34;hardware&amp;#34;: [{&amp;#34;hostname&amp;#34; : &amp;#34;testOrder1&amp;#34;, &amp;#34;domain&amp;#34;: &amp;#34;cgallo.com&amp;#34;}], &amp;#34;sshKeys&amp;#34; : [87634], &amp;#34;tags&amp;#34;: &amp;#34;cgallo, test&amp;#34;}&amp;#39;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;&amp;ndash;complex-type should match up with something that starts with SoftLayer_Container_Product&lt;em&gt;Order&lt;/em&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&#34;http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server&#34;&gt;SoftLayer_Container_Product_Order_Hardware_Server&lt;/a&gt; for bare metal servers, but there are others that may need to be selected. SLDN has a complete list of all supported containers.&lt;/p&gt;
@@ -1000,17 +1359,14 @@ def createTicket(self):
 &lt;h3 id=&#34;5-testing-an-order&#34;&gt;5. Testing an order.&lt;/h3&gt;
 
 &lt;p&gt;the &amp;ndash;verify option will not actually place an order, just insure the order is mostly correct. You may still run into when actually placing the order however. Such as being unable to find IDs for ssh keys, vlans, etc, or being out of stock of an offering.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;slcli --really order place --verify --preset D2620V4_64GB_2X1TB_SATA_RAID_1 BARE_METAL_SERVER  TORONTO  \
-    OS_UBUNTU_16_04_LTS_XENIAL_XERUS_64_BIT \
-    BANDWIDTH_0_GB_2  \
-    1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS  \
-    REBOOT_KVM_OVER_IP 1_IP_ADDRESS  \
-    UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT \
-    --extras &#39;{&amp;quot;hardware&amp;quot;: [{&amp;quot;hostname&amp;quot; : &amp;quot;testOrder1&amp;quot;, &amp;quot;domain&amp;quot;: &amp;quot;cgallo.com&amp;quot;}], &amp;quot;sshKeys&amp;quot; : [87634], &amp;quot;tags&amp;quot;: &amp;quot;cgallo, test&amp;quot;}&#39; \
-     --complex-type SoftLayer_Container_Product_Order_Hardware_Server
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;slcli --really order place --verify --preset D2620V4_64GB_2X1TB_SATA_RAID_1 BARE_METAL_SERVER  TORONTO  &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;    OS_UBUNTU_16_04_LTS_XENIAL_XERUS_64_BIT &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;    BANDWIDTH_0_GB_2  &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;    1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS  &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;    REBOOT_KVM_OVER_IP 1_IP_ADDRESS  &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;    UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;    --extras &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;{&amp;#34;hardware&amp;#34;: [{&amp;#34;hostname&amp;#34; : &amp;#34;testOrder1&amp;#34;, &amp;#34;domain&amp;#34;: &amp;#34;cgallo.com&amp;#34;}], &amp;#34;sshKeys&amp;#34; : [87634], &amp;#34;tags&amp;#34;: &amp;#34;cgallo, test&amp;#34;}&amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;     --complex-type SoftLayer_Container_Product_Order_Hardware_Server&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
     <item>
@@ -1044,22 +1400,19 @@ def createTicket(self):
 &lt;li&gt;[Example slcli order useagecontent/python/ordering_slcli.md&lt;/li&gt;
 &lt;li&gt;](&lt;a href=&#34;https://softlayer.github.io/python/ordering_slcli/&#34;&gt;https://softlayer.github.io/python/ordering_slcli/&lt;/a&gt;)&lt;/li&gt;
 &lt;/ul&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;$ ./slcli order
-Usage: slcli order [OPTIONS] COMMAND [ARGS]...
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;$ ./slcli order
+Usage: slcli order &lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;OPTIONS&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt; COMMAND &lt;span style=&#34;color:#f92672&#34;&gt;[&lt;/span&gt;ARGS&lt;span style=&#34;color:#f92672&#34;&gt;]&lt;/span&gt;...
 
 Options:
   -h, --help  Show this message and exit.
 
 Commands:
   category-list      List the categories of a package.
-  item-list          List package items used for ordering.
+  item-list          List package items used &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; ordering.
   package-list       List packages that can be ordered via the...
   package-locations  List Datacenters a package can be ordered in.
   place              Place or verify an order.
-  preset-list        List package presets.
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+  preset-list        List package presets.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
     <item>
@@ -1091,84 +1444,6 @@ Commands:
 &lt;ul&gt;
 &lt;li&gt;This fixes a problem where volumes could be end up with lesser than assigned quota size.&lt;/li&gt;
 &lt;li&gt;Removed deprecated abuse field from RIPE registration person details.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: December 11, 2017</title>
-      <link>https://softlayer.github.io/release_notes/2017/20171206/</link>
-      <pubDate>Mon, 11 Dec 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2017/20171206/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Adds warning messages to that will pop to alert EU only processing users that they are selecting a data center or package that it not EU compliant.&lt;/li&gt;
-&lt;li&gt;This change will add a checkbox on the WWW order from checkout page that allows customers to opt-in to EU localized support. For a customer that opts-in, any servers they have in an EU datacenter will only be serviced by technicians also in the EU.&lt;/li&gt;
-&lt;li&gt;Removes the VSI section from the Server Listings page (of the Control Portal).&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Update the &amp;ldquo;refreshAuthentication&amp;rdquo; method to accept the POST request with the basic authentication.&lt;/li&gt;
-&lt;li&gt;Added EU compliant field to datacenters, ORM flag and enable/disable methods for EU Support on the account. Currently in the EU AMS01, AMS03, FRA02, LON02, MIL01, OSL01, PAR01&lt;/li&gt;
-&lt;li&gt;An exception will be thrown if a customer tries to place a BYOL order for Windows on that is not for a dedicated host instance.&lt;/li&gt;
-&lt;li&gt;Fixed a bug with removeHardwareAccess not properly removing a user if their premission had been grandted with grantHardwareAccess(id=0)&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Adding EU compliance support to Ticket system&lt;/li&gt;
-&lt;li&gt;Removed all code referencing NETWORK_MESSAGE_QUEUE. The Message Queue product is now EOL.&lt;/li&gt;
-&lt;li&gt;Made changes so that the order indexes and names/slots of the hard-drives being swapped in get the same order indexes and names of the swapped-out hard drives.&lt;/li&gt;
-&lt;li&gt;Prevent accounts with BAP tier 1 support from enrolling in EU support.&lt;/li&gt;
-&lt;li&gt;Remove the use of PPTP VPN from EU flagged accounts&lt;/li&gt;
-&lt;li&gt;Prevent setting EU security level for accounts with PPTP usage&lt;/li&gt;
-&lt;li&gt;Enable Security Groups in the AMS01, SEO01, SJC01 and SJC03 data centers.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: December 04, 2017</title>
-      <link>https://softlayer.github.io/release_notes/2017/20171204/</link>
-      <pubDate>Mon, 04 Dec 2017 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2017/20171204/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fix issue where LVM was set on storage groups erroneously when editing a configuration on the order form.&lt;/li&gt;
-&lt;li&gt;Add a new order approval e-mail notification template for SAP Certified servers.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Added account validation support for combining unicode characters, such as diacritical arabic characters.&lt;/li&gt;
-&lt;li&gt;Added new check to prevent multiple partitions being set with grow flag.&lt;/li&gt;
-&lt;li&gt;Allow the customers who does not have USER_MANAGE permission to see their own login attempts.&lt;/li&gt;
-&lt;li&gt;Only master user, parent user or user itself can add API key.&lt;/li&gt;
-&lt;li&gt;Increase the permission action description column size to 256&lt;/li&gt;
-&lt;li&gt;Adds support for upgrading existing File and Block storage volumes. Volumes&amp;rsquo; size can now be increased, and volumes&amp;rsquo; IOPS can now be increased and decreased. Certain limits do apply, see Sales and Support for details. &lt;a href=&#34;https://github.com/softlayer/softlayer-python/releases/tag/v5.3.1&#34;&gt;SLCLI version 3.0.1&lt;/a&gt; supports this action.&lt;/li&gt;
-&lt;li&gt;Do not require customers to explicitly state the billing type (hourly/monthly) when upgrading a volume, as that can be inferred from the volume billing records&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fixed generic internal error message during an OS reload where the image template is missing to throw correct message.&lt;/li&gt;
-&lt;li&gt;Removed &amp;ldquo;account.companyName&amp;rdquo; mask from the hardware search, specifically only for the scenario where the user is attempting to export a CSV / excel.&lt;/li&gt;
-&lt;li&gt;Scrub Security answers for users based on security level of employee and account.&lt;/li&gt;
-&lt;li&gt;Fixed the issue that getLoadBalancerStatistics API not collecting stats from Retired appliances&lt;/li&gt;
-&lt;li&gt;Cancel image store action jobs when a provision is cancelled&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>

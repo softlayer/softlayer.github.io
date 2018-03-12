@@ -142,78 +142,57 @@ ga('send', 'pageview');
 <h2 id="find-the-dc-name">Find the DC name</h2>
 
 <p>Lets start by finding the datacenter we want to order in.</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getRegions.json?objectMask=mask\[description,keyname\]' | python -m json.tool
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getRegions.json?objectMask=mask\[description,keyname\]&#39; | python -m json.tool</pre></div>
 <p>Keep track of the KeyName of the location you want to order from.</p>
-
-<pre><code>[{&quot;description&quot;: &quot;HOU02 - Houston&quot;, &quot;keyname&quot;: &quot;HOUSTON02&quot; }]
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[{&#34;description&#34;: &#34;HOU02 - Houston&#34;, &#34;keyname&#34;: &#34;HOUSTON02&#34; }]</pre></div>
 <h2 id="find-the-correct-router-optional">Find the correct router (optional)</h2>
 
 <p>If you want the new VLAN to be behind a specific router, you need to find the ID of that router.</p>
 
 <p>To get a list of all the routers your account currently has VLANs on, you can use</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY &quot;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getRouters?objectMask=mask\[hostname,id\]&quot; | python -m json.tool
-</code></pre>
-
-<pre><code>[{ &quot;hostname&quot;: &quot;bcr02a.hou02&quot;, &quot;id&quot;: 112661 },]
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#34;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getRouters?objectMask=mask\[hostname,id\]&#34; | python -m json.tool</pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">[{ &#34;hostname&#34;: &#34;bcr02a.hou02&#34;, &#34;id&#34;: 112661 },]</pre></div>
 <p>If you have a Vyatta or other device you want this VLAN to be accessible to, you can find the Vyattas router and just use that.</p>
 
 <p>This will list all Gateway devices and their routers</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY &quot;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getNetworkGateways?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&quot; | python -m json.tool
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#34;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getNetworkGateways?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&#34; | python -m json.tool</pre></div>
 <p>This will list a specific gateway device and its routers</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY &quot;https://api.softlayer.com/rest/v3.1/SoftLayer_Network_Gateway/172123/getObject?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&quot; | python -m json.tool
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#34;https://api.softlayer.com/rest/v3.1/SoftLayer_Network_Gateway/172123/getObject?objectMask=mask\[members\[hardware\[backendRouters\[hostname,id\],frontendRouters\[hostname,id\]\]\]\]&#34; | python -m json.tool</pre></div>
 <p>Which will output something like this. For Public VLANs, you will want the ID of the frontend router, for Private, the backend router. If there are 2 routers, use the id from the router labeled A</p>
-
-<pre><code class="language-json">{
-    &quot;id&quot;: 172123,
-    &quot;name&quot;: &quot;houstonvpndemo&quot;,
-    &quot;members&quot;: [
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">172123</span>,
+    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;houstonvpndemo&#34;</span>,
+    <span style="color:#f92672">&#34;members&#34;</span>: [
         {
-            &quot;hardwareId&quot;: 149607,
-            &quot;id&quot;: 201323,
-            &quot;networkGatewayId&quot;: 172123,
-            &quot;hardware&quot;: {
-                &quot;fullyQualifiedDomainName&quot;: &quot;houstonvpndemo.example.com&quot;,
-                &quot;id&quot;: 149607,
-                &quot;backendRouters&quot;: [
+            <span style="color:#f92672">&#34;hardwareId&#34;</span>: <span style="color:#ae81ff">149607</span>,
+            <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">201323</span>,
+            <span style="color:#f92672">&#34;networkGatewayId&#34;</span>: <span style="color:#ae81ff">172123</span>,
+            <span style="color:#f92672">&#34;hardware&#34;</span>: {
+                <span style="color:#f92672">&#34;fullyQualifiedDomainName&#34;</span>: <span style="color:#e6db74">&#34;houstonvpndemo.example.com&#34;</span>,
+                <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">149607</span>,
+                <span style="color:#f92672">&#34;backendRouters&#34;</span>: [
                     {
-                        &quot;hostname&quot;: &quot;bcr02a.hou02&quot;,
-                        &quot;id&quot;: 112661
+                        <span style="color:#f92672">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;bcr02a.hou02&#34;</span>,
+                        <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">112661</span>
                     },
                     {
-                        &quot;hostname&quot;: &quot;bcr02b.hou02&quot;,
-                        &quot;id&quot;: 112660
+                        <span style="color:#f92672">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;bcr02b.hou02&#34;</span>,
+                        <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">112660</span>
                     }
                 ],
-                &quot;frontendRouters&quot;: [
+                <span style="color:#f92672">&#34;frontendRouters&#34;</span>: [
                     {
-                        &quot;hostname&quot;: &quot;fcr02a.hou02&quot;,
-                        &quot;id&quot;: 112561
+                        <span style="color:#f92672">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;fcr02a.hou02&#34;</span>,
+                        <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">112561</span>
                     },
                     {
-                        &quot;hostname&quot;: &quot;fcr02b.hou02&quot;,
-                        &quot;id&quot;: 112560
+                        <span style="color:#f92672">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;fcr02b.hou02&#34;</span>,
+                        <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">112560</span>
                     }
                 ]
             }
         }
         ]
-    }
-</code></pre>
-
+    }</code></pre></div>
 <p>For this example, we are going to use &ldquo;fcr02a.hou02&rdquo;, or id=112561</p>
 
 <h2 id="find-the-price-ids">Find the price IDs</h2>
@@ -223,77 +202,62 @@ ga('send', 'pageview');
 <h4 id="find-the-package">Find the package</h4>
 
 <p>This will get all packages that are NOT bluemix services.</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;objectFilter=\{&quot;type&quot;:\{&quot;keyName&quot;:\{&quot;operation&quot;:&quot;!=BLUEMIX_SERVICE&quot;\}\}\}'
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;objectFilter=\{&#34;type&#34;:\{&#34;keyName&#34;:\{&#34;operation&#34;:&#34;!=BLUEMIX_SERVICE&#34;\}\}\}&#39;</pre></div>
 <p>One of the results is going to be NETWORK_VLAN, which is what we want.</p>
-
-<pre><code class="language-json">{
-    &quot;id&quot;: 571,
-    &quot;isActive&quot;: 1,
-    &quot;keyName&quot;: &quot;NETWORK_VLAN&quot;,
-    &quot;name&quot;: &quot;Network VLAN&quot;,
-    &quot;type&quot;: {
-        &quot;id&quot;: 495,
-        &quot;keyName&quot;: &quot;ADDITIONAL_SERVICES_NETWORK_VLAN&quot;,
-        &quot;name&quot;: &quot;Network VLAN&quot;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">571</span>,
+    <span style="color:#f92672">&#34;isActive&#34;</span>: <span style="color:#ae81ff">1</span>,
+    <span style="color:#f92672">&#34;keyName&#34;</span>: <span style="color:#e6db74">&#34;NETWORK_VLAN&#34;</span>,
+    <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Network VLAN&#34;</span>,
+    <span style="color:#f92672">&#34;type&#34;</span>: {
+        <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">495</span>,
+        <span style="color:#f92672">&#34;keyName&#34;</span>: <span style="color:#e6db74">&#34;ADDITIONAL_SERVICES_NETWORK_VLAN&#34;</span>,
+        <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Network VLAN&#34;</span>
     }
-}
-</code></pre>
-
+}</code></pre></div>
 <p>Since packages ids can change, it is a good idea to look these up in the future based on their keyName. <em>This object filter starts at keyName, the one above starts at type</em></p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;objectFilter=\{&quot;keyName&quot;:\{&quot;operation&quot;:&quot;NETWORK_VLAN&quot;\}\}'
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/getAllObjects.json?objectMask=mask\[id,name,keyName,isActive,type\]&amp;objectFilter=\{&#34;keyName&#34;:\{&#34;operation&#34;:&#34;NETWORK_VLAN&#34;\}\}&#39;</pre></div>
 <h4 id="find-the-price-ids-1">Find the price ids</h4>
 
 <p>From the above example, we know we need to get the items from package 571</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getItems.json?objectMask=mask\[id,keyName,itemCategory,prices\[id,locationGroupId\]\]' | python -m json.tool
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/571/getItems.json?objectMask=mask\[id,keyName,itemCategory,prices\[id,locationGroupId\]\]&#39; | python -m json.tool</pre></div>
 <p>The result should be similar to this. If a price has multiple ids, use the one iwth a locationGroupId = null</p>
-
-<pre><code class="language-json">[
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">[
     {
-        &quot;id&quot;:1072, 
-        &quot;keyName&quot;:&quot;PRIVATE_NETWORK_VLAN&quot;
-        &quot;itemCategory&quot;: {
-            &quot;categoryCode&quot;: &quot;network_vlan&quot;,
-            &quot;id&quot;: 113,
-            &quot;name&quot;: &quot;Network Vlan&quot;,
-            &quot;quantityLimit&quot;: 0,
-            &quot;sortOrder&quot;: null
+        <span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#ae81ff">1072</span>, 
+        <span style="color:#f92672">&#34;keyName&#34;</span>:<span style="color:#e6db74">&#34;PRIVATE_NETWORK_VLAN&#34;</span>
+        <span style="color:#e6db74">&#34;itemCategory&#34;</span>: {
+            <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;network_vlan&#34;</span>,
+            <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">113</span>,
+            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Network Vlan&#34;</span>,
+            <span style="color:#f92672">&#34;quantityLimit&#34;</span>: <span style="color:#ae81ff">0</span>,
+            <span style="color:#f92672">&#34;sortOrder&#34;</span>: <span style="color:#66d9ef">null</span>
         }
-        &quot;prices&quot;: [
+        <span style="color:#e6db74">&#34;prices&#34;</span>: [
             {
-                &quot;id&quot;: 2019,
-                &quot;locationGroupId&quot;: null
+                <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">2019</span>,
+                <span style="color:#f92672">&#34;locationGroupId&#34;</span>: <span style="color:#66d9ef">null</span>
             }
         ]
     },
     {
-        &quot;id&quot;:583, 
-        &quot;keyName&quot;:&quot;8_STATIC_PUBLIC_IP_ADDRESSES&quot;
-        &quot;itemCategory&quot;: {
-            &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-            &quot;id&quot;: 53,
-            &quot;name&quot;: &quot;Public Secondary Static IP Addresses&quot;,
-            &quot;quantityLimit&quot;: 0,
-            &quot;sortOrder&quot;: 35
+        <span style="color:#f92672">&#34;id&#34;</span>:<span style="color:#ae81ff">583</span>, 
+        <span style="color:#f92672">&#34;keyName&#34;</span>:<span style="color:#e6db74">&#34;8_STATIC_PUBLIC_IP_ADDRESSES&#34;</span>
+        <span style="color:#e6db74">&#34;itemCategory&#34;</span>: {
+            <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+            <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">53</span>,
+            <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Public Secondary Static IP Addresses&#34;</span>,
+            <span style="color:#f92672">&#34;quantityLimit&#34;</span>: <span style="color:#ae81ff">0</span>,
+            <span style="color:#f92672">&#34;sortOrder&#34;</span>: <span style="color:#ae81ff">35</span>
         }
-        &quot;prices&quot;: [
+        <span style="color:#e6db74">&#34;prices&#34;</span>: [
             {
-                &quot;id&quot;: 36696,
-                &quot;locationGroupId&quot;: null
+                <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">36696</span>,
+                <span style="color:#f92672">&#34;locationGroupId&#34;</span>: <span style="color:#66d9ef">null</span>
             }
         ]
     }
-]
-</code></pre>
-
+]</code></pre></div>
 <h4 id="answer-the-ip-useage-questions">Answer the IP useage questions</h4>
 
 <p><a href="https://softlayer.github.io/reference/services/SoftLayer_Product_Item_Category/getQuestions/">getQuestions</a></p>
@@ -301,10 +265,7 @@ ga('send', 'pageview');
 <p>When ordering a new subnet of IP space, a few questions need to be answered for our records.</p>
 
 <p>ID 53 is from the above item category id.</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Item_Category/53/getQuestions.json' | python -m json.tool
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Item_Category/53/getQuestions.json&#39; | python -m json.tool</pre></div>
 <p>That will return a long list of questions you need to answer, which we will have to add when we make our order.</p>
 
 <h2 id="placeing-the-order">Placeing the order</h2>
@@ -312,96 +273,84 @@ ga('send', 'pageview');
 <p>Now that we have all the required information, we can build an order object.</p>
 
 <h4 id="order-json">order.json</h4>
-
-<pre><code class="language-json">{
-  &quot;parameters&quot;: [
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;parameters&#34;</span>: [
     {
-      &quot;location&quot;: &quot;HOUSTON02&quot;,
-      &quot;routerId&quot;: 112661,
-      &quot;packageId&quot;: 571,
-      &quot;prices&quot;: [
+      <span style="color:#f92672">&#34;location&#34;</span>: <span style="color:#e6db74">&#34;HOUSTON02&#34;</span>,
+      <span style="color:#f92672">&#34;routerId&#34;</span>: <span style="color:#ae81ff">112661</span>,
+      <span style="color:#f92672">&#34;packageId&#34;</span>: <span style="color:#ae81ff">571</span>,
+      <span style="color:#f92672">&#34;prices&#34;</span>: [
         {
-          &quot;id&quot;: 2019 
+          <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">2019</span> 
         },
         {
-          &quot;id&quot;: 36696 
+          <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">36696</span> 
         }
       ],
-      &quot;quantity&quot;: 1,
-      &quot;name&quot;: &quot;myNewVlan&quot;,
-      &quot;complexType&quot;: &quot;SoftLayer_Container_Product_Order_Network_Vlan&quot;,
-      &quot;itemCategoryQuestionAnswers&quot;: [
+      <span style="color:#f92672">&#34;quantity&#34;</span>: <span style="color:#ae81ff">1</span>,
+      <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;myNewVlan&#34;</span>,
+      <span style="color:#f92672">&#34;complexType&#34;</span>: <span style="color:#e6db74">&#34;SoftLayer_Container_Product_Order_Network_Vlan&#34;</span>,
+      <span style="color:#f92672">&#34;itemCategoryQuestionAnswers&#34;</span>: [
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 14,
-          &quot;answer&quot;: 4 
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">14</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#ae81ff">4</span> 
         },
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 15,
-          &quot;answer&quot;: 8 
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">15</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#ae81ff">8</span> 
         },
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 16,
-          &quot;answer&quot;: &quot;For more machines&quot;
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">16</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#e6db74">&#34;For more machines&#34;</span>
         },
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 9,
-          &quot;answer&quot;: &quot;Chris&quot;
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">9</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#e6db74">&#34;Chris&#34;</span>
         },
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 10,
-          &quot;answer&quot;: &quot;Developer&quot;
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">10</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#e6db74">&#34;Developer&#34;</span>
         },
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 11,
-          &quot;answer&quot;: &quot;chris@company.com&quot;
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">11</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#e6db74">&#34;chris@company.com&#34;</span>
         },
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 12,
-          &quot;answer&quot;: &quot;1234567890&quot;  
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">12</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#e6db74">&#34;1234567890&#34;</span>  
         },
         {
-          &quot;categoryId&quot;: 53,
-          &quot;categoryCode&quot;: &quot;static_sec_ip_addresses&quot;,
-          &quot;questionId&quot;: 13,
-          &quot;answer&quot;: true  
+          <span style="color:#f92672">&#34;categoryId&#34;</span>: <span style="color:#ae81ff">53</span>,
+          <span style="color:#f92672">&#34;categoryCode&#34;</span>: <span style="color:#e6db74">&#34;static_sec_ip_addresses&#34;</span>,
+          <span style="color:#f92672">&#34;questionId&#34;</span>: <span style="color:#ae81ff">13</span>,
+          <span style="color:#f92672">&#34;answer&#34;</span>: <span style="color:#66d9ef">true</span>  
         }
       ]
     }
   ]
-}
-</code></pre>
-
+}</code></pre></div>
 <p>After you create your order container file, then we should use <a href="https://softlayer.github.io/reference/services/SoftLayer_Product_Order/verifyOrder/">verifyOrder</a> to make sure our data is ok.</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY  --data @order.json  'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/verifyOrder'
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY  --data @order.json  &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/verifyOrder&#39;</pre></div>
 <p>If you get back a json object, then it should be ok to order.</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY -X POST  --data @order.json  'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/placeOrder'
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY -X POST  --data @order.json  &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/placeOrder&#39;</pre></div>
 <p>If successful, you should get a large json object as a reciept when done. This will have your orderId on it, so you can look it up if needed.</p>
 
 <p>My order id was 23530337, so I will use the <a href="https://softlayer.github.io/reference/services/SoftLayer_Billing_Order/getObject/">SoftLayer_Billing_Order</a> setvice to view it.</p>
-
-<pre><code>curl -u $SL_USER:$SL_APIKEY  'https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order/23530337/getObject'
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY  &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order/23530337/getObject&#39;</pre></div>
             </div>
         </div>
 

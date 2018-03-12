@@ -136,67 +136,63 @@ ga('send', 'pageview');
                 <p>Attaching a currently detached portable block device to a given guest. The disk image will need to be migrated to the host the guest is on, so make sure to check if that host has enough disk space (with checkHostDiskAvailability) before attaching. This is only required for guests with local storage guests. SAN based guests don&rsquo;t need that step.</p>
 
 <p>Running this on a disk that is already attached will move the disk to the new guest.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
 
-<pre><code class="language-python">import SoftLayer
-from pprint import pprint as pp
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
 
-class example():
+    <span style="color:#66d9ef">def</span> __init__(self):
 
-    def __init__(self):
+        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
 
-        self.client = SoftLayer.Client()
-
-    def main(self, image_id, guest_id):
-        my_image = self.getMyImage(image_id)
-        size = my_image.get(&quot;capacity&quot;, 100)
-        &quot;&quot;&quot;
-        SAN based guests will throw the following exception:
-        SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Public): This guest is SAN-based, and does not require host migration for disk attachment.
-        &quot;&quot;&quot;
-        available = self.client['SoftLayer_Virtual_Guest'].checkHostDiskAvailability(size,id=guest_id)
-        # This should be True. False means the host doesn't have enough disk space to attach
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(self, image_id, guest_id):
+        my_image <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>getMyImage(image_id)
+        size <span style="color:#f92672">=</span> my_image<span style="color:#f92672">.</span>get(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;capacity&#34;</span>, <span style="color:#ae81ff">100</span>)
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        SAN based guests will throw the following exception:
+</span><span style="color:#e6db74">        SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Public): This guest is SAN-based, and does not require host migration for disk attachment.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        available <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Virtual_Guest&#39;</span>]<span style="color:#f92672">.</span>checkHostDiskAvailability(size,id<span style="color:#f92672">=</span>guest_id)
+        <span style="color:#75715e"># This should be True. False means the host doesn&#39;t have enough disk space to attach</span>
         pp(available)
 
-        attach = self.client['SoftLayer_Virtual_Guest'].attachDiskImage(image_id, id=guest_id)
-        print(&quot;Attaching storage&quot;)
+        attach <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Virtual_Guest&#39;</span>]<span style="color:#f92672">.</span>attachDiskImage(image_id, id<span style="color:#f92672">=</span>guest_id)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Attaching storage&#34;</span>)
         pp(attach)
 
-    def getImages(self):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getImages</span>(self):
 
-        mask = &quot;mask[type,blockDevices[guest]]&quot;
-        images = self.client['SoftLayer_Account'].getPortableStorageVolumes(mask=mask)
+        mask <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[type,blockDevices[guest]]&#34;</span>
+        images <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getPortableStorageVolumes(mask<span style="color:#f92672">=</span>mask)
 
-        for image in images:
-            desc = image.get('description', &quot;---&quot;)
-            capacity = image.get('capacity', &quot;0&quot;)
-            print(&quot;%s - %s (%s) - %s &quot; % 
-                (image['id'], image['type']['keyName'], capacity ,desc)
+        <span style="color:#66d9ef">for</span> image <span style="color:#f92672">in</span> images:
+            desc <span style="color:#f92672">=</span> image<span style="color:#f92672">.</span>get(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;---&#34;</span>)
+            capacity <span style="color:#f92672">=</span> image<span style="color:#f92672">.</span>get(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;capacity&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;0&#34;</span>)
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> (</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">) - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> &#34;</span> <span style="color:#f92672">%</span> 
+                (image[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>], image[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;type&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;keyName&#39;</span>], capacity ,desc)
             )
-            for disk in image['blockDevices']:
-                try:
-                    hostname = disk['guest']['fullyQualifiedDomainName']
-                except KeyError:
-                    hostname = &quot;None&quot;
-                print(&quot;\t%s&quot; % hostname)
+            <span style="color:#66d9ef">for</span> disk <span style="color:#f92672">in</span> image[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;blockDevices&#39;</span>]:
+                <span style="color:#66d9ef">try</span>:
+                    hostname <span style="color:#f92672">=</span> disk[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;guest&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;fullyQualifiedDomainName&#39;</span>]
+                <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyError</span>:
+                    hostname <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;None&#34;</span>
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> hostname)
 
-    def getMyImage(self,imageId):
-        mask = &quot;mask[blockDevices[guest],sourceDiskImage,type]&quot;
-        image = self.client['SoftLayer_Virtual_Disk_Image'].getObject(mask=mask,id=imageId)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getMyImage</span>(self,imageId):
+        mask <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[blockDevices[guest],sourceDiskImage,type]&#34;</span>
+        image <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Virtual_Disk_Image&#39;</span>]<span style="color:#f92672">.</span>getObject(mask<span style="color:#f92672">=</span>mask,id<span style="color:#f92672">=</span>imageId)
         pp(image)
-        return image
+        <span style="color:#66d9ef">return</span> image
 
 
-if __name__ == &quot;__main__&quot;:
-    image_id = 12345
-    guest_id = 67890
-    main = example()
-    main.getImages()
-    main.main(image_id, guest_id)
-    # The new guest will only show up on the image once the migration transaction is completed
-    main.getMyImage(image_id)
-
-</code></pre>
-
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    image_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">12345</span>
+    guest_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">67890</span>
+    main <span style="color:#f92672">=</span> example()
+    main<span style="color:#f92672">.</span>getImages()
+    main<span style="color:#f92672">.</span>main(image_id, guest_id)
+    <span style="color:#75715e"># The new guest will only show up on the image once the migration transaction is completed</span>
+    main<span style="color:#f92672">.</span>getMyImage(image_id)</code></pre></div>
             </div>
         </div>
 

@@ -132,54 +132,52 @@ ga('send', 'pageview');
                 
 				
                 <p>With the introduction to Location-based Pricing, we updated our pricing model to represent the costs in each data center more clearly. Instead of adding premiums to a base server price, we have priced servers and services in each data center with their own location-based <a href="http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price">SoftLayer_Product_Item_Price</a> objects via the API. In the following example we will query for the Dallas 6 data center, and then filter our item (Local Load Balancer) and prices to include only the location-based pricing for the specific data center we&rsquo;re in —or we can filter for the standard price if a location-based price doesn&rsquo;t exist.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">import</span> json
 
-<pre><code class="language-python">
-import SoftLayer
-import json
+package_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">194</span>
+datacenter <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;dal06&#39;</span>
 
-package_id = 194
-datacenter = 'dal06'
+client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
 
-client = SoftLayer.Client()
-
-location_object_filter = {
-    'name': {'operation': datacenter}
+location_object_filter <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: datacenter}
 }
 
-location_object_mask = &quot;priceGroups&quot;
+location_object_mask <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;priceGroups&#34;</span>
 
-location = client[&quot;SoftLayer_Location_Datacenter&quot;].getDatacenters(filter=location_object_filter, mask=location_object_mask)
+location <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Location_Datacenter&#34;</span>]<span style="color:#f92672">.</span>getDatacenters(filter<span style="color:#f92672">=</span>location_object_filter, mask<span style="color:#f92672">=</span>location_object_mask)
 
-if len(location) == 0:
-    # error handling
+<span style="color:#66d9ef">if</span> len(location) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+    <span style="color:#75715e"># error handling</span>
     exit()
 
-# lookup location group ids
-location_group_ids = []
-for location_group in location[0][&quot;priceGroups&quot;]:
-    location_group_ids.append(location_group[&quot;id&quot;])
+<span style="color:#75715e"># lookup location group ids</span>
+location_group_ids <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> location_group <span style="color:#f92672">in</span> location[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;priceGroups&#34;</span>]:
+    location_group_ids<span style="color:#f92672">.</span>append(location_group[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>])
 
-object_filter_standard = {
-    'items': {
-        &quot;prices&quot;: {
-            &quot;locationGroupId&quot;: {
-                &quot;operation&quot;: &quot;is null&quot;
+object_filter_standard <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;items&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;prices&#34;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;locationGroupId&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;is null&#34;</span>
             }
         }
     }
 }
 
-standard_items = client[&quot;SoftLayer_Product_Package&quot;].getItems(id=package_id, filter=object_filter_standard)
+standard_items <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Product_Package&#34;</span>]<span style="color:#f92672">.</span>getItems(id<span style="color:#f92672">=</span>package_id, filter<span style="color:#f92672">=</span>object_filter_standard)
 
-object_filter_location = {
-    'items': {
-        &quot;prices&quot;: {
-            &quot;locationGroupId&quot;: {
-                &quot;operation&quot;: &quot;in&quot;,
-                &quot;options&quot;: [
+object_filter_location <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;items&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;prices&#34;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;locationGroupId&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;in&#34;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;options&#34;</span>: [
                     {
-                        &quot;name&quot;: &quot;data&quot;,
-                        &quot;value&quot;: location_group_ids
+                        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;data&#34;</span>,
+                        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;value&#34;</span>: location_group_ids
                     }
                 ]
             }
@@ -187,26 +185,22 @@ object_filter_location = {
     }
 }
 
-location_items = client[&quot;SoftLayer_Product_Package&quot;].getItems(id=package_id, filter=object_filter_location)
+location_items <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Product_Package&#34;</span>]<span style="color:#f92672">.</span>getItems(id<span style="color:#f92672">=</span>package_id, filter<span style="color:#f92672">=</span>object_filter_location)
 
-# let's key by item id
-items = {}
+<span style="color:#75715e"># let&#39;s key by item id</span>
+items <span style="color:#f92672">=</span> {}
 
-for standard_item in standard_items:
-    for location_item in location_items:
-        if location_item[&quot;id&quot;] == standard_item[&quot;id&quot;]:
-            items[location_item[&quot;id&quot;]] = location_item
-            break
+<span style="color:#66d9ef">for</span> standard_item <span style="color:#f92672">in</span> standard_items:
+    <span style="color:#66d9ef">for</span> location_item <span style="color:#f92672">in</span> location_items:
+        <span style="color:#66d9ef">if</span> location_item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>] <span style="color:#f92672">==</span> standard_item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>]:
+            items[location_item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>]] <span style="color:#f92672">=</span> location_item
+            <span style="color:#66d9ef">break</span>
 
-    if standard_item[&quot;id&quot;] not in items:
-        items[standard_item[&quot;id&quot;]] = standard_item
-
-
-print(json.dumps(items, sort_keys=True, indent=2, separators=(',', ': ')))
+    <span style="color:#66d9ef">if</span> standard_item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>] <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> items:
+        items[standard_item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>]] <span style="color:#f92672">=</span> standard_item
 
 
-</code></pre>
-
+<span style="color:#66d9ef">print</span>(json<span style="color:#f92672">.</span>dumps(items, sort_keys<span style="color:#f92672">=</span>True, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>, separators<span style="color:#f92672">=</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;,&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;: &#39;</span>)))</code></pre></div>
             </div>
         </div>
 

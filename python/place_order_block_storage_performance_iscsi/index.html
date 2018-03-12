@@ -131,144 +131,141 @@ ga('send', 'pageview');
 				
                 
 				
-                <pre><code class="language-python">&quot;&quot;&quot;
-Order a block storage (performance ISCSI).
+                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">Order a block storage (performance ISCSI).
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">Important manual pages:
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItems
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Location
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Location/getDatacenters
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_Iscsi_OS_Type
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_Iscsi_OS_Type/getAllObjects
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Location
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_Enterprise
+</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+</span><span style="color:#e6db74">http://sldn.softlayer.com/blog/cmporter/Location-based-Pricing-and-You
+</span><span style="color:#e6db74">http://sldn.softlayer.com/blog/bpotter/Going-Further-SoftLayer-API-Python-Client-Part-3
+</span><span style="color:#e6db74">http://sldn.softlayer.com/article/Object-Filters
+</span><span style="color:#e6db74">http://sldn.softlayer.com/article/Python
+</span><span style="color:#e6db74">http://sldn.softlayer.com/article/Object-Masks
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">License: http://sldn.softlayer.com/article/License
+</span><span style="color:#e6db74">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
 
-Important manual pages:
-http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
-http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package
-http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItems
-http://sldn.softlayer.com/reference/services/SoftLayer_Location
-http://sldn.softlayer.com/reference/services/SoftLayer_Location/getDatacenters
-http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_Iscsi_OS_Type
-http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage_Iscsi_OS_Type/getAllObjects
-http://sldn.softlayer.com/reference/datatypes/SoftLayer_Location
-http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_Enterprise
-http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-http://sldn.softlayer.com/blog/cmporter/Location-based-Pricing-and-You
-http://sldn.softlayer.com/blog/bpotter/Going-Further-SoftLayer-API-Python-Client-Part-3
-http://sldn.softlayer.com/article/Object-Filters
-http://sldn.softlayer.com/article/Python
-http://sldn.softlayer.com/article/Object-Masks
+<span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">import</span> json
 
-License: http://sldn.softlayer.com/article/License
-Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-&quot;&quot;&quot;
+<span style="color:#75715e"># Values &#34;AMS01&#34;, &#34;AMS03&#34;, &#34;CHE01&#34;, &#34;DAL05&#34;, &#34;DAL06&#34; &#34;FRA02&#34;, &#34;HKG02&#34;, &#34;LON02&#34;, etc.</span>
+location <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;AMS01&#34;</span>
 
-import SoftLayer
-import json
+<span style="color:#75715e"># Values &#34;20&#34;, &#34;40&#34;, &#34;80&#34;, &#34;100&#34;, etc.</span>
+storageSize <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;40&#34;</span>
 
-# Values &quot;AMS01&quot;, &quot;AMS03&quot;, &quot;CHE01&quot;, &quot;DAL05&quot;, &quot;DAL06&quot; &quot;FRA02&quot;, &quot;HKG02&quot;, &quot;LON02&quot;, etc.
-location = &quot;AMS01&quot;
+<span style="color:#75715e"># Values between &#34;100&#34; and &#34;6000&#34; by intervals of 100.</span>
+iops <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;100&#34;</span>
 
-# Values &quot;20&quot;, &quot;40&quot;, &quot;80&quot;, &quot;100&quot;, etc.
-storageSize = &quot;40&quot;
+<span style="color:#75715e"># Values &#34;Hyper-V&#34;, &#34;Linux&#34;, &#34;VMWare&#34;, &#34;Windows 2008+&#34;, &#34;Windows GPT&#34;, &#34;Windows 2003&#34;, &#34;Xen&#34;</span>
+os <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Linux&#34;</span>
 
-# Values between &quot;100&quot; and &quot;6000&quot; by intervals of 100.
-iops = &quot;100&quot;
+PACKAGE_ID <span style="color:#f92672">=</span> <span style="color:#ae81ff">222</span>
 
-# Values &quot;Hyper-V&quot;, &quot;Linux&quot;, &quot;VMWare&quot;, &quot;Windows 2008+&quot;, &quot;Windows GPT&quot;, &quot;Windows 2003&quot;, &quot;Xen&quot;
-os = &quot;Linux&quot;
+client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+productOrderService <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Product_Order&#39;</span>]
+packageService <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Product_Package&#39;</span>]
+locationService <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Location&#39;</span>]
+osService <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Network_Storage_Iscsi_OS_Type&#39;</span>]
 
-PACKAGE_ID = 222
+objectFilterDatacenter <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: location<span style="color:#f92672">.</span>lower()}}
+objectFilterStorageNfs <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;items&#34;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;categories&#34;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;categoryCode&#34;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;performance_storage_iscsi&#34;</span>}}}}
+objectFilterOsType <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: os}}
 
-client = SoftLayer.Client()
-productOrderService = client['SoftLayer_Product_Order']
-packageService = client['SoftLayer_Product_Package']
-locationService = client['SoftLayer_Location']
-osService = client['SoftLayer_Network_Storage_Iscsi_OS_Type']
-
-objectFilterDatacenter = {&quot;name&quot;: {&quot;operation&quot;: location.lower()}}
-objectFilterStorageNfs = {&quot;items&quot;: {&quot;categories&quot;: {&quot;categoryCode&quot;: {&quot;operation&quot;: &quot;performance_storage_iscsi&quot;}}}}
-objectFilterOsType = {&quot;name&quot;: {&quot;operation&quot;: os}}
-
-try:
-    # Getting the datacenter.
-    datacenter = locationService.getDatacenters(filter=objectFilterDatacenter)
-    # Getting the performance storage NFS prices.
-    itemsStorageNfs = packageService.getItems(id=PACKAGE_ID, filter=objectFilterStorageNfs)
-    # Getting the storage space prices
-    objectFilter = {
-        &quot;itemPrices&quot;: {
-            &quot;item&quot;: {
-                &quot;capacity&quot;: {
-                    &quot;operation&quot;: storageSize
+<span style="color:#66d9ef">try</span>:
+    <span style="color:#75715e"># Getting the datacenter.</span>
+    datacenter <span style="color:#f92672">=</span> locationService<span style="color:#f92672">.</span>getDatacenters(filter<span style="color:#f92672">=</span>objectFilterDatacenter)
+    <span style="color:#75715e"># Getting the performance storage NFS prices.</span>
+    itemsStorageNfs <span style="color:#f92672">=</span> packageService<span style="color:#f92672">.</span>getItems(id<span style="color:#f92672">=</span>PACKAGE_ID, filter<span style="color:#f92672">=</span>objectFilterStorageNfs)
+    <span style="color:#75715e"># Getting the storage space prices</span>
+    objectFilter <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;itemPrices&#34;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;item&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;capacity&#34;</span>: {
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: storageSize
                 }
             },
-            &quot;categories&quot;: {
-                &quot;categoryCode&quot;: {
-                    &quot;operation&quot;: &quot;performance_storage_space&quot;
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;categories&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;categoryCode&#34;</span>: {
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;performance_storage_space&#34;</span>
                 }
             },
-            &quot;locationGroupId&quot;: {
-                &quot;operation&quot;: &quot;is null&quot;
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;locationGroupId&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;is null&#34;</span>
             }
         }
     }
-    pricesStorageSpace = packageService.getItemPrices(id=PACKAGE_ID, filter=objectFilter)
-    # If the prices list is empty that means that the storage space value is invalid.
-    if len(pricesStorageSpace) == 0:
-        raise ValueError('The storage space value: ' + storageSize + ' GB, is not valid.')
-    # Getting the IOPS prices
-    objectFilter = {
-        &quot;itemPrices&quot;: {
-            &quot;item&quot;: {
-                &quot;capacity&quot;: {
-                    &quot;operation&quot;: iops
+    pricesStorageSpace <span style="color:#f92672">=</span> packageService<span style="color:#f92672">.</span>getItemPrices(id<span style="color:#f92672">=</span>PACKAGE_ID, filter<span style="color:#f92672">=</span>objectFilter)
+    <span style="color:#75715e"># If the prices list is empty that means that the storage space value is invalid.</span>
+    <span style="color:#66d9ef">if</span> len(pricesStorageSpace) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">ValueError</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;The storage space value: &#39;</span> <span style="color:#f92672">+</span> storageSize <span style="color:#f92672">+</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39; GB, is not valid.&#39;</span>)
+    <span style="color:#75715e"># Getting the IOPS prices</span>
+    objectFilter <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;itemPrices&#34;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;item&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;capacity&#34;</span>: {
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: iops
                 }
             },
-            &quot;attributes&quot;: {
-                &quot;value&quot;: {
-                    &quot;operation&quot;: storageSize
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;attributes&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;value&#34;</span>: {
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: storageSize
                 }
             },
-            &quot;categories&quot;: {
-                &quot;categoryCode&quot;: {
-                    &quot;operation&quot;: &quot;performance_storage_iops&quot;
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;categories&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;categoryCode&#34;</span>: {
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;performance_storage_iops&#34;</span>
                 }
             },
-            &quot;locationGroupId&quot;: {
-                &quot;operation&quot;: &quot;is null&quot;
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;locationGroupId&#34;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;is null&#34;</span>
             }
         }
     }
-    pricesIops = packageService.getItemPrices(id=PACKAGE_ID, filter=objectFilter)
-    # If the prices list is empty that means that the IOPS value is invalid for the configured storage space.
-    if len(pricesIops) == 0:
-        raise ValueError('The IOPS value: ' + iops + ', is not valid for the storage space: ' + storageSize + ' GB.')
-    # Getting the OS.
-    os = osService.getAllObjects(filter=objectFilterOsType)
-    # Building the order template.
-    orderData = {
-        &quot;complexType&quot;: &quot;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&quot;,
-        &quot;packageId&quot;: PACKAGE_ID,
-        &quot;location&quot;: datacenter[0]['id'],
-        &quot;quantity&quot;: 1,
-        &quot;prices&quot;: [
+    pricesIops <span style="color:#f92672">=</span> packageService<span style="color:#f92672">.</span>getItemPrices(id<span style="color:#f92672">=</span>PACKAGE_ID, filter<span style="color:#f92672">=</span>objectFilter)
+    <span style="color:#75715e"># If the prices list is empty that means that the IOPS value is invalid for the configured storage space.</span>
+    <span style="color:#66d9ef">if</span> len(pricesIops) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">ValueError</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;The IOPS value: &#39;</span> <span style="color:#f92672">+</span> iops <span style="color:#f92672">+</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;, is not valid for the storage space: &#39;</span> <span style="color:#f92672">+</span> storageSize <span style="color:#f92672">+</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39; GB.&#39;</span>)
+    <span style="color:#75715e"># Getting the OS.</span>
+    os <span style="color:#f92672">=</span> osService<span style="color:#f92672">.</span>getAllObjects(filter<span style="color:#f92672">=</span>objectFilterOsType)
+    <span style="color:#75715e"># Building the order template.</span>
+    orderData <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;complexType&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&#34;</span>,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;packageId&#34;</span>: PACKAGE_ID,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;location&#34;</span>: datacenter[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>],
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;quantity&#34;</span>: <span style="color:#ae81ff">1</span>,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;prices&#34;</span>: [
             {
-                &quot;id&quot;: itemsStorageNfs[0]['prices'][0]['id']
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>: itemsStorageNfs[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;prices&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
             },
             {
-                &quot;id&quot;: pricesStorageSpace[0]['id']
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>: pricesStorageSpace[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
             },
             {
-                &quot;id&quot;: pricesIops[0]['id']
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>: pricesIops[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
             }
         ],
-        &quot;osFormatType&quot;: os[0]
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;osFormatType&#34;</span>: os[<span style="color:#ae81ff">0</span>]
     }
-    # verifyOrder() will check your order for errors. Replace this with a call to
-    # placeOrder() when you're ready to order. Both calls return a receipt object
-    # that you can use for your records.
-    response = productOrderService.verifyOrder(orderData)
-    print(json.dumps(response, sort_keys=True, indent=2, separators=(',', ': ')))
-except SoftLayer.SoftLayerAPIError as e:
-    print(&quot;Unable to place the order. faultCode=%s, faultString=%s&quot; % (e.faultCode, e.faultString))
-
-</code></pre>
-
+    <span style="color:#75715e"># verifyOrder() will check your order for errors. Replace this with a call to</span>
+    <span style="color:#75715e"># placeOrder() when you&#39;re ready to order. Both calls return a receipt object</span>
+    <span style="color:#75715e"># that you can use for your records.</span>
+    response <span style="color:#f92672">=</span> productOrderService<span style="color:#f92672">.</span>verifyOrder(orderData)
+    <span style="color:#66d9ef">print</span>(json<span style="color:#f92672">.</span>dumps(response, sort_keys<span style="color:#f92672">=</span>True, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>, separators<span style="color:#f92672">=</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;,&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;: &#39;</span>)))
+<span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Unable to place the order. faultCode=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, faultString=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (e<span style="color:#f92672">.</span>faultCode, e<span style="color:#f92672">.</span>faultString))</code></pre></div>
             </div>
         </div>
 

@@ -146,135 +146,126 @@ ga('send', 'pageview');
                 <p>This is a rough script, it doesn&rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in <a href="http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item</a></p>
 
 <p>Example Output for billsByUser()</p>
-
-<pre><code class="language-bash">chris-cde - 840.0
-    123.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $345.0
-    234.cdetesting.com : Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) $495.0
-    chris.testing.com : 2 x 2.0 GHz Cores $0.0
-    4 Portable Private IP Addresses - $0.0
-    8 Portable Private IP Addresses - $0.0
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">chris-cde - <span style="color:#ae81ff">840</span>.0
+    <span style="color:#ae81ff">123</span>.cdetesting.com : Dual Intel Xeon E5-2620 v3 <span style="color:#f92672">(</span><span style="color:#ae81ff">12</span> Cores, <span style="color:#ae81ff">2</span>.40 GHz<span style="color:#f92672">)</span> $345.0
+    <span style="color:#ae81ff">234</span>.cdetesting.com : Dual Intel Xeon E5-2620 v3 <span style="color:#f92672">(</span><span style="color:#ae81ff">12</span> Cores, <span style="color:#ae81ff">2</span>.40 GHz<span style="color:#f92672">)</span> $495.0
+    chris.testing.com : <span style="color:#ae81ff">2</span> x <span style="color:#ae81ff">2</span>.0 GHz Cores $0.0
+    <span style="color:#ae81ff">4</span> Portable Private IP Addresses - $0.0
+    <span style="color:#ae81ff">8</span> Portable Private IP Addresses - $0.0</code></pre></div>
 <p>Example Output of upcoming_hourly()</p>
-
-<pre><code class="language-bash">ItemID  Info    Host    Domain  Hours   Hourly Cost Cost
-143131173   Dual Intel Xeon E5-2620 v3 (12 Cores, 2.40 GHz) jd-cos-testing-sjc03    secore.com  489 .309    151.101
-==&gt; 143131179   64 GB RAM   291.933
-==&gt; 143131183   1.00 TB SATA    17.604
-==&gt; 143131185   1.00 TB SATA    17.604
-==&gt; 143131189   10 Gbps Dual Public &amp; Private Network Uplinks (Unbonded)    147.189
-TOTAL: 625.431
-</code></pre>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ItemID  Info    Host    Domain  Hours   Hourly Cost Cost
+<span style="color:#ae81ff">143131173</span>   Dual Intel Xeon E5-2620 v3 <span style="color:#f92672">(</span><span style="color:#ae81ff">12</span> Cores, <span style="color:#ae81ff">2</span>.40 GHz<span style="color:#f92672">)</span> jd-cos-testing-sjc03    secore.com  <span style="color:#ae81ff">489</span> .309    <span style="color:#ae81ff">151</span>.101
+<span style="color:#f92672">==</span>&gt; <span style="color:#ae81ff">143131179</span>   <span style="color:#ae81ff">64</span> GB RAM   <span style="color:#ae81ff">291</span>.933
+<span style="color:#f92672">==</span>&gt; <span style="color:#ae81ff">143131183</span>   <span style="color:#ae81ff">1</span>.00 TB SATA    <span style="color:#ae81ff">17</span>.604
+<span style="color:#f92672">==</span>&gt; <span style="color:#ae81ff">143131185</span>   <span style="color:#ae81ff">1</span>.00 TB SATA    <span style="color:#ae81ff">17</span>.604
+<span style="color:#f92672">==</span>&gt; <span style="color:#ae81ff">143131189</span>   <span style="color:#ae81ff">10</span> Gbps Dual Public &amp; Private Network Uplinks <span style="color:#f92672">(</span>Unbonded<span style="color:#f92672">)</span>    <span style="color:#ae81ff">147</span>.189
+TOTAL: <span style="color:#ae81ff">625</span>.431</code></pre></div>
 <p>Source</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">@author Christopher Gallo
+</span><span style="color:#e6db74">Goes through the next invoice. Collections billing items by the user that orderd them.
+</span><span style="color:#e6db74">Prints out each user and how much they caused in billing, along with what they ordered.
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+<span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
 
-<pre><code class="language-python">&quot;&quot;&quot;
-@author Christopher Gallo
-Goes through the next invoice. Collections billing items by the user that orderd them.
-Prints out each user and how much they caused in billing, along with what they ordered.
-&quot;&quot;&quot;
-import SoftLayer
-from pprint import pprint as pp
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">bills</span>():
 
-class bills():
+    <span style="color:#66d9ef">def</span> __init__(self):
 
-    def __init__(self):
+        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+        self<span style="color:#f92672">.</span>mgr <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>VSManager(self<span style="color:#f92672">.</span>client)
 
-        self.client = SoftLayer.Client()
-        self.mgr = SoftLayer.VSManager(self.client)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">billsByUser</span>(self):
 
-    def billsByUser(self):
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Not all billing items have a user record, these are collected under the master account
+</span><span style="color:#e6db74">        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
+</span><span style="color:#e6db74">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&gt; taps orderItem for
+</span><span style="color:#e6db74">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&gt; taps order for 
+</span><span style="color:#e6db74">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&gt; taps userRecord for
+</span><span style="color:#e6db74">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        mask<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[orderItem[order[id,userRecord[displayName,username]]]]&#34;</span>
+        billingItems <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getNextInvoiceTopLevelBillingItems(mask<span style="color:#f92672">=</span>mask)
 
-        &quot;&quot;&quot;
-        Not all billing items have a user record, these are collected under the master account
-        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&gt; taps orderItem for
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&gt; taps order for 
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&gt; taps userRecord for
-        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
-        &quot;&quot;&quot;
-        mask=&quot;mask[orderItem[order[id,userRecord[displayName,username]]]]&quot;
-        billingItems = self.client['SoftLayer_Account'].getNextInvoiceTopLevelBillingItems(mask=mask)
-
-        users = {'masterUser': []}
-        for item in billingItems:
-            if 'orderItem' in item:
-                username = item['orderItem']['order']['userRecord']['username']
-                del item['orderItem']
-                if username not in users:
-                    users[username] = []
-                users[username].append(item)
-            else:
-                users['masterUser'].append(item)
-
-
-        # prints everything out, and finds the sum of items.
-        for user in users:
-            servers = []
-            everything_else = []
-            total_cost = 0
-
-            for item in users[user]:
-
-                # this doens't include Tax fees, or setup fees because I'm lazy
-                cost = float(item['recurringFee']) + float(item['oneTimeFee'])
-                if 'hostName' in item:
-                    fqdn = &quot;%s.%s : %s $%s&quot; % (item['hostName'], item['domainName'], item['description'], cost)
-                    servers.append(fqdn)
-                else:
-                    item = &quot;%s - $%s&quot; % (item['description'], cost)
-                    everything_else.append(item)
-                total_cost = total_cost + cost
-            print(&quot;%s - %s&quot; % (user , total_cost))
-            for server in servers:
-                print(&quot;\t%s&quot; % server)
-            for thing in everything_else:
-                print(&quot;\t%s&quot; % thing)
+        users <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;masterUser&#39;</span>: []}
+        <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> billingItems:
+            <span style="color:#66d9ef">if</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderItem&#39;</span> <span style="color:#f92672">in</span> item:
+                username <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderItem&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;userRecord&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;username&#39;</span>]
+                <span style="color:#66d9ef">del</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderItem&#39;</span>]
+                <span style="color:#66d9ef">if</span> username <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> users:
+                    users[username] <span style="color:#f92672">=</span> []
+                users[username]<span style="color:#f92672">.</span>append(item)
+            <span style="color:#66d9ef">else</span>:
+                users[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;masterUser&#39;</span>]<span style="color:#f92672">.</span>append(item)
 
 
-    def upcoming_hourly(self):
-    &quot;&quot;&quot;
-    Filters upcoming billing items for only hourly WITH a hostname that contains the string 'test'
-    Each hourly server will also have some children that need to be added for the total cost, those are included with the nonZeroNextInvoiceChildren property
-    NOTE: 
-    ObjectMask starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_item
-    ObjectFilter starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account
-    hourlyFlag needs to be 1 or 0.
+        <span style="color:#75715e"># prints everything out, and finds the sum of items.</span>
+        <span style="color:#66d9ef">for</span> user <span style="color:#f92672">in</span> users:
+            servers <span style="color:#f92672">=</span> []
+            everything_else <span style="color:#f92672">=</span> []
+            total_cost <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
 
-    &quot;&quot;&quot;
-        mask=&quot;mask[hourlyFlag,nonZeroNextInvoiceChildren]&quot;
-        objectFilter =  {
-            'nextInvoiceTopLevelBillingItems': {
-                'hourlyFlag': {'operation': 1},
-                'hostName': {'operation': '*= test'}
+            <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> users[user]:
+
+                <span style="color:#75715e"># this doens&#39;t include Tax fees, or setup fees because I&#39;m lazy</span>
+                cost <span style="color:#f92672">=</span> float(item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;recurringFee&#39;</span>]) <span style="color:#f92672">+</span> float(item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;oneTimeFee&#39;</span>])
+                <span style="color:#66d9ef">if</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hostName&#39;</span> <span style="color:#f92672">in</span> item:
+                    fqdn <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">.</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> : </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> $</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hostName&#39;</span>], item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;domainName&#39;</span>], item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>], cost)
+                    servers<span style="color:#f92672">.</span>append(fqdn)
+                <span style="color:#66d9ef">else</span>:
+                    item <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - $</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>], cost)
+                    everything_else<span style="color:#f92672">.</span>append(item)
+                total_cost <span style="color:#f92672">=</span> total_cost <span style="color:#f92672">+</span> cost
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (user , total_cost))
+            <span style="color:#66d9ef">for</span> server <span style="color:#f92672">in</span> servers:
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> server)
+            <span style="color:#66d9ef">for</span> thing <span style="color:#f92672">in</span> everything_else:
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> thing)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">upcoming_hourly</span>(self):
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Filters upcoming billing items for only hourly WITH a hostname that contains the string &#39;test&#39;
+</span><span style="color:#e6db74">    Each hourly server will also have some children that need to be added for the total cost, those are included with the nonZeroNextInvoiceChildren property
+</span><span style="color:#e6db74">    NOTE: 
+</span><span style="color:#e6db74">    ObjectMask starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_item
+</span><span style="color:#e6db74">    ObjectFilter starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account
+</span><span style="color:#e6db74">    hourlyFlag needs to be 1 or 0.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+        mask<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[hourlyFlag,nonZeroNextInvoiceChildren]&#34;</span>
+        objectFilter <span style="color:#f92672">=</span>  {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;nextInvoiceTopLevelBillingItems&#39;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hourlyFlag&#39;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#ae81ff">1</span>},
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hostName&#39;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;*= test&#39;</span>}
             }
         }
-        billingItems = self.client['SoftLayer_Account'].getNextInvoiceTopLevelBillingItems(mask=mask, filter=objectFilter)
-        print(&quot;ItemID\tInfo\tHost\tDomain\tHours\tHourly Cost\tCost&quot;)
-        for item in billingItems:
-            itemId = item['id']
-            hostName = item['hostName']
-            domainName = item['domainName']
-            description = item['description']
-            hours = item['hoursUsed']
-            hourly_cost = item['hourlyRecurringFee']
-            cost = int(hours) * float(hourly_cost)
-            total_cost = cost
-            print(&quot;%s\t%s\t%s\t%s\t%s\t%s\t%s&quot; % (itemId, description, hostName,domainName, hours, hourly_cost, cost ))
-            for child in item['nonZeroNextInvoiceChildren']:
-                childId = child['id']
-                childDesc = child['description']
-                childCost = int(child['hoursUsed']) * float(child['hourlyRecurringFee'])
-                total_cost = total_cost + childCost
-                print(&quot;==&gt; %s\t%s\t%s&quot; % (childId,childDesc,childCost))
-            print(&quot;TOTAL: %s&quot; % (total_cost))
+        billingItems <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getNextInvoiceTopLevelBillingItems(mask<span style="color:#f92672">=</span>mask, filter<span style="color:#f92672">=</span>objectFilter)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;ItemID</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">Info</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">Host</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">Domain</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">Hours</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">Hourly Cost</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">Cost&#34;</span>)
+        <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> billingItems:
+            itemId <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+            hostName <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hostName&#39;</span>]
+            domainName <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;domainName&#39;</span>]
+            description <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>]
+            hours <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hoursUsed&#39;</span>]
+            hourly_cost <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hourlyRecurringFee&#39;</span>]
+            cost <span style="color:#f92672">=</span> int(hours) <span style="color:#f92672">*</span> float(hourly_cost)
+            total_cost <span style="color:#f92672">=</span> cost
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (itemId, description, hostName,domainName, hours, hourly_cost, cost ))
+            <span style="color:#66d9ef">for</span> child <span style="color:#f92672">in</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;nonZeroNextInvoiceChildren&#39;</span>]:
+                childId <span style="color:#f92672">=</span> child[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+                childDesc <span style="color:#f92672">=</span> child[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>]
+                childCost <span style="color:#f92672">=</span> int(child[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hoursUsed&#39;</span>]) <span style="color:#f92672">*</span> float(child[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hourlyRecurringFee&#39;</span>])
+                total_cost <span style="color:#f92672">=</span> total_cost <span style="color:#f92672">+</span> childCost
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;==&gt; </span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (childId,childDesc,childCost))
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;TOTAL: </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (total_cost))
 
 
-if __name__ == &quot;__main__&quot;:
-    main = bills()
-    main.billsByUser()
-</code></pre>
-
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main <span style="color:#f92672">=</span> bills()
+    main<span style="color:#f92672">.</span>billsByUser()</code></pre></div>
             </div>
         </div>
 

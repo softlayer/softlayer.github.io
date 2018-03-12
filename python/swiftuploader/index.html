@@ -190,246 +190,239 @@ ga('send', 'pageview');
 <p>Lastly, you will be emailed after the VHD has been processed by our system.</p>
 
 <p>-Adam Shaw</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># ================================================================================</span>
+<span style="color:#75715e">#     ObjectStorageUploader.py</span>
+<span style="color:#75715e">#     © Copyright IBM Corporation 2014.</span>
+<span style="color:#75715e">#     LICENSE: MIT (http://opensource.org/licenses/MIT)    </span>
+<span style="color:#75715e"># ================================================================================</span>
 
-<pre><code class="language-python"># ================================================================================
-#     ObjectStorageUploader.py
-#     © Copyright IBM Corporation 2014.
-#     LICENSE: MIT (http://opensource.org/licenses/MIT)    
-# ================================================================================
-
-import argparse
-import os
-import math
-import http.client
-from urllib.parse import urlparse
-from urllib.parse import quote
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> math
+<span style="color:#f92672">import</span> http.client
+<span style="color:#f92672">from</span> urllib.parse <span style="color:#f92672">import</span> urlparse
+<span style="color:#f92672">from</span> urllib.parse <span style="color:#f92672">import</span> quote
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(&quot;-f&quot;, &quot;--file&quot;, help=&quot;file to upload to SWIFT&quot;)
-    parser.add_argument(&quot;-u&quot;, &quot;--username&quot;, help=&quot;SWIFT username&quot;)
-    parser.add_argument(&quot;-p&quot;, &quot;--password&quot;, help=&quot;SWIFT password (SoftLayer API key)&quot;)
-    parser.add_argument(&quot;-c&quot;, &quot;--cluster&quot;, help=&quot;SWIFT cluster to use (default: dal05.objectstorage.softlayer.net)&quot;)
-    parser.add_argument(&quot;-t&quot;, &quot;--target&quot;, help=&quot;location on SWIFT cluster to store file (container/filename.vhd)&quot;)
-    args = parser.parse_args()
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser()
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;-f&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;--file&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;file to upload to SWIFT&#34;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;-u&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;--username&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SWIFT username&#34;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;-p&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;--password&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SWIFT password (SoftLayer API key)&#34;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;-c&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;--cluster&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SWIFT cluster to use (default: dal05.objectstorage.softlayer.net)&#34;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;-t&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;--target&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;location on SWIFT cluster to store file (container/filename.vhd)&#34;</span>)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
 
-    if not args.file:
-        filename = select_file()
-    else:
-        filename = args.file
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> args<span style="color:#f92672">.</span>file:
+        filename <span style="color:#f92672">=</span> select_file()
+    <span style="color:#66d9ef">else</span>:
+        filename <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>file
 
-    if not args.username:
-        swift_user_name, swift_password = get_swift_credentials()
-    else:
-        swift_user_name = args.username
-        swift_password = args.password
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> args<span style="color:#f92672">.</span>username:
+        swift_user_name, swift_password <span style="color:#f92672">=</span> get_swift_credentials()
+    <span style="color:#66d9ef">else</span>:
+        swift_user_name <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>username
+        swift_password <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>password
 
-    if not args.cluster:
-        storage_url, auth_token = authenticate_swift(
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> args<span style="color:#f92672">.</span>cluster:
+        storage_url, auth_token <span style="color:#f92672">=</span> authenticate_swift(
             swift_user_name,
             swift_password,
-            &quot;dal05.objectstorage.softlayer.net&quot;
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;dal05.objectstorage.softlayer.net&#34;</span>
         )
-    else:
-        storage_url, auth_token = authenticate_swift(
+    <span style="color:#66d9ef">else</span>:
+        storage_url, auth_token <span style="color:#f92672">=</span> authenticate_swift(
             swift_user_name,
             swift_password,
-            args.cluster
+            args<span style="color:#f92672">.</span>cluster
         )
 
-    if not args.target:
-        container = select_container(storage_url, auth_token)
-        swift_target_path = &quot;{}/{}&quot;.format(container, quote(filename))
-    else:
-        swift_target_path = args.target
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> args<span style="color:#f92672">.</span>target:
+        container <span style="color:#f92672">=</span> select_container(storage_url, auth_token)
+        swift_target_path <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;{}/{}&#34;</span><span style="color:#f92672">.</span>format(container, quote(filename))
+    <span style="color:#66d9ef">else</span>:
+        swift_target_path <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>target
 
     upload_file(filename, swift_target_path, storage_url, auth_token)
 
 
-def select_file():
-    current_path = (os.path.dirname(os.path.realpath(__file__)))
-    print(&quot;Files in {}&quot;.format(current_path))
-    files = get_file_list(current_path)
-    return prompt_for_choice(files, &quot;Select file for upload:&quot;)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">select_file</span>():
+    current_path <span style="color:#f92672">=</span> (os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>realpath(__file__)))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Files in {}&#34;</span><span style="color:#f92672">.</span>format(current_path))
+    files <span style="color:#f92672">=</span> get_file_list(current_path)
+    <span style="color:#66d9ef">return</span> prompt_for_choice(files, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Select file for upload:&#34;</span>)
 
 
-def get_file_list(path):
-    files = []
-    for file in os.listdir(path):
-        if os.path.isfile(file):
-            files.append(file)
-    return files
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_file_list</span>(path):
+    files <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>listdir(path):
+        <span style="color:#66d9ef">if</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>isfile(file):
+            files<span style="color:#f92672">.</span>append(file)
+    <span style="color:#66d9ef">return</span> files
 
 
-def prompt_for_choice(list, prompt_label):
-    for i, item in enumerate(list):
-        if len(item):
-            print(&quot;{}) {}&quot;.format(i, item))
-    selected_index = input(prompt_label)
-    if selected_index.isdigit():
-        if 0 &lt;= int(selected_index) &lt; len(list):
-            print()
-            return list[int(selected_index)]
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">prompt_for_choice</span>(list, prompt_label):
+    <span style="color:#66d9ef">for</span> i, item <span style="color:#f92672">in</span> enumerate(list):
+        <span style="color:#66d9ef">if</span> len(item):
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;{}) {}&#34;</span><span style="color:#f92672">.</span>format(i, item))
+    selected_index <span style="color:#f92672">=</span> input(prompt_label)
+    <span style="color:#66d9ef">if</span> selected_index<span style="color:#f92672">.</span>isdigit():
+        <span style="color:#66d9ef">if</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">&lt;=</span> int(selected_index) <span style="color:#f92672">&lt;</span> len(list):
+            <span style="color:#66d9ef">print</span>()
+            <span style="color:#66d9ef">return</span> list[int(selected_index)]
 
-    print(&quot;Invalid Input: {}&quot;.format(selected_index))
-    return prompt_for_choice(list, prompt_label)
-
-
-def get_swift_credentials():
-    swift_user_name = input(&quot;Swift Username:&quot;)
-    swift_password = input(&quot;Swift Password:&quot;)
-    return swift_user_name, swift_password
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Invalid Input: {}&#34;</span><span style="color:#f92672">.</span>format(selected_index))
+    <span style="color:#66d9ef">return</span> prompt_for_choice(list, prompt_label)
 
 
-def authenticate_swift(swift_user_name, swift_password, selected_endpoint=&quot;&quot;):
-    if selected_endpoint == &quot;&quot;:
-        swift_endpoints = [
-            &quot;dal05.objectstorage.softlayer.net&quot;,
-            &quot;sng01.objectstorage.softlayer.net&quot;,
-            &quot;ams01.objectstorage.softlayer.net&quot;,
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_swift_credentials</span>():
+    swift_user_name <span style="color:#f92672">=</span> input(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Swift Username:&#34;</span>)
+    swift_password <span style="color:#f92672">=</span> input(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Swift Password:&#34;</span>)
+    <span style="color:#66d9ef">return</span> swift_user_name, swift_password
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">authenticate_swift</span>(swift_user_name, swift_password, selected_endpoint<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;</span>):
+    <span style="color:#66d9ef">if</span> selected_endpoint <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;</span>:
+        swift_endpoints <span style="color:#f92672">=</span> [
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;dal05.objectstorage.softlayer.net&#34;</span>,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;sng01.objectstorage.softlayer.net&#34;</span>,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;ams01.objectstorage.softlayer.net&#34;</span>,
         ]
-        selected_endpoint = prompt_for_choice(
+        selected_endpoint <span style="color:#f92672">=</span> prompt_for_choice(
             swift_endpoints,
-            &quot;Select Object Storage Endpoint:&quot;
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Select Object Storage Endpoint:&#34;</span>
         )
 
-    print(&quot;Authenticating...&quot;)
-    headers = {
-        &quot;X-Storage-User&quot;: swift_user_name,
-        &quot;X-Storage-Pass&quot;: swift_password
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Authenticating...&#34;</span>)
+    headers <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Storage-User&#34;</span>: swift_user_name,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Storage-Pass&#34;</span>: swift_password
     }
-    try:
-        response = object_storage_request(
+    <span style="color:#66d9ef">try</span>:
+        response <span style="color:#f92672">=</span> object_storage_request(
             selected_endpoint,
-            &quot;/auth/v1.0/&quot;,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;/auth/v1.0/&#34;</span>,
             headers
         )
-    except Exception:
-        swift_user_name, swift_password = get_swift_credentials()
-        return authenticate_swift(swift_user_name, swift_password)
-    print(&quot;Success!&quot;)
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span>:
+        swift_user_name, swift_password <span style="color:#f92672">=</span> get_swift_credentials()
+        <span style="color:#66d9ef">return</span> authenticate_swift(swift_user_name, swift_password)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Success!&#34;</span>)
 
-    storage_url = response.getheader(&quot;X-Storage-Url&quot;)
-    auth_token = response.getheader(&quot;X-Auth-Token&quot;)
+    storage_url <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>getheader(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Storage-Url&#34;</span>)
+    auth_token <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>getheader(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Auth-Token&#34;</span>)
 
-    return storage_url, auth_token
+    <span style="color:#66d9ef">return</span> storage_url, auth_token
 
 
-def select_container(storage_url, auth_token):
-    url_tuple = urlparse(storage_url)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">select_container</span>(storage_url, auth_token):
+    url_tuple <span style="color:#f92672">=</span> urlparse(storage_url)
 
-    headers = {&quot;X-Auth-Token&quot;: auth_token}
-    try:
-        response = object_storage_request(
-            url_tuple.netloc,
-            url_tuple.path,
+    headers <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Auth-Token&#34;</span>: auth_token}
+    <span style="color:#66d9ef">try</span>:
+        response <span style="color:#f92672">=</span> object_storage_request(
+            url_tuple<span style="color:#f92672">.</span>netloc,
+            url_tuple<span style="color:#f92672">.</span>path,
             headers
         )
-    except Exception:
-        swift_user_name, swift_password = get_swift_credentials()
-        storage_url, auth_token = authenticate_swift(swift_user_name, swift_password)
-        return select_container(storage_url, auth_token)
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span>:
+        swift_user_name, swift_password <span style="color:#f92672">=</span> get_swift_credentials()
+        storage_url, auth_token <span style="color:#f92672">=</span> authenticate_swift(swift_user_name, swift_password)
+        <span style="color:#66d9ef">return</span> select_container(storage_url, auth_token)
 
-    containers = response.read().decode(&quot;utf-8&quot;).split(&quot;\n&quot;)
-    return prompt_for_choice(containers, &quot;Select Container:&quot;)
-
-
-def object_storage_request(server, path, headers, method=&quot;GET&quot;, data=&quot;&quot;):
-    connection = http.client.HTTPConnection(server)
-    connection.request(method, path, data, headers)
-    response = connection.getresponse()
-
-    if 200 &lt;= response.getcode() &lt; 300:
-        return response
-
-    print(&quot;Error {}: {}&quot;.format(response.status, response.reason))
-    raise Exception(response.status, response.reason)
+    containers <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>read()<span style="color:#f92672">.</span>decode(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;utf-8&#34;</span>)<span style="color:#f92672">.</span>split(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+    <span style="color:#66d9ef">return</span> prompt_for_choice(containers, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Select Container:&#34;</span>)
 
 
-def upload_file(filename, swift_target_path, storage_url, auth_token):
-    url_tuple = urlparse(storage_url)
-    headers = {&quot;X-Auth-Token&quot;: auth_token}
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">object_storage_request</span>(server, path, headers, method<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;GET&#34;</span>, data<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;</span>):
+    connection <span style="color:#f92672">=</span> http<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>HTTPConnection(server)
+    connection<span style="color:#f92672">.</span>request(method, path, data, headers)
+    response <span style="color:#f92672">=</span> connection<span style="color:#f92672">.</span>getresponse()
 
-    file_size = os.path.getsize(filename)
-    block_size = 1048576
-    chunk_size = 5 * block_size
-    chunks = math.ceil(file_size / chunk_size)
+    <span style="color:#66d9ef">if</span> <span style="color:#ae81ff">200</span> <span style="color:#f92672">&lt;=</span> response<span style="color:#f92672">.</span>getcode() <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">300</span>:
+        <span style="color:#66d9ef">return</span> response
 
-    print(&quot;Reading in file&quot;)
-    file = open(filename, 'rb')
-    print(&quot;Uploading {} to \&quot;{}\&quot;&quot;.format(filename, swift_target_path))
-    for i in range(0, chunks):
-        data = file.read(chunk_size)
-        print(&quot;Uploading part {} of {}&quot;.format(i + 1, chunks))
-        chunk_name = &quot;chunk-{0:0&gt;5}&quot;.format(i)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Error {}: {}&#34;</span><span style="color:#f92672">.</span>format(response<span style="color:#f92672">.</span>status, response<span style="color:#f92672">.</span>reason))
+    <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">Exception</span>(response<span style="color:#f92672">.</span>status, response<span style="color:#f92672">.</span>reason)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">upload_file</span>(filename, swift_target_path, storage_url, auth_token):
+    url_tuple <span style="color:#f92672">=</span> urlparse(storage_url)
+    headers <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Auth-Token&#34;</span>: auth_token}
+
+    file_size <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>getsize(filename)
+    block_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">1048576</span>
+    chunk_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">*</span> block_size
+    chunks <span style="color:#f92672">=</span> math<span style="color:#f92672">.</span>ceil(file_size <span style="color:#f92672">/</span> chunk_size)
+
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Reading in file&#34;</span>)
+    file <span style="color:#f92672">=</span> open(filename, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;rb&#39;</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Uploading {} to </span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">{}</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">.</span>format(filename, swift_target_path))
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, chunks):
+        data <span style="color:#f92672">=</span> file<span style="color:#f92672">.</span>read(chunk_size)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Uploading part {} of {}&#34;</span><span style="color:#f92672">.</span>format(i <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>, chunks))
+        chunk_name <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;chunk-{0:0&gt;5}&#34;</span><span style="color:#f92672">.</span>format(i)
         object_storage_request(
-            url_tuple.netloc,
-            &quot;{}/{}/{}&quot;.format(url_tuple.path, swift_target_path, chunk_name),
+            url_tuple<span style="color:#f92672">.</span>netloc,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;{}/{}/{}&#34;</span><span style="color:#f92672">.</span>format(url_tuple<span style="color:#f92672">.</span>path, swift_target_path, chunk_name),
             headers,
-            &quot;PUT&quot;,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;PUT&#34;</span>,
             data
         )
 
-    try:
-        print(&quot;Writing manifest file&quot;)
-        headers = {
-            &quot;X-Auth-Token&quot;: auth_token,
-            &quot;X-Object-Manifest&quot;: swift_target_path,
-            &quot;Content-Length&quot;: 0,
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Writing manifest file&#34;</span>)
+        headers <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Auth-Token&#34;</span>: auth_token,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;X-Object-Manifest&#34;</span>: swift_target_path,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Content-Length&#34;</span>: <span style="color:#ae81ff">0</span>,
         }
         object_storage_request(
-            url_tuple.netloc,
-            &quot;{}/{}&quot;.format(url_tuple.path, swift_target_path),
+            url_tuple<span style="color:#f92672">.</span>netloc,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;{}/{}&#34;</span><span style="color:#f92672">.</span>format(url_tuple<span style="color:#f92672">.</span>path, swift_target_path),
             headers,
-            &quot;PUT&quot;
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;PUT&#34;</span>
         )
-    except Exception:
-        return
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span>:
+        <span style="color:#66d9ef">return</span>
 
-    print(&quot;File Uploaded!&quot;)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;File Uploaded!&#34;</span>)
 
-if __name__ == &quot;__main__&quot;:
-    main()
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main()</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span><span style="color:#75715e"># ================================================================================
+</span><span style="color:#75715e">#     ObjectStorageUploader.sh
+</span><span style="color:#75715e">#     © Copyright IBM Corporation 2014.
+</span><span style="color:#75715e">#     LICENSE: MIT (http://opensource.org/licenses/MIT)    
+</span><span style="color:#75715e"># ================================================================================
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#./objectstorageupload.sh dsl-4.4.10.iso &#39;myContainer/file.vhd&#39; &#39;SLOS1234-1:SL1234&#39; &#39;apikey&#39;
+</span><span style="color:#75715e"></span>
+fileToUpload<span style="color:#f92672">=</span>$1
+swiftTargetPath<span style="color:#f92672">=</span>$2
+swiftUsername<span style="color:#f92672">=</span>$3
+swiftPassword<span style="color:#f92672">=</span>$4
 
-</code></pre>
+swiftEndpoint<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://dal05.objectstorage.softlayer.net/auth/v1.0/&#39;</span>
 
-<pre><code class="language-bash">#!/bin/bash
-# ================================================================================
-#     ObjectStorageUploader.sh
-#     © Copyright IBM Corporation 2014.
-#     LICENSE: MIT (http://opensource.org/licenses/MIT)    
-# ================================================================================
+apiResponse<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>curl -X GET -H <span style="color:#e6db74">&#34;X-Storage-User: </span>$swiftUsername<span style="color:#e6db74">&#34;</span> -H <span style="color:#e6db74">&#34;X-Storage-Pass: </span>$swiftPassword<span style="color:#e6db74">&#34;</span> -s -i $swiftEndpoint<span style="color:#66d9ef">)</span>
+swiftAuthToken<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo <span style="color:#e6db74">&#34;</span>$apiResponse<span style="color:#e6db74">&#34;</span> | grep <span style="color:#e6db74">&#34;X-Auth-Token:&#34;</span> | sed <span style="color:#e6db74">&#39;s/X-Auth-Token: //g&#39;</span> | tr -d <span style="color:#e6db74">&#39;\r&#39;</span><span style="color:#66d9ef">)</span>
+swiftStorageUrl<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo <span style="color:#e6db74">&#34;</span>$apiResponse<span style="color:#e6db74">&#34;</span> | grep <span style="color:#e6db74">&#34;X-Storage-Url:&#34;</span> | sed <span style="color:#e6db74">&#39;s/X-Storage-Url: //g&#39;</span> | tr -d <span style="color:#e6db74">&#39;\r&#39;</span><span style="color:#66d9ef">)</span>
 
-#./objectstorageupload.sh dsl-4.4.10.iso 'myContainer/file.vhd' 'SLOS1234-1:SL1234' 'apikey'
+fileSize<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>wc -c $fileToUpload | awk <span style="color:#e6db74">&#39;{print $1}&#39;</span><span style="color:#66d9ef">)</span>
+blockSize<span style="color:#f92672">=</span><span style="color:#ae81ff">1048576</span>
+let chunkSize<span style="color:#f92672">=</span><span style="color:#ae81ff">2048</span> <span style="color:#75715e">#2GB chunks
+</span><span style="color:#75715e"></span>let chunks<span style="color:#f92672">=(</span>$fileSize/$blockSize+$chunkSize-1<span style="color:#f92672">)</span>/$chunkSize;
 
-fileToUpload=$1
-swiftTargetPath=$2
-swiftUsername=$3
-swiftPassword=$4
+<span style="color:#66d9ef">for</span> <span style="color:#f92672">((</span>i<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>; i&lt;chunks; i++<span style="color:#f92672">))</span>
+<span style="color:#66d9ef">do</span>
+   printf -v chunkName <span style="color:#e6db74">&#34;chunk-%05d&#34;</span> $i
+   let skipChunk<span style="color:#f92672">=</span>$i*chunkSize
 
-swiftEndpoint='https://dal05.objectstorage.softlayer.net/auth/v1.0/'
+   dd <span style="color:#66d9ef">if</span><span style="color:#f92672">=</span>$fileToUpload bs<span style="color:#f92672">=</span>$blockSize count<span style="color:#f92672">=</span>$chunkSize skip<span style="color:#f92672">=</span>$skipChunk | curl -X PUT -H <span style="color:#e6db74">&#34;X-Auth-Token: </span>$swiftAuthToken<span style="color:#e6db74">&#34;</span> --data-binary @- <span style="color:#e6db74">&#34;</span>$swiftStorageUrl<span style="color:#e6db74">/</span>$swiftTargetPath<span style="color:#e6db74">/</span>$chunkName<span style="color:#e6db74">&#34;</span>
+<span style="color:#66d9ef">done</span>
 
-apiResponse=$(curl -X GET -H &quot;X-Storage-User: $swiftUsername&quot; -H &quot;X-Storage-Pass: $swiftPassword&quot; -s -i $swiftEndpoint)
-swiftAuthToken=$(echo &quot;$apiResponse&quot; | grep &quot;X-Auth-Token:&quot; | sed 's/X-Auth-Token: //g' | tr -d '\r')
-swiftStorageUrl=$(echo &quot;$apiResponse&quot; | grep &quot;X-Storage-Url:&quot; | sed 's/X-Storage-Url: //g' | tr -d '\r')
-
-fileSize=$(wc -c $fileToUpload | awk '{print $1}')
-blockSize=1048576
-let chunkSize=2048 #2GB chunks
-let chunks=($fileSize/$blockSize+$chunkSize-1)/$chunkSize;
-
-for ((i=0; i&lt;chunks; i++))
-do
-   printf -v chunkName &quot;chunk-%05d&quot; $i
-   let skipChunk=$i*chunkSize
-
-   dd if=$fileToUpload bs=$blockSize count=$chunkSize skip=$skipChunk | curl -X PUT -H &quot;X-Auth-Token: $swiftAuthToken&quot; --data-binary @- &quot;$swiftStorageUrl/$swiftTargetPath/$chunkName&quot;
-done
-
-curl -X PUT -H &quot;X-Auth-Token: $swiftAuthToken&quot; -H &quot;X-Object-Manifest: $swiftTargetPath&quot; -H &quot;Content-Length: 0&quot; $swiftStorageUrl/$swiftTargetPath
-</code></pre>
-
+curl -X PUT -H <span style="color:#e6db74">&#34;X-Auth-Token: </span>$swiftAuthToken<span style="color:#e6db74">&#34;</span> -H <span style="color:#e6db74">&#34;X-Object-Manifest: </span>$swiftTargetPath<span style="color:#e6db74">&#34;</span> -H <span style="color:#e6db74">&#34;Content-Length: 0&#34;</span> $swiftStorageUrl/$swiftTargetPath</code></pre></div>
 <p>Originally from <a href="https://sldn.softlayer.com/blog/ashaw/object-storage-uploader">SLDN</a></p>
 
             </div>

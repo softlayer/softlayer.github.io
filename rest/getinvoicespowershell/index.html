@@ -130,87 +130,84 @@ ga('send', 'pageview');
                 
 				
                 <p>This powershell script will get the filename for the PDF and Excel invoices and save them locally. Requires <a href="http://social.technet.microsoft.com/wiki/contents/articles/21016.how-to-install-windows-powershell-4-0.aspx">PowerShell Version 4</a> for the Invoke-WebRequest and ConvertFrom-Json functions.</p>
-
-<pre><code class="language-ps1"># Start SL script
-$MyScriptName = &quot;_Call_SL_Rest&quot;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ps1" data-lang="ps1"><span style="color:#75715e"># Start SL script</span>
+$MyScriptName = <span style="color:#e6db74">&#34;_Call_SL_Rest&#34;</span>
 $HomeDir = pwd
-$date4file = get-date -uformat &quot;%Y-%m-%d_%H%M%S&quot;
-$log = &quot;$HomeDir\&quot;+$date4file+$MyScriptName+&quot;.log&quot;
-$BaseURL = &quot;https://api.softlayer.com/rest/v3&quot;
-Add-Content $log &quot;$(Get-Date -format s) : Start&quot;
+$date4file = get-date -uformat <span style="color:#e6db74">&#34;%Y-%m-%d_%H%M%S&#34;</span>
+$log = <span style="color:#e6db74">&#34;$HomeDir\&#34;</span>+$date4file+$MyScriptName+<span style="color:#e6db74">&#34;.log&#34;</span>
+$BaseURL = <span style="color:#e6db74">&#34;https://api.softlayer.com/rest/v3&#34;</span>
+Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : Start&#34;</span>
 
-$SLUser = &quot;SLUSERNAME&quot;
-$SLapikey =  &quot;APIKEY&quot;
+$SLUser = <span style="color:#e6db74">&#34;SLUSERNAME&#34;</span>
+$SLapikey =  <span style="color:#e6db74">&#34;APIKEY&#34;</span>
 
-$LoginPair = &quot;$($SLUser):$($SLapikey)&quot;
-$encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($LoginPair))
-$basicAuthValue = &quot;Basic $encodedCreds&quot;
+$LoginPair = <span style="color:#e6db74">&#34;</span>$($SLUser)<span style="color:#e6db74">:</span>$($SLapikey)<span style="color:#e6db74">&#34;</span>
+$encodedCreds = <span style="color:#66d9ef">[System.Convert]</span>::ToBase64String(<span style="color:#66d9ef">[System.Text.Encoding]</span>::ASCII.GetBytes($LoginPair))
+$basicAuthValue = <span style="color:#e6db74">&#34;Basic $encodedCreds&#34;</span>
 $Headers = @{
     Authorization = $basicAuthValue
 }
 
-$GSTURL=&quot;$($BaseURL)/SoftLayer_Account/getObject&quot;
-#$GSTURL=&quot;$($BaseURL)/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]&quot;
-Add-Content $log &quot;$(Get-Date -format s) : Authenticate as User $($SLUser) at URL $($GSTURL)&quot;
+$GSTURL=<span style="color:#e6db74">&#34;</span>$($BaseURL)<span style="color:#e6db74">/SoftLayer_Account/getObject&#34;</span>
+<span style="color:#75715e">#$GSTURL=&#34;$($BaseURL)/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]&#34;</span>
+Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : Authenticate as User </span>$($SLUser)<span style="color:#e6db74"> at URL </span>$($GSTURL)<span style="color:#e6db74">&#34;</span>
 $GSTRequest = Invoke-WebRequest $GSTURL  -Headers $Headers -SessionVariable slsession
-#Write-host $GSTRequest.content
+<span style="color:#75715e">#Write-host $GSTRequest.content</span>
 $GSTanswerConv = ConvertFrom-Json $($GSTRequest.content)
-Add-Content $log &quot;$(Get-Date -format s) : Account Info: $($GSTanswerConv | select companyName , country , id)&quot;
+Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : Account Info: </span>$($GSTanswerConv | select companyName , country , id)<span style="color:#e6db74">&#34;</span>
 
-#########################
-function CallURL($URL) {   
- Add-Content $log &quot;$(Get-Date -format s) : Call URL $($URL)&quot;
+<span style="color:#75715e">#########################</span>
+<span style="color:#66d9ef">function</span> CallURL($URL) {   
+ Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : Call URL </span>$($URL)<span style="color:#e6db74">&#34;</span>
 $Request = Invoke-WebRequest $URL  -WebSession $slsession 
 $answerConv = ConvertFrom-Json $($Request.content)
- return $answerConv
+ <span style="color:#66d9ef">return</span> $answerConv
  }
-#########################
-$URLcall=&quot;$($BaseURL)/SoftLayer_Account/getLatestRecurringInvoice&quot;
+<span style="color:#75715e">#########################</span>
+$URLcall=<span style="color:#e6db74">&#34;</span>$($BaseURL)<span style="color:#e6db74">/SoftLayer_Account/getLatestRecurringInvoice&#34;</span>
 $Callanswer = CallURL($URLcall)
 
-Add-Content $log &quot;$(Get-Date -format s) : Invoice Info: $($Callanswer | select companyName , id,typeCode, modifyDate , createDate)&quot;
+Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : Invoice Info: </span>$($Callanswer | select companyName , id,typeCode, modifyDate , createDate)<span style="color:#e6db74">&#34;</span>
 
 $LastIvoiceID = $Callanswer.id
 
-$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getPdfDetailedFilename&quot;
+$URLcall=<span style="color:#e6db74">&#34;</span>$($BaseURL)<span style="color:#e6db74">/SoftLayer_Billing_Invoice/</span>$($LastIvoiceID)<span style="color:#e6db74">/getPdfDetailedFilename&#34;</span>
 $Callanswer = CallURL($URLcall)
-Add-Content $log &quot;$(Get-Date -format s) : Invoice FileName: $($Callanswer)&quot;
+Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : Invoice FileName: </span>$($Callanswer)<span style="color:#e6db74">&#34;</span>
 
 $PdfDetailedFilename = $Callanswer
-$FileDest = &quot;$HomeDir\$PdfDetailedFilename&quot;
+$FileDest = <span style="color:#e6db74">&#34;$HomeDir\$PdfDetailedFilename&#34;</span>
 
-$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getPdfDetailed&quot;
+$URLcall=<span style="color:#e6db74">&#34;</span>$($BaseURL)<span style="color:#e6db74">/SoftLayer_Billing_Invoice/</span>$($LastIvoiceID)<span style="color:#e6db74">/getPdfDetailed&#34;</span>
 $Callanswer = CallURL($URLcall)
 $FileData = $Callanswer
 
-$bytes=[System.Convert]::FromBase64String($FileData)
-$decoded=[System.Text.Encoding]::Default.GetString($bytes)
-[Byte[]]$bytes_FileData=[System.Text.Encoding]::Default.GetBytes($decoded)
+$bytes=<span style="color:#66d9ef">[System.Convert]</span>::FromBase64String($FileData)
+$decoded=<span style="color:#66d9ef">[System.Text.Encoding]</span>::<span style="color:#66d9ef">Default</span>.GetString($bytes)
+<span style="color:#66d9ef">[Byte[]]</span>$bytes_FileData=<span style="color:#66d9ef">[System.Text.Encoding]</span>::<span style="color:#66d9ef">Default</span>.GetBytes($decoded)
 set-content -encoding byte -Path $FileDest -value $bytes_FileData
 $PdfFile = $FileDest
 
-$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getXlsFilename&quot;
+$URLcall=<span style="color:#e6db74">&#34;</span>$($BaseURL)<span style="color:#e6db74">/SoftLayer_Billing_Invoice/</span>$($LastIvoiceID)<span style="color:#e6db74">/getXlsFilename&#34;</span>
 $Callanswer = CallURL($URLcall)
-Add-Content $log &quot;$(Get-Date -format s) : Invoice FileName: $($Callanswer)&quot;
+Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : Invoice FileName: </span>$($Callanswer)<span style="color:#e6db74">&#34;</span>
 
 $XlsFilename = $Callanswer
-$FileDest = &quot;$HomeDir\$XlsFilename&quot;
+$FileDest = <span style="color:#e6db74">&#34;$HomeDir\$XlsFilename&#34;</span>
 
 
-$URLcall=&quot;$($BaseURL)/SoftLayer_Billing_Invoice/$($LastIvoiceID)/getExcel&quot;
+$URLcall=<span style="color:#e6db74">&#34;</span>$($BaseURL)<span style="color:#e6db74">/SoftLayer_Billing_Invoice/</span>$($LastIvoiceID)<span style="color:#e6db74">/getExcel&#34;</span>
 $Callanswer = CallURL($URLcall)
 $FileData = $Callanswer
 
-$bytes=[System.Convert]::FromBase64String($FileData)
-$decoded=[System.Text.Encoding]::Default.GetString($bytes)
-[Byte[]]$bytes_FileData=[System.Text.Encoding]::Default.GetBytes($decoded)
+$bytes=<span style="color:#66d9ef">[System.Convert]</span>::FromBase64String($FileData)
+$decoded=<span style="color:#66d9ef">[System.Text.Encoding]</span>::<span style="color:#66d9ef">Default</span>.GetString($bytes)
+<span style="color:#66d9ef">[Byte[]]</span>$bytes_FileData=<span style="color:#66d9ef">[System.Text.Encoding]</span>::<span style="color:#66d9ef">Default</span>.GetBytes($decoded)
 set-content -encoding byte -Path $FileDest -value $bytes_FileData
 $XlsFile = $FileDest
 
-Add-Content $log &quot;$(Get-Date -format s) : End&quot;
-#End
-</code></pre>
-
+Add-Content $log <span style="color:#e6db74">&#34;</span>$(Get-Date -format s)<span style="color:#e6db74"> : End&#34;</span>
+<span style="color:#75715e">#End</span></code></pre></div>
             </div>
         </div>
 
