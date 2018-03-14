@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
+    <meta name="author" content="SoftLayer">
+
+    <title>PHP Memory Management in Foreach - https://softlayer.github.io/</title>
+    <link rel="canonical" href="https://softlayer.github.io/blog/dmcaloon/php-memory-management-foreach/">
+        <link href="https://softlayer.github.io/css/main.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/fa-svg-with-js.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/custom.css" rel="stylesheet">
+    <link href="https://softlayer.github.io/css/highlight/solarized_dark.css" rel="stylesheet">
+
+    <script src="https://softlayer.github.io/js/highlight.pack.js"></script>
+
+    <script>hljs.initHighlightingOnLoad();</script>
+    <link rel="shortcut icon" href="https://softlayer.github.io/img/favicon.ico" type="image/x-icon" />
+	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Lato" />
+            
+
+    <script src="https://softlayer.github.io/js/jquery-3.3.1.min.js"></script> 
+    <script src="https://softlayer.github.io/js/sldn.js"></script>
+    <script src="https://softlayer.github.io/js/fontawesome-all.js"></script>
+
+    
+	<script>
+		$(document).ready(function() {
+			$('table').addClass("table table-hover table-striped")
+		})
+	</script>
+    
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-88235803-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+</head>
+
+<body>
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle Navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="https://softlayer.github.io/">SoftLayer API</a>
+            </div>
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav">
+                    
+                        <li><a href="https://softlayer.github.io/article/">Articles</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/reference/softlayerapi">Documentation</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/go/">Go</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/php/">PHP</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/perl/">Perl</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/python/">Python</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/rest/">Rest</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/ruby/">Ruby</a></li>
+                    
+                        <li><a href="https://softlayer.github.io/tools/">Tools</a></li>
+                    
+
+                    
+                </ul>
+                <div id="custom-search-input" class="pull-right">
+                  <form class="navbar-form" role="search" method="get" action="https://www.bing.com/">
+                    <div class="input-group col-md-12">
+                      <input type="text" class="form-control input-md" placeholder="Search" name="q" id="srch-term">
+                      <input type="hidden" name="q1" value="site:softlayer.github.io" />
+                      <div class="input-group-btn">
+                        <button class="btn btn-info" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<div class="container">
+    <div class="row">
+    
+        <div class="col-md-3">
+            <div style="word-wrap: break-word;"> 
+                <h4>January 15, 2009<br></h4>
+            </div>
+        </div>
+        <div class="col-md-9">
+
+                <strong>Classes <span class="fa fa-book"/></strong>
+                
+                <br>
+                <strong>Tags <span class="fa fa-tags"/></strong>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/blog">blog</a>
+                          
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+		<div class="col-md-12">
+            <div class="well well-sm release-note" style="word-wrap: break-word;">
+				<h3>PHP Memory Management in Foreach<br> <small>&lt;style type=text/css&gt;code { display: block; background:#dddddd; border: 1px solid #999999; padding: 5px; }&lt;/style&gt;&lt;p&gt;M</small></h3>
+				
+                
+				
+                <p><style type="text/css">code { display: block; background:#dddddd; border: 1px solid #999999; padding: 5px; }</style><p>Many developers, even experienced ones, are confused by the way PHP handles arrays in <a href="http://us3.php.net/foreach">foreach loops</a>.  In the standard foreach loop, PHP makes a copy of the array that is used in the loop.  The copy is discarded immediately after the loop finishes.  This is transparent in the operation of a simple foreach loop.  For example:</p>
+<div class="geshifilter">
+<pre class="php geshifilter-php" style="font-family:monospace;"><span style="color: #000088;">$set</span> <span style="color: #339933;">=</span> <a href="http://www.php.net/array"><span style="color: #990000;">array</span></a><span style="color: #009900;">&#40;</span><span style="color: #0000ff;">&ldquo;apple&rdquo;</span><span style="color: #339933;">,</span> <span style="color: #0000ff;">&ldquo;banana&rdquo;</span><span style="color: #339933;">,</span> <span style="color: #0000ff;">&ldquo;coconut&rdquo;</span><span style="color: #009900;">&#41;</span><span style="color: #339933;">;</span>
+<span style="color: #b1b100;">foreach</span> <span style="color: #009900;">&#40;</span> <span style="color: #000088;">$set</span> <span style="color: #b1b100;">AS</span> <span style="color: #000088;">$item</span> <span style="color: #009900;">&#41;</span> <span style="color: #009900;">&#123;</span>
+    <a href="http://www.php.net/echo"><span style="color: #990000;">echo</span></a> <span style="color: #0000ff;">&ldquo;<span style="color: #006699; font-weight: bold;">{$item}</span><span style="color: #000099; font-weight: bold;"><br />
+</span>&ldquo;</span><span style="color: #339933;">;</span>
+<span style="color: #009900;">&#125;</span></pre></div>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">apple
+banana
+coconut</pre></div>
+<p>Even though the copy is created, the developer doesn’t notice, because the original array isn’t referenced within the loop or after the loop finishes.  However, when you attempt to modify the items in a loop, you find that they are unmodified when you finish:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">);<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #0000BB">strrev&nbsp;</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [0] =&gt; apple
+    [1] =&gt; banana
+    [2] =&gt; coconut
+)</pre></div>
+<p>There are no changes from the original, even though you clearly assigned a value to $item.  This is because you are operating on $item as it appears in the copy of $set being worked on.  You can override this by grabbing $item by reference, like so:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">);<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;&amp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #0000BB">strrev</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [0] =&gt; elppa
+    [1] =&gt; ananab
+    [2] =&gt; tunococ
+)</pre></div>
+<p>As you can see, when $item is operated on by-reference, the changes made to $item are made to the members of the original $set.  Using $item by reference also prevents PHP from creating the array copy.  To test this, first we’ll show a quick script demonstrating the copy:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">);<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[]&nbsp;=&nbsp;</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [0] =&gt; apple
+    [1] =&gt; banana
+    [2] =&gt; coconut
+    [3] =&gt; Apple
+    [4] =&gt; Banana
+    [5] =&gt; Coconut
+)</pre></div>
+<p>In this example, PHP copied $set and used it to loop over, but when $set was used inside the loop, PHP added the variables to the original array, not the copied array.  Basically, PHP is only using the copied array for the execution of the loop and the assignment of $item.  Because of this, the loop above only executes 3 times, and each time it appends another value to the end of the original $set, leaving the original $set with 6 elements, but never entering an infinite loop.</p>
+<p>However, what if we had used $item by reference, as I mentioned before?  A single character added to the above test:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">);<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;&amp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[]&nbsp;=&nbsp;</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>Results in an infinite loop.  Note this actually is an infinite loop, you’ll have to either kill the script yourself or wait for your OS to run out of memory.  I added the following line to my script so PHP would run out of memory very quickly, I suggest you do the same if you’re going to be running these infinite loop tests:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">ini_set</span><span style="color: #007700">(</span><span style="color: #DD0000">&ldquo;memory_limit&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;1M&rdquo;</span><span style="color: #007700">);</span></span></p>
+<p>So in this previous example with the infinite loop, we see the reason why PHP was written to create a copy of the array to loop over.  When a copy is created and used only by the structure of the loop construct itself, the array stays static throughout the execution of the loop, so you’ll never run into issues.</p>
+<p>But wait, there’s more.  PHP fails to create a copy of the array if a reference is used at all.  We know that referencing $item will cause the infinite loop scenario above, but if $set is referenced anywhere else in the script, even the non-referencing foreach format will break:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">);<br /></span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">=&nbsp;&amp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">;<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[]&nbsp;=&nbsp;</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />}</span></span></p>
+<p>Results in an infinite loop, even though $item isn’t by reference.  Using $a instead of $set gives identical results.  </p>
+<p>This is not to say that $item is implicitly used by reference if $set is referenced.  See this example:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">);<br /></span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">=&nbsp;&amp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">;<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [0] =&gt; apple
+    [1] =&gt; banana
+    [2] =&gt; coconut
+)</pre></div>
+<p>$set is unchanged from the original values, because even though $set is referenced by $a, and $set has not been copied, $item is still given only lexical scope in relation to the loop, and will not pass modifications back to $set.  You will still have to assign it by reference to make changes to the original array:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">,&nbsp;</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">);<br /></span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">=&nbsp;&amp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">;<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">AS&nbsp;&amp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">=&nbsp;</span><span style="color: #0000BB">strrev</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [0] =&gt; elppa
+    [1] =&gt; ananab
+    [2] =&gt; tunococ
+)</pre></div>
+<p>All of these examples also work in associative arrays using the foreach ( $set AS $key =&gt; $item ) syntax.  $key can never be used by-reference it always comes from the array the loop construct is using, and cannot be modified.  So the tricks used to modify array items in-position won’t work for modifying the keys.  You can create new keys in the array, however, and unset the existing ones, like so:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;red&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;yellow&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;brown&rdquo;</span><span style="color: #007700">);<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$key&nbsp;</span><span style="color: #007700">=&gt;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$key</span><span style="color: #007700">)]&nbsp;=&nbsp;</span><span style="color: #0000BB">$item</span><span style="color: #007700">;<br />&nbsp;&nbsp;&nbsp;&nbsp;unset(</span><span style="color: #0000BB">$set</span><span style="color: #007700">[</span><span style="color: #0000BB">$key</span><span style="color: #007700">]);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [Apple] =&gt; red
+    [Banana] =&gt; yellow
+    [Coconut] =&gt; brown
+)</pre></div>
+<p>However, as you may have already noticed, this array was copied before the loop began.  If you were using the array in a situation where it couldn’t be copied, you will run into errors:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;red&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;yellow&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;brown&rdquo;</span><span style="color: #007700">);<br /></span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">=&nbsp;&amp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">;<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$key&nbsp;</span><span style="color: #007700">=&gt;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$key</span><span style="color: #007700">)]&nbsp;=&nbsp;</span><span style="color: #0000BB">$item</span><span style="color: #007700">;<br />&nbsp;&nbsp;&nbsp;&nbsp;unset(</span><span style="color: #0000BB">$set</span><span style="color: #007700">[</span><span style="color: #0000BB">$key</span><span style="color: #007700">]);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+)</pre></div>
+<p>Because the array was referenced and not copied, you get vastly unpredictable results when attempting to alter the physical structure of the array, especially using unset().  Without the unset() call in this example, you operate on the original array and loop through the original array, so you get the same infinite-loop generating code as before, but since we’re specifying the key for $set it doesn’t continue forever:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;red&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;yellow&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;brown&rdquo;</span><span style="color: #007700">);<br /></span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">=&nbsp;&amp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">;<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$key&nbsp;</span><span style="color: #007700">=&gt;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$key</span><span style="color: #007700">)]&nbsp;=&nbsp;</span><span style="color: #0000BB">$item</span><span style="color: #007700">;<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [apple] =&gt; red
+    [banana] =&gt; yellow
+    [coconut] =&gt; brown
+    [Apple] =&gt; red
+    [Banana] =&gt; yellow
+    [Coconut] =&gt; brown
+)</pre></div>
+<p>You can prove that it’s still possible to enter an infinite loop by adding a $set[] inside your loop:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;red&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;yellow&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;brown&rdquo;</span><span style="color: #007700">);<br /></span><span style="color: #0000BB">$a&nbsp;</span><span style="color: #007700">=&nbsp;&amp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">;<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$key&nbsp;</span><span style="color: #007700">=&gt;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$key</span><span style="color: #007700">)]&nbsp;=&nbsp;</span><span style="color: #0000BB">$item</span><span style="color: #007700">;<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[]&nbsp;=&nbsp;</span><span style="color: #0000BB">$item</span><span style="color: #007700">;<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">);</span></span></p>
+<p>This results in an infinite loop.</p>
+<p>One interesting thing you can do with the $key =&gt; $item syntax when the array is copied is modify the original array structure without fear of causing loop issues:</p>
+<p><span style="color: #000000"><span style="color: #0000BB">&lt;?php<br />$set&nbsp;</span><span style="color: #007700">=&nbsp;array(</span><span style="color: #DD0000">&ldquo;apple&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;red&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;banana&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;yellow&rdquo;</span><span style="color: #007700">,</span><span style="color: #DD0000">&ldquo;coconut&rdquo;</span><span style="color: #007700">=&gt;</span><span style="color: #DD0000">&ldquo;brown&rdquo;</span><span style="color: #007700">);<br />foreach&nbsp;(&nbsp;</span><span style="color: #0000BB">$set&nbsp;</span><span style="color: #007700">AS&nbsp;</span><span style="color: #0000BB">$key&nbsp;</span><span style="color: #007700">=&gt;&nbsp;</span><span style="color: #0000BB">$item&nbsp;</span><span style="color: #007700">)&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color: #0000BB">$set</span><span style="color: #007700">[]&nbsp;=&nbsp;</span><span style="color: #0000BB">ucfirst</span><span style="color: #007700">(</span><span style="color: #0000BB">$item</span><span style="color: #007700">);<br />&nbsp;&nbsp;&nbsp;&nbsp;unset(</span><span style="color: #0000BB">$set</span><span style="color: #007700">[</span><span style="color: #0000BB">$key</span><span style="color: #007700">]);<br />}<br /></span><span style="color: #0000BB">print_r</span><span style="color: #007700">(</span><span style="color: #0000BB">$set</span><span style="color: #007700">); </span></span></p>
+<p>This outputs:</p>
+<div class="geshifilter">
+<pre class="text geshifilter-text" style="font-family:monospace;">Array
+(
+    [0] =&gt; Red
+    [1] =&gt; Yellow
+    [2] =&gt; Brown
+)</pre></div>
+<p>As you can see from this example, the array was copied for use in the loop construct.  References to $set within the loop still refer to the outer version of $set, so the unset() call and the $set[] addition work on the original, leaving us with a nicely upper-cased version of the original, without keys.  </p>
+<p>This knowledge is useful for developers who are trying to plug memory holes in PHP applications.  If you foreach through an array of objects that can be 50MB in size, you create an entire copy of the structure in memory for no reason other than to power the loop.  If your loop doesn’t modify the structure of the array or add to it at all, it would be vastly more efficient to add the “cheat” of $a = &amp;$array; right before your array to prevent PHP from making a copy.  </p>
+<p>This knowledge is also hopefully useful for programmers who cannot figure out why arrays are behaving like they are.  Basically, if you don’t use references, the loop executes once for each member in the original array, regardless of what you do to the original.  </p>
+<p>NOTE:  These tests were performed on PHP version 5.2.5.  5.2.0 and earlier perform differently.  Run these tests yourself under controlled circumstances before relying on PHP to behave in any particular way.</p></p>
+
+            </div>
+        </div>
+
+    </div>
+    <hr>
+    <div class="row">
+            
+        <div class="col-md-6">
+            
+<div class="panel panel-default">
+    <div class="panel-heading" style="padding: 2px 15px;">
+        <h4>More Documentation</h4>
+    </div>
+    <div class="panel-body">
+        <a href="https://softlayer.github.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
+        <a href="https://github.com/softlayer/softlayer-java"><i class="fab fa-github"></i> softlayer-java<br></a>
+        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fab fa-github"></i> softlayer-perl<br></a>
+        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fab fa-github"></i> softlayer-php<br></a>
+        <a href="https://github.com/softlayer/softlayer-python"><i class="fab fa-github"></i> softlayer-python<br></a>
+        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fab fa-github"></i> softlayer-ruby<br></a>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading text-center" style="padding: 2px 15px;">
+      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fab fa-facebook-square" alt="facebook"></i> </a>
+      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fab fa-twitter" alt="twitter"></i> </a>
+      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fab fa-linkedin"></i> </a>
+      <a href="https://github.com/softlayer/softlayer.github.io"><i class="fab fa-github" alt="github"></i> </a>
+
+    </div>
+</div>
+
+        </div>
+        <div class="col-md-6">
+            <div class="well well-sm" style="word-wrap: break-word;"> 
+                <strong>Feedback? <span class="fa fa-comment"/></strong>
+                    <p>
+                        We would love to hear it<br>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20blog%20-%20PHP%20Memory%20Management%20in%20Foreach&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fblog%2fdmcaloon%2fphp-memory-management-foreach%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                    </p>
+            </div>
+        </div>
+
+    </div>
+        <footer>
+            <div class="row">
+                <hr>
+                <div class="col-sm-12">
+                    <p>&copy; SoftLayer 2015<br>
+                    Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
+                </div>
+            </div>
+        </footer>
+</div>
+
+    <script src="https://softlayer.github.io/js/jquery.js"></script>
+    <script src="https://softlayer.github.io/js/bootstrap.js"></script>
+</body>
+</html>
+
+/blog/dmcaloon/php-memory-management-foreach/
