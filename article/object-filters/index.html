@@ -128,7 +128,7 @@ ga('send', 'pageview');
                 
                 
 
-<p>Object filters can be used to limit the results returned by the API. They differ from object masks in that they determine what Data Type objects are returned while Object Masks define what properties to retrieve from the returned objects.</p>
+<p>Object filters can be used to limit the results returned by the API. They differ from objectMasks in that they determine which objects are returned while objectMasks define what properties to retrieve from the returned objects.</p>
 
 <h2 id="structure">Structure</h2>
 
@@ -137,13 +137,18 @@ ga('send', 'pageview');
 <p>Each filter object will have at least an &lsquo;operation&rsquo; property and may contain one or more &lsquo;options&rsquo;.</p>
 
 <p>To pull a list of all virtual machines in the Dallas 5 datacenter we would start with SoftLayer_Account::getVirtualGuests. We will augment this call with an Object Filter to limit the objects returned to those in the Dallas 5 datacenter.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    object_filter <span style="color:#f92672">=</span> {
-        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: {
-            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;datacenter&#39;</span>: {
-                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;dal05&#39;</span>}
-            }
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">object_filter <span style="color:#f92672">=</span> {
+    <span style="color:#75715e"># https://softlayer.github.io/reference/datatypes/SoftLayer_Account/#virtualGuests</span>
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: { 
+        <span style="color:#75715e"># https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest/#datacenter</span>
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;datacenter&#39;</span>: { 
+            <span style="color:#75715e"># https://softlayer.github.io/reference/datatypes/SoftLayer_Location/#name</span>
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;dal05&#39;</span>} 
         }
-    }</code></pre></div>
+    }
+}</code></pre></div>
+<p><em>NOTE</em> objectFilters generally start at the Service&rsquo;s datatype, which is why the SoftLayer_Account::getVirtualGuests&rsquo;s objectFilter starts with the &lsquo;virtualGuests&rsquo; property, and not the datacenter property.</p>
+
 <p>We have given the target property a value of a json object with one element named <code>operation</code>. the operation element has a string value of <code>dal05</code>. The value of the operation element determines the conditional that will be used. The above is an example of the <code>Equals</code> conditional.</p>
 
 <p>The inverse of this example, pulling all virtual machines <strong><em>not</em></strong> in the Dallas 5 datacenter is accomplished by changing to the <code>NOT EQUAL</code> conditional.</p>
@@ -154,50 +159,111 @@ ga('send', 'pageview');
         }
     }
 }</code></pre></div>
+<p>An objectFilter can have multiple operations as well.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">object_filter <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;datacenter&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;!=dal05&#39;</span>}
+        }, 
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;domain&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;test.com&#39;</span>
+        }
+    }
+}</code></pre></div>
 <h2 id="operations">Operations</h2>
 
 <p>An operation is the conditional added to the Object Filter to define what Data Type objects will be returned by the API.</p>
 
-<h2 id="general-filters">General Filters</h2>
+<h2 id="literal-operators">Literal Operators</h2>
 
-<h3 id="equals">Equals</h3>
+<ul>
+<li><code>value</code> - Checks that the column matches value</li>
+<li><code>!= value</code> - Checks that the column does not match value</li>
+<li><code>&gt; value</code> - Checks that the column is greater than value</li>
+<li><code>&gt;= value</code> - Checks that the column is greater than or equal to value</li>
+<li><code>&lt; value</code> - Checks that the column is less than value</li>
+<li><code>&lt;= value</code> - Checks that the column is less than or equal to value</li>
+<li><code>^= value</code> - Checks that the column starts with value</li>
+<li><code>!^= value</code> - Checks that the column does not start with value</li>
+<li><code>$= value</code> - Checks that the column ends with value</li>
+<li><code>!$= value</code> - Checks that the column does not end with value</li>
+<li><code>*= value</code> - Checks that the column contains value</li>
+<li><code>!*= value</code> - Checks that the column does not contain with value</li>
+<li><code>_= value</code> - Checks that the lowercased column equals value</li>
+<li><code>~ value</code> - Checks that the column matches the regular expression value</li>
+<li><code>!~ value</code> - Checks that the column does not match the regular expression value</li>
+<li><code>not null</code> - Checks that the column is not null</li>
+<li><code>is null</code> - Checks that the column is null</li>
+</ul>
 
-<p><strong><em>Value can be int or string</em></strong></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;baz&#39;
-operation = 1234</pre></div>
-<h3 id="not-equal">Not Equal</h3>
-
-<p><strong><em>Value can be int or string</em></strong></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;!= example string&#39;
-operation = &#39;!= 1234&#39;</pre></div>
-<h3 id="greater-than-or-equal-to">Greater Than or Equal to</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;&gt;= 1234&#39;</pre></div>
-<h3 id="greater-than">Greater Than</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;&gt; 1234&#39;</pre></div>
-<h3 id="less-than-or-equal-to">Less Than or Equal to</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;&lt;= 1234&#39;</pre></div>
-<h3 id="less-than">Less Than</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;&lt; 1234&#39; </pre></div>
-<h3 id="not-null">Not Null</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;not null&#39;</pre></div>
-<h3 id="is-null">Is Null</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;is null&#39; </pre></div>
-<h2 id="string-filters">String Filters</h2>
-
-<h3 id="contains">Contains</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;*= wibble wobble&#39;</pre></div>
-<h3 id="does-not-contain">Does not Contain</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;!*= corge&#39;</pre></div>
-<h3 id="starts-with">Starts With</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;^= qux&#39;</pre></div>
-<h3 id="ends-with">Ends With</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;$= baz&#39;</pre></div>
-<h2 id="date-filters">Date filters</h2>
+<h2 id="advanced-operators">Advanced Operators</h2>
 
 <p>Some Object Filters require <code>options</code> to be passed in addition the operation. Options are passed as an array of json objects.</p>
 
+<p><em>WARNING</em> If you don&rsquo;t properly define these operators, the API tends to just ignore the filter and return the normal results.</p>
+
+<h3 id="in-not-in">IN, NOT IN</h3>
+
+<p>The in operation can be used to require the column to match only one of the values. It only supports integer values. For example:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">object_filter <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;datacenter&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;in&#39;</span>, 
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;options&#39;</span>: [{
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;data&#39;</span>,
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;value&#39;</span>: [<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;dal09&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;tor01&#39;</span>]
+                }]
+            }
+        }
+    }
+}</code></pre></div>
+<h3 id="or">OR</h3>
+
+<p>There is also an or operation but the in version is recommended when it can be used. Unlike the in operation, the or operation supports literal operators in the values and should therefore be used when needing more than just normal equality. For example</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">_filter <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;datacenter&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;or&#39;</span>, 
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;options&#39;</span>: [{
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;data&#39;</span>,
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;value&#39;</span>: [<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;^= tor&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;^= sjc&#39;</span>]
+                }]
+            }
+        }
+    }
+}</code></pre></div>
+<h3 id="and">AND</h3>
+
+<p>The and operation lets a column match multiple possibilities. For example this will get all virtualGuests with maxMemory between 1G and 16G</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">_filter <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;maxMemory&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;and&#39;</span>, 
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;options&#39;</span>: [{
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;data&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;value&#39;</span>: [<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&gt;= 1024&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&lt;= 16384&#39;</span>]
+            }]
+        }
+    }
+}</code></pre></div>
+<h2 id="date-filters">Date filters</h2>
+
+<p>Date filters need to be used on fields that contain a date object. Usually the date string format is in the <code>MM/DD/YYYY HH24:MI:SS</code> form (using Oracle notation here), usually. If your filter isn&rsquo;t working, try matching the date format to the format returned by the API.</p>
+
 <h3 id="x-days-past">X days past</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;&gt;= currentDate - 01/01/01&#39;</pre></div>
+
+<p>A simple way to get dates a few days in the past is this format.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;&gt;= currentDate - 30&#39;</pre></div>
+<p>alternatively</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&#39;operation&#39;: &#39;&gt; sysdate - 30&#39;</pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">_filter <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;provisionDate&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&gt; sysdate - 30&#39;</span>
+        }
+    }
+}</code></pre></div>
 <h3 id="exact-date">Exact Date</h3>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;isDate&#39;
 options = [{
@@ -223,19 +289,42 @@ options = [{
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;betweenDate&#39;
 options = [{
     &#39;name&#39;: &#39;startDate&#39;,
-    &#39;value: [&#39;01/01/01&#39;]
+    &#39;value: [&#39;01/01/2015&#39;]
     },
     {
     &#39;name&#39;: &#39;endDate&#39;,
-    &#39;value&#39;: [&#39;01/02/01]
+    &#39;value&#39;: [&#39;01/31/2015]
     }
 ]</pre></div>
-<h2 id="regex-filters">Regex Filters</h2>
+<h2 id="sorting">Sorting</h2>
 
-<h3 id="like">Like</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;~ value&#39;</pre></div>
-<h3 id="not-like">Not Like</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">operation = &#39;!~ value&#39;</pre></div>
+<p>The sort option accepts an array. ASC or DESC can be provided to set the sort direction. Since a query can contain many orderBy options, the API allows the developer to set the precedence with a sortOrder option which takes a single-value array of an integer. The lower integer has higher sort priority.  This example will sort the virtual guests by <code>maxMemory</code> ASC, then by <code>provisionDate</code> DESC.</p>
+
+<p>It is not possible to SORT and SEARCH on the same property.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">_filter <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>: {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;provisionDate&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderBy&#39;</span>,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;options&#39;</span>: [{
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;sort&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;value&#39;</span>: [<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;DESC&#39;</span>]
+            }, {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;sortOrder&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;value&#39;</span>: [<span style="color:#ae81ff">1</span>]
+            }]
+        },
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;maxMemory&#39;</span>: {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;operation&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderBy&#39;</span>,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;options&#39;</span>: [{
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;sort&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;value&#39;</span>: [<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;ASC&#39;</span>]
+            }, {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;sortOrder&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;value&#39;</span>: [<span style="color:#ae81ff">0</span>]
+            }]
+        },
+    }
+}</code></pre></div>
 <h2 id="examples">Examples</h2>
 
 <h3 id="rest">REST</h3>
