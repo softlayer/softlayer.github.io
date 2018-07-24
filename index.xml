@@ -6,7 +6,316 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 20 Jul 2018 00:00:00 UTC</updated>
+    <updated>Mon, 23 Jul 2018 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Automating Block Storage</title>
+      <link>https://softlayer.github.io/article/AutomatingStorage/</link>
+      <pubDate>Mon, 23 Jul 2018 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/article/AutomatingStorage/</guid>
+      <description>
+
+&lt;h2 id=&#34;the-process&#34;&gt;The Process&lt;/h2&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Order a VSI with a postInstall script&lt;/li&gt;
+&lt;li&gt;Order a storage volume&lt;/li&gt;
+&lt;li&gt;Update the metadata of the VSI to include the needed information to mount the storage volume&lt;/li&gt;
+&lt;li&gt;postInstall script gets metadata from the metadata service, and mounts the volume&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&#34;ordering-code&#34;&gt;Ordering Code&lt;/h2&gt;
+
+&lt;p&gt;This script will order a VSI, based on a configuration in the file, then order some storage, authorize storage to the new VSI, and set the VSI&amp;rsquo;s metadata with the needed information for it to be mounted.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Create a new Virtual Guest and block storage.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;allowAccessToNetworkStorageList, setUserMetadata
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;createObject() enables the creation of computing instances on an account.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;This method is a simplified alternative to interacting with the ordering
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;system directly.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Important manual pages:
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;https://softlayer.github.io/reference/services/SoftLayer_Product_Order/placeOrder/
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;https://softlayer.github.io/reference/services/SoftLayer_Billing_Order/getObject/
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;https://softlayer.github.io/reference/services/SoftLayer_Account/getNetworkStorage/
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/setUserMetadata/
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/generateOrderTemplate
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/allowAccessToNetworkStorageList/
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;License: http://sldn.softlayer.com/article/License
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Author: SoftLayer Technologies, Inc. &amp;lt;sldn@softlayer.com&amp;gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; time
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# For nice debug output:&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; pp
+
+
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Initial setup of some variables&lt;/span&gt;
+
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+storage_manager &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;  SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;BlockStorageManager(client)
+guest_manager &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;VSManager(client)
+
+vmId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+username &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+password &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+targetAddress &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+blockStorageId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+blockStorageOrderId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+allowAccessToNetworkStorage &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Describes the VM we want to order&lt;/span&gt;
+templateVirtualGuest &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;hostname&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;tester&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;domain&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ibm.com&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;datacenter&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;dal13&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;flavor&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;BL2_2X4X100&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;hourlyBillingFlag&amp;#34;&lt;/span&gt;: True,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;os_code&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CENTOS_7_64&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;nic_speed&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;postInstallScriptUri&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;https://pastebin.com/whatever&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ssh_keys&amp;#34;&lt;/span&gt;: [&lt;span style=&#34;color:#ae81ff&#34;&gt;87634&lt;/span&gt;],
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;public_security_groups&amp;#34;&lt;/span&gt;: [&lt;span style=&#34;color:#ae81ff&#34;&gt;128321&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;128323&lt;/span&gt;]
+}
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# === ORDERS THE VM ===&lt;/span&gt;
+virtualGuestResponse &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; guest_manager&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_instance(&lt;span style=&#34;color:#f92672&#34;&gt;**&lt;/span&gt;templateVirtualGuest)
+vmId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; virtualGuestResponse[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+pp(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;virtualGuestId &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(vmId))
+
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# === ORDERS THE STORAGE ===&lt;/span&gt;
+blockStorageOrder &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; storage_manager&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;order_block_volume(
+    storage_type&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;performance&amp;#34;&lt;/span&gt;,
+    location&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;dal13&amp;#34;&lt;/span&gt;,
+    size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;100&lt;/span&gt;,
+    os_type&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;LINUX&amp;#34;&lt;/span&gt;,
+    iops&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt;,
+    snapshot_size&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None,
+    service_offering&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storage_as_a_service&amp;#39;&lt;/span&gt;,
+    hourly_billing_flag&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True
+)
+
+blockStorageOrderId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; blockStorageOrder[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;orderId&amp;#39;&lt;/span&gt;]
+pp(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;blockStorageOrderId &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(blockStorageOrderId))
+
+status &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt; status &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;APPROVED&amp;#34;&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Checking storage order status...&amp;#34;&lt;/span&gt;)
+    orderStatus &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Billing_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getObject(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;blockStorageOrderId)
+    status &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; orderStatus[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;status&amp;#39;&lt;/span&gt;]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; status &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;APPROVED&amp;#34;&lt;/span&gt;:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Order pending approval&amp;#34;&lt;/span&gt;)
+        time&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sleep(&lt;span style=&#34;color:#ae81ff&#34;&gt;60&lt;/span&gt;)
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Used to lookup the storage id based on its order&lt;/span&gt;
+objectFilter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;networkStorage&amp;#34;&lt;/span&gt;: {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;billingItem&amp;#34;&lt;/span&gt;: {
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;orderItem&amp;#34;&lt;/span&gt;: {
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;order&amp;#34;&lt;/span&gt;: {
+                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: {
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: blockStorageOrderId
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+objectMask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[billingItem[orderItem[order[id]]]]&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Getting block storage info&amp;#34;&lt;/span&gt;)
+blockStorageArray &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Account&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getNetworkStorage(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectFilter, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectMask)
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; blockStorage &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; blockStorageArray:
+    blockStorageId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; blockStorage[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;blockStorageId &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(blockStorageId))
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Can&amp;#39;t autorize a volume while there is an active transaction&lt;/span&gt;
+activeTransaction &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Network_Storage&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getActiveTransactions(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;blockStorageId)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt; (len(activeTransaction) &lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;):
+    activeTransaction &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Network_Storage&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getActiveTransactions(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;blockStorageId)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;There is a block storage transaction running&amp;#39;&lt;/span&gt;)
+    time&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sleep(&lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;)
+
+blockStorageObject &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [ {  &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: blockStorageId } ]
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Granting vm {} access to {}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(vmId, blockStorageId))
+&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+    allowAccessToNetworkStorage &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Virtual_Guest&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;allowAccessToNetworkStorageList(blockStorageObject, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;vmId)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;exceptions&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Exception_Network_Storage_Group_MassAccessControlModification&amp;#34;&lt;/span&gt;:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;This host is already allowed access&amp;#34;&lt;/span&gt;)
+
+
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Find out the username/password/ip for our iscsi target&lt;/span&gt;
+objectMask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;mask[id, iscsiTargetIpAddresses, allowedVirtualGuests[fullyQualifiedDomainName, 
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;allowedHost[id,name,resourceTableId,resourceTableName, credential[id,username,password],sourceSubnet]]]&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+blockStorageCredentials &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Network_Storage&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getObject(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectMask, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;blockStorageId)
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# We assume this volume only has 1 host authorized to mount it.&lt;/span&gt;
+pp(blockStorageCredentials)
+allowedHost &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; blockStorageCredentials[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;allowedVirtualGuests&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
+credentials &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; allowedHost[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;allowedHost&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;credential&amp;#39;&lt;/span&gt;]
+targetAddress &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; blockStorageCredentials[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;iscsiTargetIpAddresses&amp;#39;&lt;/span&gt;]
+username &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; credentials[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;username&amp;#39;&lt;/span&gt;]
+password &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; credentials[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;password&amp;#39;&lt;/span&gt;]
+iqn &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; allowedHost[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;allowedHost&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Set the meta data for the vm&lt;/span&gt;
+meta_string &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{storageId}, {iqn}, {target}, {user}, {password}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(
+                storageId&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;blockStorageId, target&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;, &amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;join(targetAddress), user&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;username, password&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;password, iqn&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;iqn)
+metadata &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [meta_string]
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Setting MetaData:&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; metadata)
+metadataSet &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Virtual_Guest&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;setUserMetadata(metadata, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;vmId)
+
+
+
+mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[userData]&amp;#34;&lt;/span&gt;
+virtualGuestData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Virtual_Guest&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getObject(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;vmId)
+pp(virtualGuestData)
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;FINISHED&amp;#34;&lt;/span&gt;)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id=&#34;post-install-script&#34;&gt;Post install script&lt;/h2&gt;
+
+&lt;p&gt;Most of the configuration for this script comes from &lt;a href=&#34;https://console.bluemix.net/docs/infrastructure/BlockStorage/accessing_block_storage_linux.html#connecting-to-mpio-iscsi-luns-on-linux&#34;&gt;https://console.bluemix.net/docs/infrastructure/BlockStorage/accessing_block_storage_linux.html#connecting-to-mpio-iscsi-luns-on-linux&lt;/a&gt; and this specific script is meant to run on Centos7. If you are not using Centos7, you will need to make some minor adjustments to the configuration files.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#!/bin/bash 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# *************************  Connecting to MPIO ISCSI lun on Linux OS *************************
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# The following script uses steps for CentOS distribution only, to change configuration please review the following url:
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# https://console.bluemix.net/docs/infrastructure/BlockStorage/accessing_block_storage_linux.html#connecting-to-mpio-iscsi-luns-on-linux
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;# Get the metadata
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;IFS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt; read -ra METAAA &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;`&lt;/span&gt;curl https://api.service.softlayer.com/rest/v3.1/SoftLayer_Resource_Metadata/getUserMetadata&lt;span style=&#34;color:#e6db74&#34;&gt;`&lt;/span&gt;
+USERNAME&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;METAAA[4]&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+IP_1&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;METAAA[3]&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+IP_2&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;METAAA[2]&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;# This removes the trailing \&amp;#34; that comes from the curl command
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;PASSWORD&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;METAAA[5]%&lt;span style=&#34;color:#ae81ff&#34;&gt;\&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;
+INITIATOR&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;METAAA[1]&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#1 Install the iSCSI and multipath utilities to your host.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;yum -y install iscsi-initiator-utils device-mapper-multipath
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#2 Create/edit /etc/multipath.conf with the minimum configuration that is provided in the following commands. 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;MINIMUMCONFIGURATION&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;defaults {
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;user_friendly_names no
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;max_fds max
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;flush_on_last_del yes
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;queue_without_daemon no
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;dev_loss_tmo infinity
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;fast_io_fail_tmo 5
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;}
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;# All data under blacklist must be specific to your system.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;blacklist {
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;wwid &amp;#34;SAdaptec*&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;devnode &amp;#34;^hd[a-z]&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;devnode &amp;#34;^(ram|raw|loop|fd|md|dm-|sr|scd|st)[0-9]*&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;devnode &amp;#34;^cciss.*&amp;#34;  
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;}
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;devices {
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;device {
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;vendor &amp;#34;NETAPP&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;product &amp;#34;LUN&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;path_grouping_policy group_by_prio
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;features &amp;#34;3 queue_if_no_path pg_init_retries 50&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;prio &amp;#34;alua&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;path_checker tur
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;failback immediate
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;path_selector &amp;#34;round-robin 0&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;hardware_handler &amp;#34;1 alua&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;rr_weight uniform
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;rr_min_io 128
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;}
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;}
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&lt;/span&gt;
+echo &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;$MINIMUMCONFIGURATION&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &amp;gt; /etc/multipath.conf
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#3 Load the multipath module, start multipath services, and set it start on boot.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# CentOS 7 commands, change the following according the SO type.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;modprobe dm-multipath
+systemctl start multipathd
+systemctl enable multipathd
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#4 Verify that multipath is working.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;multipath -ll
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#5 Update /etc/iscsi/initiatorname.iscsi file with the IQN from the IBM Cloud infrastructure customer portal. 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#  Enter the value as lowercase.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;echo &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;InitiatorName=&lt;/span&gt;$INITIATOR&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &amp;gt; /etc/iscsi/initiatorname.iscsi
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#6 Edit the CHAP settings in /etc/iscsi/iscsid.conf by using the user name and password from the IBM Cloud infrastructure customer portal. 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#  Use uppercase for CHAP names.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;ISCSIDCONF&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;iscsid.startup = /bin/systemctl start iscsid.socket iscsiuio.socket
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.startup = automatic
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.leading_login = No
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.timeo.replacement_timeout = 120
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.conn[0].timeo.login_timeout = 15
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.conn[0].timeo.logout_timeout = 15
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.conn[0].timeo.noop_out_interval = 5
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.conn[0].timeo.noop_out_timeout = 5
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.err_timeo.abort_timeout = 15
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.err_timeo.lu_reset_timeout = 30
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.err_timeo.tgt_reset_timeout = 30
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.initial_login_retry_max = 8
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.cmds_max = 128
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.queue_depth = 32
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.xmit_thread_priority = -20
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.iscsi.InitialR2T = No
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.iscsi.ImmediateData = Yes
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.iscsi.FirstBurstLength = 262144
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.iscsi.MaxBurstLength = 16776192
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.conn[0].iscsi.MaxRecvDataSegmentLength = 262144
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.conn[0].iscsi.MaxXmitDataSegmentLength = 0
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;discovery.sendtargets.iscsi.MaxRecvDataSegmentLength = 32768
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.conn[0].iscsi.HeaderDigest = None
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.nr_sessions = 1
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.iscsi.FastAbort = Yes
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.scan = auto
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.auth.authmethod = CHAP
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.auth.username = &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;USERNAME&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;node.session.auth.password =  &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;PASSWORD&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;discovery.sendtargets.auth.authmethod = CHAP
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;discovery.sendtargets.auth.username =  &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;USERNAME&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;discovery.sendtargets.auth.password =  &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;PASSWORD&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;
+echo &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;$ISCSIDCONF&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &amp;gt; /etc/iscsi/iscsid.conf
+ 
+&lt;span style=&#34;color:#75715e&#34;&gt;#7 Set iSCSI to start at boot and start it now.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;systemctl enable iscsi
+systemctl enable iscsid
+systemctl start iscsi
+systemctl start iscsid
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#8 Discover the device by using the Target IP address that was obtained from the IBM Cloud infrastructure customer portal.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;#A. Run the discovery against the iSCSI array.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+iscsiadm -m discovery -t sendtargets -p $IP_1
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#B. Set the host to automatically log in to the iSCSI array.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;iscsiadm -m node -L automatic
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#9 Verify that the host is logged in to the iSCSI array and maintained its sessions.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;iscsiadm -m session
+multipath -l
+
+&lt;span style=&#34;color:#75715e&#34;&gt;#10 Verify that the device is connected. 
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#   By default the device attaches to /dev/mapper/mpathX where X is the generated ID of the connected device.
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;fdisk -l | grep /dev/mapper&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Release notes: July 20, 2018</title>
@@ -646,71 +955,6 @@ These pages should be updated to match:
 
 	}
 
-}&lt;/pre&gt;&lt;/div&gt;</description>
-    </item>
-    
-    <item>
-      <title>CreatePdf.cs</title>
-      <link>https://softlayer.github.io/csharp/CreatePdf.cs/</link>
-      <pubDate>Wed, 25 Apr 2018 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/csharp/CreatePdf.cs/</guid>
-      <description>&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;﻿﻿//-----------------------------------------------------------------------
-// &amp;lt;copyright file=&amp;#34;CreatePdf.cs&amp;#34; company=&amp;#34;Softlayer&amp;#34;&amp;gt;
-//     SoftLayer Technologies, Inc.
-// &amp;lt;/copyright&amp;gt;
-// &amp;lt;license&amp;gt;
-// http://sldn.softlayer.com/article/License
-// &amp;lt;/license&amp;gt;
-//-----------------------------------------------------------------------
-namespace Quotes
-{
-    using System;
-    using System.IO;
-    using System.Collections.Generic;
-    class CreatePdf
-    {
-        /// &amp;lt;summary&amp;gt;
-        /// Create Pdf
-        /// This script creates a PDF record of a SoftLayer quoted order.
-        /// The Pdf is stored in the path specified in &amp;#34;path&amp;#34; string
-        /// See below for more details.
-        /// &amp;lt;/summary&amp;gt;
-        /// &amp;lt;manualPages&amp;gt;
-        /// http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Order_Quote/getPdf
-        /// &amp;lt;/manualPages&amp;gt;
-        static void Main(string[] args)
-        {
-            // Your SoftLayer username
-            string username = &amp;#34;&amp;#34;;
-            // Your SoftLayer apiKey, you can generate it on: https://control.softlayer.com/account/users
-            string apiKey = &amp;#34;apikey_goes_here&amp;#34;;
-            // Define the quote identifier that you wish to save
-            int quoteId = 1528487;
-            // Define the path that you wish to create the PDF from quote
-            string path = @&amp;#34;C:\Reports\testpdf.pdf&amp;#34;;
-            // Creating a connection to the SoftLayer_Billing_Order_Quote API service and             
-            // bind our API username and key to it. 
-            authenticate authenticate = new authenticate();
-            authenticate.username = username;
-            authenticate.apiKey = apiKey;
-            SoftLayer_Billing_Order_QuoteService quoteService = new SoftLayer_Billing_Order_QuoteService();
-            quoteService.authenticateValue = authenticate;
-            // Setting init parameters
-            quoteService.SoftLayer_Billing_Order_QuoteInitParametersValue = new SoftLayer_Billing_Order_QuoteInitParameters();
-            quoteService.SoftLayer_Billing_Order_QuoteInitParametersValue.id = quoteId;
-            try
-            {
-                byte[] result = quoteService.getPdf();
-                File.WriteAllBytes(path, result);
-                Console.WriteLine(&amp;#34;The PDF was created&amp;#34;);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(&amp;#34;Unable to create PDF: &amp;#34; + e.Message);
-            }
-        }
-    }
 }&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
