@@ -6,7 +6,280 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 03 Aug 2018 00:00:00 UTC</updated>
+    <updated>Tue, 07 Aug 2018 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Advanced Quote Ordering</title>
+      <link>https://softlayer.github.io/python/order_quote_advanced/</link>
+      <pubDate>Tue, 07 Aug 2018 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/order_quote_advanced/</guid>
+      <description>
+
+&lt;h2 id=&#34;quotes&#34;&gt;Quotes&lt;/h2&gt;
+
+&lt;p&gt;Quotes are a way to save an order, and then easily duplicate the order later. You can create a quote from the control portal by going through the normal order process, and then instead of hitting &amp;ldquo;Order&amp;rdquo; at the end, there will be a button that says &amp;ldquo;Save Quote&amp;rdquo;, which will save the order for later. You can then use the quote service to pull down the information about it from the API. &lt;code&gt;listQuotes&lt;/code&gt; in the example below does exactly this.&lt;/p&gt;
+
+&lt;p&gt;To order from a quote you will need the following bits of information
+- Quote ID
+- Datacenter ID where you want the order to end up
+- Other bits of optional data, like SSH keys, vlan ids, image ids, etc.&lt;/p&gt;
+
+&lt;h3 id=&#34;rest-api-call&#34;&gt;REST API Call&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;curl -u $SL_USER:$SL_APIKEY &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getActiveQuotes.json?objectMask=mask%5Border%5Bid%2C+orderTotalAmount%2C+orderTopLevelItems%5Bid%2C+description%5D%5D%2C+ordersFromQuoteCount%5D&#39;&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;python-output&#34;&gt;Python Output&lt;/h3&gt;
+
+&lt;p&gt;The sample code will output something like this. Quotes can be PENDING, which means they might expire if you don&amp;rsquo;t call &lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/saveQuote/&#34;&gt;SoftLayer_Billing_Order_Quote::saveQuote(id=quoteId)&lt;/a&gt; before its expiration date. SAVED quotes will stick around until you call &lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/deleteQuote/&#34;&gt;SoftLayer_Billing_Order_Quote::deleteQuote(id=quoteId)&lt;/a&gt;
+The quoteId in the first column is what will be used for placing the order. Description is just the topLevelBillingItem for the quote.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;ID, createDate, name, status, order count, description
+&lt;span style=&#34;color:#ae81ff&#34;&gt;2460465&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;2018&lt;/span&gt;-07-23T14:20:59-06:00, Ruber, SAVED, &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;, Single Intel Xeon E3-1270 v3 &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt; Cores, &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;.50 GHz&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;span style=&#34;color:#ae81ff&#34;&gt;2457385&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;2018&lt;/span&gt;-07-17T14:23:54-06:00, AJCB-TESTWITHSSHKEYS, PENDING, &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;, Single Intel Xeon E3-1270 v3 &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt; Cores, &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;.50 GHz&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;span style=&#34;color:#ae81ff&#34;&gt;1528487&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;2015&lt;/span&gt;-09-25T15:37:27-06:00, test-quote, SAVED, &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; x &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;.0 GHz Core&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id=&#34;finding-the-dc-id&#34;&gt;Finding the DC id&lt;/h2&gt;
+
+&lt;p&gt;Now we need to figure out which DC we want to place the order in.
+The way we are going to do this, is by checking the quote&amp;rsquo;s top level item, and see what DCs that package is available in. Using &lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Location/getDatacenters/&#34;&gt;SoftLayer_Location::getDatacenters()&lt;/a&gt; would show you all datacenters, and not all packages are available in all datacenters.&lt;/p&gt;
+
+&lt;h3 id=&#34;rest-call&#34;&gt;REST Call&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order_Quote/&amp;lt;QUOTEID&amp;gt;/getObject.json?objectMask=mask[id,+order[id,orderTopLevelItems[id,package[id,availableLocations[location[longName,id]]]]]]&#39;&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;python&#34;&gt;Python&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listLocationsForQuote&lt;/span&gt;(self, quoteId):
+    mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&amp;#34;&lt;/span&gt;
+    locations &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Billing_Order_Quote&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getObject(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;quoteId, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+    
+    package_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; locations[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;order&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;orderTopLevelItems&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;package&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Package {} is available in the following locations...&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(package_id))
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; dc &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; locations[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;order&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;orderTopLevelItems&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;package&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;availableLocations&amp;#39;&lt;/span&gt;]:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{}, id={}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(dc[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;longName&amp;#39;&lt;/span&gt;], dc[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;Package &lt;span style=&#34;color:#ae81ff&#34;&gt;46&lt;/span&gt; is available in the following locations...
+Seattle &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;18171&lt;/span&gt;
+Dallas &lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;138124&lt;/span&gt;
+Houston &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;142775&lt;/span&gt;
+Dallas &lt;span style=&#34;color:#ae81ff&#34;&gt;7&lt;/span&gt;, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;142776&lt;/span&gt;
+San Jose &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;168642&lt;/span&gt;
+...&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id=&#34;building-our-new-order&#34;&gt;Building our new order&lt;/h2&gt;
+
+&lt;p&gt;Ok, now we have a quote, a dc, now we just need to build our order out.&lt;/p&gt;
+
+&lt;h3 id=&#34;softlayer-billing-order-quote-getrecalculatedordercontainer-https-softlayer-github-io-reference-services-softlayer-billing-order-quote-getrecalculatedordercontainer&#34;&gt;&lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/getRecalculatedOrderContainer/&#34;&gt;SoftLayer_Billing_Order_Quote::getRecalculatedOrderContainer()&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order_Quote/&amp;lt;QUOTEID&amp;gt;/getRecalculatedOrderContainer.json&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;This function takes a quote, and returns an order container with all the proper price ids filled in, which are required to place the actual order.&lt;/p&gt;
+
+&lt;p&gt;With this order container, all we need to do is fill out some extra information (basically anything that would be on the last page of the order form).&lt;/p&gt;
+
+&lt;h3 id=&#34;order-containers-https-softlayer-github-io-reference-datatypes-softlayer-container-product-order&#34;&gt;&lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order/&#34;&gt;Order containers&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;The object you send in to the placeOrder method, is going to be a SoftLayer_Container_Product_Order, or possibly one of its child classes, like &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server/&#34;&gt;Hardware_Server&lt;/a&gt; or &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest/&#34;&gt;Virtual_Guest&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;The only data you have to change here is the hostname and domain for your servers, the location, and the quantity.
+&amp;gt;If you are ordering baremetal, you need to change container[&amp;lsquo;hardware&amp;rsquo;], if you are ordering virtual guests, you need to change container[&amp;lsquo;virtualGuests&amp;rsquo;]&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;guests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hostname&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;quotetest&amp;#39;&lt;/span&gt;, 
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;domain&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;example.com&amp;#39;&lt;/span&gt;
+}
+quote &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Billing_Order_Quote&amp;#39;&lt;/span&gt;]
+quote_container &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; quote&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getRecalculatedOrderContainer(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;quote_id)
+container &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; quote_container
+container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;complexType&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest&amp;#34;&lt;/span&gt;
+container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;quantity&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;
+container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(guests)
+container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(guests)
+container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; dc_id&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;container[&#39;virtualGuests&#39;]&lt;/code&gt; array should have 1 entry for each server you want to order. Since I am ordering 2 servers, I appeneded 2 entries to the array.&lt;/p&gt;
+
+&lt;h3 id=&#34;complex-types&#34;&gt;Complex Types&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;getRecalculatedOrderContainer&lt;/code&gt; will return a generic Container_Product_Order type, so you will need to specify the correct type to be able to actually place an order. Orders can occasionally work without specifying this complexType, but its better to be sure. There are quite a lot of container types, the full list can be found here: &lt;a href=&#34;https://softlayer.github.io/reference/softlayerapi/&#34;&gt;https://softlayer.github.io/reference/softlayerapi/&lt;/a&gt; , and search for &lt;code&gt;Container_Product_Order&lt;/code&gt; to see all the options.&lt;/p&gt;
+
+&lt;p&gt;The most common are:
++ &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server&#34;&gt;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server&lt;/a&gt;
++ &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance&#34;&gt;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance&lt;/a&gt;
++ &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_LoadBalancer_AsAService&#34;&gt;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_LoadBalancer_AsAService&lt;/a&gt;
++ &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_AsAService&#34;&gt;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_AsAService&lt;/a&gt;
++ &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Vlan&#34;&gt;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Vlan&lt;/a&gt;
++ &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest&#34;&gt;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;ssh-keys&#34;&gt;SSH keys&lt;/h3&gt;
+
+&lt;p&gt;To have SSH keys installed on a server at order time, we need to specify them in the [sshKeys]&lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_SshKeys/)&#34;&gt;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_SshKeys/)&lt;/a&gt; property. This property is at the container level, NOT the guest level, even though guests have a sshKey property.
+This propety is an array of sshKeys, which itself is an array of ids. This means that there needs to be 1 array of keys per server you are ordering, and the order they are applied should match the order they are listed in the virtualGuests propety. &lt;code&gt;sshKeys[0] =&amp;gt; virtualGuests[0]&lt;/code&gt;, &lt;code&gt;sshKeys[1] =&amp;gt; virtualGuests[1]&lt;/code&gt; and so on.&lt;/p&gt;
+
+&lt;p&gt;An sshKey itself should look like this&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;sshKey = {
+    &amp;#39;sshKeyIds&amp;#39; : [1234, 456, 11111]
+}
+container[&amp;#39;sshKeys&amp;#39;].append(sshKey)
+container[&amp;#39;sshKeys&amp;#39;].append(sshKey)&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This is a bit combersome, but it does allow you the flexibility to order different sshKeys on different servers if you need to.&lt;/p&gt;
+
+&lt;h3 id=&#34;post-provision-scripts&#34;&gt;Post Provision Scripts&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest/#provisionScripts&#34;&gt;provisionScripts&lt;/a&gt; are simply an array of strings (urls) to apply to each server in order. Like sshKeys, the order these provision scripts are listed match up with their virtualGuests. Each guest will only have 1 provision script run on it.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Post provision scripts need to be HTTPS to be executed, HTTP scripts just get downloaded&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;scriptUrl = &amp;#39;https://somesite.com/script.sh&amp;#39;
+container[&amp;#39;provisionScripts&amp;#39;] = [scriptUrl, scriptUrl]&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;vlans-and-subnets&#34;&gt;Vlans and Subnets&lt;/h3&gt;
+
+&lt;p&gt;Vlans and Subnets need to be specified at the guest level, not the container level. You will also need the VLAN/Subnet ID, which is different than the vlan number which can be a bit confusing to new api users.&lt;/p&gt;
+
+&lt;p&gt;Public Vlans and Public Subnets need to be added to the &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest/#primaryNetworkComponent&#34;&gt;primaryNetworkComponent&lt;/a&gt;.
+Private Vlans and Private Subnets need to be added to the &lt;a href=&#34;https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest/#primaryBackendNetworkComponent&#34;&gt;primaryBackendNetworkComponent&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This example selects a specific VLAN for the primaryNetwork, and a specific Subnet for the primaryBackendNetwork. You can have both a specific vlan and specific network, assuming the subnet is already routed to the vlan you specified.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;guest = {
+    &amp;#39;hostname&amp;#39;: &amp;#39;tester&amp;#39;,
+    &amp;#39;domain&amp;#39;: &amp;#39;example.com&amp;#39;,
+    &amp;#39;primaryNetworkComponent&amp;#39;: {
+        &amp;#34;networkVlan&amp;#34;: {&amp;#34;id&amp;#34;: int(public_vlan)}},
+    &amp;#34;primaryBackendNetworkComponent&amp;#34;: {
+        &amp;#34;primarySubnet&amp;#34;: {&amp;#34;id&amp;#34;: int(private_subnet)}}
+
+}&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;image-templates&#34;&gt;Image Templates&lt;/h3&gt;
+
+&lt;p&gt;Instead of specifying a fresh operating system, you can have a server provisioned from a imageTemplate by specifying its ID.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;container[&amp;#39;imageTemplateId&amp;#39;] = image_id&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This ISN&amp;rsquo;T an array, so the imageTemplate here will get applied to all guests in the order.&lt;/p&gt;
+
+&lt;h2 id=&#34;the-whole-script&#34;&gt;The Whole Script&lt;/h2&gt;
+
+&lt;p&gt;This is the script I use when testing out bits of the ordering API, and hopefully it will be helpful in building your own way to order image templates.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; pp
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;example&lt;/span&gt;():
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+        debugger &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;DebugTransport(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport)
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; debugger
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;orderQuote&lt;/span&gt;(self, quote_id, dc_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None, image_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None, private_vlan &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None, public_vlan &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None):
+        &lt;span style=&#34;color:#75715e&#34;&gt;# If you have more than 1 server in the quote, you will need to append&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;# a copy of this for each VSI, with hostnames changed as needed&lt;/span&gt;
+        guests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hostname&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;quotetest&amp;#39;&lt;/span&gt;, 
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;domain&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;example.com&amp;#39;&lt;/span&gt;
+        }
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; public_vlan:
+            guests&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;update({
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;primaryNetworkComponent&amp;#39;&lt;/span&gt;: {
+                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;networkVlan&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: int(public_vlan)}}})
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; private_vlan:
+            guests&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;update({
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;primaryBackendNetworkComponent&amp;#34;&lt;/span&gt;: {
+                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;networkVlan&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: int(private_vlan)}}})
+
+        quote &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Billing_Order_Quote&amp;#39;&lt;/span&gt;]
+        quote_container &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; quote&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getRecalculatedOrderContainer(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;quote_id)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;================= QUOTE CONTAINER =================&amp;#34;&lt;/span&gt;)
+        pp(quote_container)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;================= QUOTE CONTAINER =================&amp;#34;&lt;/span&gt;)
+
+        container &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; quote_container
+        container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;complexType&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest&amp;#34;&lt;/span&gt;
+        container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;quantity&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;
+        container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+        container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(guests)
+        container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(guests)
+
+        &lt;span style=&#34;color:#75715e&#34;&gt;# container[&amp;#39;provisionScripts&amp;#39;] = [&amp;#39;https://gist.githubusercontent.com/myscript.py&amp;#39;]&lt;/span&gt;
+        sshKeys &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;sshKeyIds&amp;#39;&lt;/span&gt;: [&lt;span style=&#34;color:#ae81ff&#34;&gt;395515&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;87634&lt;/span&gt;]}
+        container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;sshKeys&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [sshKeys, sshKeys]
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; image_id &lt;span style=&#34;color:#f92672&#34;&gt;is&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; None:
+            container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;imageTemplateId&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; image_id
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; dc_id &lt;span style=&#34;color:#f92672&#34;&gt;is&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; None:
+            container[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; dc_id
+
+        &lt;span style=&#34;color:#75715e&#34;&gt;# result = self.client[&amp;#39;Product_Order&amp;#39;].verifyOrder(container)&lt;/span&gt;
+        result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;placeOrder(container)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;================= RECEIPT CONTAINER =================&amp;#34;&lt;/span&gt;)
+        pp(result)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;================= RECEIPT CONTAINER =================&amp;#34;&lt;/span&gt;)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listQuotes&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#75715e&#34;&gt;# https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Order_Quote/&lt;/span&gt;
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[order[id, orderTotalAmount, orderTopLevelItems[id, description]], ordersFromQuoteCount]&amp;#34;&lt;/span&gt;
+        quotes &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Account&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getActiveQuotes(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ID, createDate, name, status, order count, description&amp;#34;&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; quote &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; quotes:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{}, {}, {}, {}, {}, {}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(
+                quote[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], quote[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;createDate&amp;#39;&lt;/span&gt;], quote[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;], quote[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;status&amp;#39;&lt;/span&gt;], 
+                quote[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;ordersFromQuoteCount&amp;#39;&lt;/span&gt;], quote[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;order&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;orderTopLevelItems&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;])
+            )
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listLocations&lt;/span&gt;(self):
+        locations &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Location&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getDatacenters()
+        pp(locations)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listLocationsForQuote&lt;/span&gt;(self, quoteId):
+        mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&amp;#34;&lt;/span&gt;
+        locations &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Billing_Order_Quote&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getObject(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;quoteId, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+
+        package_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; locations[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;order&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;orderTopLevelItems&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;package&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Package {} is available in the following locations...&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(package_id))
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; dc &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; locations[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;order&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;orderTopLevelItems&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;package&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;availableLocations&amp;#39;&lt;/span&gt;]:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{}, id={}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(dc[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;longName&amp;#39;&lt;/span&gt;], dc[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]))
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listSshKeys&lt;/span&gt;(self):
+        keys &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Account&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getSshKeys()
+        pp(keys)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listImageTemplates&lt;/span&gt;(self):
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[id,name,note]&amp;#34;&lt;/span&gt;
+        imageTemplates &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Account&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getPrivateBlockDeviceTemplateGroups(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ID - Name - Note&amp;#34;&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; template &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; imageTemplates:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;], template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;note&amp;#39;&lt;/span&gt;]))
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;KeyError&lt;/span&gt;:
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;], &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;None&amp;#39;&lt;/span&gt;))
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listVlansInLocation&lt;/span&gt;(self, location_id):
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[id,vlanNumber,primaryRouter[hostname,datacenter[id,name]]]&amp;#34;&lt;/span&gt;
+        objfilter2 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; { &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;networkVlans&amp;#34;&lt;/span&gt;:    
+                        {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;primaryRouter&amp;#34;&lt;/span&gt;: 
+                            {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;datacenter&amp;#34;&lt;/span&gt;: { &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt; : {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;:location_id} } }
+                        }
+                    }
+        subnets &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Account&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getNetworkVlans(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask,filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objfilter2)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; subnet &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; subnets:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; ( subnet[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], subnet[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;vlanNumber&amp;#39;&lt;/span&gt;], subnet[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;primaryRouter&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hostname&amp;#39;&lt;/span&gt;]))
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;debug&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; call &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get_last_calls():
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_reproduceable(call))
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    quote_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1528487&lt;/span&gt;
+    main &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; example()
+    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listImageTemplates()&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listQuotes()&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listLocationsForQuote(quote_id)&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listLocations()&lt;/span&gt;
+    dal13 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1854895&lt;/span&gt;
+    ams03 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;814994&lt;/span&gt;
+    dal09 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;449494&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listSshKeys()&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listVlansInLocation(dal13)&lt;/span&gt;
+    backend_vlan &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2068355&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;#951, bcr01a.dal13&lt;/span&gt;
+    front_vlan &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2068353&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;# 907, fcr01a.dal13&lt;/span&gt;
+    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;orderQuote(quote_id, dc_id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;dal13, public_vlan&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;front_vlan,private_vlan&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;backend_vlan)
+    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;debug()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Release notes: August 3, 2018</title>
@@ -1249,108 +1522,6 @@ These pages should be updated to match:
 &lt;li&gt;Enabling Security Groups in FRA05 Datacenter.&lt;/li&gt;
 &lt;/ul&gt;
 </description>
-    </item>
-    
-    <item>
-      <title>Event Logs</title>
-      <link>https://softlayer.github.io/python/event_log/</link>
-      <pubDate>Fri, 18 May 2018 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/event_log/</guid>
-      <description>&lt;p&gt;This example deals with a few ways of pulling data from &lt;code&gt;SoftLayer_Event_Log&lt;/code&gt;. There can ben quite a few Logs here, so I recommend using a filter like in the &lt;code&gt;recentLogs&lt;/code&gt; function to limit how far back you search for Events, otherwise you will be paging through Events for a long time.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;@author Christopher Gallo
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; datetime
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;example&lt;/span&gt;():
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
-
-        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
-        debugger &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;DebugTransport(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport)
-        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; debugger
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;recentLogs&lt;/span&gt;(self):
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;REST API CALL
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;            resultLimit=0,50&amp;amp;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;            objectFilter={&amp;#34;eventCreateDate&amp;#34;:{&amp;#34;operation&amp;#34;:&amp;#34;greaterThanDate&amp;#34;,&amp;#34;options&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;date&amp;#34;,&amp;#34;value&amp;#34;:[&amp;#34;2018-04-18T00:00:00.0000-06:00&amp;#34;]}]}}&amp;#39;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        _filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;eventCreateDate&amp;#39;&lt;/span&gt;: { 
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;greaterThanDate&amp;#39;&lt;/span&gt;, 
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;options&amp;#39;&lt;/span&gt;: [
-                    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;date&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;value&amp;#39;&lt;/span&gt;: [getDateString(&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;)]}
-                ]
-            }
-        }
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; event &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(_filter):
-            printLogs(event)
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;systemLogs&lt;/span&gt;(self):
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;REST API CALL
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;            resultLimit=0,50&amp;amp;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;            objectFilter={&amp;#34;userType&amp;#34;:{&amp;#34;operation&amp;#34;:&amp;#34;SYSTEM&amp;#34;}}&amp;#39;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        _filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;userType&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SYSTEM&amp;#39;&lt;/span&gt;}}
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; event &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(_filter):
-            printLogs(event)
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;loginLogs&lt;/span&gt;(self):
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;REST API CALL
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;            resultLimit=0,50&amp;amp;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;            objectFilter={&amp;#34;eventName&amp;#34;:{&amp;#34;operation&amp;#34;:&amp;#34;^= Login&amp;#34;}}&amp;#39;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        _filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;eventName&amp;#39;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;^= Login&amp;#39;&lt;/span&gt;
-            }
-        }
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; event &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(_filter):
-            printLogs(event)
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;allLogs&lt;/span&gt;(self):
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;REST API CALL
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?resultLimit=0,50&amp;#39;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; event &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(None):
-            printLogs(event)
-        
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getAllObjects&lt;/span&gt;(self, _filter, limit&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;50&lt;/span&gt;, offset&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;):
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;Pages through all results from the Event_Log. This might take long time.&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        notDone &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; True
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;while&lt;/span&gt; notDone:
-            events &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Event_Log&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getAllObjects&amp;#39;&lt;/span&gt;, filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;_filter, limit&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;limit, offset&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;offset)
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; from getAllObjects, offset = &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (len(events), offset))
-
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; event &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; events:
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;yield&lt;/span&gt; event
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; len(events) &lt;span style=&#34;color:#f92672&#34;&gt;&amp;lt;&lt;/span&gt; limit:
-                notDone &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; False
-            offset &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; offset &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; limit
-            notDone &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; False
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;debug&lt;/span&gt;(self):
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; call &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get_last_calls():
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_reproduceable(call))
-
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getDateString&lt;/span&gt;(self, delta&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):
-    date_object &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;date&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;today() &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timedelta(days&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;delta)
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; date_object&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strftime(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%Y-%m-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%d&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;T00:00:00.0000-06:00&amp;#34;&lt;/span&gt;)
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;printLogs&lt;/span&gt;(log):
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (log[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;eventName&amp;#39;&lt;/span&gt;],log[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;eventCreateDate&amp;#39;&lt;/span&gt;], log[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;userType&amp;#39;&lt;/span&gt;]))
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
-    main &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; example()
-    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;allLogs()
-    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;debug()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
   </channel>

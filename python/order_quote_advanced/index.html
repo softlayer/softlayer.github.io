@@ -104,7 +104,7 @@ ga('send', 'pageview');
     
         <div class="col-md-3">
             <div style="word-wrap: break-word;"> 
-                <h4>October 5, 2016<br></h4>
+                <h4>August 7, 2018<br></h4>
             </div>
         </div>
         <div class="col-md-9">
@@ -140,13 +140,155 @@ ga('send', 'pageview');
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
+                
+
+<h2 id="quotes">Quotes</h2>
+
+<p>Quotes are a way to save an order, and then easily duplicate the order later. You can create a quote from the control portal by going through the normal order process, and then instead of hitting &ldquo;Order&rdquo; at the end, there will be a button that says &ldquo;Save Quote&rdquo;, which will save the order for later. You can then use the quote service to pull down the information about it from the API. <code>listQuotes</code> in the example below does exactly this.</p>
+
+<p>To order from a quote you will need the following bits of information
+- Quote ID
+- Datacenter ID where you want the order to end up
+- Other bits of optional data, like SSH keys, vlan ids, image ids, etc.</p>
+
+<h3 id="rest-api-call">REST API Call</h3>
+
+<p><code>curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getActiveQuotes.json?objectMask=mask%5Border%5Bid%2C+orderTotalAmount%2C+orderTopLevelItems%5Bid%2C+description%5D%5D%2C+ordersFromQuoteCount%5D'</code></p>
+
+<h3 id="python-output">Python Output</h3>
+
+<p>The sample code will output something like this. Quotes can be PENDING, which means they might expire if you don&rsquo;t call <a href="https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/saveQuote/">SoftLayer_Billing_Order_Quote::saveQuote(id=quoteId)</a> before its expiration date. SAVED quotes will stick around until you call <a href="https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/deleteQuote/">SoftLayer_Billing_Order_Quote::deleteQuote(id=quoteId)</a>
+The quoteId in the first column is what will be used for placing the order. Description is just the topLevelBillingItem for the quote.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ID, createDate, name, status, order count, description
+<span style="color:#ae81ff">2460465</span>, <span style="color:#ae81ff">2018</span>-07-23T14:20:59-06:00, Ruber, SAVED, <span style="color:#ae81ff">0</span>, Single Intel Xeon E3-1270 v3 <span style="color:#f92672">(</span><span style="color:#ae81ff">4</span> Cores, <span style="color:#ae81ff">3</span>.50 GHz<span style="color:#f92672">)</span>
+<span style="color:#ae81ff">2457385</span>, <span style="color:#ae81ff">2018</span>-07-17T14:23:54-06:00, AJCB-TESTWITHSSHKEYS, PENDING, <span style="color:#ae81ff">0</span>, Single Intel Xeon E3-1270 v3 <span style="color:#f92672">(</span><span style="color:#ae81ff">4</span> Cores, <span style="color:#ae81ff">3</span>.50 GHz<span style="color:#f92672">)</span>
+<span style="color:#ae81ff">1528487</span>, <span style="color:#ae81ff">2015</span>-09-25T15:37:27-06:00, test-quote, SAVED, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span> x <span style="color:#ae81ff">2</span>.0 GHz Core</code></pre></div>
+<h2 id="finding-the-dc-id">Finding the DC id</h2>
+
+<p>Now we need to figure out which DC we want to place the order in.
+The way we are going to do this, is by checking the quote&rsquo;s top level item, and see what DCs that package is available in. Using <a href="https://softlayer.github.io/reference/services/SoftLayer_Location/getDatacenters/">SoftLayer_Location::getDatacenters()</a> would show you all datacenters, and not all packages are available in all datacenters.</p>
+
+<h3 id="rest-call">REST Call</h3>
+
+<p><code>'https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order_Quote/&lt;QUOTEID&gt;/getObject.json?objectMask=mask[id,+order[id,orderTopLevelItems[id,package[id,availableLocations[location[longName,id]]]]]]'</code></p>
+
+<h3 id="python">Python</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listLocationsForQuote</span>(self, quoteId):
+    mask<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&#34;</span>
+    locations <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]<span style="color:#f92672">.</span>getObject(id<span style="color:#f92672">=</span>quoteId, mask<span style="color:#f92672">=</span>mask)
+    
+    package_id <span style="color:#f92672">=</span> locations[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Package {} is available in the following locations...&#34;</span><span style="color:#f92672">.</span>format(package_id))
+    <span style="color:#66d9ef">for</span> dc <span style="color:#f92672">in</span> locations[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;availableLocations&#39;</span>]:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;{}, id={}&#34;</span><span style="color:#f92672">.</span>format(dc[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;longName&#39;</span>], dc[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]))</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Package <span style="color:#ae81ff">46</span> is available in the following locations...
+Seattle <span style="color:#ae81ff">1</span>, id<span style="color:#f92672">=</span><span style="color:#ae81ff">18171</span>
+Dallas <span style="color:#ae81ff">5</span>, id<span style="color:#f92672">=</span><span style="color:#ae81ff">138124</span>
+Houston <span style="color:#ae81ff">2</span>, id<span style="color:#f92672">=</span><span style="color:#ae81ff">142775</span>
+Dallas <span style="color:#ae81ff">7</span>, id<span style="color:#f92672">=</span><span style="color:#ae81ff">142776</span>
+San Jose <span style="color:#ae81ff">1</span>, id<span style="color:#f92672">=</span><span style="color:#ae81ff">168642</span>
+...</code></pre></div>
+<h2 id="building-our-new-order">Building our new order</h2>
+
+<p>Ok, now we have a quote, a dc, now we just need to build our order out.</p>
+
+<h3 id="softlayer-billing-order-quote-getrecalculatedordercontainer-https-softlayer-github-io-reference-services-softlayer-billing-order-quote-getrecalculatedordercontainer"><a href="https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/getRecalculatedOrderContainer/">SoftLayer_Billing_Order_Quote::getRecalculatedOrderContainer()</a></h3>
+
+<p><code>'https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order_Quote/&lt;QUOTEID&gt;/getRecalculatedOrderContainer.json</code></p>
+
+<p>This function takes a quote, and returns an order container with all the proper price ids filled in, which are required to place the actual order.</p>
+
+<p>With this order container, all we need to do is fill out some extra information (basically anything that would be on the last page of the order form).</p>
+
+<h3 id="order-containers-https-softlayer-github-io-reference-datatypes-softlayer-container-product-order"><a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order/">Order containers</a></h3>
+
+<p>The object you send in to the placeOrder method, is going to be a SoftLayer_Container_Product_Order, or possibly one of its child classes, like <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server/">Hardware_Server</a> or <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest/">Virtual_Guest</a></p>
+
+<p>The only data you have to change here is the hostname and domain for your servers, the location, and the quantity.
+&gt;If you are ordering baremetal, you need to change container[&lsquo;hardware&rsquo;], if you are ordering virtual guests, you need to change container[&lsquo;virtualGuests&rsquo;]</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">guests <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hostname&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;quotetest&#39;</span>, 
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;domain&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;example.com&#39;</span>
+}
+quote <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]
+quote_container <span style="color:#f92672">=</span> quote<span style="color:#f92672">.</span>getRecalculatedOrderContainer(id<span style="color:#f92672">=</span>quote_id)
+container <span style="color:#f92672">=</span> quote_container
+container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;complexType&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Container_Product_Order_Virtual_Guest&#34;</span>
+container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;quantity&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>] <span style="color:#f92672">=</span> []
+container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
+container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
+container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;location&#39;</span>] <span style="color:#f92672">=</span> dc_id</code></pre></div>
+<p>The <code>container['virtualGuests']</code> array should have 1 entry for each server you want to order. Since I am ordering 2 servers, I appeneded 2 entries to the array.</p>
+
+<h3 id="complex-types">Complex Types</h3>
+
+<p><code>getRecalculatedOrderContainer</code> will return a generic Container_Product_Order type, so you will need to specify the correct type to be able to actually place an order. Orders can occasionally work without specifying this complexType, but its better to be sure. There are quite a lot of container types, the full list can be found here: <a href="https://softlayer.github.io/reference/softlayerapi/">https://softlayer.github.io/reference/softlayerapi/</a> , and search for <code>Container_Product_Order</code> to see all the options.</p>
+
+<p>The most common are:
++ <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server">https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server</a>
++ <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance">https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance</a>
++ <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_LoadBalancer_AsAService">https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_LoadBalancer_AsAService</a>
++ <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_AsAService">https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_AsAService</a>
++ <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Vlan">https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Network_Vlan</a>
++ <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest">https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest</a></p>
+
+<h3 id="ssh-keys">SSH keys</h3>
+
+<p>To have SSH keys installed on a server at order time, we need to specify them in the [sshKeys]<a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_SshKeys/)">https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_SshKeys/)</a> property. This property is at the container level, NOT the guest level, even though guests have a sshKey property.
+This propety is an array of sshKeys, which itself is an array of ids. This means that there needs to be 1 array of keys per server you are ordering, and the order they are applied should match the order they are listed in the virtualGuests propety. <code>sshKeys[0] =&gt; virtualGuests[0]</code>, <code>sshKeys[1] =&gt; virtualGuests[1]</code> and so on.</p>
+
+<p>An sshKey itself should look like this</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">sshKey = {
+    &#39;sshKeyIds&#39; : [1234, 456, 11111]
+}
+container[&#39;sshKeys&#39;].append(sshKey)
+container[&#39;sshKeys&#39;].append(sshKey)</pre></div>
+<p>This is a bit combersome, but it does allow you the flexibility to order different sshKeys on different servers if you need to.</p>
+
+<h3 id="post-provision-scripts">Post Provision Scripts</h3>
+
+<p><a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest/#provisionScripts">provisionScripts</a> are simply an array of strings (urls) to apply to each server in order. Like sshKeys, the order these provision scripts are listed match up with their virtualGuests. Each guest will only have 1 provision script run on it.</p>
+
+<blockquote>
+<p>Post provision scripts need to be HTTPS to be executed, HTTP scripts just get downloaded</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">scriptUrl = &#39;https://somesite.com/script.sh&#39;
+container[&#39;provisionScripts&#39;] = [scriptUrl, scriptUrl]</pre></div>
+<h3 id="vlans-and-subnets">Vlans and Subnets</h3>
+
+<p>Vlans and Subnets need to be specified at the guest level, not the container level. You will also need the VLAN/Subnet ID, which is different than the vlan number which can be a bit confusing to new api users.</p>
+
+<p>Public Vlans and Public Subnets need to be added to the <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest/#primaryNetworkComponent">primaryNetworkComponent</a>.
+Private Vlans and Private Subnets need to be added to the <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest/#primaryBackendNetworkComponent">primaryBackendNetworkComponent</a></p>
+
+<p>This example selects a specific VLAN for the primaryNetwork, and a specific Subnet for the primaryBackendNetwork. You can have both a specific vlan and specific network, assuming the subnet is already routed to the vlan you specified.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">guest = {
+    &#39;hostname&#39;: &#39;tester&#39;,
+    &#39;domain&#39;: &#39;example.com&#39;,
+    &#39;primaryNetworkComponent&#39;: {
+        &#34;networkVlan&#34;: {&#34;id&#34;: int(public_vlan)}},
+    &#34;primaryBackendNetworkComponent&#34;: {
+        &#34;primarySubnet&#34;: {&#34;id&#34;: int(private_subnet)}}
+
+}</pre></div>
+<h3 id="image-templates">Image Templates</h3>
+
+<p>Instead of specifying a fresh operating system, you can have a server provisioned from a imageTemplate by specifying its ID.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">container[&#39;imageTemplateId&#39;] = image_id</pre></div>
+<p>This ISN&rsquo;T an array, so the imageTemplate here will get applied to all guests in the order.</p>
+
+<h2 id="the-whole-script">The Whole Script</h2>
+
+<p>This is the script I use when testing out bits of the ordering API, and hopefully it will be helpful in building your own way to order image templates.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
 <span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
 
 <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
 
     <span style="color:#66d9ef">def</span> __init__(self):
         self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+        debugger <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>DebugTransport(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport)
+        self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport <span style="color:#f92672">=</span> debugger
 
     <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">orderQuote</span>(self, quote_id, dc_id <span style="color:#f92672">=</span> None, image_id <span style="color:#f92672">=</span> None, private_vlan <span style="color:#f92672">=</span> None, public_vlan <span style="color:#f92672">=</span> None):
         <span style="color:#75715e"># If you have more than 1 server in the quote, you will need to append</span>
@@ -166,14 +308,20 @@ ga('send', 'pageview');
 
         quote <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]
         quote_container <span style="color:#f92672">=</span> quote<span style="color:#f92672">.</span>getRecalculatedOrderContainer(id<span style="color:#f92672">=</span>quote_id)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;================= QUOTE CONTAINER =================&#34;</span>)
+        pp(quote_container)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;================= QUOTE CONTAINER =================&#34;</span>)
 
         container <span style="color:#f92672">=</span> quote_container
-        container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;quantity&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+        container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;complexType&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Container_Product_Order_Virtual_Guest&#34;</span>
+        container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;quantity&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
         container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>] <span style="color:#f92672">=</span> []
+        container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
         container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
 
         <span style="color:#75715e"># container[&#39;provisionScripts&#39;] = [&#39;https://gist.githubusercontent.com/myscript.py&#39;]</span>
-        <span style="color:#75715e"># container[&#39;sshKeys&#39;] = [{&#39;sshKeyIds&#39;: [660791]} ]</span>
+        sshKeys <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;sshKeyIds&#39;</span>: [<span style="color:#ae81ff">395515</span>, <span style="color:#ae81ff">87634</span>]}
+        container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;sshKeys&#39;</span>] <span style="color:#f92672">=</span> [sshKeys, sshKeys]
 
         <span style="color:#66d9ef">if</span> image_id <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
             container[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;imageTemplateId&#39;</span>] <span style="color:#f92672">=</span> image_id
@@ -183,15 +331,33 @@ ga('send', 'pageview');
 
         <span style="color:#75715e"># result = self.client[&#39;Product_Order&#39;].verifyOrder(container)</span>
         result <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Product_Order&#39;</span>]<span style="color:#f92672">.</span>placeOrder(container)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;================= RECEIPT CONTAINER =================&#34;</span>)
         pp(result)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;================= RECEIPT CONTAINER =================&#34;</span>)
 
     <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listQuotes</span>(self):
-        quotes <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getActiveQuotes()
-        pp(quotes)
+        <span style="color:#75715e"># https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Order_Quote/</span>
+        mask <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[order[id, orderTotalAmount, orderTopLevelItems[id, description]], ordersFromQuoteCount]&#34;</span>
+        quotes <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getActiveQuotes(mask<span style="color:#f92672">=</span>mask)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;ID, createDate, name, status, order count, description&#34;</span>)
+        <span style="color:#66d9ef">for</span> quote <span style="color:#f92672">in</span> quotes:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;{}, {}, {}, {}, {}, {}&#34;</span><span style="color:#f92672">.</span>format(
+                quote[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>], quote[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;createDate&#39;</span>], quote[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>], quote[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;status&#39;</span>], 
+                quote[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;ordersFromQuoteCount&#39;</span>], quote[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>])
+            )
 
     <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listLocations</span>(self):
         locations <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Location&#39;</span>]<span style="color:#f92672">.</span>getDatacenters()
         pp(locations)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listLocationsForQuote</span>(self, quoteId):
+        mask<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&#34;</span>
+        locations <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]<span style="color:#f92672">.</span>getObject(id<span style="color:#f92672">=</span>quoteId, mask<span style="color:#f92672">=</span>mask)
+
+        package_id <span style="color:#f92672">=</span> locations[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Package {} is available in the following locations...&#34;</span><span style="color:#f92672">.</span>format(package_id))
+        <span style="color:#66d9ef">for</span> dc <span style="color:#f92672">in</span> locations[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;availableLocations&#39;</span>]:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;{}, id={}&#34;</span><span style="color:#f92672">.</span>format(dc[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;longName&#39;</span>], dc[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]))
 
     <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listSshKeys</span>(self):
         keys <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getSshKeys()
@@ -218,21 +384,27 @@ ga('send', 'pageview');
         <span style="color:#66d9ef">for</span> subnet <span style="color:#f92672">in</span> subnets:
             <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> ( subnet[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>], subnet[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;vlanNumber&#39;</span>], subnet[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;primaryRouter&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hostname&#39;</span>]))
 
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">debug</span>(self):
+        <span style="color:#66d9ef">for</span> call <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>get_last_calls():
+            <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>print_reproduceable(call))
+
 
 <span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
-    quote_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1234</span>
+    quote_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1528487</span>
     main <span style="color:#f92672">=</span> example()
     <span style="color:#75715e"># main.listImageTemplates()</span>
     <span style="color:#75715e"># main.listQuotes()</span>
+    <span style="color:#75715e"># main.listLocationsForQuote(quote_id)</span>
     <span style="color:#75715e"># main.listLocations()</span>
     dal13 <span style="color:#f92672">=</span> <span style="color:#ae81ff">1854895</span>
     ams03 <span style="color:#f92672">=</span> <span style="color:#ae81ff">814994</span>
     dal09 <span style="color:#f92672">=</span> <span style="color:#ae81ff">449494</span>
     <span style="color:#75715e"># main.listSshKeys()</span>
     <span style="color:#75715e"># main.listVlansInLocation(dal13)</span>
-    backend_vlan <span style="color:#f92672">=</span> <span style="color:#ae81ff">1400000</span> <span style="color:#75715e"># 123, bcr06a.dal09</span>
-    front_vlan <span style="color:#f92672">=</span> <span style="color:#ae81ff">1400001</span> <span style="color:#75715e"># 456, fcr06a.dal09</span>
-    main<span style="color:#f92672">.</span>orderQuote(quote_id, dc_id<span style="color:#f92672">=</span>dal09, private_vlan<span style="color:#f92672">=</span>backend_vlan,public_vlan<span style="color:#f92672">=</span>front_vlan )</code></pre></div>
+    backend_vlan <span style="color:#f92672">=</span> <span style="color:#ae81ff">2068355</span> <span style="color:#75715e">#951, bcr01a.dal13</span>
+    front_vlan <span style="color:#f92672">=</span> <span style="color:#ae81ff">2068353</span> <span style="color:#75715e"># 907, fcr01a.dal13</span>
+    main<span style="color:#f92672">.</span>orderQuote(quote_id, dc_id<span style="color:#f92672">=</span>dal13, public_vlan<span style="color:#f92672">=</span>front_vlan,private_vlan<span style="color:#f92672">=</span>backend_vlan)
+    main<span style="color:#f92672">.</span>debug()</code></pre></div>
             </div>
         </div>
 
