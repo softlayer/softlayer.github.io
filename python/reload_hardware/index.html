@@ -8,7 +8,7 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>Reload with SSH keys - https://softlayer.github.io/</title>
+    <title>Reload Server Examples - https://softlayer.github.io/</title>
     <link rel="canonical" href="https://softlayer.github.io/python/reload_hardware/">
         <link href="https://softlayer.github.io/css/main.css" rel="stylesheet">
     <link href="https://softlayer.github.io/css/bootstrap.css" rel="stylesheet">
@@ -113,14 +113,20 @@ ga('send', 'pageview');
                 
                     <a class="label label-primary" href="https://softlayer.github.io/classes/SoftLayer_Hardware_Server">SoftLayer_Hardware_Server</a>
                 
+                    <a class="label label-primary" href="https://softlayer.github.io/classes/SoftLayer_Hardware_Component_HardDrive">SoftLayer_Hardware_Component_HardDrive</a>
+                
                 <br>
                 <strong>Tags <span class="fa fa-tags"/></strong>
-                
-                    <a class="label label-danger" href="https://softlayer.github.io/tags/reloadOperatingSystem">reloadOperatingSystem</a>
                 
                     <a class="label label-danger" href="https://softlayer.github.io/tags/reload">reload</a>
                 
                     <a class="label label-danger" href="https://softlayer.github.io/tags/server">server</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/deprecated">deprecated</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/sshkeys">sshkeys</a>
+                
+                    <a class="label label-danger" href="https://softlayer.github.io/tags/hardware">hardware</a>
                           
         </div>
     </div>
@@ -128,11 +134,59 @@ ga('send', 'pageview');
     <div class="row">
 		<div class="col-md-12">
             <div class="well well-sm release-note" style="word-wrap: break-word;">
-				<h3>Reload with SSH keys<br> <small>Reloads a server with an image template and some ssh keys</small></h3>
+				<h3>Reload Server Examples<br> <small>A variety of ways to perform an OS reload on bare metal servers</small></h3>
 				
                 
+                    <div class="alert alert-info alert-dismissable" style="margin-top:25px;margin-bottom:5px;">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <strong>Hey, listen!</strong><br>
+                        This example contains deprecated methods or syntax and needs to be updated. Please use caution when using.
+                    </div>
+                
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
+                
+
+<p>This article covers a few ways to reload bare metal servers. This article is marked depreciated because of its use of Flex Image Templates, the other ways to reload operating systems are still valid.</p>
+
+<h3 id="list-flex-image-templates"><strong>List Flex Image Templates</strong></h3>
+
+<blockquote>
+<p>Flex Images are depreciated as of 8/7/2017. <a href="https://knowledgelayer.softlayer.com/learning/softlayer-product-life-cycle-policy">SoftLayer Product Lifecycle</a></p>
+</blockquote>
+
+<p>Reloading a hardware server from an image template allows users to restore or reconfigure the server based off a pre-existing Flex Image Template that is associated with the account in use.</p>
+
+<p>To retrieve the list of available Flex Image Template in the account it is required to use object-filters over the method SoftLayer_Account::getPrivateBlockDeviceTemplateGroups as following</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(self):        
+        <span style="color:#75715e"># Object-filter which is used to retrieve Flex Images</span>
+        _filter <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;privateBlockDeviceTemplateGroups&#34;</span>:{<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;imageTypeKeyName&#34;</span>:{<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>:<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;DISK_CAPTURE&#34;</span>}}}
+        
+        <span style="color:#75715e"># object-mask to retrieve only the id and name of the image</span>
+        _mask <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[id,name]&#34;</span>
+
+        accountService <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Account&#39;</span>]
+        <span style="color:#75715e"># Retrieve all Flex Images in the account</span>
+        images <span style="color:#f92672">=</span> accountService<span style="color:#f92672">.</span>getPrivateBlockDeviceTemplateGroups(filter<span style="color:#f92672">=</span>_filter, mask<span style="color:#f92672">=</span>_mask)
+
+        pp(images)
+        
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main <span style="color:#f92672">=</span> example()
+    main<span style="color:#f92672">.</span>main()</code></pre></div>
+<h3 id="load-hardware-server-from-flex-image-template"><strong>Load Hardware Server from Flex Image Template</strong></h3>
+
+<p>SoftLayer does not perform internal backups of customer devices, so the data in the device cannot be retrieved after the OS Reload is initiated. Back up all data on the device prior to initiating the OS Reload.</p>
+
+<p>Post Install Script, SSH Keys, Reset IPMI Password, Apply Motherboard BIOS upgrades, Apply firmware updates for all hard drives, etc., are some of the features that can be added in the server configuration, it is recommended to review <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Hardware_Server_Configuration">Container_Hardware_Server_Configuration</a> in order know which additional features can be added.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
 <span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
 
 <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
@@ -141,19 +195,292 @@ ga('send', 'pageview');
         self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
 
     <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(self):
-        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">        Will reload the operating system with a new imageTemplate, 
-</span><span style="color:#e6db74">        along with a set of sshKeys. This will erease all data.
-</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
-        <span style="color:#75715e"># Change these IDs</span>
+        <span style="color:#75715e"># ID of server which will be reloaded</span>
+        serverId <span style="color:#f92672">=</span> <span style="color:#ae81ff">102938</span>        
+        <span style="color:#75715e"># Flex Image ID</span>
         imageId <span style="color:#f92672">=</span> <span style="color:#ae81ff">1234567</span>
+        
         sshKey1 <span style="color:#f92672">=</span> <span style="color:#ae81ff">123</span>
         sshKey2 <span style="color:#f92672">=</span> <span style="color:#ae81ff">456</span>
-        serverId <span style="color:#f92672">=</span> <span style="color:#ae81ff">102938</span>
+
+        <span style="color:#75715e"># Build reload configuration        </span>
         config <span style="color:#f92672">=</span> {
             <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;imageTemplateId&#39;</span>: imageId, 
             <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;sshKeyIds&#39;</span>: [sshKey1, sshKey2]
         }
+
+        output <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Hardware_Server&#39;</span>]<span style="color:#f92672">.</span>reloadOperatingSystem(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;FORCE&#39;</span>, config, id<span style="color:#f92672">=</span>serverId)
+
+        pp(config)
+        <span style="color:#66d9ef">print</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;RESULT</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>
+        pp(output)
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main <span style="color:#f92672">=</span> example()
+    main<span style="color:#f92672">.</span>main()</code></pre></div>
+<h3 id="reload-from-a-list-of-ip-addresses">Reload from a list of IP addresses</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">Reload servers from a list of IPs
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">This script looks for a server with a determinate IP address and reloads
+</span><span style="color:#e6db74">the Operative System with another one.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">It makes a single call to the reloadOperatingSystem() method in the
+</span><span style="color:#e6db74">SoftLayer_Hardware_Server API service
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">Important manual pages:
+</span><span style="color:#e6db74">https://softlayer.github.io/reference/datatypes/SoftLayer_Hardware_Server
+</span><span style="color:#e6db74">https://softlayer.github.io/reference/services/SoftLayer_Hardware_Server/findByIpAddress
+</span><span style="color:#e6db74">https://softlayer.github.io/reference/services/SoftLayer_Hardware_Server/reloadOperatingSystem
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+<span style="color:#f92672">import</span> SoftLayer
+
+<span style="color:#75715e"># The IP addresses you wish to reload</span>
+ipsToReload <span style="color:#f92672">=</span> [<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;159.8.52.190&#39;</span>]
+
+<span style="color:#75715e"># The new OS you wish to load</span>
+newOSToLoad <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;CentOS 6.x - Minimal Install (64 bit)&#39;</span>
+
+
+<span style="color:#75715e"># Declare a new API service objects for: SoftLayer_Hardware_Server</span>
+client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>create_client_from_env()
+hardwareService <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Hardware_Server&#39;</span>]
+
+<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">Add an object mask to retrieve our prices related to the servers
+</span><span style="color:#e6db74">https://softlayer.github.io/reference/datatypes/SoftLayer_Hardware_Server
+</span><span style="color:#e6db74">for a list of the relational properties you can retrieve along with hardware.
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+objectMask <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[billingItem[package[items[prices]]]]&#34;</span>
+
+<span style="color:#75715e"># the list of servers to reload</span>
+serversToReload <span style="color:#f92672">=</span> {}
+
+<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">We are looking for the server with the specified IP addresses
+</span><span style="color:#e6db74">and the price for the new OS to load
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+<span style="color:#66d9ef">try</span>:
+    <span style="color:#66d9ef">for</span> ipToReload <span style="color:#f92672">in</span> ipsToReload:
+        server <span style="color:#f92672">=</span> hardwareService<span style="color:#f92672">.</span>findByIpAddress(ipToReload, mask<span style="color:#f92672">=</span>objectMask)
+        serversToReload[ipToReload] <span style="color:#f92672">=</span> {}
+        serversToReload[ipToReload][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>] <span style="color:#f92672">=</span> server[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+        <span style="color:#66d9ef">if</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;billingItem&#39;</span> <span style="color:#f92672">in</span> server<span style="color:#f92672">.</span>keys():
+            <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> server[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;billingItem&#34;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;package&#34;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;items&#34;</span>]:
+                <span style="color:#66d9ef">if</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>] <span style="color:#f92672">==</span> newOSToLoad:
+                    serversToReload[ipToReload][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;priceId&#39;</span>] <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;prices&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+                    <span style="color:#66d9ef">break</span>
+    <span style="color:#75715e"># we are calling the reloadOperatingSystem for the desired servers</span>
+    <span style="color:#66d9ef">for</span> ipToReload <span style="color:#f92672">in</span> ipsToReload:
+        config <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;itemPrices&#39;</span>: [
+                {
+                    <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>: serversToReload[ipToReload][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+                }
+                ]
+            }
+        reload <span style="color:#f92672">=</span> hardwareService<span style="color:#f92672">.</span>reloadOperatingSystem(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;FORCE&#39;</span>, config, id<span style="color:#f92672">=</span>serversToReload[ipToReload][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>])
+        <span style="color:#66d9ef">print</span>(reload)
+<span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Unable to reload the bare metal servers: </span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">faultCode= </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">faultString= </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span>
+          <span style="color:#f92672">%</span> (e<span style="color:#f92672">.</span>faultCode, e<span style="color:#f92672">.</span>faultString))
+    exit(<span style="color:#ae81ff">1</span>)</code></pre></div>
+<h3 id="changing-software-options-during-a-reload">Changing Software options during a reload</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">Reload servers from a list of IPs, with the option to specify some additional software
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">Important manual pages:
+</span><span style="color:#e6db74">https://softlayer.github.io/reference/datatypes/SoftLayer_Hardware_Server
+</span><span style="color:#e6db74">https://softlayer.github.io/reference/services/SoftLayer_Hardware_Server/findByIpAddress
+</span><span style="color:#e6db74">https://softlayer.github.io/reference/services/SoftLayer_Hardware_Server/reloadOperatingSystem
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+<span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">import</span> json
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_price</span>(server, item_name):
+    <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;Get the price for an item.
+</span><span style="color:#e6db74">        :param SoftLayer_Hardware_Server server: The server to reload.
+</span><span style="color:#e6db74">        :param string item_name: The item name to get the price.
+</span><span style="color:#e6db74">        :returns: A Softlayer_Product_Item_Price object.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    items <span style="color:#f92672">=</span> server[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;billingItem&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;items&#39;</span>]
+    prices <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> items:
+        <span style="color:#66d9ef">if</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span> <span style="color:#f92672">in</span> item:
+            <span style="color:#66d9ef">if</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;description&#39;</span>]<span style="color:#f92672">.</span>upper()<span style="color:#f92672">.</span>strip() <span style="color:#f92672">==</span> item_name<span style="color:#f92672">.</span>upper()<span style="color:#f92672">.</span>strip():
+                prices <span style="color:#f92672">=</span> item[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;prices&#39;</span>]
+                <span style="color:#66d9ef">break</span>
+    price <span style="color:#f92672">=</span> [price <span style="color:#66d9ef">for</span> price <span style="color:#f92672">in</span> prices <span style="color:#66d9ef">if</span> price[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;locationGroupId&#39;</span>] <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>]
+    <span style="color:#66d9ef">if</span> len(price) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
+        price <span style="color:#f92672">=</span> price[<span style="color:#ae81ff">0</span>]
+    <span style="color:#66d9ef">else</span>:
+        price <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>
+    <span style="color:#66d9ef">return</span> price
+
+
+ipsToReload <span style="color:#f92672">=</span> [<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;159.8.52.190&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;10.104.213.250&#39;</span>]
+
+<span style="color:#75715e"># The configuration for the reload.</span>
+<span style="color:#75715e"># The values with empty value will not included in the reload request.</span>
+newOSToLoad <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;CentOS 6.x (64 bit)&#39;</span>
+newOsAddom <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;XenServer Enterprise for XenServer 5.6&#39;</span>
+newControlPanel <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;cPanel/WHM with Softaculous and RVskin&#39;</span>
+newDatabase <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>
+newAntivir <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>
+newFirewall <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>
+customProvisionScriptUri <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>
+resetIpmiPassword <span style="color:#f92672">=</span> False
+upgradeBios <span style="color:#f92672">=</span> False
+upgradeHardDriveFirmware <span style="color:#f92672">=</span> False
+
+<span style="color:#75715e"># Partitions for the reload. If you do not want specify partitions set the value empty hardDrives = []</span>
+<span style="color:#75715e"># Each partition must have at least its name and minimumSize defined.</span>
+<span style="color:#75715e"># Name defines your partition&#39;s mount point, and minimumSize specifies its size</span>
+<span style="color:#75715e"># in gigabytes.</span>
+<span style="color:#75715e"># UNIX partition schemes must have at least one swap partition, defined by the</span>
+<span style="color:#75715e"># partition name /swap0. Set the partition&#39;s grow property to 1 to indicate that</span>
+<span style="color:#75715e"># partition should expand to fill the remainder of the disk. You must have one</span>
+<span style="color:#75715e"># grow partition in your partition scheme.</span>
+<span style="color:#75715e"># Windows partitioning is a little simpler. Specify the C: partition with the</span>
+<span style="color:#75715e"># name /os, with drives letters D:, E:, F:, etc as /disk0, /disk1, /disk2, and</span>
+<span style="color:#75715e"># so on.</span>
+<span style="color:#75715e"># This example sets up the following partition scheme:</span>
+<span style="color:#75715e">#  * swap: 1G</span>
+<span style="color:#75715e">#  * /boot: 100M</span>
+<span style="color:#75715e">#  * /test: 15G</span>
+<span style="color:#75715e">#  * /:  grown to fill disk space</span>
+hardDrives <span style="color:#f92672">=</span> [
+    {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;complexType&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Hardware_Component_HardDrive&#39;</span>,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;partitions&#39;</span>: [
+            {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;/swap0&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;minimumSize&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;1&#39;</span>,
+            },
+            {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;/boot&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;minimumSize&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;.1&#39;</span>,
+            },
+            {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;/test&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;minimumSize&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;15&#39;</span>,
+            },
+            {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;name&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;/&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;minimumSize&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;1&#39;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;grow&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;1&#39;</span>,
+            },
+        ]
+    }
+]
+
+client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>create_client_from_env()
+hardwareService <span style="color:#f92672">=</span> client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SoftLayer_Hardware_Server&#39;</span>]
+
+objectMask <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;mask[account[attributes[accountAttributeType]], activeTransaction[transactionStatus], &#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;billingItem[item[totalPhysicalCoreCapacity, capacity], &#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;package[configuration[itemCategory[categoryCode, name]], &#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;items[availabilityAttributes[attributeTypeKeyName], coreRestrictedItemFlag, prices[accountRestrictions,&#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;categories[categoryCode, name], requiredCoreCount, definedSoftwareLicenseFlag], requirements, &#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;softwareDescription[averageInstallationDuration]]]], hourlyBillingFlag, managedResourceFlag, &#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operatingSystem[averageInstallationDuration, passwords[sshKeys]], primaryIpAddress, &#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;softwareComponents[softwareLicense[softwareDescription[features[keyName], &#34;</span> \
+             <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;productItems[categories[categoryCode, name]]]]], networkGatewayMemberFlag]&#34;</span>
+
+failedServers <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> ipToReload <span style="color:#f92672">in</span> ipsToReload:
+    failedServer <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;ip&#39;</span>: ipToReload}
+    <span style="color:#66d9ef">try</span>:
+        server <span style="color:#f92672">=</span> hardwareService<span style="color:#f92672">.</span>findByIpAddress(ipToReload, mask<span style="color:#f92672">=</span>objectMask)
+        <span style="color:#66d9ef">if</span> server <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+            failedServer[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;error&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Ip does not exist.&#34;</span>
+            failedServers<span style="color:#f92672">.</span>append(failedServer)
+            <span style="color:#66d9ef">continue</span>
+    <span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
+        failedServer[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;error&#39;</span>] <span style="color:#f92672">=</span> e
+        failedServers<span style="color:#f92672">.</span>append(failedServer)
+        <span style="color:#66d9ef">continue</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;activeTransaction&#39;</span> <span style="color:#f92672">in</span> server:
+        failedServer[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;error&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;There is an active transaction.&#34;</span>
+        failedServers<span style="color:#f92672">.</span>append(failedServer)
+        <span style="color:#66d9ef">continue</span>
+    priceOs <span style="color:#f92672">=</span> get_price(server, newOSToLoad)
+    priceOsAddom <span style="color:#f92672">=</span> get_price(server, newOsAddom)
+    pricePanel <span style="color:#f92672">=</span> get_price(server, newControlPanel)
+    priceDataBase <span style="color:#f92672">=</span> get_price(server, newDatabase)
+    priceAntivir <span style="color:#f92672">=</span> get_price(server, newAntivir)
+    priceFirewall <span style="color:#f92672">=</span> get_price(server, newFirewall)
+    itemPrices <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">if</span> priceOs <span style="color:#f92672">!=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+        itemPrices<span style="color:#f92672">.</span>append(priceOs)
+    <span style="color:#66d9ef">if</span> priceOsAddom <span style="color:#f92672">!=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+        itemPrices<span style="color:#f92672">.</span>append(priceOsAddom)
+    <span style="color:#66d9ef">if</span> pricePanel <span style="color:#f92672">!=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+        itemPrices<span style="color:#f92672">.</span>append(pricePanel)
+    <span style="color:#66d9ef">if</span> priceDataBase <span style="color:#f92672">!=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+        itemPrices<span style="color:#f92672">.</span>append(priceDataBase)
+    <span style="color:#66d9ef">if</span> priceAntivir <span style="color:#f92672">!=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+        itemPrices<span style="color:#f92672">.</span>append(priceAntivir)
+    <span style="color:#66d9ef">if</span> priceFirewall <span style="color:#f92672">!=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+        itemPrices<span style="color:#f92672">.</span>append(priceFirewall)
+
+    config <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;itemPrices&#39;</span>: itemPrices,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;resetIpmiPassword&#39;</span>: resetIpmiPassword,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;upgradeBios&#39;</span>: upgradeBios,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;upgradeHardDriveFirmware&#39;</span>: upgradeHardDriveFirmware
+    }
+
+    <span style="color:#66d9ef">if</span> customProvisionScriptUri <span style="color:#f92672">!=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;&#39;</span>:
+        config[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;customProvisionScriptUri&#39;</span>] <span style="color:#f92672">=</span> customProvisionScriptUri
+
+    <span style="color:#66d9ef">if</span> len(hardDrives) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
+        config[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;hardDrives&#39;</span>] <span style="color:#f92672">=</span> hardDrives
+
+    <span style="color:#66d9ef">try</span>:
+        reload <span style="color:#f92672">=</span> hardwareService<span style="color:#f92672">.</span>reloadOperatingSystem(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;FORCE&#39;</span>, config, id<span style="color:#f92672">=</span>server[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>])
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Se inició el proceso de Os Reload&#39;</span>)
+        <span style="color:#66d9ef">print</span>(reload)
+    <span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
+        failedServer[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;error&#39;</span>] <span style="color:#f92672">=</span> e
+        failedServers<span style="color:#f92672">.</span>append(failedServer)
+        <span style="color:#66d9ef">continue</span>
+
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;The reload failed for these IPs:&#34;</span>)
+    <span style="color:#66d9ef">print</span>(json<span style="color:#f92672">.</span>dumps(failedServers, sort_keys<span style="color:#f92672">=</span>True, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>, separators<span style="color:#f92672">=</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;,&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;: &#39;</span>)))</code></pre></div>
+<h3 id="reload-with-custom-partitions">Reload with custom partitions</h3>
+
+<p>The following code allows you to reload a Bare Metal server with a custom partitioning scheme. You simply need to change the serverId and the partitions to suit your needs. Note that one partition must be marked as the &lsquo;grow&rsquo; partition.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(self):
+        serverId <span style="color:#f92672">=</span> <span style="color:#ae81ff">1154505</span>
+        config <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;upgradeHardDriveFirmware&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;0&#34;</span>,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;upgradeBios&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;0&#34;</span>,
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;hardDrives&#34;</span>: [
+            {
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;complexType&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Hardware_Component_HardDrive&#34;</span>,
+                <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;partitions&#34;</span>: [
+                    { <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;/boot&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;minimumSize&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;.25&#34;</span>},
+                    { <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;/swap0&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;minimumSize&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;20&#34;</span>},
+                    { <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;/&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;minimumSize&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;200&#34;</span>},
+                    { <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;/tmp&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;minimumSize&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;200&#34;</span>},
+                    { <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;/var&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;minimumSize&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;200&#34;</span>},
+                    { <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;/remove&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;minimumSize&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;1&#34;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;grow&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;1&#34;</span>}
+                ]
+            }
+        ]}
 
         output <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Hardware_Server&#39;</span>]<span style="color:#f92672">.</span>reloadOperatingSystem(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;FORCE&#39;</span>, config, id<span style="color:#f92672">=</span>serverId)
 
@@ -203,7 +530,7 @@ ga('send', 'pageview');
                 <strong>Feedback? <span class="fa fa-comment"/></strong>
                     <p>
                         We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Reload%20with%20SSH%20keys&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2freload_hardware%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Reload%20Server%20Examples&body=Feedback+regarding%3A%20https%3a%2f%2fsoftlayer.github.io%2fpython%2freload_hardware%2f"><span class="fa fa-github-square"/> Open an issue</a>
                     </p>
             </div>
         </div>
