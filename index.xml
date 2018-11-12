@@ -242,6 +242,76 @@ https://api.softlayer.com/v3.1/sldn/rest/SoftLayer_Event_Log/getAllObjects.json?
     </item>
     
     <item>
+      <title>Order an external authentication</title>
+      <link>https://softlayer.github.io/python/order_external_auth/</link>
+      <pubDate>Wed, 26 Sep 2018 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/order_external_auth/</guid>
+      <description>&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;example&lt;/span&gt;():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Generate the order template used to place the order&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;_generateOrder&lt;/span&gt;(self, userId, keyName, package, credential&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None):
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Retrieve the package object in order to know its ID&lt;/span&gt;
+        pkg_filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: package}}
+        package_list &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;pkg_filter)
+        package_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; package_list[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Retrive the available price of external auth item&lt;/span&gt;
+        itm_filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;itemPrices&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;item&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;:keyName}}}}
+        prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItemPrices(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;itm_filter, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id)
+
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Build skeleton of order template&lt;/span&gt;
+        orderTemplate &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;complexType&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Container_Product_Order_User_Customer_External_Binding&amp;#39;&lt;/span&gt;,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;packageId&amp;#39;&lt;/span&gt;: package_id,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;:[{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: prices[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]}],
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;userId&amp;#39;&lt;/span&gt;: userId,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;externalId&amp;#39;&lt;/span&gt;: credentialId
+        }
+        
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; orderTemplate
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;orderExternalAuth&lt;/span&gt;(self, userId, keyName, credential&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None):
+        &lt;span style=&#34;color:#75715e&#34;&gt;# package used to order an External Auth.&lt;/span&gt;
+        package_name &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;AUTHENTICATION_SERVICES&amp;#39;&lt;/span&gt;
+        
+        order_template &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;_generateOrder(userId, keyName, package_name, 
+                                             credential&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;credential)
+
+        order_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Order&amp;#39;&lt;/span&gt;]
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+            &lt;span style=&#34;color:#75715e&#34;&gt;# verifyOrder() will check your order for errors. Replace this with a call&lt;/span&gt;
+            &lt;span style=&#34;color:#75715e&#34;&gt;# to placeOrder() when you&amp;#39;re ready to order &lt;/span&gt;
+            receipt &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; order_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(order_template)
+
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(receipt, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; (SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError) &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:            
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to order external auth: &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;# The user id on which the external auth will be attached. &lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Users are able to order an external auth by themselves, but if you want to order &lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# for other users  then use the credentials of the Master User&lt;/span&gt;
+    user_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;66252&lt;/span&gt;
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Key name of external auth you want to order, select between:&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# SYMANTEC_IDENTITY_PROTECTION or PHONEBASED_AUTHENTICATION&lt;/span&gt;
+    keyName &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SYMANTEC_IDENTITY_PROTECTION&amp;#39;&lt;/span&gt;
+    
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Items like SYMANTEC_IDENTITY_PROTECTION requires a credential id&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# It isn&amp;#39;t required for PHONEBASED_AUTHENTICATION&lt;/span&gt;
+    credentialId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;ASD5675d6DDD7&amp;#39;&lt;/span&gt;
+
+    main &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; example()
+    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;orderExternalAuth(user_id, keyName, credential&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;credentialId)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    
+    <item>
       <title>Release notes: September 20, 2018</title>
       <link>https://softlayer.github.io/release_notes/2018/20180920/</link>
       <pubDate>Thu, 20 Sep 2018 00:00:00 UTC</pubDate>
@@ -605,47 +675,6 @@ Check your username and API key to make sure they are still valid.&lt;/p&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Generally not an error you should encounter, but can be seen when trying to do some actions on resources that have not fully provisioned. If you get this exception on a resource that is fully provisioned, opening a ticket is recommended.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: August 15, 2018</title>
-      <link>https://softlayer.github.io/release_notes/2018/20180815/</link>
-      <pubDate>Wed, 15 Aug 2018 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/release_notes/2018/20180815/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Pre-select the first host in the Dedicated Hosts table when ordering a DH.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Correct validation when creating a quote&lt;/li&gt;
-&lt;li&gt;Event logs for 2FA status change&lt;/li&gt;
-&lt;li&gt;Adding the ability for customers to delete tags.&lt;/li&gt;
-&lt;li&gt;Add check for SOAP request call to prevent commit in customer&amp;rsquo;s removeSecurityAnswers method.&lt;/li&gt;
-&lt;li&gt;Added ability to filter Event_Logs based on username
-&lt;code&gt;
-https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-resultLimit=0,100&amp;amp;
-objectFilter={&amp;quot;eventName&amp;quot;:{&amp;quot;operation&amp;quot;:&amp;quot;Permission/Resource change&amp;quot;}, &amp;quot;label&amp;quot;:{&amp;quot;operation&amp;quot;:&amp;quot;sl205-mb-test02&amp;quot;}}
-&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;Fix bug to not allow editing of &amp;lsquo;name&amp;rsquo; and &amp;lsquo;category&amp;rsquo; in &lt;a href=&#34;https://softlayer.github.io/reference/services/SoftLayer_Network_Gateway/editObject/&#34;&gt;SoftLayer_Network_Gateway&lt;/a&gt;.&lt;/li&gt;
-&lt;li&gt;Removed FORUM_PASSWORD  from SoftLayer_User_Customer&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fix issue where disk controller limits were incorrectly enforced on bare metal orders.&lt;/li&gt;
-&lt;li&gt;Performance improvement when fetching tax calculations.&lt;/li&gt;
-&lt;li&gt;Firewall names longer than 255 characters will be truncated to 255 characters.&lt;/li&gt;
-&lt;/ul&gt;
 </description>
     </item>
     
