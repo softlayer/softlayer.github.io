@@ -6,7 +6,154 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 08 Feb 2019 00:00:00 UTC</updated>
+    <updated>Wed, 13 Feb 2019 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Bandwidth Usage Reports</title>
+      <link>https://softlayer.github.io/python/bandwidthData/</link>
+      <pubDate>Wed, 13 Feb 2019 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://softlayer.github.io/python/bandwidthData/</guid>
+      <description>
+
+&lt;h3 id=&#34;data-time-alignment&#34;&gt;Data Time Alignment&lt;/h3&gt;
+
+&lt;p&gt;The &lt;a href=&#34;reference/services/SoftLayer_Metric_Tracking_Object/&#34;&gt;SoftLayer_Metric_TrackingObject&lt;/a&gt; class will auto-align your requested time to its nearest data collection boundary.&lt;/p&gt;
+
+&lt;p&gt;For example, if you wanted bandwidth data from &lt;code&gt;2019-02-03T00:30:00&lt;/code&gt; to &lt;code&gt;2019-02-04T00:30:01&lt;/code&gt; with a 3600s rollup, you would get data back from &lt;code&gt;2019-02-03T01:00:00&lt;/code&gt; to &lt;code&gt;2019-02-04T00:00:00&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;This is especially problematic when requesting rollups for 12 and 24 hour periods. For these, the collection boundary starts at 00:00 UTC. So if you are in CST timezone for example, your request of data from &lt;code&gt;2019-02-03T00:00:00&lt;/code&gt; to &lt;code&gt;2019-02-04T00:00:00&lt;/code&gt; will get aligned to &lt;code&gt;2019-02-03T18:00:00-06:00&lt;/code&gt; and &lt;code&gt;2019-02-03T18:00:00-06:00&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;So if you are interested in daily values of your bandwidth, make sure to understand you should send in your requests in UTC so everything aligns to what you requested. This script does this for you, which should hopefully help.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; Softlayer Stores in octets (bytes), sizes printed are in Giga Bytes (octets / 1024^3)
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Sum values are a running total for the time period requested.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+ 
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; pp
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; logging
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; datetime
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; calendar
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt;  click
+ 
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;dateToEpoch&lt;/span&gt;(ctx, param, value):
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;A handy function to take a &amp;#39;YYYY-MM-DD&amp;#39; date and return a datetime object
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+        datetime_object &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strptime(value, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;%Y-%m-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%d&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&lt;/span&gt;)
+        datetime_object&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;replace(tzinfo&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timezone&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;utc)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; datetime_object
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ValueError&lt;/span&gt;:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;raise&lt;/span&gt; click&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;BadParameter(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Unable to parse date: &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; value)
+ 
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;example&lt;/span&gt;():
+ 
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self, start, end):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;       :param int start: epoch time to start at. Should align to 00:00 UTC
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;       :param int end: epoch time to end at. Should align to 00:00 UTC
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;       &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+        debugger &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;DebugTransport(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport)
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; debugger
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;start &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; start
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;end &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; end
+ 
+        &lt;span style=&#34;color:#75715e&#34;&gt;# logger = logging.getLogger()&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;# logger.addHandler(logging.StreamHandler())&lt;/span&gt;
+   
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;debug&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Useful for printing out the exact API calls that were used. If using the rest transport, will print cure-able commands.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; call &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get_last_calls():
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_reproduceable(call))
+ 
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Goes through the server and virtualGuest list of servers. Uses pagination to step through large server lists.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Getting reports from &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; -&amp;gt; &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;start, self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;end))
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;mask[id,hostname,fullyQualifiedDomainName,metricTrackingObject[id]]&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        servers &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Account&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getHardware&amp;#39;&lt;/span&gt;, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask, iter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, limit&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;100&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; server &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; servers:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; server[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;fullyQualifiedDomainName&amp;#39;&lt;/span&gt;])
+            data &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getBWReport(server[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;metricTrackingObject&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;])
+            self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;detailedReport(server, data)
+ 
+        guests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Account&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getVirtualGuests&amp;#39;&lt;/span&gt;, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask, iter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, limit&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;100&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; server &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; guests:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; server[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;fullyQualifiedDomainName&amp;#39;&lt;/span&gt;])
+            data &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getBWReport(server[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;metricTrackingObject&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;])
+            self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;detailedReport(server, data)
+ 
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;detailedReport&lt;/span&gt;(self, server, data):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;Prints out the collected data, does sime date formatting to make it look nice. 
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        This bit only works in py3.7 because it supports the -06:00 TZ format (part of %z). If you are not using py3.7, you could just print out the date as is, which would be in your local timezone.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Start Date             , End Data               , In , Out, In Sum, Out Sum&amp;#34;&lt;/span&gt;)
+        bw_data &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {}
+        total_in &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+        total_out &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; point &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; data:
+            start_date &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; point[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;dateTime&amp;#39;&lt;/span&gt;]
+            counter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;convert(point[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;counter&amp;#39;&lt;/span&gt;])
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; point[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;type&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;publicIn_net_octet&amp;#39;&lt;/span&gt;:
+                bw_data[start_date] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;in&amp;#39;&lt;/span&gt;: counter}
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;elif&lt;/span&gt; point[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;type&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;publicOut_net_octet&amp;#39;&lt;/span&gt;:
+                bw_data[start_date][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;out&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; counter
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; point &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; bw_data:
+            &lt;span style=&#34;color:#75715e&#34;&gt;# make a datetime object out of the date SL gave us, convert it BACK to UTC&lt;/span&gt;
+            start_date &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strptime(point, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;%Y-%m-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%d&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;T%H:%M:%S%z&amp;#39;&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;astimezone(datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timezone&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;utc)
+            &lt;span style=&#34;color:#75715e&#34;&gt;# since our rollup is 86400, our end date is + 86400 sceonds&lt;/span&gt;
+            end_date &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; start_date &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; datetime&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timedelta(seconds&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;86400&lt;/span&gt;)
+            total_in &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; round(total_in &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; float(bw_data[point][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;in&amp;#39;&lt;/span&gt;]),&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;)
+            total_out &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; round(total_out &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; float(bw_data[point][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;out&amp;#39;&lt;/span&gt;]),&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;)
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (
+                start_date&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strftime(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%Y-%m-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%d&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; %H:%M:%S %Z&amp;#34;&lt;/span&gt;),
+                end_date&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;strftime(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;%Y-%m-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%d&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; %H:%M:%S %Z&amp;#34;&lt;/span&gt;),
+                bw_data[point][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;in&amp;#39;&lt;/span&gt;],
+                bw_data[point][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;out&amp;#39;&lt;/span&gt;],
+                total_in,
+                total_out)
+            )
+ 
+ 
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getBWReport&lt;/span&gt;(self, tracking_id):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        start and end here are getting converted to epoch time so we don&amp;#39;t have to worry about properly specifying a timezone. 
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;getBWReport&amp;#34;&lt;/span&gt;)
+        start &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; calendar&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timegm(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;start&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timetuple())
+        end &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; calendar&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timegm(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;end&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;timetuple())
+        data &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Metric_Tracking_Object&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getBandwidthData&amp;#39;&lt;/span&gt;, start, end, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;public&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;86400&lt;/span&gt;, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;tracking_id)
+        &lt;span style=&#34;color:#75715e&#34;&gt;# pp(data)&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; data
+ 
+ 
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;convert&lt;/span&gt;(self, bytes):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt;  round(int(bytes) &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (&lt;span style=&#34;color:#ae81ff&#34;&gt;1024&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;**&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt; ),&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;)
+ 
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@click.command&lt;/span&gt;()
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@click.option&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;--start&amp;#39;&lt;/span&gt;, default&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;2019-01-01&amp;#39;&lt;/span&gt;, help&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Start date, YYYY-MM-DD&amp;#39;&lt;/span&gt;, callback&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;dateToEpoch)
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@click.option&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;--end&amp;#39;&lt;/span&gt;, default&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;2019-02-01&amp;#39;&lt;/span&gt;, help&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;End Date, YYYY-MM-DD&amp;#39;&lt;/span&gt;, callback&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;dateToEpoch)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;(start, end):
+    main &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; example(start, end)
+    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;main()
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Uncomment this to print out the API calls made.&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;#main.debug()&lt;/span&gt;
+ 
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    main()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;rest-calls-made&#34;&gt;REST Calls made&lt;/h3&gt;
+
+&lt;p&gt;Get server list, with tracking object Ids&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY -X GET &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getHardware.json?objectMask=mask%5Bid%2Chostname%2CfullyQualifiedDomainName%2CmetricTrackingObject%5Bid%5D%5D&amp;amp;resultLimit=0%2C2&amp;#39;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Get bandwidth data&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;curl -u $SL_USER:$SL_APIKEY -X POST  -d &amp;#39;{&amp;#34;parameters&amp;#34;: [1546300800, 1548979200, &amp;#34;public&amp;#34;, 86400]}&amp;#39; &amp;#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Metric_Tracking_Object/26570093/getBandwidthData.json&amp;#39;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
     
     <item>
       <title>Release notes: February 08, 2019</title>
@@ -1479,248 +1626,6 @@ objectMaskIops &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span
                 &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: itemsStorage[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
             }
         ]
-    }
-    &lt;span style=&#34;color:#75715e&#34;&gt;# verifyOrder() will check your order for errors. Replace this with a call to&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# placeOrder() when you&amp;#39;re ready to order. Both calls return a receipt object&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# that you can use for your records.&lt;/span&gt;
-    response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; productOrderService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderData)
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(response, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))
-&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to place the order. faultCode=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, faultString=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
-    </item>
-    
-    <item>
-      <title>Order a performance storage (block/file)</title>
-      <link>https://softlayer.github.io/python/order_performance_storage/</link>
-      <pubDate>Thu, 22 Nov 2018 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://softlayer.github.io/python/order_performance_storage/</guid>
-      <description>
-
-&lt;h3 id=&#34;important-note-there-is-a-new-version-of-storage-devices-staas-v2-so-it-is-recomended-to-review-order-block-file-storages-with-managers-order-block-file-storage-with-managers&#34;&gt;&lt;strong&gt;Important Note:&lt;/strong&gt; There is a new version of storage devices (STaaS v2) so it is recomended to review &lt;a href=&#34;../order_block_file_storage_with_managers&#34;&gt;Order Block/File storages with Managers&lt;/a&gt;&lt;/h3&gt;
-
-&lt;p&gt;Performance Block/File storage devices are under package 222 and they are differentiated by the &lt;code&gt;complexType&lt;/code&gt; in the order template, being &lt;code&gt;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&lt;/code&gt; for Block and &lt;code&gt;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Nfs&lt;/code&gt; for File storages.&lt;/p&gt;
-
-&lt;p&gt;These storage devices do not support snapshots, there is not any category name called &lt;code&gt;storage_snapshot_space&lt;/code&gt; or similar in the package configuration, you can execute the following code to verify this last.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
-&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint
-
-client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
-packageService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Package&amp;#39;&lt;/span&gt;]
-
-result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; packageService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getConfiguration(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;222&lt;/span&gt;, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;itemCategory&amp;#34;&lt;/span&gt;)
-pprint(result)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Tips before ordering&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;In most of the cases the order verification fails whether the selected price cannot be ordered in the selected location or it does not meet the capacity restriction of the storage space.&lt;/p&gt;
-
-&lt;p&gt;Following REST call retrieves all prices under package 240 and shows on which locations are available, if &lt;code&gt;locationGroupId&lt;/code&gt; is null means the price is standard and can be used on any location.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-html&#34; data-lang=&#34;html&#34;&gt;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Package/222/getItemPrices?objectMask=mask[id,capacityRestrictionMaximum,capacityRestrictionMinimum,capacityRestrictionType,locationGroupId,item[capacity,description],categories,pricingLocationGroup[locations]]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;About capacity restrictions, the &lt;code&gt;performance_storage_iops&lt;/code&gt; items have capacity restrictions (min/max) which should match with the &lt;code&gt;capacity&lt;/code&gt; value of the selected &lt;code&gt;performance_storage_space&lt;/code&gt; item, it means if you want an storage space of &amp;ldquo;40 GB Storage Space&amp;rdquo; and &amp;ldquo;600 IOPS&amp;rdquo;:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;    {
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40692&lt;/span&gt;,
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;locationGroupId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;,
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categories&amp;#34;&lt;/span&gt;: [
-            {
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;performance_storage_space&amp;#34;&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;382&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Storage Space&amp;#34;&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;quantityLimit&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;sortOrder&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;
-            }
-        ],
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;item&amp;#34;&lt;/span&gt;: {
-            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;capacity&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;40&amp;#34;&lt;/span&gt;,
-            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;description&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;40 GB Storage Space&amp;#34;&lt;/span&gt;
-        }
-    }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Then price of &lt;code&gt;performance_storage_iops&lt;/code&gt; should be:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;    {
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40942&lt;/span&gt;,
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;locationGroupId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;,
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;capacityRestrictionMaximum&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;40&amp;#34;&lt;/span&gt;,
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;capacityRestrictionMinimum&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;40&amp;#34;&lt;/span&gt;,
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;capacityRestrictionType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;STORAGE_SPACE&amp;#34;&lt;/span&gt;,
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categories&amp;#34;&lt;/span&gt;: [
-            {
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;performance_storage_iops&amp;#34;&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;384&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Performance Storage IOPS&amp;#34;&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;quantityLimit&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;,
-                &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;sortOrder&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;
-            }
-        ],
-        &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;item&amp;#34;&lt;/span&gt;: {
-            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;capacity&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;600&amp;#34;&lt;/span&gt;,
-            &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;description&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;600 IOPS&amp;#34;&lt;/span&gt;
-        }
-    }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&#34;block-performance-storage&#34;&gt;&lt;strong&gt;Block Performance Storage&lt;/strong&gt;&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
-&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint
-
-orderTemplate &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&amp;#34;&lt;/span&gt;,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;location&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;DALLAS05&amp;#34;&lt;/span&gt;,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;quantity&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;packageId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;222&lt;/span&gt;,
-    &lt;span style=&#34;color:#75715e&#34;&gt;# To see the list of prices available for the package&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# use the SoftLayer_Product_Package::getItems method with masks&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# or SoftLayer_Product_Package::getItemPrices&lt;/span&gt;
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;prices&amp;#34;&lt;/span&gt;: [
-        {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40672&lt;/span&gt;},      &lt;span style=&#34;color:#75715e&#34;&gt;# BlockStorage(Performance) keyName: performance_storage_iscsi&lt;/span&gt;
-        {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40692&lt;/span&gt;},      &lt;span style=&#34;color:#75715e&#34;&gt;# 40GB Storage Space        keyName: performance_storage_space&lt;/span&gt;
-        {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40942&lt;/span&gt;}       &lt;span style=&#34;color:#75715e&#34;&gt;# 600 IOPS                  keyName: performance_storage_iops&lt;/span&gt;
-    ],
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;osFormatType&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;LINUX&amp;#34;&lt;/span&gt;}
-}
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Declares the API client to use the SoftLayer_Product_Order API service&lt;/span&gt;
-client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
-productOrderService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Use placeOrder method when you ready to order&lt;/span&gt;
-    result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; productOrderService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderTemplate)
-    pprint(result)
-&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to place the order. &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&#34;file-performance-storage&#34;&gt;&lt;strong&gt;File Performance Storage&lt;/strong&gt;&lt;/h2&gt;
-
-&lt;p&gt;Since the prices are the same, basically it is only to required change the price of &lt;code&gt;performance_storage_iscsi&lt;/code&gt; by &lt;code&gt;performance_storage_nfs&lt;/code&gt;, and remove the property &lt;code&gt;osFormatType&lt;/code&gt;&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
-&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint
-
-orderTemplate &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;complexType&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Nfs&amp;#39;&lt;/span&gt;,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;quantity&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;packageId&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;222&lt;/span&gt;,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;DALLAS09&amp;#39;&lt;/span&gt;,
-    &lt;span style=&#34;color:#75715e&#34;&gt;# To see the list of prices available for the package&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# use the SoftLayer_Product_Package::getItems method with masks&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# or SoftLayer_Product_Package::getItemPrices&lt;/span&gt;
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;: [
-        {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40662&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# File Storage (Performance)    keyName: performance_storage_nfs&lt;/span&gt;
-        {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40692&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# 40GB Storage Space            keyName: performance_storage_space&lt;/span&gt;
-        {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;40942&lt;/span&gt;}   &lt;span style=&#34;color:#75715e&#34;&gt;# 600 IOPS                      keyName: performance_storage_iops&lt;/span&gt;
-    ]
-}
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Declares the API client&lt;/span&gt;
-client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Use placeOrder method when you ready to order&lt;/span&gt;
-    result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderTemplate)
-    pprint(result)
-&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to place the order. &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&#34;complex-example&#34;&gt;&lt;strong&gt;Complex example&lt;/strong&gt;&lt;/h2&gt;
-
-&lt;p&gt;Following is a more complex example which order a block storage by setting only the parameters of location, size, iops, and os.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Values &amp;#34;AMS01&amp;#34;, &amp;#34;AMS03&amp;#34;, &amp;#34;CHE01&amp;#34;, &amp;#34;DAL05&amp;#34;, &amp;#34;DAL06&amp;#34; &amp;#34;FRA02&amp;#34;, &amp;#34;HKG02&amp;#34;, &amp;#34;LON02&amp;#34;, etc.&lt;/span&gt;
-location &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;AMS01&amp;#34;&lt;/span&gt;
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Values &amp;#34;20&amp;#34;, &amp;#34;40&amp;#34;, &amp;#34;80&amp;#34;, &amp;#34;100&amp;#34;, etc.&lt;/span&gt;
-storageSize &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;40&amp;#34;&lt;/span&gt;
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Values between &amp;#34;100&amp;#34; and &amp;#34;6000&amp;#34; by intervals of 100.&lt;/span&gt;
-iops &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;100&amp;#34;&lt;/span&gt;
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Values &amp;#34;Hyper-V&amp;#34;, &amp;#34;Linux&amp;#34;, &amp;#34;VMWare&amp;#34;, &amp;#34;Windows 2008+&amp;#34;, &amp;#34;Windows GPT&amp;#34;, &amp;#34;Windows 2003&amp;#34;, &amp;#34;Xen&amp;#34;&lt;/span&gt;
-os &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Linux&amp;#34;&lt;/span&gt;
-
-PACKAGE_ID &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;222&lt;/span&gt;
-
-client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
-productOrderService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]
-packageService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Package&amp;#39;&lt;/span&gt;]
-locationService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Location&amp;#39;&lt;/span&gt;]
-osService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Network_Storage_Iscsi_OS_Type&amp;#39;&lt;/span&gt;]
-
-objectFilterDatacenter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: location&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;lower()}}
-objectFilterStorageNfs &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;items&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;categories&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;performance_storage_iscsi&amp;#34;&lt;/span&gt;}}}}
-objectFilterOsType &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: os}}
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Getting the datacenter.&lt;/span&gt;
-    datacenter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; locationService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getDatacenters(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectFilterDatacenter)
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Getting the performance storage NFS prices.&lt;/span&gt;
-    itemsStorageNfs &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; packageService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItems(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;PACKAGE_ID, filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectFilterStorageNfs)
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Getting the storage space prices&lt;/span&gt;
-    objectFilter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;itemPrices&amp;#34;&lt;/span&gt;: {
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;item&amp;#34;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;capacity&amp;#34;&lt;/span&gt;: {
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: storageSize
-                }
-            },
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;categories&amp;#34;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: {
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;performance_storage_space&amp;#34;&lt;/span&gt;
-                }
-            },
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;locationGroupId&amp;#34;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;is null&amp;#34;&lt;/span&gt;
-            }
-        }
-    }
-    pricesStorageSpace &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; packageService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItemPrices(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;PACKAGE_ID, filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectFilter)
-    &lt;span style=&#34;color:#75715e&#34;&gt;# If the prices list is empty that means that the storage space value is invalid.&lt;/span&gt;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; len(pricesStorageSpace) &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;:
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;raise&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ValueError&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;The storage space value: &amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; storageSize &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39; GB, is not valid.&amp;#39;&lt;/span&gt;)
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Getting the IOPS prices&lt;/span&gt;
-    objectFilter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;itemPrices&amp;#34;&lt;/span&gt;: {
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;item&amp;#34;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;capacity&amp;#34;&lt;/span&gt;: {
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: iops
-                }
-            },
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;attributes&amp;#34;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: {
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: storageSize
-                }
-            },
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;categories&amp;#34;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;categoryCode&amp;#34;&lt;/span&gt;: {
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;performance_storage_iops&amp;#34;&lt;/span&gt;
-                }
-            },
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;locationGroupId&amp;#34;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;is null&amp;#34;&lt;/span&gt;
-            }
-        }
-    }
-    pricesIops &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; packageService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItemPrices(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;PACKAGE_ID, filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectFilter)
-    &lt;span style=&#34;color:#75715e&#34;&gt;# If the prices list is empty that means that the IOPS value is invalid for the configured storage space.&lt;/span&gt;
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; len(pricesIops) &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;:
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;raise&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ValueError&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;The IOPS value: &amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; iops &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;, is not valid for the storage space: &amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; storageSize &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39; GB.&amp;#39;&lt;/span&gt;)
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Getting the OS.&lt;/span&gt;
-    os &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; osService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;objectFilterOsType)
-    &lt;span style=&#34;color:#75715e&#34;&gt;# Building the order template.&lt;/span&gt;
-    orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&amp;#34;&lt;/span&gt;,
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;packageId&amp;#34;&lt;/span&gt;: PACKAGE_ID,
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;location&amp;#34;&lt;/span&gt;: datacenter[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;quantity&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;prices&amp;#34;&lt;/span&gt;: [
-            {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: itemsStorageNfs[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
-            },
-            {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: pricesStorageSpace[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
-            },
-            {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: pricesIops[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
-            }
-        ],
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;osFormatType&amp;#34;&lt;/span&gt;: os[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
     }
     &lt;span style=&#34;color:#75715e&#34;&gt;# verifyOrder() will check your order for errors. Replace this with a call to&lt;/span&gt;
     &lt;span style=&#34;color:#75715e&#34;&gt;# placeOrder() when you&amp;#39;re ready to order. Both calls return a receipt object&lt;/span&gt;
