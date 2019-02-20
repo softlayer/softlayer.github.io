@@ -217,11 +217,11 @@ curl -s -u &#39;bx:bx&#39; -k -X POST --header &#39;Content-Type: application/x-
 
 <p>Tokens are retrieved from <a href="https://iam-id-1.ng.bluemix.net/identity/passcode">https://iam-id-1.ng.bluemix.net/identity/passcode</a></p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">TOKEN=qwe124cxzv
-curl -s -u &#39;bx:bx&#39; -k -X POST --header &#39;Content-Type: application/x-www-form-urlencoded&#39; --header &#39;Accept: application/json&#39; -d &#34;grant_type=urn:ibm:params:oauth:grant-type:passcode&amp;passcode=$PASSCODE0&amp;response_type=cloud_iam,ims_portal&#34; https://iam.ng.bluemix.net/oidc/token</pre></div>
+curl -s -u &#39;bx:bx&#39; -k -X POST --header &#39;Content-Type: application/x-www-form-urlencoded&#39; --header &#39;Accept: application/json&#39; -d &#34;grant_type=urn:ibm:params:oauth:grant-type:passcode&amp;passcode=$TOKEN&amp;response_type=cloud_iam,ims_portal&#34; https://iam.ng.bluemix.net/oidc/token</pre></div>
 <p>In the response, will be a data field call <code>ims_token</code> which will let you authenticate to the SoftLayer API until the token expires (which should also be in the returned data)</p>
 
-<p>The REST endpoint doesn&rsquo;t support authenticating with tokens, so you will need to use the SOAP/XML endpoints.</p>
-
+<p>The REST endpoint doesn&rsquo;t support authenticating with tokens, but the MOBILE endpoint works, along with the SOAP/XML endpoints.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u USERID:IMS_TOKEN &#39;https://api.softlayer.com/mobile/v3.1/SoftLayer_Account/getObject&#39;</pre></div>
 <p>In the authentication header, you will set <code>userId</code> and <code>authToken</code>,  instead of <code>username</code> and <code>apiKey</code>. A call to SoftLayer_Customer::getObject would look like this in XML.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#75715e">&lt;?xml version=\&#34;1.0\&#34; encoding=\&#34;UTF-8\&#34;?&gt;</span>
 <span style="color:#f92672">&lt;methodCall&gt;</span>
@@ -295,6 +295,116 @@ curl -s -u &#39;bx:bx&#39; -k -X POST --header &#39;Content-Type: application/x-
     <span style="color:#f92672">&lt;/param&gt;</span>
   <span style="color:#f92672">&lt;/params&gt;</span>
 <span style="color:#f92672">&lt;/methodCall&gt;</span></code></pre></div>
+<h2 id="using-the-softlayer-python-library-with-ims-token">Using the SoftLayer Python Library with IMS_TOKEN</h2>
+
+<p>The following is a short example of how to get an IMS_TOKEN, and use it to make API calls with the SoftLayer Python library.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">Uses an IBM ID username/password to make SoftLayer API calls. 
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">Using this method, you MUST use the xmlrpc endpoint in your ~/.softlayer file
+</span><span style="color:#e6db74">`endpoint_url = https://api.softlayer.com/xmlrpc/v3.1/`
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">To use a rest endpoint, you will ahve to use https://api.softlayer.com/mobile/v3.1/, 
+</span><span style="color:#e6db74">which isn&#39;t supported by the softlayer python library
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+ 
+
+<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
+<span style="color:#f92672">import</span> logging
+<span style="color:#f92672">import</span> click
+<span style="color:#f92672">import</span> requests
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">from</span> SoftLayer.auth <span style="color:#f92672">import</span> TokenAuthentication <span style="color:#66d9ef">as</span> TokenAuthentication
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+ 
+    <span style="color:#66d9ef">def</span> __init__(self, token, user, password):
+        <span style="color:#66d9ef">if</span> token <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+            ims_token <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_ims_token_sso(token)
+        <span style="color:#66d9ef">else</span>:
+            ims_token <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_ims_token_password(user, password)
+        authObject <span style="color:#f92672">=</span> TokenAuthentication(ims_token[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;ims_user_id&#39;</span>], ims_token[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;ims_token&#39;</span>])
+        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>create_client_from_env(auth<span style="color:#f92672">=</span>authObject)
+        debugger <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>DebugTransport(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport)
+        self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport <span style="color:#f92672">=</span> debugger
+        <span style="color:#75715e"># logger = logging.getLogger()</span>
+        <span style="color:#75715e"># logger.addHandler(logging.StreamHandler())</span>
+   
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">debug</span>(self):
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Useful for printing out the exact API calls that were used. If using the rest transport, will print cure-able commands.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">for</span> call <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>get_last_calls():
+            <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>print_reproduceable(call))
+ 
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_ims_token_sso</span>(self, token):
+        <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        For accounts controlled by SSO, use this method.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        url <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;https://iam.ng.bluemix.net/oidc/token&#39;</span>
+        payload <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;grant_type&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;urn:ibm:params:oauth:grant-type:passcode&#39;</span>, 
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;passcode&#39;</span>: token,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;response_type&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;cloud_iam,ims_portal&#39;</span>
+        }
+        headers <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Content-Type&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;application/x-www-form-urlencoded&#39;</span>,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Accept&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;application/json&#39;</span>
+        }
+        result <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(url, data<span style="color:#f92672">=</span>payload, auth<span style="color:#f92672">=</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;bx&#39;</span>,<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;bx&#39;</span>), headers<span style="color:#f92672">=</span>headers)
+
+        <span style="color:#75715e"># This is what your token should look like.</span>
+        <span style="color:#75715e"># Once you use an SSO token to get an IMS_TOKEN, it expires </span>
+        <span style="color:#75715e"># so I use this as an easy way to save the IMS token response.</span>
+
+        <span style="color:#75715e"># test_token = {</span>
+        <span style="color:#75715e">#     &#39;access_token&#39;: &#39;REALLY LONG STRING GOES HERE&#39;,</span>
+        <span style="color:#75715e">#     &#39;expiration&#39;: 1550699632,</span>
+        <span style="color:#75715e">#     &#39;expires_in&#39;: 3600,</span>
+        <span style="color:#75715e">#     &#39;ims_token&#39;: &#39;ANOTHER-REALLY-LONG_TOKEN_THING&#39;,</span>
+        <span style="color:#75715e">#     &#39;ims_user_id&#39;: 244956,</span>
+        <span style="color:#75715e">#     &#39;refresh_token&#39;: &#39;REALLYLONGTOKENGOESHERE&#39;,</span>
+        <span style="color:#75715e">#     &#39;scope&#39;: &#39;ibm openid&#39;,</span>
+        <span style="color:#75715e">#     &#39;token_type&#39;: &#39;Bearer&#39;</span>
+        <span style="color:#75715e"># }</span>
+        <span style="color:#75715e"># return test_token</span>
+        <span style="color:#66d9ef">return</span> json<span style="color:#f92672">.</span>loads(result<span style="color:#f92672">.</span>text)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_ims_token_password</span>(self, username, password):
+        url <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;https://iam.ng.bluemix.net/oidc/token&#39;</span>
+        payload <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;grant_type&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;password&#39;</span>, 
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;username&#39;</span>: username,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;password&#39;</span>: password,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;response_type&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;cloud_iam,ims_portal&#39;</span>
+        }
+        headers <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Content-Type&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;application/x-www-form-urlencoded&#39;</span>,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Accept&#39;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;application/json&#39;</span>
+        }
+        result <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(url, data<span style="color:#f92672">=</span>payload, auth<span style="color:#f92672">=</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;bx&#39;</span>,<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;bx&#39;</span>), headers<span style="color:#f92672">=</span>headers)
+        pp(result<span style="color:#f92672">.</span>text)
+        <span style="color:#66d9ef">return</span> json<span style="color:#f92672">.</span>load(result<span style="color:#f92672">.</span>text)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(self):
+        account <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Account&#39;</span>, <span style="color:#e6db74"></span><span style="color:#e6db74">&#39;getObject&#39;</span>)
+        pp(account)
+
+<span style="color:#a6e22e">@click.command</span>()
+<span style="color:#a6e22e">@click.option</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;--sso&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#39;SSO token from https://iam-id-1.ng.bluemix.net/identity/passcode&#39;</span>)
+<span style="color:#a6e22e">@click.option</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;--username&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#39;IBM Id Username&#39;</span>)
+<span style="color:#a6e22e">@click.option</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;--password&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74"></span><span style="color:#e6db74">&#39;IBM Id Password&#39;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(sso<span style="color:#f92672">=</span>None, username<span style="color:#f92672">=</span>None, password<span style="color:#f92672">=</span>None):
+
+    main <span style="color:#f92672">=</span> example(sso, username, password)
+    main<span style="color:#f92672">.</span>main()
+    <span style="color:#75715e"># Uncomment this to print out the API calls made.</span>
+    main<span style="color:#f92672">.</span>debug()
+ 
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main()</code></pre></div>
             </div>
         </div>
 
