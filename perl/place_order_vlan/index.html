@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>order_portable_public_subnet.py - https://sldn.softlayer.com/</title>
-    <link rel="canonical" href="https://sldn.softlayer.com/python/order_portable_public_subnet.py/">
+    <title>Order a Vlan - https://sldn.softlayer.com/</title>
+    <link rel="canonical" href="https://sldn.softlayer.com/perl/place_order_vlan/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
@@ -103,21 +103,27 @@ ga('send', 'pageview');
     
         <div class="col-md-3">
             <div style="word-wrap: break-word;"> 
-                <h4>November 23, 2017<br></h4>
+                <h4>March 18, 2019<br></h4>
             </div>
         </div>
         <div class="col-md-9">
 
                 <strong>Classes <span class="fa fa-book"/></strong>
                 
-                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Container_Product_Order_Network_Subnet">SoftLayer_Container_Product_Order_Network_Subnet</a>
+                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price">SoftLayer_Product_Item_Price</a>
+                
+                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Package">SoftLayer_Product_Package</a>
                 
                     <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Order">SoftLayer_Product_Order</a>
+                
+                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Container_Product_Order_Network_Vlan">SoftLayer_Container_Product_Order_Network_Vlan</a>
                 
                 <br>
                 <strong>Tags <span class="fa fa-tags"/></strong>
                 
-                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/subnets">subnets</a>
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/vlans">vlans</a>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/order">order</a>
                           
         </div>
     </div>
@@ -125,104 +131,46 @@ ga('send', 'pageview');
     <div class="row">
 		<div class="col-md-12">
             <div class="well well-sm release-note" style="word-wrap: break-word;">
-				<h3>order_portable_public_subnet.py<br> <small>order_portable_public_subnet.py</small></h3>
+				<h3>Order a Vlan<br> <small>Order a Network Vlan device</small></h3>
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&#34;&#34;&#34;
-Orders a new portable public subnet
+                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-pl" data-lang="pl"><span style="color:#66d9ef">use</span> lib <span style="color:#e6db74">&#39;/softlayer-api-perl-client-master/&#39;</span>;
+<span style="color:#66d9ef">use</span> SoftLayer::API::SOAP;
+<span style="color:#66d9ef">use</span> Data::Dumper;
 
-Important manual pages:
-http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
-http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+<span style="color:#75715e"># Your SoftLayer API username and key.</span>
+<span style="color:#66d9ef">my</span> $username <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;set me&#39;</span>;
+<span style="color:#66d9ef">my</span> $apikey <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;set me&#39;</span>;
 
-License: http://sldn.softlayer.com/article/License
-Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-&#34;&#34;&#34;
-import SoftLayer
-# For nice debug output:
-from pprint import pprint as pp
-
-API_USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
-
-# Order Template with all new item configurations
-
-orderTemplate = {
-    &#39;location&#39;: 224092,    # Singapore 1
-    &#39;packageId&#39;: 0,
-    &#39;endPointVlanId&#39;: 527900,
-    &#39;prices&#39;: [
+<span style="color:#75715e"># Building a skeleton SoftLayer_Container_Product_Order_Network_Vlan object</span>
+<span style="color:#75715e"># to model the order for the new VLAN</span>
+<span style="color:#66d9ef">my</span> $order_template <span style="color:#f92672">=</span> bless({
+    <span style="color:#e6db74">&#39;orderContainerType&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;SoftLayer_Container_Product_Order_Network_Vlan&#39;</span>,
+    <span style="color:#e6db74">&#39;location&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;AMSTERDAM&#39;</span>,
+    <span style="color:#e6db74">&#39;packageId&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">571</span>,    <span style="color:#75715e"># ADDITIONAL_SERVICES_NETWORK_VLAN</span>
+    <span style="color:#e6db74">&#39;prices&#39;</span> <span style="color:#f92672">=&gt;</span> [
         {
-            &#39;id&#39;: 13980
-        }
+            <span style="color:#e6db74">&#39;complexType&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;SoftLayer_Product_Item_Price&#39;</span>,            
+            <span style="color:#e6db74">&#39;id&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">51775</span> <span style="color:#75715e"># The pice for PUBLIC_NETWORK_VLAN</span>
+        } 
     ],
-    &#39;quantity&#39;: 1,
-    &#39;itemCategoryQuestionAnswers&#39;: [
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 14,
-            &#39;answer&#39;: 1    # TOTAL_IPS_IN_30_DAYS
-        },
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 15,
-            &#39;answer&#39;: 3    # TOTAL_IPS_IN_12_MONTHS
-        },
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 16,
-            &#39;answer&#39;: &#39;Test description of your need for additional IPs&#39;     # REASON_FOR_IPS
-        },
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 9,
-            &#39;answer&#39;: &#39;ContactNameTest&#39;    # CONTACT_NAME
-        },
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 10,
-            &#39;answer&#39;: &#39;ContactJobTitleTest&#39;    # CONTACT_JOB_TITLE
-        },
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 11,
-            &#39;answer&#39;: &#39;contact.email@myemail.com&#39;    # CONTACT_EMAIL
-        },
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 12,
-            &#39;answer&#39;: &#39;72878781&#39;    # CONTACT_PHONE_NUMBER
-        },
-        {
-            &#39;categoryId&#39;: 313,
-            &#39;categoryCode&#39;: &#39;sov_sec_ip_addresses_pub&#39;,
-            &#39;questionId&#39;: 13,
-            &#39;answer&#39;: True    # CONTACT_VALIDATED
-        }
-    ],
-    &#39;complexType&#39;: &#39;SoftLayer_Container_Product_Order_Network_Subnet&#39;
+    <span style="color:#e6db74">&#39;quantity&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#ae81ff">1</span>, 
+    <span style="color:#e6db74">&#39;sendQuoteEmailFlag&#39;</span> <span style="color:#f92672">=&gt;</span> True,
+    <span style="color:#e6db74">&#39;name&#39;</span> <span style="color:#f92672">=&gt;</span> <span style="color:#e6db74">&#39;A Vlan Name&#39;</span>    
+},<span style="color:#e6db74">&#39;slapi:SoftLayer_Container_Product_Order_Network_Vlan&#39;</span>);
+
+<span style="color:#75715e"># Creating a SoftLayer API client object</span>
+<span style="color:#66d9ef">my</span> $product_order <span style="color:#f92672">=</span> SoftLayer::API::SOAP<span style="color:#f92672">-&gt;</span><span style="color:#66d9ef">new</span>(<span style="color:#e6db74">&#39;SoftLayer_Product_Order&#39;</span>, undef, $username, $apikey);
+
+<span style="color:#75715e"># verifyOrder() will check your order for errors. Replace this with a call to</span>
+<span style="color:#75715e"># placeOrder() when you&#39;re ready to order. </span>
+<span style="color:#66d9ef">my</span> $receipt <span style="color:#f92672">=</span> $product_order<span style="color:#f92672">-&gt;</span>verifyOrder($order_template);
+<span style="color:#66d9ef">if</span> ($receipt<span style="color:#f92672">-&gt;</span>fault) {
+    die <span style="color:#e6db74">&#39;Unable to create the vlan. &#39;</span> <span style="color:#f92672">.</span> $receipt<span style="color:#f92672">-&gt;</span>faultstring;
 }
-
-# Creates a new connection to the API service.
-client = SoftLayer.Client(
-    username=API_USERNAME,
-    api_key=API_KEY
-)
-
-try:
-    result = client[&#39;SoftLayer_Product_Order&#39;].verifyOrder(orderTemplate)
-    pp(result)
-except SoftLayer.SoftLayerAPIError as e:
-    pp(&#39;Failed ... Unable to order the new item faultCode=%s, faultString=%s&#39;
-        % (e.faultCode, e.faultString))</pre></div>
+<span style="color:#66d9ef">print</span> Dumper($receipt<span style="color:#f92672">-&gt;</span>result);
+<span style="color:#66d9ef">print</span> (<span style="color:#e6db74">&#34;The order was verified successfully&#34;</span>);</code></pre></div>
             </div>
         </div>
 
@@ -262,7 +210,7 @@ except SoftLayer.SoftLayerAPIError as e:
                 <strong>Feedback? <span class="fa fa-comment"/></strong>
                     <p>
                         We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20order_portable_public_subnet.py&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2forder_portable_public_subnet.py%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20perl%20-%20Order%20a%20Vlan&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fperl%2fplace_order_vlan%2f"><span class="fa fa-github-square"/> Open an issue</a>
                     </p>
             </div>
         </div>

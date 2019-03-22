@@ -8,8 +8,8 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>place_order_vlan.rb - https://sldn.softlayer.com/</title>
-    <link rel="canonical" href="https://sldn.softlayer.com/ruby/place_order_vlan.rb/">
+    <title>Order Global IP - https://sldn.softlayer.com/</title>
+    <link rel="canonical" href="https://sldn.softlayer.com/python/order_global_ipv4_ipv6/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
@@ -103,27 +103,27 @@ ga('send', 'pageview');
     
         <div class="col-md-3">
             <div style="word-wrap: break-word;"> 
-                <h4>November 23, 2017<br></h4>
+                <h4>March 18, 2019<br></h4>
             </div>
         </div>
         <div class="col-md-9">
 
                 <strong>Classes <span class="fa fa-book"/></strong>
                 
-                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price">SoftLayer_Product_Item_Price</a>
-                
-                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Account">SoftLayer_Account</a>
+                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Container_Product_Order_Network_Subnet">SoftLayer_Container_Product_Order_Network_Subnet</a>
                 
                     <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Package">SoftLayer_Product_Package</a>
                 
-                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Order">SoftLayer_Product_Order</a>
+                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet">SoftLayer_Network_Subnet</a>
                 
-                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Container_Product_Order_Network_Vlan">SoftLayer_Container_Product_Order_Network_Vlan</a>
+                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Order">SoftLayer_Product_Order</a>
                 
                 <br>
                 <strong>Tags <span class="fa fa-tags"/></strong>
                 
-                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/vlans">vlans</a>
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/subnets">subnets</a>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/order">order</a>
                           
         </div>
     </div>
@@ -131,82 +131,60 @@ ga('send', 'pageview');
     <div class="row">
 		<div class="col-md-12">
             <div class="well well-sm release-note" style="word-wrap: break-word;">
-				<h3>place_order_vlan.rb<br> <small>place_order_vlan.rb</small></h3>
+				<h3>Order Global IP<br> <small>Order a global IPv4 or IPv6 </small></h3>
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># Example to create a new VLAN
-# the script uses the placeOrder method to order
-# a new VLAN with 32 static IP address
-#
-# Important manual page
-# http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
-# http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-# http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Vlan
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-#
-# License: http://sldn.softlayer.com/article/License
-# Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-require &#39;softlayer_api&#39;
-require &#39;pp&#39;
+                <p>This example uses <code>verifyOrder</code> method to check the order for errors, replace it by
+<code>placeOrder</code> method when you are ready to order.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
+<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint
 
-# Your SoftLayer API username and key.
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Network</span>:
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
 
-# Build a skeleton SoftLayer_Container_Product_Order_Network_Vlan object
-# to model the order for the new VLAN
-order_data = {
-  &#39;complexType&#39; =&gt; &#39;SoftLayer_Container_Product_Order_Network_Vlan&#39;,
-  &#39;location&#39; =&gt; &#39;AMSTERDAM&#39;,
-  &#39;packageId&#39; =&gt; 0,
-  # Build a skeleton SoftLayer_Product_Item_Price objects. These objects contain
-  # much more than Ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id
-  # to know what you want to order.
-  # to get the list of valid prices for the package
-  # use the SoftLayer_Product_Package:getItems method
-  # e.g.
-  # productPackageService = client[&#39;SoftLayer_Product_Package&#39;]
-  # prices = productPackageService.getItems(id = packageID)
-  &#39;prices&#39; =&gt; [
-    {
-      &#39;complexType&#39; =&gt; &#39;SoftLayer_Product_Item_Price&#39;,
-      # The price for the new Public Network Vlan
-      &#39;id&#39; =&gt; 201_8
-    },
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_get_package_id</span>(self, keyname):
+        _filter <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;type&#34;</span>:{<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;keyName&#34;</span>:{<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>:keyname}}}
+    
+        package <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Product_Package&#39;</span>]<span style="color:#f92672">.</span>getAllObjects(filter<span style="color:#f92672">=</span>_filter)
+        <span style="color:#66d9ef">return</span> package[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;id&#39;</span>]
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_get_item_price</span>(self, package_id, item_keyname):
+        _filter <span style="color:#f92672">=</span> {<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;items&#34;</span>:{<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;keyName&#34;</span>:{<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;operation&#34;</span>:item_keyname}}}
+        
+        items <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Product_Package&#39;</span>]<span style="color:#f92672">.</span>getItems(filter<span style="color:#f92672">=</span>_filter, id<span style="color:#f92672">=</span>package_id)
 
-    {
-      &#39;complexType&#39; =&gt; &#39;SoftLayer_Product_Item_Price&#39;,
-      # The price for 32 Static Public IP Addresses
-      &#39;id&#39; =&gt; 367_16
-    }
+        price_id <span style="color:#f92672">=</span> [p[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>] <span style="color:#66d9ef">for</span> p <span style="color:#f92672">in</span> items[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;prices&#34;</span>]
+                   <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> p[<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;locationGroupId&#34;</span>]][<span style="color:#ae81ff">0</span>]
+        <span style="color:#66d9ef">return</span> price_id
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">order_global_ip</span>(self, package, item_keyname):
+        packageId <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_get_package_id(package)
+        priceId <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_get_item_price(packageId, item_keyname)
+            
+        orderData <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;complexType&#34;</span>: <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;SoftLayer_Container_Product_Order_Network_Subnet&#34;</span>,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;packageId&#34;</span>: packageId,
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;prices&#34;</span>: [{<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;id&#34;</span>: priceId}],
+            <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;quantity&#34;</span>: <span style="color:#ae81ff">1</span>
+        }
+        
+        <span style="color:#66d9ef">try</span>:
+            <span style="color:#75715e"># verifyOrder will check your order for errors. Replace this with placeOrder</span>
+            <span style="color:#75715e"># when you&#39;re ready to order</span>
+            <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74"></span><span style="color:#e6db74">&#39;Product_Order&#39;</span>]<span style="color:#f92672">.</span>verifyOrder(orderData)
+        <span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74"></span><span style="color:#e6db74">&#34;Unable to order: </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (e<span style="color:#f92672">.</span>faultCode, e<span style="color:#f92672">.</span>faultString))
 
-  ],
-  &#39;quantity&#39; =&gt; 1,
-  &#39;sendQuoteEmailFlag&#39; =&gt; true,
-  &#39;name&#39; =&gt; &#39;myVLANnew&#39;,
-  # The router ID where the VLAN will be created
-  # to get the list of routers in your account
-  # use the SoftLayer_Account::getRouters method
-  &#39;routerId&#39; =&gt; 117_960
-}
-
-# Declaring the API client
-client = SoftLayer::Client.new(username: USERNAME, api_key: API_KEY)
-product_order_service = client.service_named(&#39;SoftLayer_Product_Order&#39;)
-
-begin
-  # verifyOrder() will check your order for errors. Replace this with a call
-  # to placeOrder() when you&#39;re ready to order. Both calls return a receipt
-  # object that you can use for your records.
-  # Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
-  # provisioning process.
-  response = product_order_service.verifyOrder(order_data)
-  pp response
-rescue StandardError =&gt; exception
-  puts &#34;Unable to place the order. : #{exception}&#34;
-end</pre></div>
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    package <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;ADDITIONAL_SERVICES_GLOBAL_IP_ADDRESSES&#34;</span>    
+    <span style="color:#75715e"># Available values are: GLOBAL_IPV4 and GLOBAL_IPV6</span>
+    item <span style="color:#f92672">=</span> <span style="color:#e6db74"></span><span style="color:#e6db74">&#34;GLOBAL_IPV4&#34;</span>
+        
+    network <span style="color:#f92672">=</span> Network()
+    receipt <span style="color:#f92672">=</span> network<span style="color:#f92672">.</span>order_global_ip(package, item)
+    pprint(receipt)</code></pre></div>
             </div>
         </div>
 
@@ -246,7 +224,7 @@ end</pre></div>
                 <strong>Feedback? <span class="fa fa-comment"/></strong>
                     <p>
                         We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20ruby%20-%20place_order_vlan.rb&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fruby%2fplace_order_vlan.rb%2f"><span class="fa fa-github-square"/> Open an issue</a>
+                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Order%20Global%20IP&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2forder_global_ipv4_ipv6%2f"><span class="fa fa-github-square"/> Open an issue</a>
                     </p>
             </div>
         </div>
