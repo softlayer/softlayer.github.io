@@ -6,7 +6,30 @@
     <language>en-US</language>
     <author>Enthusiastic Hugo User</author>
     <rights>Copyright (c) 2014, Enthusiastic Hugo User; all rights reserved.</rights>
-    <updated>Fri, 29 Mar 2019 00:00:00 UTC</updated>
+    <updated>Fri, 05 Apr 2019 00:00:00 UTC</updated>
+    
+    <item>
+      <title>Release notes: APril 5, 2019</title>
+      <link>https://sldn.softlayer.com/release_notes/2019/20190405/</link>
+      <pubDate>Fri, 05 Apr 2019 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://sldn.softlayer.com/release_notes/2019/20190405/</guid>
+      <description>
+
+&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Fix issue where the order forms were unhelpful in handling paypal payments that were cancelled.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Prevent placing an order for more than one private cloud service at a time.&lt;/li&gt;
+&lt;li&gt;This issue lets copy to ICOS actions automatically refresh their IAM access token before it expires during large exports.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Release notes: March 29, 2019</title>
@@ -72,6 +95,562 @@
 &lt;li&gt;Hourly pricing for LUNA HSM&lt;/li&gt;
 &lt;/ul&gt;
 </description>
+    </item>
+    
+    <item>
+      <title>Working with upgrade virtual guest dedicated and families</title>
+      <link>https://sldn.softlayer.com/python/upgrade_virtual_guest/</link>
+      <pubDate>Fri, 29 Mar 2019 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://sldn.softlayer.com/python/upgrade_virtual_guest/</guid>
+      <description>
+
+&lt;h3 id=&#34;upgrade-cpu-ram-for-vsi-dedicated&#34;&gt;Upgrade CPU, RAM for VSI dedicated.&lt;/h3&gt;
+
+&lt;p&gt;To get the items KeyNames available to upgrade your VSI, you can use the service
+SoftLayer_Virtual_Guest::getUpgradeItemPrices. Add to your request a mask as the below to retrieve the items KeyNames.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-mask[id,item[id,keyName,description]```&#34; data-lang=&#34;mask[id,item[id,keyName,description]```&#34;&gt;I suggest you to search the items comparing with the control portal, use the description and search in the response,
+then use the keyName of that item.
+
+Change the &amp;#34;items&amp;#34; variable with the cpu and ram keyNames you want to upgrade your vs.
+e.g. I am upgrading the cpu from 2 x 2.0 GHz to 8 x 2.0 GHz and the ram from 4 GB to 12 GB.
+```python
+import json
+
+import SoftLayer
+
+# Declare the API client
+client = SoftLayer.create_client_from_env()
+
+# The id of the virtual guest you wish upgrade
+virtualGuestId = 11111
+
+# items KeyNames to be upgraded.
+items = [&amp;#39;GUEST_PRIVATE_CORES_8&amp;#39;, &amp;#39;RAM_12_GB&amp;#39;]
+
+item_prices = client[&amp;#34;SoftLayer_Virtual_Guest&amp;#34;].getUpgradeItemPrices(mask=&amp;#39;mask[id,item[id,keyName]]&amp;#39;,
+                                                                     id=virtualGuestId)
+
+prices = []
+for item in items:
+    for get_item in item_prices:
+        if item == get_item[&amp;#39;item&amp;#39;][&amp;#39;keyName&amp;#39;]:
+            prices.append(get_item[&amp;#39;id&amp;#39;])
+
+# Build a skeleton SoftLayer_Container_Product_Order_Property objects
+properties = [
+    {
+        &amp;#34;name&amp;#34;: &amp;#34;MAINTENANCE_WINDOW&amp;#34;,
+        &amp;#34;value&amp;#34;: &amp;#34;2018-08-20T06:04:10Z&amp;#34;},
+    {
+        &amp;#34;name&amp;#34;: &amp;#34;NOTE_GENERAL&amp;#34;,
+        &amp;#34;value&amp;#34;: &amp;#34;Upgrade instance configuration.&amp;#34;
+    }
+]
+
+# Build a skeleton SoftLayer_Virtual_Guest object to model the id
+virtualGuests = [
+    {
+        &amp;#34;id&amp;#34;: virtualGuestId
+    }
+]
+
+&amp;#34;&amp;#34;&amp;#34;
+Build a skeleton SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade object
+containing the upgrade you wish to place.
+&amp;#34;&amp;#34;&amp;#34;
+orderData = {
+    &amp;#34;complexType&amp;#34;: &amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;#34;,
+    &amp;#39;prices&amp;#39;: [{&amp;#39;id&amp;#39;: price_id} for price_id in prices],
+    &amp;#39;properties&amp;#39;: properties,
+    &amp;#39;virtualGuests&amp;#39;: virtualGuests
+}
+
+try:
+    # Upgrading the virtual guest
+    response = client[&amp;#39;SoftLayer_Product_Order&amp;#39;].verifyOrder(orderData)
+    print(json.dumps(response, sort_keys=False, indent=4, separators=(&amp;#39;,&amp;#39;, &amp;#39;: &amp;#39;)))
+
+except SoftLayer.SoftLayerAPIError as e:
+    &amp;#34;&amp;#34;&amp;#34;
+        If there was an error returned from the SoftLayer API then bomb out with the
+        error message.
+        &amp;#34;&amp;#34;&amp;#34;
+    print(&amp;#34;Unable to upgrade the VSI \nfaultCode= %s, \nfaultString= %s&amp;#34;
+          % (e.faultCode, e.faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;upgrade-a-flavor-cpu-ram-for-vsi-families&#34;&gt;Upgrade a flavor(cpu, ram) for VSI families.&lt;/h3&gt;
+
+&lt;p&gt;Change the &amp;ldquo;preset_keyName&amp;rdquo; variable with the flavor keyNames you want to upgrade your vs.&lt;/p&gt;
+
+&lt;p&gt;e.g. I am upgrading the flavor BL2_4X8X100(cpu 4, ram 8 GB, first disk 100 GB) to
+BL2_4X16X100(cpu 4, ram 16 GB, first disk 100 GB).&lt;/p&gt;
+
+&lt;p&gt;The flavor keyName you can get through SoftLayer_Product_Package::getActivePresets.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Declare the API client&lt;/span&gt;
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# The id of the virtual guest you wish upgrade&lt;/span&gt;
+virtualGuestId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;12345&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Package keyName.&lt;/span&gt;
+package_keyName &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;PUBLIC_CLOUD_SERVER&amp;#39;&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Preset keyName cpu 4, ram 16 GB, first disk 100 GB.&lt;/span&gt;
+preset_keyName &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;BL2_4X16X100&amp;#39;&lt;/span&gt;
+
+object_filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: package_keyName}}
+
+filter_preset &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;activePresets&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: preset_keyName}}}
+
+response_package &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Product_Package&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;object_filter)
+package_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; response_package[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+
+response_preset &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Product_Package&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getActivePresets(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;filter_preset, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id)
+presetId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; response_preset[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Container_Product_Order_Property objects&lt;/span&gt;
+properties &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;orderOrigin&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;control&amp;#34;&lt;/span&gt;
+    },
+
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;MAINTENANCE_WINDOW&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;2018-08-31T16:42:52.370Z&amp;#34;&lt;/span&gt;
+    }
+]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Virtual_Guest object to model the id&lt;/span&gt;
+virtualGuests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: virtualGuestId
+    }
+]
+
+&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Build a skeleton SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade object
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;containing the upgrade you wish to place.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;presetId&amp;#39;&lt;/span&gt;: presetId,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;properties&amp;#39;&lt;/span&gt;: properties,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;: virtualGuests
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Upgrading the virtual guest&lt;/span&gt;
+    response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderData)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(response, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        If there was an error returned from the SoftLayer API then bomb out with the
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        error message.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to upgrade the VSI &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultCode= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultString= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;
+          &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;adding-two-new-disks-this-script-works-for-both-options-vsi-dedicated-and-families&#34;&gt;Adding two new disks (This script works for both options, VSI dedicated and families).&lt;/h3&gt;
+
+&lt;p&gt;Replace the &amp;ldquo;virtualGuestId&amp;rdquo; variable with your vsId and set the &amp;ldquo;items&amp;rdquo; data with the keyName of the disk size you
+choose.&lt;/p&gt;
+
+&lt;p&gt;You can set the &amp;ldquo;guest_disk&amp;rdquo; depend of the position of the disk you want e.g. guest_disk1, guest_disk2, guest_disk3,
+guest_disk4.&lt;/p&gt;
+
+&lt;p&gt;The disk0 is added when you create your vs and you can only change this disk from SAN to LOCAL.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Declare the API client&lt;/span&gt;
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# The id of the virtual guest you wish upgrade&lt;/span&gt;
+virtualGuestId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;12345&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Items keyName. Change the &amp;#34;guest_disk&amp;#34; position as you want, to add to the vs, e.g. for guest_disk3, guest_disk4 too.&lt;/span&gt;
+items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;GUEST_DISK_10_GB_SAN&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;guest_disk1&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;GUEST_DISK_20_GB_SAN&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;guest_disk2&amp;#39;&lt;/span&gt;}
+
+item_prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Virtual_Guest&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getUpgradeItemPrices(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[id,item[id,keyName]]&amp;#39;&lt;/span&gt;,
+                                                                     id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;virtualGuestId)
+
+prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; items&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;keys():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; get_item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; item_prices:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; get_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;item&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;]:
+            itemId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; get_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+            itemObject &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: itemId,
+                          &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categories&amp;#39;&lt;/span&gt;: [
+                              {
+                                  &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categoryCode&amp;#39;&lt;/span&gt;: items&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(item),
+                                  &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;complexType&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Item_Category&amp;#39;&lt;/span&gt;
+                              }
+                          ],
+                          }
+            prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(itemObject)
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Container_Product_Order_Property objects&lt;/span&gt;
+properties &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;MAINTENANCE_WINDOW&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;2018-08-20T06:04:10Z&amp;#34;&lt;/span&gt;},
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;NOTE_GENERAL&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Upgrade instance configuration.&amp;#34;&lt;/span&gt;
+    }
+]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Virtual_Guest object to model the id&lt;/span&gt;
+virtualGuests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: virtualGuestId
+    }
+]
+
+orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;: prices,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;properties&amp;#39;&lt;/span&gt;: properties,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;: virtualGuests
+}
+
+orderService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Upgrading the virtual guest&lt;/span&gt;
+    response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; orderService&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderData)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(response, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        If there was an error returned from the SoftLayer API then bomb out with the
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        error message.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to upgrade the VSI &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultCode= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultString= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;
+          &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;upgrade-the-size-of-a-specific-disk-this-script-works-for-both-options-vsi-dedicated-and-families&#34;&gt;Upgrade the size of a specific disk (This script works for both options, VSI dedicated and families).&lt;/h3&gt;
+
+&lt;p&gt;Change the &amp;ldquo;item_keyName&amp;rdquo; variable with the disk keyName you want to upgrade the specific disk on your vs.&lt;/p&gt;
+
+&lt;p&gt;e.g. I am upgrading the first disk from 10 GB to 20 GB.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Declare the API client&lt;/span&gt;
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# The id of the virtual guest you wish upgrade&lt;/span&gt;
+virtualGuestId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;11111&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# item KeyName to be upgraded.&lt;/span&gt;
+item_keyName &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;GUEST_DISK_20_GB_SAN&amp;#39;&lt;/span&gt;  &lt;span style=&#34;color:#75715e&#34;&gt;# &amp;#34;description&amp;#34;: &amp;#34;20 GB (SAN)&amp;#34;&lt;/span&gt;
+
+item_prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Virtual_Guest&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getUpgradeItemPrices(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[id,item[id,keyName]]&amp;#39;&lt;/span&gt;,
+                                                                     id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;virtualGuestId)
+
+prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+item_price_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; None
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; item_prices:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; item_keyName &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;item&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;]:
+        item_price_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Container_Product_Order_Property objects&lt;/span&gt;
+properties &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;MAINTENANCE_WINDOW&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;2018-08-20T06:04:10Z&amp;#34;&lt;/span&gt;},
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;NOTE_GENERAL&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Upgrade instance configuration.&amp;#34;&lt;/span&gt;
+    }
+]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Virtual_Guest object to model the id&lt;/span&gt;
+virtualGuests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: virtualGuestId
+    }
+]
+
+orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;: [{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: item_price_id,
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categories&amp;#39;&lt;/span&gt;: [
+                    {
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categoryCode&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;guest_disk1&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#75715e&#34;&gt;# Change the &amp;#34;categoryCode&amp;#34; data for the categoryCode you want.&lt;/span&gt;
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;complexType&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Item_Category&amp;#39;&lt;/span&gt;
+                    }
+                ]
+                }
+               ],
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;properties&amp;#39;&lt;/span&gt;: properties,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;: virtualGuests
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Upgrading the virtual guest&lt;/span&gt;
+    response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderData)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(response, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        If there was an error returned from the SoftLayer API then bomb out with the
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        error message.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to upgrade the VSI &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultCode= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultString= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;
+          &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;upgrade-the-bandwidth-this-script-works-for-both-options-vsi-dedicated-and-families-monthly&#34;&gt;Upgrade the BANDWIDTH (This script works for both options, VSI dedicated and families Monthly).&lt;/h3&gt;
+
+&lt;p&gt;This option is only available for a vs monthly.&lt;/p&gt;
+
+&lt;p&gt;Change the &amp;ldquo;items&amp;rdquo; variable with the item keyName you want to upgrade your vs.&lt;/p&gt;
+
+&lt;p&gt;e.g. I am upgrading the Bandwidth from 250 GB to 1000 GB.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Declare the API client&lt;/span&gt;
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# The id of the virtual guest you wish upgrade&lt;/span&gt;
+virtualGuestId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;12345&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Item KeyName to be upgraded.&lt;/span&gt;
+items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;BANDWIDTH_1000_GB&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#75715e&#34;&gt;# &amp;#34;description&amp;#34;: &amp;#34;1000 GB Bandwidth Allotment&amp;#34;&lt;/span&gt;
+
+item_prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Virtual_Guest&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getUpgradeItemPrices(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[id,item[id,keyName]]&amp;#39;&lt;/span&gt;,
+                                                                     id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;virtualGuestId)
+
+prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; items:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item_price &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; item_prices:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; item_price[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;item&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;]:
+            prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(item_price[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;])
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Container_Product_Order_Property objects&lt;/span&gt;
+properties &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;MAINTENANCE_WINDOW&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;2018-08-20T06:04:10Z&amp;#34;&lt;/span&gt;},
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;NOTE_GENERAL&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Upgrade instance configuration.&amp;#34;&lt;/span&gt;
+    }
+]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Virtual_Guest object to model the id&lt;/span&gt;
+virtualGuests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: virtualGuestId
+    }
+]
+
+orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;: [{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: price_id} &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; price_id &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; prices],
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;properties&amp;#39;&lt;/span&gt;: properties,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;: virtualGuests
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Upgrading the virtual guest&lt;/span&gt;
+    response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderData)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(response, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        If there was an error returned from the SoftLayer API then bomb out with the
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        error message.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to upgrade the VSI &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultCode= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultString= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;
+          &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;upgrade-the-uplink-port-speeds-this-script-works-for-both-options-vsi-dedicated-and-families&#34;&gt;Upgrade the  Uplink Port Speeds (This script works for both options VSI dedicated and families).&lt;/h3&gt;
+
+&lt;p&gt;Change the &amp;ldquo;items&amp;rdquo; variable with the item keyName you want to upgrade your vs.&lt;/p&gt;
+
+&lt;p&gt;e.g. I am upgrading the Uplink Port Speeds from 1 Gbps to 100 Mbps.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Declare the API client&lt;/span&gt;
+client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# The id of the virtual guest you wish upgrade&lt;/span&gt;
+virtualGuestId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;12345&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# items KeyNames to be upgraded.&lt;/span&gt;
+items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;100_MBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&amp;#39;&lt;/span&gt;]  &lt;span style=&#34;color:#75715e&#34;&gt;# &amp;#34;description&amp;#34;: &amp;#34;100 Mbps Public &amp;amp; Private Network Uplinks&amp;#34;&lt;/span&gt;
+
+item_prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Virtual_Guest&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getUpgradeItemPrices(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[id,item[id,keyName]]&amp;#39;&lt;/span&gt;,
+                                                                     id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;virtualGuestId)
+
+prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; items:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; get_item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; item_prices:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; get_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;item&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;]:
+            prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(get_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;])
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Container_Product_Order_Property objects&lt;/span&gt;
+properties &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;MAINTENANCE_WINDOW&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;2018-08-20T06:04:10Z&amp;#34;&lt;/span&gt;},
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;NOTE_GENERAL&amp;#34;&lt;/span&gt;,
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;value&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Upgrade instance configuration.&amp;#34;&lt;/span&gt;
+    }
+]
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Build a skeleton SoftLayer_Virtual_Guest object to model the id&lt;/span&gt;
+virtualGuests &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+    {
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: virtualGuestId
+    }
+]
+
+orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&amp;#34;&lt;/span&gt;,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;: [{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: price_id} &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; price_id &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; prices],
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;properties&amp;#39;&lt;/span&gt;: properties,
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;virtualGuests&amp;#39;&lt;/span&gt;: virtualGuests
+}
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Upgrading the virtual guest&lt;/span&gt;
+    response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderData)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(response, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;4&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        If there was an error returned from the SoftLayer API then bomb out with the
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        error message.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to upgrade the VSI &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultCode= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;faultString= &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;
+          &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>Order a Netscaler</title>
+      <link>https://sldn.softlayer.com/python/orderNetscaler/</link>
+      <pubDate>Thu, 28 Mar 2019 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://sldn.softlayer.com/python/orderNetscaler/</guid>
+      <description>&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-py&#34; data-lang=&#34;py&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Network&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
+        client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;package_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;order_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Order&amp;#39;&lt;/span&gt;]
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;print_available_locations&lt;/span&gt;(self, package_id):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;pass&lt;/span&gt;
+        regions &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;package_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getRegions(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id)
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; region &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; regions:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; | &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; | &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
+                (region[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;location&amp;#34;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;locationId&amp;#34;&lt;/span&gt;], 
+                 region[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;keyname&amp;#34;&lt;/span&gt;], 
+                 region[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;description&amp;#34;&lt;/span&gt;]))
+    
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;print_available_items&lt;/span&gt;(self, package_id):
+        _mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[id, description, keyName]&amp;#34;&lt;/span&gt;
+        items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;package_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItems(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;_mask, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id)
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; items:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\n&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; | &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; | &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;], item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;], item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;description&amp;#34;&lt;/span&gt;]))
+    
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_package_id&lt;/span&gt;(self, keyname):
+        _filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;type&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;operation&amp;#34;&lt;/span&gt;:keyname}}}
+    
+        package &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;package_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;_filter)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; package[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;_get_item_prices&lt;/span&gt;(self, package_id, keynames):
+        items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;package_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItems(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id)
+
+        prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []        
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item_keyname &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; keynames:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+                item &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [i &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; items &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; i[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;keyName&amp;#34;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; item_keyname][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;IndexError&lt;/span&gt;:
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ERROR: Item {} doesn&amp;#39;t exist&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(item_keyname))
+                exit(&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)
+            
+            price_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; p &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;prices&amp;#34;&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;locationGroupId&amp;#34;&lt;/span&gt;]][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
+
+            prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(price_id)
+        
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; prices
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;order_netscaler&lt;/span&gt;(self, package_id, location, items,
+                        fvlan&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, bvlan&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, verify&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;False):
+
+        prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;_get_item_prices(package_id, items)
+
+        orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;complexType&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftLayer_Container_Product_Order_Network_Application_Delivery_Controller&amp;#34;&lt;/span&gt;,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;packageId&amp;#34;&lt;/span&gt;: package_id,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;location&amp;#34;&lt;/span&gt;: location,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;prices&amp;#34;&lt;/span&gt;: [{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: price_id} &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; price_id &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; prices],
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;quantity&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
+        }
+
+        hardware &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {}
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; fvlan:
+            hardware[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;primaryNetworkComponent&amp;#34;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;networkVlan&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: fvlan}}
+        
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; bvlan:
+            hardware[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;primaryBackendNetworkComponent&amp;#34;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;networkVlan&amp;#34;&lt;/span&gt;:{&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: bvlan}}
+        
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; hardware:
+            orderData[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;hardware&amp;#34;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [hardware]
+        
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; verify:
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;order_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderData)
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;order_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;placeOrder(orderData)                
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to order: &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))
+        
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    package &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ADDITIONAL_SERVICES_APPLICATION_DELIVERY_APPLIANCE&amp;#34;&lt;/span&gt;
+   
+    network &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Network()
+    package_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; network&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get_package_id(package)
+    
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Uncomment the following to see the list of locations and items you can select&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# network.print_available_locations(package_id)&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# network.print_available_items(package_id)&lt;/span&gt;
+
+    location &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;AMSTERDAM03&amp;#34;&lt;/span&gt;
+    
+    item_keynames &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;CITRIX_NETSCALER_VPX_10_1_10MBPS_STANDARD&amp;#34;&lt;/span&gt;,    &lt;span style=&#34;color:#75715e&#34;&gt;# Netscaler&lt;/span&gt;
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;4_STATIC_PUBLIC_IP_ADDRESSES&amp;#34;&lt;/span&gt;                  &lt;span style=&#34;color:#75715e&#34;&gt;# ip address&lt;/span&gt;
+    ]
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# The vlans you want assign to the netscaler (optional)&lt;/span&gt;
+    public_vlan &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;12345&lt;/span&gt;
+    private_vlan &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;67890&lt;/span&gt;
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Remove verify=True or set it False when you ready to order&lt;/span&gt;
+    receipt &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; network&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;order_netscaler(package_id, location, item_keynames, 
+                                      fvlan&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;public_vlan, bvlan&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;private_vlan, verify&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True)
+    pprint(receipt)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
     <item>
@@ -1869,264 +2448,6 @@ productOrderService &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; cli
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Order Evault</title>
-      <link>https://sldn.softlayer.com/csharp/OrderEvault.cs/</link>
-      <pubDate>Tue, 26 Feb 2019 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://sldn.softlayer.com/csharp/OrderEvault.cs/</guid>
-      <description>&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-csharp&#34; data-lang=&#34;csharp&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;using&lt;/span&gt; System;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;using&lt;/span&gt; System.Collections.Generic;
-&lt;span style=&#34;color:#66d9ef&#34;&gt;using&lt;/span&gt; System.Linq;
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;namespace&lt;/span&gt; OrderEvault
-{
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Program&lt;/span&gt;
-    {
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;static&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; Main(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;[]&lt;/span&gt; args)
-        {
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Your SoftLayer username and API username.
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            authenticate authenticate = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; authenticate()
-            {   
-                username = &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;set me&amp;#34;&lt;/span&gt;,
-                apiKey = &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;set me&amp;#34;&lt;/span&gt;
-            };
-
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Evault prices are on this package
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; package = &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;ADDITIONAL_SERVICES&amp;#34;&lt;/span&gt;;
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; location = &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;DALLAS06&amp;#34;&lt;/span&gt;;
-
-            &lt;span style=&#34;color:#75715e&#34;&gt;// KeyName format usually is EVAULT_##_GB and the values could be: 10, 20, 30, 40, 50, 
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#75715e&#34;&gt;// 60, 100, 175, 250, 350, 500, 750, 1000, 1500, 2000, 4000
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; itemKeyName = &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;EVAULT_10_GB&amp;#34;&lt;/span&gt;;
-            
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Virtual server ID to which the evault will be added
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; guestID = &lt;span style=&#34;color:#ae81ff&#34;&gt;123456789&lt;/span&gt;;
-            IList&amp;lt;SoftLayer_Virtual_Guest&amp;gt; guestList = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; List&amp;lt;SoftLayer_Virtual_Guest&amp;gt;()
-            {
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Virtual_Guest(){id=guestID, idSpecified=&lt;span style=&#34;color:#66d9ef&#34;&gt;true&lt;/span&gt;}
-            };
-
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Initialize the Evault object
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            Evault evault = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; Evault(authenticate);
-            
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Remove the &amp;#39;verify&amp;#39; param or set it to false to place the order
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#a6e22e&#34;&gt;evault&lt;/span&gt;.placeOrder(package, itemKeyName, location, guestList, verify: &lt;span style=&#34;color:#66d9ef&#34;&gt;true&lt;/span&gt;);
-        }
-    }
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Evault&lt;/span&gt;
-    {        
-        SoftLayer_Product_PackageService packageService;
-        SoftLayer_Product_OrderService orderService;
-
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; Evault(authenticate auth)
-        {
-            packageService = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_PackageService();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.authenticateValue = auth;
-
-            orderService = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_OrderService();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;orderService&lt;/span&gt;.authenticateValue = auth;
-        }
-
-        &lt;span style=&#34;color:#75715e&#34;&gt;// Verify or Place the order and prints the results
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;public&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;void&lt;/span&gt; placeOrder(&lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; packageType, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; evaultKeyName, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; datacenter,
-            IList&amp;lt;SoftLayer_Virtual_Guest&amp;gt; guests, &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; quantity = &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;, Boolean verify = &lt;span style=&#34;color:#66d9ef&#34;&gt;false&lt;/span&gt;)
-        {
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Retrieve packageId and the evault price
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; packageId = (&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt;) getPackage(packageType).id;
-            List&amp;lt;SoftLayer_Product_Item_Price&amp;gt; itemPrices = getItemPrices(packageId, evaultKeyName);
-
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Build the order template
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            SoftLayer_Container_Product_Order orderTemplate = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Container_Product_Order_Network_Storage_Backup_Evault_Vault()
-            {
-                location = datacenter,
-                packageId = packageId,
-                packageIdSpecified = &lt;span style=&#34;color:#66d9ef&#34;&gt;true&lt;/span&gt;,
-                prices = &lt;span style=&#34;color:#a6e22e&#34;&gt;itemPrices&lt;/span&gt;.ToArray(),
-                virtualGuests = &lt;span style=&#34;color:#a6e22e&#34;&gt;guests&lt;/span&gt;.ToArray(),
-                quantity = quantity,
-                quantitySpecified = &lt;span style=&#34;color:#66d9ef&#34;&gt;true&lt;/span&gt;
-            };
-            
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;
-            {
-                &lt;span style=&#34;color:#75715e&#34;&gt;// Call to the verifyOrder method if TRUE, to placeOrder if FALSE
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;                &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (verify)
-                {
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Wait while verifying the order...&amp;#34;&lt;/span&gt;);
-
-                    SoftLayer_Container_Product_Order order = &lt;span style=&#34;color:#a6e22e&#34;&gt;orderService&lt;/span&gt;.verifyOrder(orderTemplate);
-
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\nOrder verified!\n&amp;#34;&lt;/span&gt;);
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\tItem Description: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;order&lt;/span&gt;.prices&lt;span style=&#34;color:#a6e22e&#34;&gt;[0]&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;item&lt;/span&gt;.description);
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\tVirtual Guest FQDN: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;order&lt;/span&gt;.virtualGuests&lt;span style=&#34;color:#a6e22e&#34;&gt;[0]&lt;/span&gt;.fullyQualifiedDomainName);
-                }
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;
-                {
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Wait while placing the order...&amp;#34;&lt;/span&gt;);
-
-                    SoftLayer_Container_Product_Order_Receipt receipt = &lt;span style=&#34;color:#a6e22e&#34;&gt;orderService&lt;/span&gt;.placeOrder(orderTemplate, &lt;span style=&#34;color:#66d9ef&#34;&gt;false&lt;/span&gt;);
-
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\nOrder approved!\n&amp;#34;&lt;/span&gt;);
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\tOrder ID: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;receipt&lt;/span&gt;.orderId);
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\tOrder Date: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;receipt&lt;/span&gt;.orderDate);
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\tOrder Status: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;receipt&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;placedOrder&lt;/span&gt;.status);
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\tItem Description: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;receipt&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;orderDetails&lt;/span&gt;.prices&lt;span style=&#34;color:#a6e22e&#34;&gt;[0]&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;item&lt;/span&gt;.description);
-                    &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\tVirtual Server Hostname: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;receipt&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;orderDetails&lt;/span&gt;.virtualGuests&lt;span style=&#34;color:#a6e22e&#34;&gt;[0]&lt;/span&gt;.fullyQualifiedDomainName);
-                }
-            }
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;catch&lt;/span&gt; (Exception e)
-            {
-                &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Invalid order: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;e&lt;/span&gt;.Message);
-            }
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.ReadLine();
-        }
-
-        &lt;span style=&#34;color:#75715e&#34;&gt;// Use object-filter to retrieve the Product_Package object
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;private&lt;/span&gt; SoftLayer_Product_Package getPackage(String type)
-        {
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Filter to find the packageId
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.SoftLayer_Product_PackageObjectFilterValue = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_PackageObjectFilter();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;SoftLayer_Product_PackageObjectFilterValue&lt;/span&gt;.type = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_Package_TypeObjectFilter();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;SoftLayer_Product_PackageObjectFilterValue&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;type&lt;/span&gt;.keyName = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Utility_ObjectFilter_Operation();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;SoftLayer_Product_PackageObjectFilterValue&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;type&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;keyName&lt;/span&gt;.operation = type;
-            
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Retrieving the package id...&amp;#34;&lt;/span&gt;);
-            SoftLayer_Product_Package package = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_Package();
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;
-            {
-                SoftLayer_Product_Package&lt;span style=&#34;color:#a6e22e&#34;&gt;[]&lt;/span&gt; packages = &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.getAllObjects();
-                package = packages&lt;span style=&#34;color:#a6e22e&#34;&gt;[0]&lt;/span&gt;;
-            }
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;catch&lt;/span&gt;(Exception e)
-            {
-                &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to get package list: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;e&lt;/span&gt;.Message);
-            }
-
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; package;
-        }
-
-        &lt;span style=&#34;color:#75715e&#34;&gt;// Use object-filter to retrieve the price id, it is added to a list
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;        &lt;span style=&#34;color:#75715e&#34;&gt;// which will be used in the order template
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;        &lt;span style=&#34;color:#66d9ef&#34;&gt;private&lt;/span&gt; List&amp;lt;SoftLayer_Product_Item_Price&amp;gt; getItemPrices(&lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; packageId, &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; keyName)
-        {
-            &lt;span style=&#34;color:#75715e&#34;&gt;// Filter to find the item through its keyName
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.SoftLayer_Product_PackageObjectFilterValue = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_PackageObjectFilter();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;SoftLayer_Product_PackageObjectFilterValue&lt;/span&gt;.items = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_ItemObjectFilter();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;SoftLayer_Product_PackageObjectFilterValue&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;items&lt;/span&gt;.keyName = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Utility_ObjectFilter_Operation();
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;SoftLayer_Product_PackageObjectFilterValue&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;items&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;keyName&lt;/span&gt;.operation = keyName;
-
-            &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Retrieving the item price ...&amp;#34;&lt;/span&gt;);
-            List&amp;lt;SoftLayer_Product_Item_Price&amp;gt; itemPrices = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; List&amp;lt;SoftLayer_Product_Item_Price&amp;gt;();
-
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;
-            {
-                SoftLayer_Product_PackageInitParameters packageInitParameters = &lt;span style=&#34;color:#66d9ef&#34;&gt;new&lt;/span&gt; SoftLayer_Product_PackageInitParameters();
-                &lt;span style=&#34;color:#a6e22e&#34;&gt;packageInitParameters&lt;/span&gt;.id = packageId;
-
-                &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.SoftLayer_Product_PackageInitParametersValue = packageInitParameters;
-
-                SoftLayer_Product_Item&lt;span style=&#34;color:#a6e22e&#34;&gt;[]&lt;/span&gt; items = &lt;span style=&#34;color:#a6e22e&#34;&gt;packageService&lt;/span&gt;.getItems();
-
-                &lt;span style=&#34;color:#75715e&#34;&gt;// Looks for the standard price and add it to the list
-&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;                &lt;span style=&#34;color:#66d9ef&#34;&gt;foreach&lt;/span&gt; (SoftLayer_Product_Item_Price iPrice &lt;span style=&#34;color:#66d9ef&#34;&gt;in&lt;/span&gt; items&lt;span style=&#34;color:#a6e22e&#34;&gt;[0]&lt;/span&gt;.prices)
-                {
-                    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (&lt;span style=&#34;color:#a6e22e&#34;&gt;iPrice&lt;/span&gt;.locationGroupId == &lt;span style=&#34;color:#66d9ef&#34;&gt;null&lt;/span&gt;)
-                    {
-                        &lt;span style=&#34;color:#a6e22e&#34;&gt;itemPrices&lt;/span&gt;.Add(iPrice);
-                        &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;;
-                    }
-                }
-            }
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;catch&lt;/span&gt; (Exception e)
-            {
-                &lt;span style=&#34;color:#a6e22e&#34;&gt;Console&lt;/span&gt;.WriteLine(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to get the Evault price: &amp;#34;&lt;/span&gt; + &lt;span style=&#34;color:#a6e22e&#34;&gt;e&lt;/span&gt;.Message);
-            }            
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; itemPrices;
-        }        
-    }   
-}&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
-    </item>
-    
-    <item>
-      <title>Release notes: February 26, 2019</title>
-      <link>https://sldn.softlayer.com/release_notes/2019/20190226/</link>
-      <pubDate>Tue, 26 Feb 2019 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://sldn.softlayer.com/release_notes/2019/20190226/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Adds option for new customers to select if they are ordering on behalf of a business or as an individual. Also adds a checkbox allowing customers to specify they do not have a VAT ID.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Adds validation for userStatusId on api request SoftLayer_User_Customer::createObject&lt;/li&gt;
-&lt;li&gt;Improved performance of &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_User_Customer/removeAllVirtualAccessForThisUser/&#34;&gt;SoftLayer_User_Customer::removeAllVirtualAccessForThisUser&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Adds the Exception field tor the SLDN API documentation&lt;/li&gt;
-&lt;li&gt;Added SLDNDocumentation tag to new iamAuthorizationFlag variable&lt;/li&gt;
-&lt;li&gt;Adds &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/createFirmwareReflashTransaction/&#34;&gt;SoftLayer_Hardware_Server::createFirmwareReflashTransaction&lt;/a&gt; and &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/massFirmwareReflash/&#34;&gt;SoftLayer_Hardware_Server::massFirmwareReflash&lt;/a&gt; to hardware servers allowing customers to reflash the components to the firmware currently installed on the device.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Modified reclaim process to reset root/ADMIN IPMI passwords&lt;/li&gt;
-&lt;li&gt;Allow creation of array slices in the RAID BIOS&lt;/li&gt;
-&lt;li&gt;Fix secondary static IPv6 subnets ordered with servers not being correctly associated to billing.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: February 20, 2019</title>
-      <link>https://sldn.softlayer.com/release_notes/2019/20190220/</link>
-      <pubDate>Wed, 20 Feb 2019 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://sldn.softlayer.com/release_notes/2019/20190220/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Use cloud.ibm.com URLs when sending emails to, or creating ticket updates for, linked customers.&lt;/li&gt;
-&lt;li&gt;Replace nonfunctional KnowledgeLayer links in emails and automated ticket updates with IBM Cloud docs links&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Improved performance of SoftLayer_Account::getVirtualGuests() when using objectFilters&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest_Block_Device_Template_Group/findGcImagesByCurrentUser/&#34;&gt;findGCImagesByCurrentUser&lt;/a&gt; is currently returning all the SoftLayer_Virtual_Guest_Block_Device_Template_Groups associated with a user&amp;rsquo;s account.  This needs to be updated to return an array of only the applicable parent SVGBDTG&lt;/li&gt;
-&lt;li&gt;Improve Server.activatePublicPort, Server.activatePrivatePort, Server.shutdownPublicPort, and Server.shutdownPrivatePort documentation when referring to how they are aliases of Server.set*NetworkInterfaceSpeed operations.&lt;/li&gt;
-&lt;li&gt;Fixed a typo in the exception message for currentDate filter with &lt;a href=&#34;https://sldn.softlayer.com/reference/services/SoftLayer_Event_Log/getAllObjects/&#34;&gt;SoftLayer_Event_Log::getAllObjects&lt;/a&gt; call&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Adds a wait after a Bluemix timeout before attempting recovery&lt;/li&gt;
-&lt;li&gt;Add Preload Assign Network transaction step&lt;/li&gt;
-&lt;li&gt;Fixed issue with billing cycle start date incorrectly calculated&lt;/li&gt;
-&lt;li&gt;IBM unique ID should be used to get the user, instead of email&lt;/li&gt;
-&lt;li&gt;Bug fix for empty Nessus scan reports&lt;/li&gt;
-&lt;li&gt;support VRRP protocol in security groups&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;catalog&#34;&gt;Catalog&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Remove Package 837 from Availability in Sao Paulo&lt;/li&gt;
-&lt;li&gt;2Gbps and 5Gbps speeds for Direct Link Exchange offering&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
