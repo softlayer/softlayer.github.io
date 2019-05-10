@@ -57,6 +57,190 @@
     </item>
     
     <item>
+      <title>Working with virtual guest passwords</title>
+      <link>https://sldn.softlayer.com/python/virtual_guest_password.py/</link>
+      <pubDate>Fri, 03 May 2019 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://sldn.softlayer.com/python/virtual_guest_password.py/</guid>
+      <description>&lt;p&gt;###Create a Virtual Guest Credential&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; prettytable &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; PrettyTable
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Server&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
+        client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;server_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Virtual_Guest&amp;#39;&lt;/span&gt;]
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;password_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Software_Component_Password&amp;#39;&lt;/span&gt;]
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;print_software_components&lt;/span&gt;(self, serverId):
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[softwareLicense[id,softwareDescription[name]]]&amp;#39;&lt;/span&gt;
+        components_response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;server_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getSoftwareComponents(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;serverId, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+
+        table &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; PrettyTable([&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;])
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; componet &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; components_response:
+            table&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;add_row([componet[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;softwareLicense&amp;#34;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;softwareDescription&amp;#34;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;]])
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(table)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;create_credential&lt;/span&gt;(self, server_id, name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, username&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, password&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, notes&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None):
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Retrieve the software components of a server.&lt;/span&gt;
+        components_response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;server_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getSoftwareComponents(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;server_id, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[softwareLicense]&amp;#39;&lt;/span&gt;)
+
+        softwareId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; component &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; components_response:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; name &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; component[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;softwareLicense&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;softwareDescription&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;]:
+                softwareId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; component[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Build a SoftLayer_Software_Component_Password object&lt;/span&gt;
+        templatePass &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;username&amp;#34;&lt;/span&gt;: username,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;password&amp;#34;&lt;/span&gt;: password,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;notes&amp;#34;&lt;/span&gt;: notes,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;softwareId&amp;#34;&lt;/span&gt;: softwareId
+        }
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+            result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;password_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;createObject(templatePass)
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; result
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to create the password. faultCode=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, faultString=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))
+            exit(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    server &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Server()
+    server_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;11111&lt;/span&gt;
+    server&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_software_components(server_id)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter a software description name from above e.g. CentOS&amp;#34;&lt;/span&gt;)
+    software_description_name &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Set the username and password data.&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter the username&amp;#34;&lt;/span&gt;)
+    username &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter the password&amp;#34;&lt;/span&gt;)
+    password &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# optional field&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter a note(this is an optional field)&amp;#34;&lt;/span&gt;)
+    notes &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Create server credentials&lt;/span&gt;
+    receipt &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; server&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_credential(server_id, name&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;software_description_name, username&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;username, password&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;password,
+                                       notes&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;notes)
+    pprint(receipt)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;###Edit a Virtual Guest Credential&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; prettytable &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; PrettyTable
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Server&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
+        client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;server_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Virtual_Guest&amp;#39;&lt;/span&gt;]
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;password_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Software_Component_Password&amp;#39;&lt;/span&gt;]
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;print_software_components_passwords&lt;/span&gt;(self, serverId):
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[id,passwords[id,password,username]]&amp;#39;&lt;/span&gt;
+        components_response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;server_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getSoftwareComponents(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;serverId, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+
+        table &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; PrettyTable([&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftwareComponentPasswordId&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;password&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;username&amp;#34;&lt;/span&gt;])
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; component &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; components_response:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; password &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; component[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;passwords&amp;#39;&lt;/span&gt;]:
+                table&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;add_row([password[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], password[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;password&amp;#39;&lt;/span&gt;], password[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;username&amp;#39;&lt;/span&gt;]])
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(table)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;edit_credential&lt;/span&gt;(self, software_password_id, username&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, password&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None, notes&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None):
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Build a SoftLayer_Software_Component_Password object&lt;/span&gt;
+        templatePass &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;username&amp;#34;&lt;/span&gt;: username,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;password&amp;#34;&lt;/span&gt;: password,
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;notes&amp;#34;&lt;/span&gt;: notes
+        }
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+            result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;password_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;editObject(templatePass, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;software_password_id)
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; result
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to create the password. faultCode=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, faultString=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))
+            exit(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    server &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Server()
+    server_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;11111&lt;/span&gt;
+    server&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_software_components_passwords(server_id)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter a SoftwareComponentPasswordId you want to edit from above&amp;#34;&lt;/span&gt;)
+    software_password_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Set the username and password data.&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter the username&amp;#34;&lt;/span&gt;)
+    username &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter the password&amp;#34;&lt;/span&gt;)
+    password &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# optional field&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter a note(this is an optional field)&amp;#34;&lt;/span&gt;)
+    notes &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Edit the server credential&lt;/span&gt;
+    receipt &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; server&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;edit_credential(software_password_id, username&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;username, password&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;password, notes&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;notes)
+    pprint(receipt)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;###Delete a Virtual Guest Credential&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint
+
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; prettytable &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; PrettyTable
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Server&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
+        client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;server_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Virtual_Guest&amp;#39;&lt;/span&gt;]
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;password_service &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Software_Component_Password&amp;#39;&lt;/span&gt;]
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;print_software_components_passwords&lt;/span&gt;(self, serverId):
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[id,passwords[id,password,username]]&amp;#39;&lt;/span&gt;
+        components_response &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;server_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getSoftwareComponents(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;serverId, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
+
+        table &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; PrettyTable([&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SoftwareComponentPasswordId&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;password&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;username&amp;#34;&lt;/span&gt;])
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; component &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; components_response:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; password &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; component[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;passwords&amp;#39;&lt;/span&gt;]:
+                table&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;add_row([password[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], password[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;password&amp;#39;&lt;/span&gt;], password[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;username&amp;#39;&lt;/span&gt;]])
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(table)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;delete_credential&lt;/span&gt;(self, software_password_id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;None):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+            result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;password_service&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;deleteObject(id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;software_password_id)
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; result
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerAPIError &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Unable to create the password. faultCode=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, faultString=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultCode, e&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;faultString))
+            exit(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    server &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Server()
+    server_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;11111&lt;/span&gt;
+    server&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_software_components_passwords(server_id)
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Enter a SoftwareComponentPasswordId you want to delete from above&amp;#34;&lt;/span&gt;)
+    software_password_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; input()
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Delete a server credential.&lt;/span&gt;
+    receipt &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; server&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;delete_credential(software_password_id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;software_password_id)
+    pprint(receipt)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    
+    <item>
       <title>Order a Virtual Server</title>
       <link>https://sldn.softlayer.com/go/order_virtual_guest/</link>
       <pubDate>Tue, 30 Apr 2019 00:00:00 UTC</pubDate>
@@ -1787,463 +1971,6 @@ orderData &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
 &lt;li&gt;Prevents hardware upgrades on Bare Metal Reserved servers.&lt;/li&gt;
 &lt;li&gt;Fixed an issue where users using the getSummaryData API may experience time outs when querying large VDRs&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Advanced Bare Metal Server Ordering</title>
-      <link>https://sldn.softlayer.com/python/orderBareMetal/</link>
-      <pubDate>Wed, 20 Mar 2019 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://sldn.softlayer.com/python/orderBareMetal/</guid>
-      <description>
-
-&lt;p&gt;Example of how to build an order for a bare metal server.&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Find the package that you want to order. listServerPackages() will filter out all that are not bare metal servers&lt;/li&gt;
-&lt;li&gt;Use getServerPrices() to find the item keyNames you want to include in your order. These price IDs can be included prices array directly, but I&amp;rsquo;ve included gatherPriceIds() to match up KeyNames to build a list of price ids. getServerPrices() will also show the locations available for ordering.&lt;/li&gt;
-&lt;li&gt;listAvailableVlans() if you want to place the server on a specific VLAN.&lt;/li&gt;
-&lt;li&gt;listPartitionTemplates() will show what partition schemes you can apply to a disk.&lt;/li&gt;
-&lt;li&gt;listRaidArrayTypes() shows what id numbers are for each RAID type.&lt;/li&gt;
-&lt;li&gt;Custom partitions can ONLY be specified for CentOS or RHEL servers, and ONLY on the secondary drives &lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a rel=&#34;footnote&#34; href=&#34;#fn:1&#34;&gt;1&lt;/a&gt;&lt;/sup&gt;. Trying to do the same for the primary controller will result in the default partitinoTemplate being applied. Custom partitions also require the arraySize be declared.&lt;/li&gt;
-&lt;/ol&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;@author Christopher Gallo
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Places an order for a Bare Metal Server
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
-&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; pp
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ordering&lt;/span&gt;():
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
-
-        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;(self, package_id, location_id, pub_vlan_id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;, priv_vlan_id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;):
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Places an order for a Bare Metal Instance
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;These items are required for all servers and have a 0$ cost, some can be upgraded&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        required_items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;AUTOMATED_NOTIFICATION&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;MONITORING_HOST_PING&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;NOTIFICATION_EMAIL_AND_TICKET&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;REBOOT_KVM_OVER_IP&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;NESSUS_VULNERABILITY_ASSESSMENT_REPORTING&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;REDUNDANT_POWER_SUPPLY&amp;#39;&lt;/span&gt;,
-        ]
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;We need bandwidth, at least 1 ip, and the port speed &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        network_items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;BANDWIDTH_500_GB&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;1_IP_ADDRESS&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;1_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED&amp;#39;&lt;/span&gt;,
-        ]
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;A disk controller, a duplicate entry for each disk you want, in order, ram, OS and processor chip &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-        physical_items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;DISK_CONTROLLER_RAID&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;HARD_DRIVE_2_00_TB_SATA_2&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;HARD_DRIVE_2_00_TB_SATA_2&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;HARD_DRIVE_2_00_TB_SATA_2&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;HARD_DRIVE_2_00_TB_SATA_2&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;RAM_64_GB_DDR4_2133_ECC_NON_REG&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;OS_CENTOS_7_X_64_BIT&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;INTEL_INTEL_XEON_E52620_V4_2_10&amp;#39;&lt;/span&gt;,
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;HARD_DRIVE_NVME_375_GB_PCIE&amp;#39;&lt;/span&gt;,    &lt;span style=&#34;color:#75715e&#34;&gt;# PCIe component slot0&lt;/span&gt;
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;HARD_DRIVE_NVME_375_GB_PCIE&amp;#39;&lt;/span&gt;     &lt;span style=&#34;color:#75715e&#34;&gt;# PCIe component slot1&lt;/span&gt;
-        ]
-
-        all_items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; required_items &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; network_items &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; physical_items
-        prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;gatherPriceIds(package_id, all_items)
-        productOrder &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;orderContainers&amp;#39;&lt;/span&gt;: [
-                {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hardware&amp;#39;&lt;/span&gt;: 
-                    [
-                        {
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;domain&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;u&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;cgallo.com&amp;#39;&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hostname&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;u&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;vmware-testing01&amp;#39;&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;primaryBackendNetworkComponent&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;networkVlan&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt; : int(priv_vlan_id)}},
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;primaryNetworkComponent&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;networkVlan&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt; : int(pub_vlan_id)}}
-                        }
-                    ],
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;: location_id,
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;packageId&amp;#39;&lt;/span&gt;: package_id,
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;: prices,
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;quantity&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storageGroups&amp;#39;&lt;/span&gt; : [
-                        {
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;arrayTypeId&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;arraySize&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;2000&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hardDrives&amp;#39;&lt;/span&gt;: [&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;,&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;],
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;partitionTemplateId&amp;#39;&lt;/span&gt; : &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-                        },
-                        {
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;arrayTypeId&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;9&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;arraySize&amp;#39;&lt;/span&gt; : &lt;span style=&#34;color:#ae81ff&#34;&gt;2000&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hardDrives&amp;#39;&lt;/span&gt;: [&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;],
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;partitions&amp;#39;&lt;/span&gt; : [
-                                {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt; : &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;size&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;200&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;isGrow&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;},
-                                {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt; : &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/boot&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;size&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;100&lt;/span&gt;},
-                                {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt; : &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/usr&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;size&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;200&lt;/span&gt;},
-                                {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt; : &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/mine&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;size&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;200&lt;/span&gt;},
-                                {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt; : &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/media&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;size&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;isGrow&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;},
-                            ]
-
-                        },
-                        {
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;arrayTypeId&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;9&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;arraySize&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;2000&lt;/span&gt;,
-                            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hardDrives&amp;#39;&lt;/span&gt;: [&lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;]
-                        }
-                    ],
-                }
-            ]
-        }
-        pp(productOrder)
-        order &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(productOrder)
-        &lt;span style=&#34;color:#75715e&#34;&gt;# order = self.client[&amp;#39;Product_Order&amp;#39;].placeOrder(productOrder)&lt;/span&gt;
-        pp(order)
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listServerPackages&lt;/span&gt;(self):
-        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[type]&amp;#34;&lt;/span&gt;
-        _filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;type&amp;#39;&lt;/span&gt;: {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;BARE_METAL_CPU&amp;#39;&lt;/span&gt;},
-            },
-        }
-        result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask, filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;_filter)
-
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; product &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; result:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
-                (product[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],
-                 product[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;],
-                 product[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;],
-                 product[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;type&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;])
-            )
-            
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listPartitionTemplates&lt;/span&gt;(self):
-        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[partitionTemplates[data]]&amp;#34;&lt;/span&gt;
-        result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Hardware_Component_Partition_OperatingSystem&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;OS Type, Notes&amp;#34;&lt;/span&gt;)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; os_type &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; result:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (os_type[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;],os_type[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;notes&amp;#39;&lt;/span&gt;]))
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\t&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Template id, Description&amp;#34;&lt;/span&gt;)
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; template &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; os_type[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;partitionTemplates&amp;#39;&lt;/span&gt;]:
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\t&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;]))
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; partition &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; template[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;data&amp;#39;&lt;/span&gt;]:
-                    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;\t\t&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
-                        (partition[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;partitionName&amp;#39;&lt;/span&gt;], 
-                         partition[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;partitionSize&amp;#39;&lt;/span&gt;], 
-                         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Grow&amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; partition[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;isGrow&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;)
-                    )
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listRaidArrayTypes&lt;/span&gt;(self):
-        result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Configuration_Storage_Group_Array_Type&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getAllObjects()
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; raid &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; result:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; Min:&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; Max:&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
-                (raid[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], 
-                 raid[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;], 
-                 raid[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;], 
-                 raid[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;minimumDrives&amp;#39;&lt;/span&gt;], 
-                 raid[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;maximumDrives&amp;#39;&lt;/span&gt;])
-            ) 
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;listAvailableVlans&lt;/span&gt;(self, dc_id):
-        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[network,type,primaryRouter[datacenter]]&amp;#34;&lt;/span&gt;
-        _filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;networkVlans&amp;#39;&lt;/span&gt; : {
-                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;primaryRouter&amp;#39;&lt;/span&gt;: {
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;datacenter&amp;#39;&lt;/span&gt; : { &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: dc_id} }
-                }
-            }
-        }
-        result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Account&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getNetworkVlans(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask,filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;_filter)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; vlan &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; result:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - VLAN: &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - Type: &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
-                (vlan[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;], 
-                 vlan[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;vlanNumber&amp;#39;&lt;/span&gt;],
-                 vlan[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;type&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;], 
-                 vlan[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;primaryRouter&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hostname&amp;#39;&lt;/span&gt;])
-            )
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;getServerPrices&lt;/span&gt;(self, package_id):
-        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;mask[regions,items[prices],activeServerItems[prices]]&amp;#34;&lt;/span&gt;
-        &lt;span style=&#34;color:#75715e&#34;&gt;# locations = self.client[&amp;#39;Product_Package&amp;#39;].getLocations(id=package_id)&lt;/span&gt;
-        result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getObject(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask,id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Location ID, Location Name&amp;#34;&lt;/span&gt;)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; location &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; result[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;regions&amp;#39;&lt;/span&gt;]:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (location[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],location[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;]))
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Price ID, description, Monthly Fee, KeyName&amp;#34;&lt;/span&gt;)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; result[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;items&amp;#39;&lt;/span&gt;]:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; prices &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;]:
-                &lt;span style=&#34;color:#75715e&#34;&gt;# only print the Default location price. &lt;/span&gt;
-                &lt;span style=&#34;color:#75715e&#34;&gt;# The ordering system will replace the default price id for you if ordering in a non-usa region.&lt;/span&gt;
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; prices[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;locationGroupId&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;is&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;:
-                    &lt;span style=&#34;color:#75715e&#34;&gt;# Some software has core restrictions that effect prices&lt;/span&gt;
-                    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;capacityRestrictionType&amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; prices:
-                        cores &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; (
-                             prices[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;capacityRestrictionMinimum&amp;#39;&lt;/span&gt;], 
-                             prices[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;capacityRestrictionMaximum&amp;#39;&lt;/span&gt;])
-                        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; - &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; cores, $&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
-                            (prices[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],
-                             item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;],
-                             cores,prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;recurringFee&amp;#39;&lt;/span&gt;,&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;?&amp;#39;&lt;/span&gt;),
-                             item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;])
-                        )
-                    &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
-                        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, $&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
-                            (prices[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],
-                              item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;],
-                              prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;recurringFee&amp;#39;&lt;/span&gt;,&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;?&amp;#39;&lt;/span&gt;),
-                              item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;])
-                        )
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;======= SERVER ITEMS =======&amp;#34;&lt;/span&gt;)
-        &lt;span style=&#34;color:#75715e&#34;&gt;# serverItems = self.client[&amp;#39;Product_Package&amp;#39;].getActiveServerItems(id=package_id)&lt;/span&gt;
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Price ID, description, Monthly Fee, KeyName&amp;#34;&lt;/span&gt;)
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; result[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;activeServerItems&amp;#39;&lt;/span&gt;]:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; prices &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;]:
-                &lt;span style=&#34;color:#75715e&#34;&gt;# only print the Default location price. &lt;/span&gt;
-                &lt;span style=&#34;color:#75715e&#34;&gt;# The ordering system will replace the default price id for you if ordering in a non-usa region.&lt;/span&gt;
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; prices[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;locationGroupId&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;is&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;&amp;#39;&lt;/span&gt;:
-                    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, $&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;, &lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;%s&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; &amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt; 
-                        (prices[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],
-                         item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;],
-                         prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;recurringFee&amp;#39;&lt;/span&gt;,&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;?&amp;#39;&lt;/span&gt;),
-                         item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;])
-                    )
-
-    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;gatherPriceIds&lt;/span&gt;(self,package_id,keyNames):
-        &lt;span style=&#34;color:#75715e&#34;&gt;# This wont work for prices that have core requirements&lt;/span&gt;
-        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;mask[id,itemCategory,keyName,prices[categories]]&amp;#39;&lt;/span&gt;
-        items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Package&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getItems(mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;package_id)
-
-        prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
-        category_dict &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;gpu0&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;pcie_slot0&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;}
-        
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item_keyname &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; keyNames:
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:                
-                matching_item &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [i &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; items &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; i[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;keyName&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; item_keyname][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;IndexError&lt;/span&gt;:
-                &lt;span style=&#34;color:#66d9ef&#34;&gt;raise&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;SoftLayerError(
-                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Item {} does not exist for package {}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(item_keyname,
-                                                                   package_id))
-
-            item_category &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; matching_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;itemCategory&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categoryCode&amp;#39;&lt;/span&gt;]
-            
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; item_category &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; category_dict:
-                price_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; p &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; matching_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;]
-                            &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;locationGroupId&amp;#39;&lt;/span&gt;]][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
-            &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
-                category_dict[item_category] &lt;span style=&#34;color:#f92672&#34;&gt;+=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-                category_code &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; item_category[:&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; str(category_dict[item_category])
-                price_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; p &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; matching_item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;]
-                                &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;locationGroupId&amp;#39;&lt;/span&gt;]
-                                &lt;span style=&#34;color:#f92672&#34;&gt;and&lt;/span&gt; p[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categories&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categoryCode&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; category_code][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
-
-            prices&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append({&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;id&amp;#34;&lt;/span&gt;: price_id})
-        
-        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; prices
-
-&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
-
-    main &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; ordering()
-
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Step 1, find the processor type you want    
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    553  Dual E5-2600 v4 Series (12 Drives)  DUAL_E52600_V4_12_DRIVES  BARE_METAL_CPU
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listServerPackages()&lt;/span&gt;
-    package_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;553&lt;/span&gt;
-
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Step 2, collect all the pieces you want to order
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    getServerPrices will list out all the keyNames and cost of components
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    that can be ordered on a certain package. Will also list the DCs that this
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    server is available in.
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;getServerPrices(package_id)
-    location_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;814994&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;#&amp;#34;AMSTERDAM03&amp;#34;&lt;/span&gt;
-
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Step 3, customize and place the order
-&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
-    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listAvailableVlans(location_id)
-    pub_vlan_id  &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2439425&lt;/span&gt;
-    priv_vlan_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;2207425&lt;/span&gt;
-    &lt;span style=&#34;color:#75715e&#34;&gt;# main.listPartitionTemplates()&lt;/span&gt;
-    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;listRaidArrayTypes()
-    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;main(package_id,location_id,pub_vlan_id,priv_vlan_id)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&#34;exceptions-you-might-see&#34;&gt;Exceptions you might see&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;SoftLayerAPIError(SoftLayer_Exception_Order_InvalidStorageGroups):&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Defining partitions on secondary storage groups is only allowed for CentOS and Red Hat operating systems.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Chose the right operating system.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-
-&lt;ul&gt;
-&lt;li&gt;SoftLayerAPIError(SoftLayer_Exception_Order_InvalidLocation):&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;The location provided for this order is invalid.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Choose a correct location, locations should be displayed in getServerPrices()&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-
-&lt;ul&gt;
-&lt;li&gt;SoftLayerAPIError(SoftLayer_Exception_Order_InvalidStorageGroups):&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Storage group #1 does not have a grow partition. Each storage group with partitions defined must have a grow partition.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Make sure your partition has &amp;lsquo;isGrow&amp;rsquo; = 1 at some point.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-
-&lt;ul&gt;
-&lt;li&gt;SoftLayerAPIError(SoftLayer_Exception_Order_InvalidStorageGroups):&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Storage group #1 with size (GB) is smaller than the total partitioned size (501GB).&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;You forgot to assign an arraySize.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-
-&lt;h2 id=&#34;another-example&#34;&gt;Another Example&lt;/h2&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;This is an older example that hard codes priceIds, which can be a bad practice as priceIds can change without notice.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
-&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; json
-
-quantity &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;
-location &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;AMSTERDAM&amp;#39;&lt;/span&gt;
-packageId &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;259&lt;/span&gt;
-lvmFlag &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; True
-&lt;span style=&#34;color:#75715e&#34;&gt;# Building a skeleton SoftLayer_Hardware_Server object to model the hostname and&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# domain we want for our server. If you set quantity greater then 1 then you&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# need to define one hostname/domain pair per server you wish to order.&lt;/span&gt;
-hardware &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
-    {
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hostname&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;test&amp;#39;&lt;/span&gt;,
-        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;domain&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;example.org&amp;#39;&lt;/span&gt;
-    }
-]
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Building a skeleton SoftLayer_Product_Item_Price objects. These objects contain&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# much more than ids, but SoftLayer&amp;#39;s ordering system only needs the price&amp;#39;s id&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# to know what you want to order.&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# Every item in SoftLayer&amp;#39;s product catalog is assigned an id. Use these ids&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# to tell the SoftLayer API which options you want in your new server. Use&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# the getActivePackages() method in the SoftLayer_Account API service to get&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# a list of available item and price options per available package.&lt;/span&gt;
-prices &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;179861&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# server: Single  Intel  Xeon  E5-2620 (6 Cores, 2.00 GHz)&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;76165&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# ram: 8 GB RAM&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;44988&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# os: CentOS 7.x (64 bit)&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;74995&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# disk_controller: RAID&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;64769&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# disk0: 2.00 TB SATA&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;69535&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# disk1: 500 GB SATA&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;69535&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# disk2: 500 GB SATA&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;50357&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# bandwidth: 500 GB Bandwidth&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;273&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# port_speed: 100 Mbps Public &amp;amp; Private Network Uplinks&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;55&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# monitoring: Host Ping&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;58&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# response: Automated Notification&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;420&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# vpn_management: Unlimited SSL VPN Users &amp;amp; 1 PPTP VPN User per account&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;418&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# vulnerability_scanner: Nessus Vulnerability Assessment &amp;amp; Reporting&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;21&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# pri_ip_addresses: 1 IP Address&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;57&lt;/span&gt;},  &lt;span style=&#34;color:#75715e&#34;&gt;# notification: Email and Ticket&lt;/span&gt;
-    {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;906&lt;/span&gt;}  &lt;span style=&#34;color:#75715e&#34;&gt;# remote_management: Reboot / KVM over IP&lt;/span&gt;
-]
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Building a skeleton SoftLayer_Container_Product_Order_Storage_Group object&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# Storage groups will only be used if the &amp;#39;RAID&amp;#39; disk controller price is selected.&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# Any other disk controller types will ignore the storage groups set here.&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# The first storage group in this array will be considered the primary storage group,&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# which is used for the OS. Any other storage groups will act as data storage.&lt;/span&gt;
-storageGroups &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
-    {
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;arraySize&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt;,
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;arrayTypeId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt;,  &lt;span style=&#34;color:#75715e&#34;&gt;# RAID_5&lt;/span&gt;
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;hardDrives&amp;#34;&lt;/span&gt;: [
-            &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;,
-            &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;,
-            &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;
-         ],
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;partitionTemplateId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;6&lt;/span&gt;
-     },
-    {
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;arraySize&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;500&lt;/span&gt;,
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;arrayTypeId&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;9&lt;/span&gt;,
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;hardDrives&amp;#34;&lt;/span&gt;: [
-             &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
-         ],
-         &lt;span style=&#34;color:#75715e&#34;&gt;# The custom partitions only work on other storage groups&lt;/span&gt;
-         &lt;span style=&#34;color:#75715e&#34;&gt;# different from the primary one&lt;/span&gt;
-         &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;partitions&amp;#34;&lt;/span&gt;: [
-             {
-                 &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;isGrow&amp;#34;&lt;/span&gt;: False,
-                 &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/test&amp;#34;&lt;/span&gt;,
-                 &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;size&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;100&lt;/span&gt;
-             },
-             {
-                 &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;isGrow&amp;#34;&lt;/span&gt;: True,
-                 &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/test2&amp;#34;&lt;/span&gt;,
-                 &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;size&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;200&lt;/span&gt;
-             }
-         ]
-     },
-]
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Building a skeleton SoftLayer_Container_Product_Order_Hardware_Server object&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# containing the order you wish to place.&lt;/span&gt;
-orderTemplate &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;quantity&amp;#39;&lt;/span&gt;: quantity,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;location&amp;#39;&lt;/span&gt;: location,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;packageId&amp;#39;&lt;/span&gt;: packageId,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;prices&amp;#39;&lt;/span&gt;: prices,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;hardware&amp;#39;&lt;/span&gt;: hardware,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storageGroups&amp;#39;&lt;/span&gt;: storageGroups,
-    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;lvmFlag&amp;#39;&lt;/span&gt;: lvmFlag
-}
-
-&lt;span style=&#34;color:#75715e&#34;&gt;# Creating a SoftLayer API client object&lt;/span&gt;
-client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;create_client_from_env()
-&lt;span style=&#34;color:#75715e&#34;&gt;# verifyOrder() will check your order for errors. Replace this with a call&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# to placeOrder() when you&amp;#39;re ready to order. Both calls return a receipt&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# object that you can use for your records.&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# Once your order is placed it&amp;#39;ll go through SoftLayer&amp;#39;s approval and&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# provisioning process. When it&amp;#39;s done you&amp;#39;ll have a new&lt;/span&gt;
-&lt;span style=&#34;color:#75715e&#34;&gt;# SoftLayer_Hardware_Server object and server ready to use.&lt;/span&gt;
-receipt &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; client[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Product_Order&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;verifyOrder(orderTemplate)
-&lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(json&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dumps(receipt, sort_keys&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, indent&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;, separators&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;: &amp;#39;&lt;/span&gt;)))&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;```&lt;/p&gt;
-&lt;div class=&#34;footnotes&#34;&gt;
-
-&lt;hr /&gt;
-
-&lt;ol&gt;
-&lt;li id=&#34;fn:1&#34;&gt;&lt;a href=&#34;https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group&#34;&gt;https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group&lt;/a&gt;
- &lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;
 </description>
     </item>
     
