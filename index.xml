@@ -9,6 +9,153 @@
     <updated>Fri, 25 Oct 2019 00:00:00 UTC</updated>
     
     <item>
+      <title>Image Template Costs</title>
+      <link>https://sldn.softlayer.com/python/image_template_costs/</link>
+      <pubDate>Fri, 25 Oct 2019 00:00:00 UTC</pubDate>
+      <author>Enthusiastic Hugo User</author>
+      <guid>https://sldn.softlayer.com/python/image_template_costs/</guid>
+      <description>&lt;p&gt;The way this script works is that first it gets your last invoice, and finds all the &lt;code&gt;Image Template&lt;/code&gt; items on it and builds a list of those, with their cost.&lt;/p&gt;
+
+&lt;p&gt;Then it goes through all your current image templates, correlates the templates Storage_Repository, and child templates with what was on your last invoice, and does some very basic math to come up with a next month cost.&lt;/p&gt;
+
+&lt;p&gt;Be aware that the next month cost assumes the template has existed in the repository for the entire month. So the result this script returns may not match exactly with what is on your next bill. This script also is not able to estimate cost of images that have been delete in the current month.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Image template cost calculator.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;SoftLayer stores image templates in a SoftLayer_Virtual_Storage_Repository, which has a collection of other templates.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;You are billed per Storage_Repository, based on the images size on disk (not actual disk size).
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;An image template created mid-month will result in a smaller bill than calcualted. 
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;It is not possible for this script to pull usage data for images that have been deleted, so those are not included in these estimates.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;Any entry in the CSV output that has a number for the first column means that Storage_Repo was delete since the last bill.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+ 
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; SoftLayer
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; pprint &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; pprint &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; pp
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; logging
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt;  click
+
+ 
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;example&lt;/span&gt;():
+ 
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;       :param int start: epoch time to start at. Should align to 00:00 UTC
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;       :param int end: epoch time to end at. Should align to 00:00 UTC
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;       &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;Client()
+        debugger &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; SoftLayer&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;DebugTransport(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport)
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; debugger
+ 
+        &lt;span style=&#34;color:#75715e&#34;&gt;# logger = logging.getLogger()&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;# logger.addHandler(logging.StreamHandler())&lt;/span&gt;
+   
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;debug&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Useful for printing out the exact API calls that were used. If using the rest transport, will print cure-able commands.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; call &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get_last_calls():
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;transport&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_reproduceable(call))
+ 
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Goes through all image templates on your account and tries to figure out how much they will cost next month.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        These costs are ESTIMATES and assumes the image template exists on your account for the entire month.
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+        storage_repos &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;lastInvoiceRepos()
+        mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;mask[children[blockDevicesDiskSpaceTotal,storageRepository[id,datacenter,name,metricTrackingObject,billingItem[item[activeUsagePrices]]]]]&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        objects &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Account&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getPrivateBlockDeviceTemplateGroups&amp;#39;&lt;/span&gt;, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;mask, iter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, limit&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;20&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; _object &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; objects:
+
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; child &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; _object[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;children&amp;#39;&lt;/span&gt;]:
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;try&lt;/span&gt;:
+                    repo_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; child[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storageRepository&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+                    repo_name &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; child[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storageRepository&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;]
+
+                    metric_id &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; child[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storageRepository&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;metricTrackingObject&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;]
+                    rate &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; float(child[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storageRepository&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;billingItem&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;item&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;activeUsagePrices&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;usageRate&amp;#39;&lt;/span&gt;])
+                    size &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;convert(child[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;blockDevicesDiskSpaceTotal&amp;#39;&lt;/span&gt;])
+
+                    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;not&lt;/span&gt; storage_repos&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(repo_id):
+                        storage_repos[repo_id] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;images&amp;#39;&lt;/span&gt;:[], &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;: repo_name}
+
+                    storage_repos[repo_id][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{} - {}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(repo_id, repo_name)
+                    storage_repos[repo_id][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;images&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append({
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;metricTrackingObject&amp;#39;&lt;/span&gt;: metric_id,
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;billingItemId&amp;#39;&lt;/span&gt;: child[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;storageRepository&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;billingItem&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;],
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;rate&amp;#39;&lt;/span&gt;: rate, 
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;size&amp;#39;&lt;/span&gt;: size,
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;: child[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;],
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;cost&amp;#39;&lt;/span&gt;: round(size &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt; rate, &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;)
+                    })
+                &lt;span style=&#34;color:#66d9ef&#34;&gt;except&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;KeyError&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; e:
+                    &lt;span style=&#34;color:#66d9ef&#34;&gt;pass&lt;/span&gt;
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Valut, Last Cost, Next Cost, Size, Images&amp;#34;&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; repo &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; storage_repos:
+            next_cost &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+            size &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+            images &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; image &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; storage_repos[repo][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;images&amp;#39;&lt;/span&gt;]:
+                next_cost&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(image[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;cost&amp;#39;&lt;/span&gt;])
+                size&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(image[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;size&amp;#39;&lt;/span&gt;])
+                images&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(image[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;])
+
+            &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;{}, {}, {}, {}, {}&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(
+                storage_repos[repo][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;], storage_repos[repo][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;recurringFee&amp;#39;&lt;/span&gt;],
+                round(sum(next_cost),&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;), round(sum(size),&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;), &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;,&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;join(images)
+            ))
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;lastInvoiceRepos&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;Gets the last invoice and fines all the SoftLayer_Virtual_Storage_Repository items&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        repos &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {}
+        invoice_mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;mask[id]&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        top_mask &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;mask[category,billingItem,product]&amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Image Template Storage or Public Image Storage&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;# Archive Storage Repository or Public Storage Repository&lt;/span&gt;
+        _filter &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+            &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;invoiceTopLevelItems&amp;#39;&lt;/span&gt; : {
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;categoryCode&amp;#39;&lt;/span&gt;: {
+                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;operation&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;or&amp;#39;&lt;/span&gt;,
+                    &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;options&amp;#39;&lt;/span&gt;: [{
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;data&amp;#39;&lt;/span&gt;,
+                        &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;value&amp;#39;&lt;/span&gt;: [&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;public_storage&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;guest_storage&amp;#39;&lt;/span&gt;]
+                    }]
+                }
+            }
+        }
+
+        invoice &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Account&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getLatestRecurringInvoice&amp;#39;&lt;/span&gt;, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;invoice_mask)
+        items &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;client&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;call(&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SoftLayer_Billing_Invoice&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;getInvoiceTopLevelItems&amp;#39;&lt;/span&gt;, mask&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;top_mask, 
+                                 filter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;_filter, iter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True, id&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;invoice[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;id&amp;#39;&lt;/span&gt;])
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; item &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; items:
+            repos[item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;resourceTableId&amp;#39;&lt;/span&gt;]] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; {
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;product&amp;#39;&lt;/span&gt;: item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;product&amp;#39;&lt;/span&gt;][&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;description&amp;#39;&lt;/span&gt;],
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;recurringFee&amp;#39;&lt;/span&gt; :item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;recurringFee&amp;#39;&lt;/span&gt;],
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;oneTimeFee&amp;#39;&lt;/span&gt;: item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;oneTimeFee&amp;#39;&lt;/span&gt;],
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;images&amp;#39;&lt;/span&gt;: [],
+                &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;name&amp;#39;&lt;/span&gt;: item[&lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;resourceTableId&amp;#39;&lt;/span&gt;]
+            }
+
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; repos
+ 
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;convert&lt;/span&gt;(self, bytes):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt;  round(int(bytes) &lt;span style=&#34;color:#f92672&#34;&gt;/&lt;/span&gt; (&lt;span style=&#34;color:#ae81ff&#34;&gt;1024&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;**&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;3&lt;/span&gt; ),&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;)
+ 
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@click.command&lt;/span&gt;()
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;main&lt;/span&gt;():
+    main &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; example()
+    main&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;main()
+    
+    &lt;span style=&#34;color:#75715e&#34;&gt;# Uncomment this to print out the API calls made.&lt;/span&gt;
+    &lt;span style=&#34;color:#75715e&#34;&gt;# main.debug()&lt;/span&gt;
+ 
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    main()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
+    </item>
+    
+    <item>
       <title>Release notes: October 25, 2019</title>
       <link>https://sldn.softlayer.com/release_notes/2019/20191025/</link>
       <pubDate>Fri, 25 Oct 2019 00:00:00 UTC</pubDate>
@@ -1204,42 +1351,6 @@ uuid&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;
 &lt;ul&gt;
 &lt;li&gt;Prevent attempts to attach a portable disk to multiple VSIs at the same time.&lt;/li&gt;
 &lt;li&gt;Restrict performing an OS reload of a guest with GPUs into PV boot mode.&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Release notes: July 12, 2019</title>
-      <link>https://sldn.softlayer.com/release_notes/2019/20190719/</link>
-      <pubDate>Fri, 12 Jul 2019 00:00:00 UTC</pubDate>
-      <author>Enthusiastic Hugo User</author>
-      <guid>https://sldn.softlayer.com/release_notes/2019/20190719/</guid>
-      <description>
-
-&lt;h4 id=&#34;portal&#34;&gt;Portal&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Choosing a secondary IP Address brought on requirement questions. These are now translated for other languages.&lt;/li&gt;
-&lt;li&gt;Prevents Bare Metal Reserved servers from appearing on the server list page.&lt;/li&gt;
-&lt;li&gt;Fixed an issue where cases created from the support center are not coming through as BAP escalated&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;api&#34;&gt;API&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Allow user to set default IBMid link, correct permissions required
-
-&lt;ul&gt;
-&lt;li&gt;SoftLayer_User_Customer_OpenIdConnect::setDefaultAccount()&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;IBM Cloud CDN - Support &amp;ldquo;/&amp;rdquo; at the end of purge url path.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;backend&#34;&gt;Backend&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Fix a bug where Customer users cannot delete linked-to-IBMid user&lt;/li&gt;
-&lt;li&gt;Allow SAML authenticated accounts to link to platform&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
