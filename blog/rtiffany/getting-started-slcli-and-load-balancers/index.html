@@ -128,17 +128,12 @@ if (!doNotTrack) {
 				
                 
 				
-                
-
-<p>Load Balancing is a way to distribute processing and communications evenly across multiple servers within a data center so that a single device does not carry an entire load.   SoftLayer Load Balancing enables customers to employ a variety of balancing methods to distribute traffic, including persistent and non-persistent options, that can be changed, activated and deactivated at any time. Today we are going to look at how to use the <a href="https://softlayer-python.readthedocs.org/en/latest/cli.html">Python slcli client</a> to manage your SoftLayer Local Load balancers.</p>
-
+                <p>Load Balancing is a way to distribute processing and communications evenly across multiple servers within a data center so that a single device does not carry an entire load.   SoftLayer Load Balancing enables customers to employ a variety of balancing methods to distribute traffic, including persistent and non-persistent options, that can be changed, activated and deactivated at any time. Today we are going to look at how to use the <a href="https://softlayer-python.readthedocs.org/en/latest/cli.html">Python slcli client</a> to manage your SoftLayer Local Load balancers.</p>
 <h3 id="load-balancer-details">Load Balancer details</h3>
-
 <p>To obtain information about our load balancer we will use the <code>detail</code> command. This will provide us with a good overview of the basic configuration of our load balancer.</p>
-
-<p><code>
-$ slcli &ndash;format=raw loadbal detail local:123456
-General properties  &mdash;&mdash;&mdash;-
+<code>
+$ slcli --format=raw loadbal detail local:123456
+General properties  ----------
 ID                 local:123456
 IP Address         172.20.31.30
 Datacenter         hou02
@@ -147,27 +142,19 @@ Dedicated          False
 HA                 False
 SSL Enabled        True
 SSL Active         False
-</code></p>
-
+</code>
 <h3 id="adding-new-service-groups">Adding new service groups</h3>
-
 <p>A Service Group is used to specify the type of traffic we want to distribute between our various servers. The current options are HTTP, DNS, FTP, HTTPS, TCP, and UDP. A service group will also determine the <a href="http://knowledgelayer.softlayer.com/faqs/27#330">Balancing Methods</a> or routing-methods we will use to balance our traffic. The routing-type and routing method take integer arguments which can be obtained using <code>slcli loadbal routing-types</code> and <code>slcli loadbal routing-methods</code> respectively.</p>
-
-<p>In the following example we are setting up a <sup>50</sup>&frasl;<sub>50</sub> allocation group to balance both HTTP (routing type 2 using Round Robin) and FTP (routing type 3 using Consistent Hash IP).</p>
-
-<p><code>
-$ slcli loadbal group-add &ndash;allocation 50 &ndash;port 80 &ndash;routing-type 2 &ndash;routing-method 10 local:123456
-Load balancer service group is being added!</p>
-
+<p>In the following example we are setting up a 50/50 allocation group to balance both HTTP (routing type 2 using Round Robin) and FTP (routing type 3 using Consistent Hash IP).</p>
+<code>
+$ slcli loadbal group-add --allocation 50 --port 80 --routing-type 2 --routing-method 10 local:123456
+Load balancer service group is being added!
 <p>$ slcli loadbal group-add &ndash;allocation 50 &ndash;port 21 &ndash;routing-type 5 &ndash;routing-method 21 local:123456
 Load balancer service group is being added!
 </code></p>
-
 <h3 id="adding-services-to-an-existing-group">Adding services to an existing group</h3>
-
 <p>In order to add a service to an existing group we need 2 pieces of information: the Service Group ID and the ID of the health check we want to set up for the service. We can get the health check ID with the command <code>slcli loadbal health-checks</code></p>
-
-<p><code>
+<code>
 $ slcli loadbal health-checks
 1   TCP
 2   HTTP
@@ -176,12 +163,10 @@ $ slcli loadbal health-checks
 5   HTTP-CUSTOM
 21  Default
 </code>
-To set up an new service to balance port 80 on the server 172.16.0.1 we set the healthcheck-type to 2 and pass the <code>--enabled</code> flag.</p>
-
-<p><code>
-$ slcli loadbal service-add 123456:222089 &ndash;enabled &ndash;port 80 &ndash;weight 1 &ndash;healthcheck-type 2 &ndash;ip-address 172.16.0.1
-Load balancer service is being added!</p>
-
+To set up an new service to balance port 80 on the server 172.16.0.1 we set the healthcheck-type to 2 and pass the `--enabled` flag.
+<code>
+$ slcli loadbal service-add 123456:222089 --enabled --port 80 --weight 1 --healthcheck-type 2 --ip-address 172.16.0.1
+Load balancer service is being added!
 <p>$ slcli &ndash;format=raw loadbal detail local:123456
 General properties  &mdash;&mdash;&mdash;-
 ID                 local:123456
@@ -199,38 +184,30 @@ Service group 2     **************
 Group Properties   123456:222087  80  50 %  2:HTTP  10:Round Robin
 Services           None
 </code></p>
-
 <h3 id="toggle-service">Toggle service</h3>
-
 <p>We can quick enable and disable a service using the <code>service-toggle</code> option and specifying the service ID:</p>
-
-<p><code>
+<code>
 $ slcli loadbal service-toggle 123456:428745
 This action will toggle the status on the service. Continue? [y/N]: y
 Load balancer service 123456:428745 status updated!
-</code></p>
-
+</code>
 <p>When we check the details of the Load Balancer again we can see that the Enabled flag is now set to 0 (Disabled).
 <code>
 $ slcli &ndash;format=raw loadbal detail local:124185|grep &lsquo;123456:428745&rsquo;
- Services           124185:436345  172.0.6.1 80  2:HTTP  10  0
+Services           124185:436345  172.0.6.1 80  2:HTTP  10  0
 </code></p>
-
 <h3 id="service-delete">Service delete</h3>
-
-<p><code>
+<code>
 $ slcli loadbal service-delete 124185:428745
 This action will cancel a service from your load balancer. Continue? [y/N]: y
 Load balancer service 428745 is being cancelled!
-</code></p>
-
+</code>
 <h3 id="service-group-delete">Service group delete</h3>
-
-<p><code>
+<code>
 $ slcli loadbal group-delete 124185:222089
 This action will cancel a service group. Continue? [y/N]: y
 Service group 124185:222089 is being deleted!
-</code></p>
+</code>
 
             </div>
         </div>

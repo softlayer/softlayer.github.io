@@ -134,65 +134,67 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">/*
-</span><span style="color:#75715e">Retrieve VLAN details such as router hostname, vlanNumber, primary router and subnet.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Retrieve the vlan&#39;s information by calling to the getObject() method in the SoftLayer_Network_Vlan
-</span><span style="color:#75715e">API service, and we using an object mask to retrieve associated subnets and primary router records.
-</span><span style="color:#75715e">See below for more details.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages:
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet_IpAddress
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getObject
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
+                <pre><code>/*
+Retrieve VLAN details such as router hostname, vlanNumber, primary router and subnet.
 
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+Retrieve the vlan's information by calling to the getObject() method in the SoftLayer_Network_Vlan
+API service, and we using an object mask to retrieve associated subnets and primary router records.
+See below for more details.
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
+Important manual pages:
+http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet_IpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getObject
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+*/
+
+package main
+
+import (
+	&quot;fmt&quot;
+	&quot;github.com/softlayer/softlayer-go/services&quot;
+	&quot;github.com/softlayer/softlayer-go/session&quot;
+	&quot;encoding/json&quot;
 )
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-  	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+func main() {
+	// SoftLayer API username and key
+	username := &quot;set me&quot;
+  	apikey   := &quot;set me&quot;
 
-	<span style="color:#75715e">// Vlan id you wish to get its details
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">vlanId</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1054267</span>
+	// Vlan id you wish to get its details
+	vlanId := 1054267
 
-	<span style="color:#75715e">// Create a session
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
+	// Create a session
+	sess := session.New(username, apikey)
 
-	<span style="color:#75715e">// Get SoftLayer_Network_Vlan service
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">service</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetNetworkVlanService</span>(<span style="color:#a6e22e">sess</span>)
+	// Get SoftLayer_Network_Vlan service
+	service := services.GetNetworkVlanService(sess)
 
-	<span style="color:#75715e">// Object-Mask to get specific vlan&#39;s information
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">mask</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;id;name;vlanNumber;primaryRouter[id;hostname];subnets[id;ipAddresses[id;ipAddress]]&#34;</span>
+	// Object-Mask to get specific vlan's information
+	mask := &quot;id;name;vlanNumber;primaryRouter[id;hostname];subnets[id;ipAddresses[id;ipAddress]]&quot;
 
-	<span style="color:#75715e">// Call to getObject() in order to retrieve vlan&#39;s details.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">vlan</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#a6e22e">vlanId</span>).<span style="color:#a6e22e">Mask</span>(<span style="color:#a6e22e">mask</span>).<span style="color:#a6e22e">GetObject</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to get Vlan&#39;s information:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// Call to getObject() in order to retrieve vlan's details.
+	vlan, err := service.Id(vlanId).Mask(mask).GetObject()
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to get Vlan's information:\n - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">// Following helps to print the result in json format.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">MarshalIndent</span>(<span style="color:#a6e22e">vlan</span>,<span style="color:#e6db74">&#34;&#34;</span>,<span style="color:#e6db74">&#34;    &#34;</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-		<span style="color:#66d9ef">return</span>
+	// Following helps to print the result in json format.
+	jsonFormat, jsonErr := json.MarshalIndent(vlan,&quot;&quot;,&quot;    &quot;)
+	if jsonErr != nil {
+		fmt.Println(jsonErr)
+		return
 	}
 
-	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
-}</pre></div>
+	fmt.Println(string(jsonFormat))
+}
+
+</code></pre>
             </div>
         </div>
 

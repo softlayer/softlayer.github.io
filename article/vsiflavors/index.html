@@ -134,85 +134,78 @@ if (!doNotTrack) {
                 
                 
                 
-                
-
-<p>The introduction of Flavors to VSI ordering significantly changes how VSIs are ordered, and the old style of ordering will eventually become unsupported. This page will hopefully explain what changes need to be made to any scripts that order VSIs.</p>
-
+                <p>The introduction of Flavors to VSI ordering significantly changes how VSIs are ordered, and the old style of ordering will eventually become unsupported. This page will hopefully explain what changes need to be made to any scripts that order VSIs.</p>
 <p>Support for flavors has been added to the <a href="https://github.com/softlayer/softlayer-python">SLCLI</a>, so make sure you have at least version 5.4.0.</p>
-
 <h1 id="getting-a-flavor-list">Getting a Flavor List</h1>
-
 <p><a href="https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/getCreateObjectOptions/">SoftLayer_Virtual_Guest::getCreateObjectOptions</a> is where you can find out the flavor listing, along with all other options you might want to supply to <a href="https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/createObject">SoftLayer_Virtual_Guest::createObject</a></p>
-
 <p>In the response from getCreateObjectOptions, will be a key &ldquo;flavors&rdquo;, with an array of different flavors and some information about their configuration.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ curl -g -u ${SLAUTH} &#34;https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest/getCreateObjectOptions&#34; | python -m json.tool
+<pre><code>$ curl -g -u ${SLAUTH} &quot;https://api.softlayer.com/rest/v3/SoftLayer_Virtual_Guest/getCreateObjectOptions&quot; | python -m json.tool
 
 
 {ommitted}
-    &#34;flavors&#34;: [
+    &quot;flavors&quot;: [
         {
-            &#34;flavor&#34;: {
-                &#34;keyName&#34;: &#34;B1_1X2X25&#34;,
-                &#34;name&#34;: &#34;B1.1x2x25&#34;,
-                &#34;configuration&#34;: [
+            &quot;flavor&quot;: {
+                &quot;keyName&quot;: &quot;B1_1X2X25&quot;,
+                &quot;name&quot;: &quot;B1.1x2x25&quot;,
+                &quot;configuration&quot;: [
                     {
-                        &#34;category&#34;: {
-                            &#34;name&#34;: &#34;First Disk&#34;
+                        &quot;category&quot;: {
+                            &quot;name&quot;: &quot;First Disk&quot;
                         },
-                        &#34;price&#34;: {
-                            &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-                            &#34;item&#34;: {
-                                &#34;description&#34;: &#34;25 GB (SAN)&#34;
+                        &quot;price&quot;: {
+                            &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+                            &quot;item&quot;: {
+                                &quot;description&quot;: &quot;25 GB (SAN)&quot;
                             }
                         }
                     },
                     {
-                        &#34;category&#34;: {
-                            &#34;name&#34;: &#34;RAM&#34;
+                        &quot;category&quot;: {
+                            &quot;name&quot;: &quot;RAM&quot;
                         },
-                        &#34;price&#34;: {
-                            &#34;hourlyRecurringFee&#34;: &#34;.03&#34;,
-                            &#34;item&#34;: {
-                                &#34;description&#34;: &#34;2 GB&#34;
+                        &quot;price&quot;: {
+                            &quot;hourlyRecurringFee&quot;: &quot;.03&quot;,
+                            &quot;item&quot;: {
+                                &quot;description&quot;: &quot;2 GB&quot;
                             }
                         }
                     },
                     {
-                        &#34;category&#34;: {
-                            &#34;name&#34;: &#34;Computing Instance&#34;
+                        &quot;category&quot;: {
+                            &quot;name&quot;: &quot;Computing Instance&quot;
                         },
-                        &#34;price&#34;: {
-                            &#34;hourlyRecurringFee&#34;: &#34;.023&#34;,
-                            &#34;item&#34;: {
-                                &#34;description&#34;: &#34;1 x 2.0 GHz Core&#34;
+                        &quot;price&quot;: {
+                            &quot;hourlyRecurringFee&quot;: &quot;.023&quot;,
+                            &quot;item&quot;: {
+                                &quot;description&quot;: &quot;1 x 2.0 GHz Core&quot;
                             }
                         }
                     }
                 ],
-                &#34;totalMinimumHourlyFee&#34;: &#34;0.053&#34;,
-                &#34;totalMinimumRecurringFee&#34;: &#34;35.17&#34;
+                &quot;totalMinimumHourlyFee&quot;: &quot;0.053&quot;,
+                &quot;totalMinimumRecurringFee&quot;: &quot;35.17&quot;
             },
-            &#34;template&#34;: {
-                &#34;id&#34;: null,
-                &#34;supplementalCreateObjectOptions&#34;: {
-                    &#34;flavorKeyName&#34;: &#34;B1_1X2X25&#34;
+            &quot;template&quot;: {
+                &quot;id&quot;: null,
+                &quot;supplementalCreateObjectOptions&quot;: {
+                    &quot;flavorKeyName&quot;: &quot;B1_1X2X25&quot;
                 }
             }
         },
-{ommitted}</pre></div>
-<p>The same information can be retrieved from the SLCLI as well.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">slcli vs create-options</pre></div>
-<h1 id="ordering-a-flavor">Ordering a Flavor</h1>
-
+{ommitted}
+</code></pre><p>The same information can be retrieved from the SLCLI as well.</p>
+<pre><code>slcli vs create-options
+</code></pre><h1 id="ordering-a-flavor">Ordering a Flavor</h1>
 <p>Basically, instead of specifying a CPU, Memory, and Disk specifically, you remove those options and instead add a new &ldquo;<a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest_SupplementalCreateObjectOptions/">supplementalCreateObjectOptions</a>&rdquo; field that has the flavor. Here is a <a href="https://console.bluemix.net/docs/vsi/vsi_provision_api.html#api-rest-public">REST Example</a></p>
-
 <p>And here is how to use the SLCLI for ordering</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">slcli vs create --os=UBUNTU_LATEST_64 \
+<pre><code>slcli vs create --os=UBUNTU_LATEST_64 \
     --flavor=BL1_2X4X100  \
     --billing=hourly  \
     --domain=softlayer.com  \
     --hostname=sldn-testing  \
-    --datacenter=hou02</pre></div>
+    --datacenter=hou02
+</code></pre>
             </div>
         </div>
 

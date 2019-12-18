@@ -128,62 +128,61 @@ if (!doNotTrack) {
 				
                 
 				
-                <p>The ability to order bare metal servers is one of the unique advantages of the SoftLayer cloud. But bare metal servers are inherently more complicated than virtual server infrastructures (VSI) because there are many more choices. A subset of the common bare metal servers can be ordered fairly easily using the [[SoftLayer_Hardware::createObject()]] method. If that’s sufficient for you, you can stop reading this article right here. If you only need to order one type of custom bare metal server, you don&rsquo;t need most of the detail that follows.</p>
-
+                <p>The ability to order bare metal servers is one of the unique advantages of the SoftLayer cloud. But bare metal servers are inherently more complicated than virtual server infrastructures (VSI) because there are many more choices. A subset of the common bare metal servers can be ordered fairly easily using the [[SoftLayer_Hardware::createObject()]] method. If that’s sufficient for you, you can stop reading this article right here. If you only need to order one type of custom bare metal server, you don't need most of the detail that follows.</p>
 <p>However, if you want to use the SoftLayer API in your code to query all bare metal servers that are available to order, this article will show you how. You’ll also learn how you can order them in a way that will work for all locations and accounts.</p>
-
 <p>The pre-set configuration bare metal servers are queried and ordered differently than the custom bare metal servers, so we will discuss those two situations below.</p>
-
 <p>##<strong>Hourly/Pre-set Configuration Bare Metal Servers</strong>
 The servers that can be ordered on an hourly basis are pre-set configurations. We have an existing inventory of these servers, so they can be provisioned without human intervention (and therefore provisioned more quickly).</p>
-
 <p>To query and order hourly bare metal servers, do the following:</p>
-
 <ul>
-<li><p>Get the simplified hardware options by calling [[SoftLayer_Hardware::getCreateObjectOptions()]] . For example, in Python:</p>
-
-<p><python>
-hwOptions = client[&lsquo;Hardware&rsquo;].getCreateObjectOptions()
-</python></p>
-
-<p>This will return a data structure like <a href="https://gist.github.com/bmpotter/a0d9a386d8681bdab456">hw-create-options.txt</a>. Note that this is just an <strong>example</strong> of the output. Always produce this data structure at runtime by calling getCreateObjectOptions(), because this data could change over time.</p></li>
-
-<li><p>In the structure returned, there is a key called <strong>fixedConfigurationPresets</strong>. All entries under that key are bare metal servers that can be ordered hourly. The properties under each <strong>preset</strong> key give the description and price of that server—although the hourly fee is rounded to the nearest dollar. If you need precise hourly fees, call [[SoftLayer_Product_Package::getActivePresets()]]  for package 200, and add up the hourly fee of each item price in the pre-set configuration. (See <a href="https://gist.github.com/bmpotter/f7791ab08819eafc93e0">calc-preset-hourly-price.py</a> for an example.)</p></li>
-
-<li><p>Under the <strong>fixedConfigurationPresets</strong> key in the data structure returned by getCreateObjectOptions(), you’ll find keys called <strong>template.</strong> This shows the pre-set information to add to the order structure for that pre-set server. You specify the chosen pre-set instead of the keys: processorCoreAmount, memoryCapacity, and hardDrives.</p></li>
-
-<li><p>Select your choices from getCreateObjectOptions() for datacenter, networkComponents, and operatingSystemReferenceCode, adding the corresponding template values into your order structure. Add the hostname, domain, and hourlyBillingFlag into the order structure and pass it to [[SoftLayer_Hardware::createObject()]].  (See <a href="https://gist.github.com/bmpotter/fe2de7f8028d73ada4e5">order-preset-bare-metal.py</a> for an example.)</p></li>
-
-<li><p>When createObject() returns, it doesn&rsquo;t provide the id of the bare metal server as it does for VSIs. You must query repeatedly for the server with the hostname and domain you specified, and a mask that includes <strong>provisionDate</strong>. When provisionDate is filled in, the server has been provisioned. You may also include <strong>hardwareStatus</strong> and <strong>lastTransaction</strong> in the mask to view the server’s current provisioning phase while you await completion. Including the operating system username and password in the mask is useful so you can log into the server once it is provisioned. (See <a href="https://gist.github.com/bmpotter/0249e838dce1370a7aa0">get-bare-metal-provision-status.py</a> for an example.)</p></li>
+<li>
+<p>Get the simplified hardware options by calling [[SoftLayer_Hardware::getCreateObjectOptions()]] . For example, in Python:</p>
+  <python>
+</li>
 </ul>
-
+<p>hwOptions = client[&lsquo;Hardware&rsquo;].getCreateObjectOptions()
+</python></p>
+<pre><code> This will return a data structure like [hw-create-options.txt](https://gist.github.com/bmpotter/a0d9a386d8681bdab456). Note that this is just an **example** of the output. Always produce this data structure at runtime by calling getCreateObjectOptions(), because this data could change over time.
+</code></pre>
+<ul>
+<li>
+<p>In the structure returned, there is a key called <strong>fixedConfigurationPresets</strong>. All entries under that key are bare metal servers that can be ordered hourly. The properties under each <strong>preset</strong> key give the description and price of that server—although the hourly fee is rounded to the nearest dollar. If you need precise hourly fees, call [[SoftLayer_Product_Package::getActivePresets()]]  for package 200, and add up the hourly fee of each item price in the pre-set configuration. (See <a href="https://gist.github.com/bmpotter/f7791ab08819eafc93e0">calc-preset-hourly-price.py</a> for an example.)</p>
+</li>
+<li>
+<p>Under the <strong>fixedConfigurationPresets</strong> key in the data structure returned by getCreateObjectOptions(), you’ll find keys called <strong>template.</strong> This shows the pre-set information to add to the order structure for that pre-set server. You specify the chosen pre-set instead of the keys: processorCoreAmount, memoryCapacity, and hardDrives.</p>
+</li>
+<li>
+<p>Select your choices from getCreateObjectOptions() for datacenter, networkComponents, and operatingSystemReferenceCode, adding the corresponding template values into your order structure. Add the hostname, domain, and hourlyBillingFlag into the order structure and pass it to [[SoftLayer_Hardware::createObject()]].  (See <a href="https://gist.github.com/bmpotter/fe2de7f8028d73ada4e5">order-preset-bare-metal.py</a> for an example.)</p>
+</li>
+<li>
+<p>When createObject() returns, it doesn't provide the id of the bare metal server as it does for VSIs. You must query repeatedly for the server with the hostname and domain you specified, and a mask that includes <strong>provisionDate</strong>. When provisionDate is filled in, the server has been provisioned. You may also include <strong>hardwareStatus</strong> and <strong>lastTransaction</strong> in the mask to view the server’s current provisioning phase while you await completion. Including the operating system username and password in the mask is useful so you can log into the server once it is provisioned. (See <a href="https://gist.github.com/bmpotter/0249e838dce1370a7aa0">get-bare-metal-provision-status.py</a> for an example.)</p>
+</li>
+</ul>
 <p>But that was the easy part.  Querying and ordering monthly, custom, bare metal servers gets more interesting.</p>
-
 <p>##<strong>Monthly/Custom Bare Metal Servers</strong>
 SoftLayer has a wider range of bare metal servers that often requires ops personnel to physically reconfigure a server (add memory, disks, etc.) to meet the request. It often takes several hours to provision a custom server, but this means there’s a much wider selection of server models and configurations available for monthly bare metal.</p>
-
 <p>To query and order monthly bare metal servers, do the following:</p>
-
 <ul>
-<li><p>Query the product packages that are of type BARE_METAL_CPU and have at least one item with a category of “server.” You can do this by calling [[SoftLayer_Product_Package::getAllObjects()]] and using a filter for these two criteria. (See <a href="https://gist.github.com/bmpotter/664ee9af622ce08da9a4">get-bare-metal-pkgs.py</a> for an example of this calling and <a href="https://gist.github.com/bmpotter/4aeca22d05b0b95732b9">bare-metal-pkgs.txt</a> for an example of the output. This gives you the list of monthly processor models that can be ordered.)</p></li>
-
-<li><p>Once a processor model is selected, you can query the associated product package for all items and item prices for that package. With this, you’ll have access to all options available for this package (amount of memory, disk size, port speed, etc.), and the price associated with each.</p>
-
+<li>
+<p>Query the product packages that are of type BARE_METAL_CPU and have at least one item with a category of “server.” You can do this by calling [[SoftLayer_Product_Package::getAllObjects()]] and using a filter for these two criteria. (See <a href="https://gist.github.com/bmpotter/664ee9af622ce08da9a4">get-bare-metal-pkgs.py</a> for an example of this calling and <a href="https://gist.github.com/bmpotter/4aeca22d05b0b95732b9">bare-metal-pkgs.txt</a> for an example of the output. This gives you the list of monthly processor models that can be ordered.)</p>
+</li>
+<li>
+<p>Once a processor model is selected, you can query the associated product package for all items and item prices for that package. With this, you’ll have access to all options available for this package (amount of memory, disk size, port speed, etc.), and the price associated with each.</p>
 <p>To organize the items into categories, use the item prices that apply to the chosen data center, and filter out duplicate item prices that are still in the system, we wrote the function getOrderItemsDict() in <a href="https://gist.github.com/bmpotter/27913e92e9ff7b6b0c54">order-custom-monthly-bare-metal.py</a>. This will build a data structure of item price objects for a package that’s organized by category. It only includes the item prices for the specified data center and handles several subtleties related to duplicates. (See <a href="https://gist.github.com/bmpotter/959720c1a2faf8f6e9e3">pkg.253.tor01.txt</a> for an example of the output getOrderItemsDict() produces for package 253 at the Toronto data center.)</p>
-
 <p>This data structure is useful in three ways:</p>
-
 <ul>
 <li>Printing this data structure gives you an organized view of the options for this server.</li>
 <li>You can programmatically parse this data structure and display these choices and their prices to the user (if necessary).</li>
 <li>You can programmatically select choices by the more reliable categoryCode and keyName (rather than the item price id, which can change) and add them to the order structure.</li>
-</ul></li>
-
-<li><p>When you are ready to order or verify an order for a monthly bare metal server, use the data structure produced by getOrderItemsDict() and the getItemPriceId() function to pick specific item price ids out of the structure. Assemble these ids and other meta information into the order structure and call [[SoftLayer_Product_Order::verifyOrder()]] or [[SoftLayer_Product_Order::placeOrder()]]. (Verifying the order first allows you to get the total price and any errors before actually ordering the server. You can see an example of this in <a href="https://gist.github.com/bmpotter/27913e92e9ff7b6b0c54">order-custom-monthly-bare-metal.py</a>.)</p></li>
-
-<li><p>If placeOrder() completes successfully, query the server repeatedly until the provisionDate is filled in. (Refer to the last section of the Hourly/Pre-set discussion above for details.)</p></li>
 </ul>
-
+</li>
+<li>
+<p>When you are ready to order or verify an order for a monthly bare metal server, use the data structure produced by getOrderItemsDict() and the getItemPriceId() function to pick specific item price ids out of the structure. Assemble these ids and other meta information into the order structure and call [[SoftLayer_Product_Order::verifyOrder()]] or [[SoftLayer_Product_Order::placeOrder()]]. (Verifying the order first allows you to get the total price and any errors before actually ordering the server. You can see an example of this in <a href="https://gist.github.com/bmpotter/27913e92e9ff7b6b0c54">order-custom-monthly-bare-metal.py</a>.)</p>
+</li>
+<li>
+<p>If placeOrder() completes successfully, query the server repeatedly until the provisionDate is filled in. (Refer to the last section of the Hourly/Pre-set discussion above for details.)</p>
+</li>
+</ul>
 <p>-Bruce</p>
 
             </div>

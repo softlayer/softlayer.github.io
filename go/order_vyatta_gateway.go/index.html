@@ -140,113 +140,115 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">/*
-</span><span style="color:#75715e">Order a Network Gateway Appliance (Vyatta)
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">The script orders a Network Gateway (Vyatta), it uses the SoftLayer_Product_Order::placeOrder
-</span><span style="color:#75715e">to make the order.
-</span><span style="color:#75715e">See below for more information.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages:
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+                <pre><code>/*
+Order a Network Gateway Appliance (Vyatta)
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
+The script orders a Network Gateway (Vyatta), it uses the SoftLayer_Product_Order::placeOrder
+to make the order.
+See below for more information.
+
+Important manual pages:
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+*/
+package main
+
+import (
+	&quot;fmt&quot;
+	&quot;github.com/softlayer/softlayer-go/datatypes&quot;
+	&quot;github.com/softlayer/softlayer-go/services&quot;
+	&quot;github.com/softlayer/softlayer-go/session&quot;
+	&quot;github.com/softlayer/softlayer-go/sl&quot;
+	&quot;encoding/json&quot;
 )
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+func main() {
+	// SoftLayer API username and key
+	username := &quot;set me&quot;
+	apikey   := &quot;set me&quot;
 
-	<span style="color:#75715e">// Declare the hostname, domain, location, packageId and quantity for the
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">// gateway you wish to order
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">quantity</span>  <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span>
-	<span style="color:#a6e22e">location</span>  <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;AMSTERDAM&#34;</span>
-	<span style="color:#a6e22e">packageId</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">174</span>
-	<span style="color:#a6e22e">hostname</span>  <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;softlayer&#34;</span>
-	<span style="color:#a6e22e">domain</span>    <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;example.com&#34;</span>
+	// Declare the hostname, domain, location, packageId and quantity for the
+	// gateway you wish to order
+	quantity  := 1
+	location  := &quot;AMSTERDAM&quot;
+	packageId := 174
+	hostname  := &quot;softlayer&quot;
+	domain    := &quot;example.com&quot;
 
-	<span style="color:#75715e">// Build a skeleton SoftLayer_Hardware object to model the hostname and domain
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">// of server. If you set quantity greater than 1 then you need to define hostname/domain
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">// per server you wish to order.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">hardware</span> <span style="color:#f92672">:=</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Hardware</span> {
+	// Build a skeleton SoftLayer_Hardware object to model the hostname and domain
+	// of server. If you set quantity greater than 1 then you need to define hostname/domain
+	// per server you wish to order.
+	hardware := []datatypes.Hardware {
 		{
-			<span style="color:#a6e22e">Hostname</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">hostname</span>),
-			<span style="color:#a6e22e">Domain</span>:   <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">domain</span>),
+			Hostname: sl.String(hostname),
+			Domain:   sl.String(domain),
 		},
 	}
 
-	<span style="color:#75715e">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">prices</span> <span style="color:#f92672">:=</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Product_Item_Price</span>{
-		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">76965</span>) },	<span style="color:#75715e">// RAM 8 GB DDR3 1333
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">74865</span>) },	<span style="color:#75715e">// Single Intel Xeon E3-1270 (4 Cores, 3.40 GHz)
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">36044</span>) },	<span style="color:#75715e">// Vyatta 6.x Subscription Edition (64 bit)
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">17129</span>) },	<span style="color:#75715e">// 1 IPv6 Address
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>( <span style="color:#ae81ff">1267</span>) },	<span style="color:#75715e">// 500 GB SATA
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(  <span style="color:#ae81ff">906</span>) },	<span style="color:#75715e">// Reboot / KVM over IP
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(  <span style="color:#ae81ff">876</span>) },	<span style="color:#75715e">// Non-RAID
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(  <span style="color:#ae81ff">420</span>) },	<span style="color:#75715e">// Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(  <span style="color:#ae81ff">418</span>) },	<span style="color:#75715e">// Nessus Vulnerability Assessment &amp; Reporting
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(  <span style="color:#ae81ff">342</span>) },	<span style="color:#75715e">// Single Intel Xeon E3-1270 (4 Cores, 3.40 GHz)
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(  <span style="color:#ae81ff">273</span>) },	<span style="color:#75715e">// 100 Mbps Public &amp; Private Network Uplinks
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(   <span style="color:#ae81ff">58</span>) },	<span style="color:#75715e">// Automated Notification
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(   <span style="color:#ae81ff">57</span>) },	<span style="color:#75715e">// Email and Ticket
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(   <span style="color:#ae81ff">55</span>) },	<span style="color:#75715e">// 500 GB SATA
-</span><span style="color:#75715e"></span>		{ <span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(   <span style="color:#ae81ff">21</span>) },	<span style="color:#75715e">// 1 IP Addresses
-</span><span style="color:#75715e"></span>	}
+	// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+	// prices for the package use the SoftLayer_Product_Package:getItems method
+	prices := []datatypes.Product_Item_Price{
+		{ Id: sl.Int(76965) },	// RAM 8 GB DDR3 1333
+		{ Id: sl.Int(74865) },	// Single Intel Xeon E3-1270 (4 Cores, 3.40 GHz)
+		{ Id: sl.Int(36044) },	// Vyatta 6.x Subscription Edition (64 bit)
+		{ Id: sl.Int(17129) },	// 1 IPv6 Address
+		{ Id: sl.Int( 1267) },	// 500 GB SATA
+		{ Id: sl.Int(  906) },	// Reboot / KVM over IP
+		{ Id: sl.Int(  876) },	// Non-RAID
+		{ Id: sl.Int(  420) },	// Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account
+		{ Id: sl.Int(  418) },	// Nessus Vulnerability Assessment &amp; Reporting
+		{ Id: sl.Int(  342) },	// Single Intel Xeon E3-1270 (4 Cores, 3.40 GHz)
+		{ Id: sl.Int(  273) },	// 100 Mbps Public &amp; Private Network Uplinks
+		{ Id: sl.Int(   58) },	// Automated Notification
+		{ Id: sl.Int(   57) },	// Email and Ticket
+		{ Id: sl.Int(   55) },	// 500 GB SATA
+		{ Id: sl.Int(   21) },	// 1 IP Addresses
+	}
 
-	<span style="color:#75715e">// Build a skeleton Container_Product_Order_Hardware_Server_Gateway_Appliance object
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">// containing the order you wish to place.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">orderTemplate</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Container_Product_Order_Hardware_Server_Gateway_Appliance</span>{}
-	<span style="color:#a6e22e">orderTemplate</span>.<span style="color:#a6e22e">OrderContainers</span> = []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Container_Product_Order</span>{
+	// Build a skeleton Container_Product_Order_Hardware_Server_Gateway_Appliance object
+	// containing the order you wish to place.
+	orderTemplate := datatypes.Container_Product_Order_Hardware_Server_Gateway_Appliance{}
+	orderTemplate.OrderContainers = []datatypes.Container_Product_Order{
 		{
-			<span style="color:#a6e22e">Quantity</span>:  <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#a6e22e">quantity</span>),
-			<span style="color:#a6e22e">Location</span>:  <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">location</span>),
-			<span style="color:#a6e22e">PackageId</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#a6e22e">packageId</span>),
-			<span style="color:#a6e22e">Prices</span>:    <span style="color:#a6e22e">prices</span>,
-			<span style="color:#a6e22e">Hardware</span>:  <span style="color:#a6e22e">hardware</span>,
+			Quantity:  sl.Int(quantity),
+			Location:  sl.String(location),
+			PackageId: sl.Int(packageId),
+			Prices:    prices,
+			Hardware:  hardware,
 		},
 	}
 
-	<span style="color:#75715e">// Create SoftLayer API session
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
+	// Create SoftLayer API session
+	sess := session.New(username, apikey)
 
-	<span style="color:#75715e">// Get SoftLayer_Product_Order service
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">service</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetProductOrderService</span>(<span style="color:#a6e22e">sess</span>)
+	// Get SoftLayer_Product_Order service
+	service := services.GetProductOrderService(sess)
 
-	<span style="color:#75715e">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">// you are ready to order.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">receipt</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">VerifyOrder</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">orderTemplate</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to place order:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+	// you are ready to order.
+	receipt, err := service.VerifyOrder(&amp;orderTemplate)
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to place order:\n - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">// Following helps to print the result in json format.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">MarshalIndent</span>(<span style="color:#a6e22e">receipt</span>, <span style="color:#e6db74">&#34;&#34;</span>,<span style="color:#e6db74">&#34;     &#34;</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-		<span style="color:#66d9ef">return</span>
+	// Following helps to print the result in json format.
+	jsonFormat, jsonErr := json.MarshalIndent(receipt, &quot;&quot;,&quot;     &quot;)
+	if jsonErr != nil {
+		fmt.Println(jsonErr)
+		return
 	}
 
-	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
-}</pre></div>
+	fmt.Println(string(jsonFormat))
+}
+
+</code></pre>
             </div>
         </div>
 

@@ -132,153 +132,135 @@ if (!doNotTrack) {
 				
                 
 				
-                
-
-<h2 id="placement-groups-https-console-bluemix-net-docs-vsi-vsi-placegroup-html-placement-groups"><a href="https://console.bluemix.net/docs/vsi/vsi_placegroup.html#placement-groups">Placement Groups</a></h2>
-
+                <h2 id="placement-groupshttpsconsolebluemixnetdocsvsivsiplacegrouphtmlplacementgroups"><a href="https://console.bluemix.net/docs/vsi/vsi_placegroup.html#placement-groups">Placement Groups</a></h2>
 <h3 id="creation">Creation</h3>
-
 <p>To create a group, we need to know a few pieces of information. With the slcli this can all be obtained with <code>slcli vs placementgroup create-options</code></p>
-
 <ol>
-<li><p>Router (Pod in a datacenter) the group should be located behind.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY -X GET -H &#34;Accept: */*&#34; &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup/getAvailableRouters.json&#39;</pre></div></li>
+<li>Router (Pod in a datacenter) the group should be located behind.</li>
 </ol>
-
-<p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_PlacementGroup/getAvailableRouters">Virtual_PlacementGroup::getAvailableRouters()</a> will print a list of all routers that support placement groups. You will need the router ID listed.</p>
-
-<ol>
-<li><p>Rule which the group should enforce</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY -X GET -H &#34;Accept: */*&#34; &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup_Rule/getAllObjects.json&#39;</pre></div></li>
+<pre><code>curl -u $SL_USER:$SL_APIKEY -X GET -H &quot;Accept: */*&quot; 'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup/getAvailableRouters.json'
+</code></pre><p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_PlacementGroup/getAvailableRouters">Virtual_PlacementGroup::getAvailableRouters()</a> will print a list of all routers that support placement groups. You will need the router ID listed.</p>
+<ol start="2">
+<li>Rule which the group should enforce</li>
 </ol>
-
-<p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_PlacementGroup_Rule/getAllObjects/">SoftLayer_Virtual_PlacementGroup_Rule::getAllObjects()</a> will print a list of rules useable, keep track of the Id. At the moment there is only the &lsquo;SPREAD&rsquo; rule which ensures each VSI is on a different host.</p>
-
-<ol>
+<pre><code>curl -u $SL_USER:$SL_APIKEY -X GET -H &quot;Accept: */*&quot; 'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup_Rule/getAllObjects.json'
+</code></pre><p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_PlacementGroup_Rule/getAllObjects/">SoftLayer_Virtual_PlacementGroup_Rule::getAllObjects()</a> will print a list of rules useable, keep track of the Id. At the moment there is only the &lsquo;SPREAD&rsquo; rule which ensures each VSI is on a different host.</p>
+<ol start="3">
 <li>Name that we want to give the group.
-This is always the hardest part, sadly we don&rsquo;t have an API to generate a name for you.</li>
+This is always the hardest part, sadly we don't have an API to generate a name for you.</li>
 </ol>
-
 <p>Next, create the instance.</p>
-
 <p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_PlacementGroup/createObject/">SoftLayer_Virtual_PlacementGroup::createObject()</a> takes as an argument a <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_PlacementGroup/">SoftLayer_Virtual_PlacementGroup</a> datatype. You only need to supply <code>backendRouterId</code>, <code>name</code>, <code>ruleId</code>.</p>
-
 <p><code>slcli vs placementgroup create --name test1234 -b bcr01.wdc01 -r SPREAD</code></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY -X POST -d &#39;{&#34;parameters&#34;: [{&#34;name&#34;: &#34;test1234&#34;, &#34;backendRouterId&#34;: 16358, &#34;ruleId&#34;: 1}]}&#39; &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup/createObject.json&#39;</pre></div>
-<h3 id="listing">Listing</h3>
-
+<pre><code>curl -u $SL_USER:$SL_APIKEY -X POST -d '{&quot;parameters&quot;: [{&quot;name&quot;: &quot;test1234&quot;, &quot;backendRouterId&quot;: 16358, &quot;ruleId&quot;: 1}]}' 'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup/createObject.json'
+</code></pre><h3 id="listing">Listing</h3>
 <p><code>slcli vs placementgroup list</code></p>
-
 <p>To list out all the placement groups, we use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Account/getPlacementGroups/">SoftLayer_Account/getPlacementGroups</a>
 with the mask <code>mask[id, name, createDate, rule, guestCount, backendRouter[id, hostname]]</code></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY -X GET &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getPlacementGroups.json?objectMask=mask%5Bid%2C+name%2C+createDate%2C+rule%2C+guestCount%2C+backendRouter%5Bid%2C+hostname%5D%5D&#39;</pre></div>
-<h3 id="deleting">Deleting</h3>
-
+<pre><code>curl -u $SL_USER:$SL_APIKEY -X GET 'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getPlacementGroups.json?objectMask=mask%5Bid%2C+name%2C+createDate%2C+rule%2C+guestCount%2C+backendRouter%5Bid%2C+hostname%5D%5D'
+</code></pre><h3 id="deleting">Deleting</h3>
 <p><code>slcli -vvv  vs placementgroup delete test1234</code></p>
-
 <p>Deleting is pretty easy, first you will need the PlacementGroup id, then just call <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_PlacementGroup/deleteObject/">SoftLayer_Virtual_PlacementGroup::deleteObject()</a></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY -X GET -H &#34;Accept: */*&#34;  &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup/81435/deleteObject.json</pre></div>
-<p>To delete a PlacementGroup, it is required all servers in that group be delete. You can use <code>slcli -vvv  vs placementgroup delete test1234 --purge</code> for that, or simply delete each VSI beforehand.</p>
-
+<pre><code>curl -u $SL_USER:$SL_APIKEY -X GET -H &quot;Accept: */*&quot;  'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_PlacementGroup/81435/deleteObject.json
+</code></pre><p>To delete a PlacementGroup, it is required all servers in that group be delete. You can use <code>slcli -vvv  vs placementgroup delete test1234 --purge</code> for that, or simply delete each VSI beforehand.</p>
 <h3 id="adding-vsis-to-a-group">Adding VSIs to a group.</h3>
-
 <p>To create a VSI in a placement group, you need to supply the placementGroupId in your <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Virtual_Guest/">SoftLayer_Container_Product_Order_Virtual_Guest</a> container. This information is added at the same level hostname and domain are set.</p>
-
 <p><code>slcli vs create -H test12345 -D test.com -f  B1_1X2X25 -d mex01 -o DEBIAN_LATEST --placementgroup test12345</code></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curl -u $SL_USER:$SL_APIKEY -X POST  -d &#39;
-{&#34;parameters&#34;: [{
-    &#34;imageTemplateId&#34;: null,
-    &#34;location&#34;: &#34;449600&#34;,
-    &#34;packageId&#34;: 1035,
-    &#34;presetId&#34;: 583,
-    &#34;prices&#34;: [{
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 202563,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;Debian GNU/Linux 9.x Stretch/Stable - Minimal Install (64 bit) &#34;
+<pre><code>curl -u $SL_USER:$SL_APIKEY -X POST  -d '
+{&quot;parameters&quot;: [{
+    &quot;imageTemplateId&quot;: null,
+    &quot;location&quot;: &quot;449600&quot;,
+    &quot;packageId&quot;: 1035,
+    &quot;presetId&quot;: 583,
+    &quot;prices&quot;: [{
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 202563,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;Debian GNU/Linux 9.x Stretch/Stable - Minimal Install (64 bit) &quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 2202,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;25 GB (SAN)&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 2202,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;25 GB (SAN)&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 905,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;Reboot / Remote Console&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 905,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;Reboot / Remote Console&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 210301,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;100 Mbps Public &amp; Private Network Uplinks&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 210301,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;100 Mbps Public &amp; Private Network Uplinks&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 1800,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;0 GB Bandwidth Allotment&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 1800,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;0 GB Bandwidth Allotment&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 21,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;1 IP Address&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 21,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;1 IP Address&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 210349,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;Host Ping and TCP Service Monitoring&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 210349,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;Host Ping and TCP Service Monitoring&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 57,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;Email and Ticket&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 57,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;Email and Ticket&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 210353,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;Automated Reboot from Monitoring&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 210353,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;Automated Reboot from Monitoring&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 420,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 420,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account&quot;
         }
     }, {
-        &#34;hourlyRecurringFee&#34;: &#34;0&#34;,
-        &#34;id&#34;: 418,
-        &#34;recurringFee&#34;: &#34;0&#34;,
-        &#34;item&#34;: {
-            &#34;description&#34;: &#34;Nessus Vulnerability Assessment &amp; Reporting&#34;
+        &quot;hourlyRecurringFee&quot;: &quot;0&quot;,
+        &quot;id&quot;: 418,
+        &quot;recurringFee&quot;: &quot;0&quot;,
+        &quot;item&quot;: {
+            &quot;description&quot;: &quot;Nessus Vulnerability Assessment &amp; Reporting&quot;
         }
     }],
-    &#34;quantity&#34;: 1,
-    &#34;sourceVirtualGuestId&#34;: null,
-    &#34;sshKeys&#34;: [],
-    &#34;useHourlyPricing&#34;: true,
-    &#34;virtualGuests&#34;: [{
-        &#34;domain&#34;: &#34;test.com&#34;,
-        &#34;hostname&#34;: &#34;test12345&#34;,
-        &#34;placementGroupId&#34;: 12345
+    &quot;quantity&quot;: 1,
+    &quot;sourceVirtualGuestId&quot;: null,
+    &quot;sshKeys&quot;: [],
+    &quot;useHourlyPricing&quot;: true,
+    &quot;virtualGuests&quot;: [{
+        &quot;domain&quot;: &quot;test.com&quot;,
+        &quot;hostname&quot;: &quot;test12345&quot;,
+        &quot;placementGroupId&quot;: 12345
     }],
-    &#34;complexType&#34;: &#34;SoftLayer_Container_Product_Order_Virtual_Guest&#34;
-}]} &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/placeOrder.json&#39;</pre></div>
+    &quot;complexType&quot;: &quot;SoftLayer_Container_Product_Order_Virtual_Guest&quot;
+}]} 'https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/placeOrder.json'
+</code></pre>
             </div>
         </div>
 

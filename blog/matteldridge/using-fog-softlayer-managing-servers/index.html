@@ -128,144 +128,113 @@ if (!doNotTrack) {
 				
                 
 				
-                
-
-<p>In <a href="http://sldn.softlayer.com/blog/matteldridge/Fog-Gem-Support-SoftLayer">part one</a> of this series we introduced a new ruby gem, <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a>, which enables SoftLayer users to leverage <a href="https://github.com/fog/fog">fog</a>, the Ruby cloud services library.</p>
-
+                <p>In <a href="http://sldn.softlayer.com/blog/matteldridge/Fog-Gem-Support-SoftLayer">part one</a> of this series we introduced a new ruby gem, <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a>, which enables SoftLayer users to leverage <a href="https://github.com/fog/fog">fog</a>, the Ruby cloud services library.</p>
 <p>In this installment, we will walk users through getting started with fog, covering several examples of using <a href="https://github.com/softlayer/fog">fog-softlayer</a> to manage servers using both VMs and bare metal cloud instances.</p>
-
-<h4 id="configure-fog-softlayer-https-github-com-softlayer-fog-softlayer-for-your-account">Configure <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a> for Your Account</h4>
-
+<h4 id="configure-fogsoftlayerhttpsgithubcomsoftlayerfogsoftlayer-for-your-account">Configure <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a> for Your Account</h4>
 <p>These examples assume you have a local file at <code>~/.fog</code> that contains:</p>
-
-<p><yaml><br />
+   <yaml>  
    :softlayer_username: example-username
-   :softlayer_api_key: 1a1a1a1a1a1a1a1a1a11a1a1a1a1a1a1a1a1a1
+   :softlayer_api_key: 1a1a1a1a1a1a1a1a1a11a1a1a1a1a1a1a1a1a1 
    :softlayer_default_domain: example.com
-  </yaml></p>
-
+  </yaml>
 <h5 id="create-a-connection-to-softlayer-compute-service">Create a Connection to SoftLayer Compute Service</h5>
-
 <p>Having the configuration file described above allows you to establish a connection to the SoftLayer cloud with just two lines of code.</p>
-
-<p><ruby>
-\trequire &lsquo;fog/softlayer&rsquo;
+<ruby>
+\trequire 'fog/softlayer'
 \t@sl = Fog::Compute[:softlayer]
-</ruby></p>
-
+</ruby>
 <h5 id="support-for-multiple-accounts">Support for Multiple Accounts</h5>
-
 <p>Alternatively, if you require supporting multiple SoftLayer accounts, credentials and defaults can be passed as arguments when establishing a connection.</p>
-
-<p><ruby>
+<ruby>
 \tfirst_account_args = {
-\t  :provider =&gt; :softlayer,
-\t  :softlayer_username =&gt; &lsquo;example-username-1&rsquo;,
-\t  :softlayer_api_key =&gt; &lsquo;1a1a1a1a1a1a1a1a1a11a1a1a1a1a1a1a1a1a1&rsquo;,
-\t  :softlayer_default_domain =&gt; &lsquo;example.com&rsquo;,
+\t  :provider => :softlayer,
+\t  :softlayer_username => 'example-username-1',
+\t  :softlayer_api_key => '1a1a1a1a1a1a1a1a1a11a1a1a1a1a1a1a1a1a1',
+\t  :softlayer_default_domain => 'example.com',
 \t}
 \t
 \tsecond_account_args = {
-\t  :provider =&gt; :softlayer,
-\t  :softlayer_username =&gt; &lsquo;example-username-2&rsquo;,
-\t  :softlayer_api_key =&gt; &lsquo;2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b&rsquo;,
-\t  :softlayer_default_domain =&gt; &lsquo;another-example.com&rsquo;,
+\t  :provider => :softlayer,
+\t  :softlayer_username => 'example-username-2',
+\t  :softlayer_api_key => '2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b',
+\t  :softlayer_default_domain => 'another-example.com',
 \t}
 \t
 \t@sl1 = Fog::Compute.new(first_account_args)
 \t@sl2 = Fog::Compute.new(second_account_args)
-</ruby></p>
-
-<h5 id="use-the-models">Use the Models</h5>
-
+</ruby>
+##### Use the Models
 <p>Fog has a robust, production tested, object model that is intuitive and powerful for working with clouds to provision infrastructure. Your primary interface for working with fog should be the models. If needed, you can directly make requests to SoftLayer with fog, but that code is not portable to OpenStack or other providers, and should be used only when required for performance.</p>
-
 <p><code>1. </code> List all servers.</p>
-
-<p><ruby>
+   <ruby>
    @sl.servers # list all servers
-   @sl.servers.size # get a count of all servers
-   </ruby></p>
-
-<p><code>2.</code> Get a server&rsquo;s details.</p>
-
-<p><ruby>
+   @sl.servers.size # get a count of all servers 
+   </ruby>
+<p><code>2.</code> Get a server's details.</p>
+   <ruby>
    server = @sl.servers.get(<server id>)
-   server.name # =&gt; &lsquo;hostname.example.com&rsquo;
-   server.created_at # =&gt; DateTime the server was created
-   server.state # =&gt; &lsquo;Running&rsquo;, &lsquo;Stopped&rsquo;, &lsquo;Terminated&rsquo;, etc.
-   </ruby></p>
-
+   server.name # => 'hostname.example.com'
+   server.created_at # => DateTime the server was created
+   server.state # => 'Running', 'Stopped', 'Terminated', etc.
+   </ruby>
 <p><code>3.</code> Provision a new VM with flavor (simple).</p>
-
-<p><ruby>
+   <ruby>
      opts = {
-     \t:flavor_id =&gt; &ldquo;m1.small&rdquo;,
-     \t:image_id =&gt; &ldquo;23f7f05f-3657-4330-8772-329ed2e816bc&rdquo;,
-     \t:name =&gt; &ldquo;test&rdquo;,
-     \t:datacenter =&gt; {:name=&gt;&ldquo;ams01&rdquo;}
+     \t:flavor_id => "m1.small",
+     \t:image_id => "23f7f05f-3657-4330-8772-329ed2e816bc",
+     \t:name => "test",
+     \t:datacenter => {:name=>"ams01"}
      }
      new_server = @sl.servers.create(opts)
-     new_server.id # =&gt; 1337
-   </ruby></p>
-
+     new_server.id # => 1337
+   </ruby>
 <p><code>4.</code> Provision a new bare metal cloud instance with flavor (simple).</p>
-
-<p><ruby>
+   <ruby>
      opts = {
-     \t:flavor_id =&gt; &ldquo;m1.small&rdquo;,
-     \t:os_code =&gt; &ldquo;UBUNTU_LATEST&rdquo;,
-     \t:name =&gt; &ldquo;test1&rdquo;,
-     \t:datacenter =&gt; {:name=&gt;&ldquo;ams01&rdquo;},
-     \t:bare_metal =&gt; true
+     \t:flavor_id => "m1.small",
+     \t:os_code => "UBUNTU_LATEST",
+     \t:name => "test1",
+     \t:datacenter => {:name=>"ams01"},
+     \t:bare_metal => true
      }
      @sl.servers.create(opts)
-     new_server.id # =&gt; 1338
-   </ruby></p>
-
+     new_server.id # => 1338
+   </ruby>
 <p><code>5.</code> Provision a new VM without flavor.</p>
-
-<p><ruby>
+   <ruby>
    \topts = {
-     \t:cpu =&gt; 2,
-     \t:ram =&gt; 2048,     \t
-     \t:disk =&gt; [{&lsquo;device&rsquo; =&gt; 0, &lsquo;diskImage&rsquo; =&gt; {&lsquo;capacity&rsquo; =&gt; 100 } }],
-     \t:ephemeral_storage =&gt; true,
-     \t:domain =&gt; &ldquo;not-my-default.com&rdquo;,
-     \t:name =&gt; &ldquo;hostname&rdquo;,
-     \t:os_code =&gt; &ldquo;UBUNTU_LATEST&rdquo;,
-     \t:name =&gt; &ldquo;test2&rdquo;,
-     \t:datacenter =&gt; {:name=&gt;&ldquo;ams01&rdquo;},<br />
+     \t:cpu => 2,
+     \t:ram => 2048,     \t
+     \t:disk => [{'device' => 0, 'diskImage' => {'capacity' => 100 } }],
+     \t:ephemeral_storage => true,
+     \t:domain => "not-my-default.com",
+     \t:name => "hostname",
+     \t:os_code => "UBUNTU_LATEST",
+     \t:name => "test2",
+     \t:datacenter => {:name=>"ams01"},     
      }
-   </ruby></p>
-
+   </ruby>
 <p><code>6.</code> Provision a bare metal cloud instance without a flavor.</p>
-
-<p><ruby>
+   <ruby>
    opts = {
-     \t:cpu =&gt; 8,
-     \t:ram =&gt; 16348,     \t
-     \t:disk =&gt; {&lsquo;capacity&rsquo; =&gt; 100 },
-     \t:ephemeral_storage =&gt; true,
-     \t:domain =&gt; &ldquo;not-my-default.com&rdquo;,
-     \t:name =&gt; &ldquo;hostname&rdquo;,
-     \t:os_code =&gt; &ldquo;UBUNTU_LATEST&rdquo;,
-     \t:name =&gt; &ldquo;test2&rdquo;,
-     \t:datacenter =&gt; {:name=&gt;&ldquo;ams01&rdquo;},
-     \t:bare_metal =&gt; true
+     \t:cpu => 8,
+     \t:ram => 16348,     \t
+     \t:disk => {'capacity' => 100 },
+     \t:ephemeral_storage => true,
+     \t:domain => "not-my-default.com",
+     \t:name => "hostname",
+     \t:os_code => "UBUNTU_LATEST",
+     \t:name => "test2",
+     \t:datacenter => {:name=>"ams01"},
+     \t:bare_metal => true
      }
-   </ruby></p>
-
+   </ruby>
 <p><code>7.</code> Delete a VM or bare metal cloud instance.</p>
-
-<p><ruby>
+   <ruby>
    \t  @sl.servers.get(<server id>).destroy
-   </ruby></p>
-
+   </ruby>
 <p>This wraps up our initial tour of working with the Server model using <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a>. In the blog in this series we explore SoftLayer Object Storage using the Directory and File models.</p>
-
 <p>\- Matt</p>
-
 <p>&ndash;
 If you have questions about or problems with <a href="http://rubygems.org/gems/fog-softlayer">fog-softlayer</a> open an <a href="https://github.com/softlayer/fog-softlayer/issues">issue</a> or <a href="mailto:matt.eldridge@us.ibm.com?subject=fog-softlayer">email me</a>.</p>
 

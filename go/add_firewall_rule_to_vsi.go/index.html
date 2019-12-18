@@ -138,139 +138,140 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">/*
-</span><span style="color:#75715e">Add firewall rules to the Firewall in a VSI.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages:
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getFirewallServiceComponent
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Firewall_Update_Request/createObject
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+                <pre><code>/*
+Add firewall rules to the Firewall in a VSI.
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-  	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+Important manual pages:
+http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getFirewallServiceComponent
+http://sldn.softlayer.com/reference/services/SoftLayer_Network_Firewall_Update_Request/createObject
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+*/
+package main
+
+import (
+	&quot;fmt&quot;
+  	&quot;encoding/json&quot;
+	&quot;github.com/softlayer/softlayer-go/session&quot;
+	&quot;github.com/softlayer/softlayer-go/services&quot;
+	&quot;github.com/softlayer/softlayer-go/datatypes&quot;
+	&quot;github.com/softlayer/softlayer-go/sl&quot;
 )
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+func main() {
+	// SoftLayer API username and key
+	username := &quot;set me&quot;
+	apikey   := &quot;set me&quot;
 
-	<span style="color:#75715e">// The id of Virtual server you wish to retrieve it firewall rules
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">vsiId</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">33051333</span>
+	// The id of Virtual server you wish to retrieve it firewall rules
+	vsiId := 33051333
 
-	<span style="color:#75715e">// Build the Network_Firewall_Update_Request_Rule object with the rules you want to add.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">rulesToAdd</span> <span style="color:#f92672">:=</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request_Rule</span>{
+	// Build the Network_Firewall_Update_Request_Rule object with the rules you want to add.
+	rulesToAdd := []datatypes.Network_Firewall_Update_Request_Rule{
 		{
-			<span style="color:#a6e22e">Action</span>                    : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;permit&#34;</span>),
-			<span style="color:#a6e22e">Protocol</span>                  : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;tcp&#34;</span>),
-			<span style="color:#a6e22e">Version</span> 	          : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">4</span>),
-			<span style="color:#a6e22e">SourceIpAddress</span>           : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;10.10.10.3&#34;</span>),
-			<span style="color:#a6e22e">DestinationIpAddress</span>      : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;169.57.65.166&#34;</span>),
-			<span style="color:#a6e22e">SourceIpCidr</span>              : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">16</span>),
-			<span style="color:#a6e22e">OrderValue</span>                : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">3</span>),
-			<span style="color:#a6e22e">DestinationPortRangeStart</span> : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8081</span>),
-			<span style="color:#a6e22e">DestinationPortRangeEnd</span>   : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8085</span>),
+			Action                    : sl.String(&quot;permit&quot;),
+			Protocol                  : sl.String(&quot;tcp&quot;),
+			Version 	          : sl.Int(4),
+			SourceIpAddress           : sl.String(&quot;10.10.10.3&quot;),
+			DestinationIpAddress      : sl.String(&quot;169.57.65.166&quot;),
+			SourceIpCidr              : sl.Int(16),
+			OrderValue                : sl.Int(3),
+			DestinationPortRangeStart : sl.Int(8081),
+			DestinationPortRangeEnd   : sl.Int(8085),
 		},
 		{
-			<span style="color:#a6e22e">Action</span>                    : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;deny&#34;</span>),
-			<span style="color:#a6e22e">Protocol</span>                  : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;udp&#34;</span>),
-			<span style="color:#a6e22e">Version</span> 	          : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">4</span>),
-			<span style="color:#a6e22e">SourceIpAddress</span>           : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;10.10.10.3&#34;</span>),
-			<span style="color:#a6e22e">DestinationIpAddress</span>      : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;169.57.65.166&#34;</span>),
-			<span style="color:#a6e22e">SourceIpCidr</span>              : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">16</span>),
-			<span style="color:#a6e22e">OrderValue</span>                : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">4</span>),
-			<span style="color:#a6e22e">DestinationPortRangeStart</span> : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8081</span>),
-			<span style="color:#a6e22e">DestinationPortRangeEnd</span>   : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8085</span>),
+			Action                    : sl.String(&quot;deny&quot;),
+			Protocol                  : sl.String(&quot;udp&quot;),
+			Version 	          : sl.Int(4),
+			SourceIpAddress           : sl.String(&quot;10.10.10.3&quot;),
+			DestinationIpAddress      : sl.String(&quot;169.57.65.166&quot;),
+			SourceIpCidr              : sl.Int(16),
+			OrderValue                : sl.Int(4),
+			DestinationPortRangeStart : sl.Int(8081),
+			DestinationPortRangeEnd   : sl.Int(8085),
 		},
 	}
 
-	<span style="color:#75715e">// Create SoftLayer API session
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
+	// Create SoftLayer API session
+	sess := session.New(username, apikey)
 
-	<span style="color:#75715e">// Get SoftLayer_Virtual_Guest and SoftLayer_Network_Component_Firewall services
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">guestService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetVirtualGuestService</span>(<span style="color:#a6e22e">sess</span>)
-	<span style="color:#a6e22e">firewallService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetNetworkComponentFirewallService</span>(<span style="color:#a6e22e">sess</span>)
-	<span style="color:#a6e22e">firewallUpdateService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetNetworkFirewallUpdateRequestService</span>(<span style="color:#a6e22e">sess</span>)
+	// Get SoftLayer_Virtual_Guest and SoftLayer_Network_Component_Firewall services
+	guestService := services.GetVirtualGuestService(sess)
+	firewallService := services.GetNetworkComponentFirewallService(sess)
+	firewallUpdateService := services.GetNetworkFirewallUpdateRequestService(sess)
 
-	<span style="color:#75715e">// 1. Get Firewall Component from VSI
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">firewall</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">guestService</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#a6e22e">vsiId</span>).<span style="color:#a6e22e">GetFirewallServiceComponent</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to get firewall component:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// 1. Get Firewall Component from VSI
+  	firewall, err := guestService.Id(vsiId).GetFirewallServiceComponent()
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to get firewall component:\n - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">// 2. Retrieve all current rules
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">oldRules</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">firewallService</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">firewall</span>.<span style="color:#a6e22e">Id</span>).<span style="color:#a6e22e">GetRules</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to get firewall rules:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// 2. Retrieve all current rules
+  	oldRules, err := firewallService.Id(*firewall.Id).GetRules()
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to get firewall rules:\n - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">/*
-</span><span style="color:#75715e">	Previous step returns an array of SoftLayer_Network_Component_Firewall_Rule objects
-</span><span style="color:#75715e">	and we need to convert it to an array of SoftLayer_Network_Firewall_Update_Request_Rule
-</span><span style="color:#75715e">	objects in order to join all rules. For that reason the method converTo() was created for
-</span><span style="color:#75715e">	this script.
-</span><span style="color:#75715e">	*/</span>
-	<span style="color:#a6e22e">rules</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">convertToFirewallRules</span>(<span style="color:#a6e22e">oldRules</span>).([]<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request_Rule</span>)
+	/*
+	Previous step returns an array of SoftLayer_Network_Component_Firewall_Rule objects
+	and we need to convert it to an array of SoftLayer_Network_Firewall_Update_Request_Rule
+	objects in order to join all rules. For that reason the method converTo() was created for
+	this script.
+	*/
+	rules := convertToFirewallRules(oldRules).([]datatypes.Network_Firewall_Update_Request_Rule)
 
-	<span style="color:#75715e">// 3. Join the existent rules with the new rules to add.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">rulesToAdd</span> = append(<span style="color:#a6e22e">rules</span>, <span style="color:#a6e22e">rulesToAdd</span><span style="color:#f92672">...</span>)
+	// 3. Join the existent rules with the new rules to add.
+	rulesToAdd = append(rules, rulesToAdd...)
 
-	<span style="color:#75715e">// 4. Build the skeleton of SoftLayer_Network_Firewall_Update_Request that will be used to
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">//    update the firewall rules
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">template</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request</span> {
-		<span style="color:#a6e22e">NetworkComponentFirewallId</span> : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">firewall</span>.<span style="color:#a6e22e">Id</span>),
-		<span style="color:#a6e22e">Rules</span>: <span style="color:#a6e22e">rulesToAdd</span>,
+	// 4. Build the skeleton of SoftLayer_Network_Firewall_Update_Request that will be used to
+	//    update the firewall rules
+  	template := datatypes.Network_Firewall_Update_Request {
+		NetworkComponentFirewallId : sl.Int(*firewall.Id),
+		Rules: rulesToAdd,
 	}
 
-	<span style="color:#75715e">// 5. Call to SoftLayer_Network_Firewall_Update_Request::createObject() method in order to
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">//    replace all firewall rules (update)
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">updateRequest</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">firewallUpdateService</span>.<span style="color:#a6e22e">CreateObject</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">template</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to replace/update all firewall rules:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// 5. Call to SoftLayer_Network_Firewall_Update_Request::createObject() method in order to
+	//    replace all firewall rules (update)
+  	updateRequest, err := firewallUpdateService.CreateObject(&amp;template)
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to replace/update all firewall rules:\n - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">// Following helps to print the result in json format.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Marshal</span>(<span style="color:#a6e22e">updateRequest</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-		<span style="color:#66d9ef">return</span>
+	// Following helps to print the result in json format.
+	jsonFormat, jsonErr := json.Marshal(updateRequest)
+	if jsonErr != nil {
+		fmt.Println(jsonErr)
+		return
 	}
-	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
+	fmt.Println(string(jsonFormat))
 }
 
-<span style="color:#75715e">/*
-</span><span style="color:#75715e">Following method converts an object type SoftLayer_Network_Component_Firewall_Rule to
-</span><span style="color:#75715e">SoftLayer_Network_Firewall_Update_Request_Rule
-</span><span style="color:#75715e">*/</span>
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">convertToFirewallRules</span>(<span style="color:#a6e22e">object</span> <span style="color:#66d9ef">interface</span>{}) <span style="color:#66d9ef">interface</span>{} {
+/*
+Following method converts an object type SoftLayer_Network_Component_Firewall_Rule to
+SoftLayer_Network_Firewall_Update_Request_Rule
+*/
+func convertToFirewallRules(object interface{}) interface{} {
 
-	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">result</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request_Rule</span>
+	var result []datatypes.Network_Firewall_Update_Request_Rule
 
-	<span style="color:#75715e">// Get the encoded JSON of object
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">encoded</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Marshal</span>(<span style="color:#a6e22e">object</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+	// Get the encoded JSON of object
+	encoded, err := json.Marshal(object)
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	<span style="color:#75715e">// Inverse the encoded JSON and return an Network_Firewall_Update_Request_Rule
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Unmarshal</span>(<span style="color:#a6e22e">encoded</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">result</span>); <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;%s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
+	// Inverse the encoded JSON and return an Network_Firewall_Update_Request_Rule
+	if err := json.Unmarshal(encoded, &amp;result); err != nil {
+		fmt.Printf(&quot;%s\n&quot;, err)
 	}
 
-	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">result</span>
-}</pre></div>
+	return result
+}
+</code></pre>
             </div>
         </div>
 

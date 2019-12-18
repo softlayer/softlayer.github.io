@@ -130,7 +130,7 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># Reload servers from a list of IPs
+                <pre><code># Reload servers from a list of IPs
 #
 # This script looks for a server with a determinate IP address and reloads
 # the Operative System with another one.
@@ -144,28 +144,28 @@ if (!doNotTrack) {
 #
 # License: http://sldn.softlayer.com/article/License
 # Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-require &#39;softlayer_api&#39;
-require &#39;pp&#39;
+require 'softlayer_api'
+require 'pp'
 
 # Your SoftLayer API username and key.
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
+USERNAME = 'set me'
+API_KEY = 'set me'
 
 # The IP addresses you wish to reload
-ips_to_reload = [&#39;1.1.1.1&#39;, &#39;2.2.2.2&#39;]
+ips_to_reload = ['1.1.1.1', '2.2.2.2']
 
 # The new OS you wish to load
-new_os_to_load = &#39;CentOS 5.x - Minimal Install (64 bit)&#39;
+new_os_to_load = 'CentOS 5.x - Minimal Install (64 bit)'
 
 # Declare a new API service objects for:
 # SoftLayer_Hardware_Server
 client = SoftLayer::Client.new(username: USERNAME, api_key: API_KEY)
-hardware_service = client.service_named(&#39;SoftLayer_Hardware_Server&#39;)
+hardware_service = client.service_named('SoftLayer_Hardware_Server')
 
 # Add an object mask to retrieve our prices related to the servers
 # http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
 # for a list of the relational properties you can retrieve along with hardware.
-object_mask = &#39;mask[billingItem[package[items[prices]]]]&#39;
+object_mask = 'mask[billingItem[package[items[prices]]]]'
 
 # The list of servers to reload
 servers_to_reload = {}
@@ -175,11 +175,11 @@ servers_to_reload = {}
 ips_to_reload.each do |ip_to_reload|
   server = hardware_service.object_mask(object_mask).find_by_ip_address(ip_to_reload)
   servers_to_reload[ip_to_reload] = {}
-  servers_to_reload[ip_to_reload][&#39;id&#39;] = server[&#39;id&#39;]
-  if server.key?(&#39;primaryIpAddress&#39;)
-    server[&#39;billingItem&#39;][&#39;package&#39;][&#39;items&#39;].each do |item|
-      if item[&#39;description&#39;] == new_os_to_load
-        servers_to_reload[ip_to_reload][&#39;priceId&#39;] = item[&#39;prices&#39;][0][&#39;id&#39;]
+  servers_to_reload[ip_to_reload]['id'] = server['id']
+  if server.key?('primaryIpAddress')
+    server['billingItem']['package']['items'].each do |item|
+      if item['description'] == new_os_to_load
+        servers_to_reload[ip_to_reload]['priceId'] = item['prices'][0]['id']
         break
       end
     end
@@ -189,15 +189,17 @@ end
 # We are calling the reloadOperatingSystem for the desired servers
 ips_to_reload.each do |ip_to_reload|
   config = {
-    &#39;itemPrices&#39; =&gt; [
+    'itemPrices' =&gt; [
       {
-        &#39;id&#39; =&gt; servers_to_reload[ip_to_reload][&#39;priceId&#39;]
+        'id' =&gt; servers_to_reload[ip_to_reload]['priceId']
       }
     ]
   }
-  reload = hardware_service.object_with_id(servers_to_reload[ip_to_reload][&#39;id&#39;]).reloadOperatingSystem(&#39;FORCE&#39;, config)
+  reload = hardware_service.object_with_id(servers_to_reload[ip_to_reload]['id']).reloadOperatingSystem('FORCE', config)
   print reload
-end</pre></div>
+end
+
+</code></pre>
             </div>
         </div>
 

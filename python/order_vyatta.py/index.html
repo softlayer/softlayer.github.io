@@ -142,118 +142,120 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">Order a Network Gateway Appliance (Vyatta)
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">The script orders a (Vyatta) high availability pair
-</span><span style="color:#e6db74">it uses the SoftLayer_Product_Order::placeOrder to make the order
-</span><span style="color:#e6db74">For more information see below:
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">Important manual pages:
-</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
-</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span style="color:#e6db74">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#e6db74">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
-<span style="color:#f92672">import</span> <span style="color:#a6e22e">SoftLayer</span>
+                <pre><code>&quot;&quot;&quot;
+Order a Network Gateway Appliance (Vyatta)
 
-<span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">Your</span> <span style="color:#a6e22e">SoftLayer</span> <span style="color:#a6e22e">API</span> <span style="color:#a6e22e">username</span> <span style="color:#a6e22e">and</span> <span style="color:#a6e22e">key</span>.
-<span style="color:#a6e22e">USERNAME</span> = <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">set</span> <span style="color:#a6e22e">me</span><span style="color:#960050;background-color:#1e0010">&#39;</span>
-<span style="color:#a6e22e">API_KEY</span> = <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">set</span> <span style="color:#a6e22e">me</span><span style="color:#960050;background-color:#1e0010">&#39;</span>
+The script orders a (Vyatta) high availability pair
+it uses the SoftLayer_Product_Order::placeOrder to make the order
+For more information see below:
 
-<span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">Build a skeleton SoftLayer_Container_Product_Order object.
-</span><span style="color:#e6db74">The object contains the configuration for the Vyatta server
-</span><span style="color:#e6db74">such as the quantity, the location, etc.
-</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
-<span style="color:#a6e22e">productOrder</span> = {
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">The</span> <span style="color:#a6e22e">number</span> <span style="color:#a6e22e">of</span> <span style="color:#a6e22e">servers</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">wish</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">order</span>.
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">If</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">wish</span> <span style="color:#a6e22e">a</span> <span style="color:#a6e22e">high</span> <span style="color:#a6e22e">availability</span> <span style="color:#a6e22e">pair</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">must</span> <span style="color:#a6e22e">specify</span> <span style="color:#ae81ff">2</span> <span style="color:#a6e22e">as</span> <span style="color:#a6e22e">quantity</span>.
-    <span style="color:#e6db74">&#34;quantity&#34;</span>: <span style="color:#ae81ff">2</span>,
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">Build</span> <span style="color:#a6e22e">a</span> <span style="color:#a6e22e">skeleton</span> <span style="color:#a6e22e">SoftLayer_Hardware_Server</span> <span style="color:#a6e22e">object</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">model</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">hostname</span> <span style="color:#a6e22e">and</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">domain</span> <span style="color:#a6e22e">we</span> <span style="color:#a6e22e">want</span> <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">our</span> <span style="color:#a6e22e">server</span>. <span style="color:#a6e22e">If</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">set</span> <span style="color:#a6e22e">quantity</span> <span style="color:#a6e22e">greater</span> <span style="color:#a6e22e">then</span> <span style="color:#ae81ff">1</span> <span style="color:#a6e22e">then</span> <span style="color:#a6e22e">you</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">need</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">define</span> <span style="color:#a6e22e">one</span> <span style="color:#a6e22e">hostname</span><span style="color:#f92672">/</span><span style="color:#a6e22e">domain</span> <span style="color:#a6e22e">pair</span> <span style="color:#a6e22e">per</span> <span style="color:#a6e22e">server</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">wish</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">order</span>.
-    <span style="color:#e6db74">&#34;hardware&#34;</span>: [
+Important manual pages:
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+&quot;&quot;&quot;
+import SoftLayer
+
+# Your SoftLayer API username and key.
+USERNAME = 'set me'
+API_KEY = 'set me'
+
+&quot;&quot;&quot;
+Build a skeleton SoftLayer_Container_Product_Order object.
+The object contains the configuration for the Vyatta server
+such as the quantity, the location, etc.
+&quot;&quot;&quot;
+productOrder = {
+    # The number of servers you wish to order.
+    # If you wish a high availability pair you must specify 2 as quantity.
+    &quot;quantity&quot;: 2,
+    # Build a skeleton SoftLayer_Hardware_Server object to model the hostname and
+    # domain we want for our server. If you set quantity greater then 1 then you
+    # need to define one hostname/domain pair per server you wish to order.
+    &quot;hardware&quot;: [
         {
-            <span style="color:#e6db74">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;vyattagw&#34;</span>,
-            <span style="color:#e6db74">&#34;domain&#34;</span>: <span style="color:#e6db74">&#34;test.com&#34;</span>
+            &quot;hostname&quot;: &quot;vyattagw&quot;,
+            &quot;domain&quot;: &quot;test.com&quot;
         },
         {
-            <span style="color:#e6db74">&#34;hostname&#34;</span>: <span style="color:#e6db74">&#34;vyattagw2&#34;</span>,
-            <span style="color:#e6db74">&#34;domain&#34;</span>: <span style="color:#e6db74">&#34;test.com&#34;</span>
+            &quot;hostname&quot;: &quot;vyattagw2&quot;,
+            &quot;domain&quot;: &quot;test.com&quot;
         }
     ],
 
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">Where</span> <span style="color:#a6e22e">you</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">d</span> <span style="color:#a6e22e">like</span> <span style="color:#a6e22e">your</span> <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">server</span> <span style="color:#a6e22e">provisioned</span>.
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">This</span> <span style="color:#a6e22e">can</span> <span style="color:#a6e22e">either</span> <span style="color:#a6e22e">be</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">id</span> <span style="color:#a6e22e">of</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">datacenter</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">wish</span> <span style="color:#a6e22e">your</span> <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">server</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">be</span> <span style="color:#a6e22e">provisioned</span> <span style="color:#a6e22e">in</span>
-    <span style="color:#e6db74">&#34;location&#34;</span>: <span style="color:#ae81ff">265592</span>,
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">The</span> <span style="color:#a6e22e">id</span> <span style="color:#a6e22e">of</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">SoftLayer_Product_Package</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">wish</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">order</span>.
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">In</span> <span style="color:#a6e22e">this</span> <span style="color:#66d9ef">case</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">Network</span> <span style="color:#a6e22e">Gateway</span> <span style="color:#a6e22e">Appliance</span> (<span style="color:#a6e22e">Vyatta</span>) <span style="color:#f92672">package</span> <span style="color:#a6e22e">id</span> <span style="color:#a6e22e">is</span> <span style="color:#ae81ff">174.</span>
-    <span style="color:#e6db74">&#34;packageId&#34;</span>: <span style="color:#ae81ff">174</span>,
+    # Where you'd like your new server provisioned.
+    # This can either be the id of the datacenter
+    # you wish your new server to be provisioned in
+    &quot;location&quot;: 265592,
+    # The id of the SoftLayer_Product_Package you wish to order.
+    # In this case the Network Gateway Appliance (Vyatta) package id is 174.
+    &quot;packageId&quot;: 174,
 
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">Build</span> <span style="color:#a6e22e">a</span> <span style="color:#a6e22e">skeleton</span> <span style="color:#a6e22e">SoftLayer_Product_Item_Price</span> <span style="color:#a6e22e">objects</span>. <span style="color:#a6e22e">These</span> <span style="color:#a6e22e">objects</span> <span style="color:#a6e22e">contain</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">much</span> <span style="color:#a6e22e">more</span> <span style="color:#a6e22e">than</span> <span style="color:#a6e22e">ids</span>, <span style="color:#a6e22e">but</span> <span style="color:#a6e22e">SoftLayer</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">s</span> <span style="color:#a6e22e">ordering</span> <span style="color:#a6e22e">system</span> <span style="color:#a6e22e">only</span> <span style="color:#a6e22e">needs</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">price</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">s</span> <span style="color:#a6e22e">id</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">know</span> <span style="color:#a6e22e">what</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">want</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">order</span>.
+    # Build a skeleton SoftLayer_Product_Item_Price objects. These objects contain
+    # much more than ids, but SoftLayer's ordering system only needs the price's id
+    # to know what you want to order.
 
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">Every</span> <span style="color:#a6e22e">item</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">SoftLayer</span><span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">s</span> <span style="color:#a6e22e">product</span> <span style="color:#a6e22e">catalog</span> <span style="color:#a6e22e">is</span> <span style="color:#a6e22e">assigned</span> <span style="color:#a6e22e">an</span> <span style="color:#a6e22e">id</span>. <span style="color:#a6e22e">Use</span> <span style="color:#a6e22e">these</span> <span style="color:#a6e22e">ids</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">tell</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">SoftLayer</span> <span style="color:#a6e22e">API</span> <span style="color:#a6e22e">which</span> <span style="color:#a6e22e">options</span> <span style="color:#a6e22e">you</span> <span style="color:#a6e22e">want</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">your</span> <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">server</span>. <span style="color:#a6e22e">Use</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">getActivePackages</span>() <span style="color:#a6e22e">method</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">the</span> <span style="color:#a6e22e">SoftLayer_Account</span> <span style="color:#a6e22e">API</span> <span style="color:#a6e22e">service</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">get</span>
-    <span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">a</span> <span style="color:#a6e22e">list</span> <span style="color:#a6e22e">of</span> <span style="color:#a6e22e">available</span> <span style="color:#a6e22e">item</span> <span style="color:#a6e22e">and</span> <span style="color:#a6e22e">price</span> <span style="color:#a6e22e">options</span> <span style="color:#a6e22e">per</span> <span style="color:#a6e22e">available</span> <span style="color:#f92672">package</span>.
-    <span style="color:#e6db74">&#34;prices&#34;</span>: [
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">13738</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">21010</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">36044</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">876</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">1267</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">342</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">273</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">17129</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">55</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">58</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">420</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">418</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">21</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">57</span>},
-        {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#ae81ff">906</span>}
+    # Every item in SoftLayer's product catalog is assigned an id. Use these ids
+    # to tell the SoftLayer API which options you want in your new server. Use
+    # the getActivePackages() method in the SoftLayer_Account API service to get
+    # a list of available item and price options per available package.
+    &quot;prices&quot;: [
+        {&quot;id&quot;: 13738},
+        {&quot;id&quot;: 21010},
+        {&quot;id&quot;: 36044},
+        {&quot;id&quot;: 876},
+        {&quot;id&quot;: 1267},
+        {&quot;id&quot;: 342},
+        {&quot;id&quot;: 273},
+        {&quot;id&quot;: 17129},
+        {&quot;id&quot;: 55},
+        {&quot;id&quot;: 58},
+        {&quot;id&quot;: 420},
+        {&quot;id&quot;: 418},
+        {&quot;id&quot;: 21},
+        {&quot;id&quot;: 57},
+        {&quot;id&quot;: 906}
         ]
     }
 
-<span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">Build a skeleton SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance object.
-</span><span style="color:#e6db74">This object contains the order for the Vyatta server.
-</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
-<span style="color:#a6e22e">orderData</span> = {
-    <span style="color:#e6db74">&#34;orderContainers&#34;</span>: [
-        <span style="color:#a6e22e">productOrder</span>
+&quot;&quot;&quot;
+Build a skeleton SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance object.
+This object contains the order for the Vyatta server.
+&quot;&quot;&quot;
+orderData = {
+    &quot;orderContainers&quot;: [
+        productOrder
     ]
 }
 
-<span style="color:#960050;background-color:#1e0010">#</span> <span style="color:#a6e22e">Create</span> <span style="color:#a6e22e">a</span> <span style="color:#a6e22e">SoftLayer</span> <span style="color:#a6e22e">API</span> <span style="color:#a6e22e">client</span> <span style="color:#a6e22e">object</span>
-<span style="color:#a6e22e">client</span> = <span style="color:#a6e22e">SoftLayer</span>.<span style="color:#a6e22e">Client</span>(<span style="color:#a6e22e">username</span>=<span style="color:#a6e22e">USERNAME</span>, <span style="color:#a6e22e">api_key</span>=<span style="color:#a6e22e">API_KEY</span>)
-<span style="color:#a6e22e">softLayerProductOrder</span> = <span style="color:#a6e22e">client</span>[<span style="color:#e6db74">&#34;SoftLayer_Product_Order&#34;</span>]
+# Create a SoftLayer API client object
+client = SoftLayer.Client(username=USERNAME, api_key=API_KEY)
+softLayerProductOrder = client[&quot;SoftLayer_Product_Order&quot;]
 
-<span style="color:#a6e22e">try</span>:
-    <span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">    verifyOrder() will check your order for errors. Replace this with a call
-</span><span style="color:#e6db74">    to placeOrder() when you&#39;re ready to order. Both calls return a receipt
-</span><span style="color:#e6db74">    object that you can use for your records.
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">    Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
-</span><span style="color:#e6db74">    provisioning process. When it&#39;s done you&#39;ll have a new
-</span><span style="color:#e6db74">    SoftLayer_Hardware_Server object and server ready to use.
-</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
-    <span style="color:#a6e22e">result</span> = <span style="color:#a6e22e">softLayerProductOrder</span>.<span style="color:#a6e22e">verifyOrder</span>(<span style="color:#a6e22e">orderData</span>)
-    print(<span style="color:#a6e22e">result</span>)
-    print(<span style="color:#e6db74">&#34;The order was verified successfully&#34;</span>)
-<span style="color:#a6e22e">except</span> <span style="color:#a6e22e">SoftLayer</span>.<span style="color:#a6e22e">SoftLayerAPIError</span> <span style="color:#a6e22e">as</span> <span style="color:#a6e22e">e</span>:
-    print(<span style="color:#e6db74">&#34;The order could not be verified by the server faultCode=%s, faultString=%s&#34;</span>
-          <span style="color:#f92672">%</span> (<span style="color:#a6e22e">e</span>.<span style="color:#a6e22e">faultCode</span>, <span style="color:#a6e22e">e</span>.<span style="color:#a6e22e">faultString</span>))
-    <span style="color:#a6e22e">exit</span>(<span style="color:#ae81ff">1</span>)</pre></div>
+try:
+    &quot;&quot;&quot;
+    verifyOrder() will check your order for errors. Replace this with a call
+    to placeOrder() when you're ready to order. Both calls return a receipt
+    object that you can use for your records.
+
+    Once your order is placed it'll go through SoftLayer's approval and
+    provisioning process. When it's done you'll have a new
+    SoftLayer_Hardware_Server object and server ready to use.
+    &quot;&quot;&quot;
+    result = softLayerProductOrder.verifyOrder(orderData)
+    print(result)
+    print(&quot;The order was verified successfully&quot;)
+except SoftLayer.SoftLayerAPIError as e:
+    print(&quot;The order could not be verified by the server faultCode=%s, faultString=%s&quot;
+          % (e.faultCode, e.faultString))
+    exit(1)
+
+</code></pre>
             </div>
         </div>
 

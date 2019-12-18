@@ -132,72 +132,74 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">/*
-</span><span style="color:#75715e">List tickets.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">The script retrieves all the tickets in a brand account.
-</span><span style="color:#75715e">It displays the same result like in https://agent.softlayer.com/support/ticket/list
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Notification_Occurrence_Event/getAllObjects
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Notification_Occurrence_Event
-</span><span style="color:#75715e">http://sldn.softlayer.com/article/Object-Filters
-</span><span style="color:#75715e">http://sldn.softlayer.com/article/Object-Masks
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+                <pre><code>/*
+List tickets.
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+The script retrieves all the tickets in a brand account.
+It displays the same result like in https://agent.softlayer.com/support/ticket/list
+
+Important manual pages
+http://sldn.softlayer.com/reference/services/SoftLayer_Notification_Occurrence_Event/getAllObjects
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Notification_Occurrence_Event
+http://sldn.softlayer.com/article/Object-Filters
+http://sldn.softlayer.com/article/Object-Masks
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+*/
+package main
+
+import (
+	&quot;fmt&quot;
+	&quot;encoding/json&quot;
+	&quot;github.com/softlayer/softlayer-go/filter&quot;
+	&quot;github.com/softlayer/softlayer-go/session&quot;
+	&quot;github.com/softlayer/softlayer-go/services&quot;
 )
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+func main() {
+	// SoftLayer API username and key
+	username := &quot;set me&quot;
+	apikey   := &quot;set me&quot;
 
-	<span style="color:#75715e">// The id of Brand you wish to retrieve his agents
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">brandId</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">2</span>
+	// The id of Brand you wish to retrieve his agents
+	brandId := 2
 
-	<span style="color:#75715e">// Create SoftLayer API session
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
+	// Create SoftLayer API session
+	sess := session.New(username, apikey)
 
-	<span style="color:#75715e">// Get SoftLayer_Brand service
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">service</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetBrandService</span>(<span style="color:#a6e22e">sess</span>)
+	// Get SoftLayer_Brand service
+	service := services.GetBrandService(sess)
 
-	<span style="color:#75715e">// Declare filter which will be used to retrieve only assigned and open tickets
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">filter</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">filter</span>.<span style="color:#a6e22e">Path</span>(<span style="color:#e6db74">&#34;tickets.status.name&#34;</span>).<span style="color:#a6e22e">In</span>(<span style="color:#e6db74">&#34;Open&#34;</span>,<span style="color:#e6db74">&#34;Assigned&#34;</span>).<span style="color:#a6e22e">Build</span>()
+	// Declare filter which will be used to retrieve only assigned and open tickets
+	filter := filter.Path(&quot;tickets.status.name&quot;).In(&quot;Open&quot;,&quot;Assigned&quot;).Build()
 
-	<span style="color:#75715e">// Declare object-mask in order to get specific information of ticket
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">mask</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;group[name],status[name],statusId,id,createDate,title,assignedUser[username],&#34;</span> <span style="color:#f92672">+</span>
-		<span style="color:#e6db74">&#34;attachedFileCount,totalUpdateCount,modifyDate,lastEditType,newUpdatesFlag,&#34;</span> <span style="color:#f92672">+</span>
-		<span style="color:#e6db74">&#34;attachedHardwareCount,account[companyName,accountStatus[name]],state[stateType],&#34;</span> <span style="color:#f92672">+</span>
-		<span style="color:#e6db74">&#34;priority,scheduledActions[transactionGroup,ticketScheduledActionReference],&#34;</span> <span style="color:#f92672">+</span>
-		<span style="color:#e6db74">&#34;attachedVirtualGuestCount,assignedAgents[username]&#34;</span>
+	// Declare object-mask in order to get specific information of ticket
+	mask := &quot;group[name],status[name],statusId,id,createDate,title,assignedUser[username],&quot; +
+		&quot;attachedFileCount,totalUpdateCount,modifyDate,lastEditType,newUpdatesFlag,&quot; +
+		&quot;attachedHardwareCount,account[companyName,accountStatus[name]],state[stateType],&quot; +
+		&quot;priority,scheduledActions[transactionGroup,ticketScheduledActionReference],&quot; +
+		&quot;attachedVirtualGuestCount,assignedAgents[username]&quot;
 
-	<span style="color:#75715e">// Retrieve all Open and Assigned tickets
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">accounts</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#a6e22e">brandId</span>).<span style="color:#a6e22e">Mask</span>(<span style="color:#a6e22e">mask</span>).<span style="color:#a6e22e">Filter</span>(<span style="color:#a6e22e">filter</span>).<span style="color:#a6e22e">GetTickets</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to retrieve tickets - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// Retrieve all Open and Assigned tickets
+	accounts, err := service.Id(brandId).Mask(mask).Filter(filter).GetTickets()
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to retrieve tickets - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">// Following helps to print the result in json format.
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">account</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">accounts</span> {
-		<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Marshal</span>(<span style="color:#a6e22e">account</span>)
-		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-			<span style="color:#66d9ef">return</span>
+	// Following helps to print the result in json format.
+	for _, account := range accounts {
+		jsonFormat, jsonErr := json.Marshal(account)
+		if jsonErr != nil {
+			fmt.Println(jsonErr)
+			return
 		}
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
+		fmt.Println(string(jsonFormat))
 	}
-}</pre></div>
+}
+
+</code></pre>
             </div>
         </div>
 

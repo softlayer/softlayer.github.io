@@ -128,48 +128,31 @@ if (!doNotTrack) {
 				
                 
 				
-                
-
-<p>In <a href="http://sldn.softlayer.com/blog/matteldridge/Using-fog-softlayer-Managing-Networks-VLANs">part six</a> of this series we explored using <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a> for managing your SoftLayer VLANs.</p>
-
+                <p>In <a href="http://sldn.softlayer.com/blog/matteldridge/Using-fog-softlayer-Managing-Networks-VLANs">part six</a> of this series we explored using <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a> for managing your SoftLayer VLANs.</p>
 <p>In this installment, we’ll cover creating and routing <a href="http://blog.softlayer.com/2012/global-ip-addresses-what-are-they-and-how-do-they-work">global IP addresses</a>.</p>
-
 <p>You can follow <a href="http://blog.softlayer.com/2012/global-ip-addresses-what-are-they-and-how-do-they-work">this link</a> for details  on  what SoftLayer global IP addresses are and how they work.</p>
-
 <p>In short, with SoftLayer global IP addresses you can route a public IPv4 or IPv6 address to any server, on any (public) VLAN, in any SoftLayer data center.</p>
-
-<p>They&rsquo;re similar to &ldquo;Elastic IPs&rdquo; offered by some other public clouds. The only difference is that global IPs are more flexible, powerful, and useful.</p>
-
-<p>This post will cover basic management of global IP addresses with <a href="https://github.com/fog/fog-softlayer">fog-softlayer</a>. Before we get into that, there&rsquo;s one <em>IMPORTANT ITEM TO NOTE: before a global IP will work properly certain minor configuration changes must be made on the target host</em>. Please read <a href="http://knowledgelayer.softlayer.com/learning/global-ip-addresses">this article</a> for information on the configuration changes.</p>
-
+<p>They're similar to &ldquo;Elastic IPs&rdquo; offered by some other public clouds. The only difference is that global IPs are more flexible, powerful, and useful.</p>
+<p>This post will cover basic management of global IP addresses with <a href="https://github.com/fog/fog-softlayer">fog-softlayer</a>. Before we get into that, there's one <em>IMPORTANT ITEM TO NOTE: before a global IP will work properly certain minor configuration changes must be made on the target host</em>. Please read <a href="http://knowledgelayer.softlayer.com/learning/global-ip-addresses">this article</a> for information on the configuration changes.</p>
 <h5 id="network-examples">Network Examples</h5>
-
 <p>These examples all assume you have <code>~/.fog</code>, which contains the following:</p>
-
-<p><code>
+   <code>
 default:
   softlayer_username: example-username
-  softlayer_api_key: 1a1a1a1a1a1a1a1a1a11a1a1a1a1a1a1a1a1a1
-  </code></p>
-
+  softlayer_api_key: 1a1a1a1a1a1a1a1a1a11a1a1a1a1a1a1a1a1a1 
+  </code>
 <h5 id="create-a-connection-to-the-softlayer-network">Create a Connection to the SoftLayer Network</h5>
-
-<p><ruby>
-require &lsquo;fog/softlayer&rsquo;
+<ruby>
+require 'fog/softlayer'
 @sl = Fog::Network[:softlayer]
-</ruby></p>
-
+</ruby>
 <h5 id="the-same-but-different">The Same, But Different</h5>
-
 <p><a href="http://sldn.softlayer.com/blog/matteldridge/Using-fog-softlayer-Managing-Networks-VLANs">Part six</a> of this series covered using the <code>Network</code> service to manage your VLANs. The service comprises a handful of models including <code>Fog::Network::Softlayer::Network</code>, <code>Fog::Network::Softlayer::Subnet</code>, and <code>Fog::Network::Softlayer::Ip</code>.</p>
-
 <p>Global IP addresses are accessed through the <code>Fog::Network::Softlayer::Ip</code> model. Unlike &ldquo;normal&rdquo; IP addresses, they can be specifically created and destroyed, while non-global IP addresses are created and destroyed via a subnet.</p>
-
 <p>This example lists all IPs on the SoftLayer account and selects those that are global. The response shows us two global IP addresses belonging to the account. The first one is unrouted, and the second one is routed.</p>
-
-<p><ruby>
+   <ruby>
     global_ips = @network.ips.select { |ip| ip.global? }
-    # =&gt; [ <Fog::Network::Softlayer::Ip
+    # => [ <Fog::Network::Softlayer::Ip
     #  id=123456789,
     #  subnet_id=123456,
     #  address="203.0.113.5",
@@ -206,159 +189,92 @@ require &lsquo;fog/softlayer&rsquo;
     #  >,
     #  note=nil,
     #  assigned_to=nil
-    # &gt;
+    # >
     # ]
-   </ruby></p>
-
+   </ruby>
 <p>If I want to route an unrouted global IP to a specific server I’m running in the Hong Kong data center, I could do the following:</p>
-
-<p><ruby>
-global_ip = @network.ips.select { |ip| ip.global? &amp;&amp; !ip.routed? }.first</p>
-
-<h1 id="fog-network-softlayer-ip">=&gt; &lt;Fog::Network::Softlayer::Ip</h1>
-
-<h1 id="id-123456789">id=123456789,</h1>
-
-<h1 id="subnet-id-123456">subnet_id=123456,</h1>
-
-<h1 id="address-203-0-113-5">address=&ldquo;203.0.113.5&rdquo;,</h1>
-
-<h1 id="broadcast-false">broadcast=false,</h1>
-
-<h1 id="gateway-false">gateway=false,</h1>
-
-<h1 id="network-false">network=false,</h1>
-
-<h1 id="reserved-false">reserved=false,</h1>
-
-<h1 id="global-id-1234">global_id=1234,</h1>
-
-<h1 id="destination-ip-nil">destination_ip=nil,</h1>
-
-<h1 id="note-nil">note=nil,</h1>
-
-<h1 id="assigned-to-nil">assigned_to=nil</h1>
-
-<h1 id="toc_15">&gt;</h1>
-
-<p>global_ip.routed? # =&gt; false</p>
-
+<ruby>
+global_ip = @network.ips.select { |ip| ip.global? && !ip.routed? }.first
+# => <Fog::Network::Softlayer::Ip
+#  id=123456789,
+#  subnet_id=123456,
+#  address="203.0.113.5",
+#  broadcast=false,
+#  gateway=false,
+#  network=false,
+#  reserved=false,
+#  global_id=1234,
+#  destination_ip=nil,
+#  note=nil,
+#  assigned_to=nil
+# >
+global_ip.routed? # => false
 <p>@compute = Fog::Compute[:softlayer]
 dest_server = @compute.servers.tagged_with([&lsquo;production&rsquo;, &lsquo;frontend&rsquo;, &lsquo;hkg&rsquo;]).first # =&gt; <a href="Fog::Compute::Softlayer::Server">Fog::Compute::Softlayer::Server</a>
 dest_ip = @network.ips.by_address(dest_server.public_ip) # =&gt; <a href="Fog::Network::Softlayer::Ip">Fog::Network::Softlayer::Ip</a></p>
-
 <p>global_ip.route(dest_ip) # =&gt; true</p>
-
 <p>global_ip.reload</p>
-
-<h1 id="fog-network-softlayer-ip-1">=&gt; &lt;Fog::Network::Softlayer::Ip</h1>
-
-<h1 id="id-123456789-1">id=123456789,</h1>
-
-<h1 id="subnet-id-123456-1">subnet_id=123456,</h1>
-
-<h1 id="address-203-0-113-5-1">address=&ldquo;203.0.113.5&rdquo;,</h1>
-
-<h1 id="broadcast-false-1">broadcast=false,</h1>
-
-<h1 id="gateway-false-1">gateway=false,</h1>
-
-<h1 id="network-false-1">network=false,</h1>
-
-<h1 id="reserved-false-1">reserved=false,</h1>
-
-<h1 id="global-id-1234-1">global_id=1234,</h1>
-
-<h1 id="destination-ip-fog-network-softlayer-ip">destination_ip= &lt;Fog::Network::Softlayer::Ip</h1>
-
-<h1 id="id-123458">id=123458,</h1>
-
-<h1 id="subnet-id-123456-2">subnet_id=123456,</h1>
-
-<h1 id="address-203-0-113-8">address=&ldquo;203.0.113.8&rdquo;,</h1>
-
-<h1 id="broadcast-false-2">broadcast=false,</h1>
-
-<h1 id="gateway-false-2">gateway=false,</h1>
-
-<h1 id="network-false-2">network=false,</h1>
-
-<h1 id="reserved-false-2">reserved=false,</h1>
-
-<h1 id="global-id-nil">global_id=nil,</h1>
-
-<h1 id="destination-ip-nil-1">destination_ip=nil,</h1>
-
-<h1 id="note-nil-1">note=nil,</h1>
-
-<h1 id="assigned-to-nil-1">assigned_to=nil</h1>
-
-<h1 id="toc_37">&gt;,</h1>
-
-<h1 id="note-nil-2">note=nil,</h1>
-
-<h1 id="assigned-to-nil-2">assigned_to=nil</h1>
-
-<h1 id="toc_40">&gt;</h1>
-
+<h1 id="-fognetworksoftlayerip">=&gt; &lt;Fog::Network::Softlayer::Ip</h1>
+<h1 id="id123456789">id=123456789,</h1>
+<h1 id="subnetid123456">subnet_id=123456,</h1>
+<h1 id="address20301135">address=&quot;203.0.113.5&rdquo;,</h1>
+<h1 id="broadcastfalse">broadcast=false,</h1>
+<h1 id="gatewayfalse">gateway=false,</h1>
+<h1 id="networkfalse">network=false,</h1>
+<h1 id="reservedfalse">reserved=false,</h1>
+<h1 id="globalid1234">global_id=1234,</h1>
+<h1 id="destinationip-fognetworksoftlayerip">destination_ip= &lt;Fog::Network::Softlayer::Ip</h1>
+<h1 id="id123458">id=123458,</h1>
+<h1 id="subnetid1234561">subnet_id=123456,</h1>
+<h1 id="address20301138">address=&quot;203.0.113.8&rdquo;,</h1>
+<h1 id="broadcastfalse1">broadcast=false,</h1>
+<h1 id="gatewayfalse1">gateway=false,</h1>
+<h1 id="networkfalse1">network=false,</h1>
+<h1 id="reservedfalse1">reserved=false,</h1>
+<h1 id="globalidnil">global_id=nil,</h1>
+<h1 id="destinationipnil">destination_ip=nil,</h1>
+<h1 id="notenil">note=nil,</h1>
+<h1 id="assignedtonil">assigned_to=nil</h1>
+<h1 id="heading">&gt;,</h1>
+<h1 id="notenil1">note=nil,</h1>
+<h1 id="assignedtonil1">assigned_to=nil</h1>
+<h1 id="heading1">&gt;</h1>
 <p>global_ip.routed?</p>
-
-<h1 id="true">=&gt; true</h1>
-
-<p></ruby></p>
-
+<h1 id="-true">=&gt; true</h1>
+</ruby>
 <p>Later, if I need to route that same address to a server in London, I can do the following:</p>
-
-<p><ruby>
-global_ip = @network.ips.by_address(&lsquo;203.0.113.5&rsquo;)
-global_ip.destination.address # =&gt; 203.0.113.8</p>
-
+<ruby>
+global_ip = @network.ips.by_address('203.0.113.5')
+global_ip.destination.address # => 203.0.113.8
 <p>london_server = @compute.servers.tagged_with([&lsquo;production&rsquo;, &lsquo;frontend&rsquo;, &lsquo;lon&rsquo;]).first # =&gt; <a href="Fog::Compute::Softlayer::Server">Fog::Compute::Softlayer::Server</a>
 dest_ip = @network.ips.by_address(london_server.public_ip) # =&gt; <a href="Fog::Network::Softlayer::Ip">Fog::Network::Softlayer::Ip</a></p>
-
 <p>global_ip.route(dest_ip) # =&gt; true
 global_ip.reload # =&gt; <a href="Fog::Network::Softlayer::Ip">Fog::Network::Softlayer::Ip</a>
 global_ip.destination.address # =&gt; 203.0.113.9
 </ruby></p>
-
-<p>At some point I don&rsquo;t want that IP address routing anywhere so I do the following:</p>
-
-<p><ruby>
-global_ip = @network.ips.by_address(&lsquo;203.0.113.5&rsquo;)
-global_ip.routed? # =&gt; true</p>
-
+<p>At some point I don't want that IP address routing anywhere so I do the following:</p>
+<ruby>
+global_ip = @network.ips.by_address('203.0.113.5')
+global_ip.routed? # => true
 <p>global_ip.unroute # =&gt; true
 global_ip.reload # =&gt; <a href="Fog::Network::Softlayer::Ip">Fog::Network::Softlayer::Ip</a></p>
-
 <p>global_ip.routed? # =&gt; false
 </ruby></p>
-
-<p>If I need an additional new global IP address, I can create it by doing the following:<br />
+<p>If I need an additional new global IP address, I can create it by doing the following:<br>
 <em>Note that these methods are blocking and can take several seconds to respond</em>.</p>
-
-<p><ruby>
-@network.create_new_global_ipv4 # =&gt; <a href="Fog::Network::Softlayer::Ip">Fog::Network::Softlayer::Ip</a></p>
-
+<ruby>
+@network.create_new_global_ipv4 # => <Fog::Network::Softlayer::Ip>
 <h1 id="for-ipv6-i-simply-do-this">For IPv6 I simply do this:</h1>
-
 <p>@network.create_new_global_ipv6 # =&gt; <a href="Fog::Network::Softlayer::Ip">Fog::Network::Softlayer::Ip</a>
 </ruby>
-   \t</p>
-
+\t</p>
 <h5 id="try-before-you-buy">Try Before You Buy</h5>
-
 <p>One of the excellent features included in <a href="http://github.com/softlayer/fog-softlayer">fog-softlayer</a> (and for all of the supported providers), is fantastic mocking.</p>
-
-<p>Even if you don&rsquo;t have a SoftLayer account, you can download <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a> and start testing this code.</p>
-
+<p>Even if you don't have a SoftLayer account, you can download <a href="https://github.com/softlayer/fog-softlayer">fog-softlayer</a> and start testing this code.</p>
 <p>Just call <code>Fog.mock!</code> immediately after requiring the gem, so you can run all of the above code examples and see how easy they are to work with.</p>
-
-<p>We&rsquo;re working hard to get full coverage of Mock classes and methods. You may run across a MockNotImplemented exception here or there. If you do, the best course is probably to fork the repo, implement the mock, and open a pull request.</p>
-
+<p>We're working hard to get full coverage of Mock classes and methods. You may run across a MockNotImplemented exception here or there. If you do, the best course is probably to fork the repo, implement the mock, and open a pull request.</p>
 <p>\- Matt</p>
-
 <p>&ndash;</p>
-
 <p>If you have questions about or problems with <a href="http://rubygems.org/gems/fog-softlayer">fog-softlayer</a> open an <a href="https://github.com/fog/fog-softlayer/issues">issue</a> or <a href="mailto:matt.eldridge@us.ibm.com?subject=fog-softlayer">email me</a>.\t</p>
 
             </div>

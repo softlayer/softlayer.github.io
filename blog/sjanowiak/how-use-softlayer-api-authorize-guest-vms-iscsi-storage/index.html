@@ -129,67 +129,42 @@ if (!doNotTrack) {
                 
 				
                 <p>SoftLayer iSCSI storage is a great platform for running a clustered OS and file system. Featuring Multipath I/O (MPIO), industry leading durability, and our global footprint, the <a href="https://www.softlayer.com/block-storage">Endurance and Performance</a> iSCSI block storage products are a great fit for a variety of workloads worldwide.</p>
-
 <p>One important feature of our Endurance and Performance block storage options is the ability to give access and authorization to any host(s) you choose via the SoftLayer customer portal or API. Once you’ve authorized a host to access a storage device, you’ve created a unique authentication string to build into your iSCSI initiator.</p>
-
 <p>If you are building a clustered server environment on guest machines inside a hypervisor, you’ll need unique authentication parameters. You can generate unique authentication information for your cluster nodes by authorizing hosts on your SoftLayer account. However, if you want to authorize specific guest VMs within your hypervisor, you have the option to generate unique authentication parameters via the SoftLayer API.</p>
-
 <p>Let’s walk through the steps to use the SoftLayer API and the SoftLayer Python CLI to identify the parameters you need in order to authorize additional IP addresses to Endurance and Performance Storage at SoftLayer.</p>
-
 <p>##<strong>Gather Your Tools</strong>
 The first step is to identify all the parameters you will need to authorize secondary IP addresses to storage. We need to identify the storage itself, and find the identifier for the actual IP address you want to authorize.</p>
-
 <p>I recommend downloading the SoftLayer CLI for Python for this first piece. The documentation can be found <a href="https://softlayer-api-python-client.readthedocs.org/en/latest/">here</a>. However if you have a SoftLayer server running Linux on your account, you can easily install with pip the following command:</p>
-
 <p><code>pip install softlayer </code></p>
-
 <p>Once SoftLayer is installed via pip, follow the quick two-step configuration outlined here.</p>
-
 <p>Begin the setup process using:</p>
-
 <p><code>slcli setup </code></p>
-
 <p>Input your user credentials and API key. You can use the public or private network endpoint. Once complete, you’re ready to advance to &hellip;</p>
-
 <p>##<strong>Gather Your Resources</strong>
-There are three parameters you need:
-<ol><li>Storage ID
-<li>Subnet ID
-<li>IP Address ID
-</ol></p>
-
+There are three parameters you need:</p>
+<ol><li>Storage ID 
+<li>Subnet ID 
+<li>IP Address ID 
+</ol>
 <p>For the first two, use the slcli to grab the data. Let’s start with the storage ID. This command is:</p>
-
 <p><code>slcli iscsi list</code></p>
-
 <p>This will produce an easy to read table of all your storage volumes. Find the volume you want to authorize your IP address and record your storage ID.</p>
-
 <p>Next, find the IP address ID. To get this, you’ll first need to identify the subnet ID by listing all your subnets via the SoftLayer CLI by running this command:</p>
-
 <p><code>slcli subnet list</code></p>
-
 <p>This will produce an easy-to-read table of all your subnets. Find the subnet that contains the IP addresses you want to authorize and record the subnet ID.</p>
-
-<p>Finally, you can use curl to identify the IP Address ID from within the subnet we just identified:<br />
+<p>Finally, you can use curl to identify the IP Address ID from within the subnet we just identified:<br>
 <code>
-curl -# -X GET https://[USERNAME]:[APIKEY]@api.softlayer.com/rest/v3/SoftLayer_Network_Subnet/[SUBNET ID]/getIpAddresses.xml?objectMask=&lsquo;id;ipAddress&rsquo;
+curl -# -X GET https://[USERNAME]:[APIKEY]@api.softlayer.com/rest/v3/SoftLayer_Network_Subnet/[SUBNET ID]/getIpAddresses.xml?objectMask='id;ipAddress&rsquo;
 </code></p>
-
 <p>This will return an XML file listing all of the IP addresses and their IP Address IDs. Record the IP Address ID that you want to authorize.</p>
-
 <p>##<strong>Putting it all Together</strong>
 Now that you have all of your parameters in place, you can run additional curl commands to authorize IP Address IDs to your storage:</p>
-
-<p><code>
-curl -v -i -X POST -d &lsquo;{&ldquo;parameters&rdquo;: [{&ldquo;id&rdquo;: [IP ADDRESS ID]}]}&rsquo; -u &ldquo;[USERNAME]:[APIKEY]&rdquo; <a href="https://api.softlayer.com/rest/v3/SoftLayer_Network_Storage/[STORAGE">https://api.softlayer.com/rest/v3/SoftLayer_Network_Storage/[STORAGE</a> ID]/allowAccessFromIpAddress.json
-</code></p>
-
+<code>
+curl -v -i -X POST -d '{"parameters": [{"id": [IP ADDRESS ID]}]}' -u "[USERNAME]:[APIKEY]" https://api.softlayer.com/rest/v3/SoftLayer_Network_Storage/[STORAGE ID]/allowAccessFromIpAddress.json 
+</code>
 <p>This command should produce an output of “OK.” Now log in to your portal, and verify that the storage device now has an entry for the IP address.</p>
-
 <p>You’ll see that the IP addresses you deployed on guest VMs within your hypervisor now have unique authorization credentials to connect to the iSCSI storage. Now you can use those credentials within your guest machines to attach to the iSCSI volumes.</p>
-
-<p>Feel free to reach out to us on via <a href="mailto:social@softlayer.com">social@softlayer.com</a>, <a href="http://www.facebook.com/SoftLayer">Facebook</a> or <a href="https://twitter.com/SoftLayer">Twitter</a> if you have any suggestions or questions.</p>
-
+<p>Feel free to reach out to us on via <a href="mailto:social@softlayer.com"><a href="mailto:social@softlayer.com">social@softlayer.com</a></a>, <a href="http://www.facebook.com/SoftLayer">Facebook</a> or <a href="https://twitter.com/SoftLayer">Twitter</a> if you have any suggestions or questions.</p>
 <p>-Seth</p>
 
             </div>

@@ -130,65 +130,67 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">/*
-</span><span style="color:#75715e">Get the firewall associated to a VSI.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">On this case we&#39;ll first retrieve the Virtual Guest ID by using the method Virtual_Guest::findByIpAddress,
-</span><span style="color:#75715e">and finally we&#39;ll use the method Virtual_Guest::getFirewallServiceComponent in order to get the firewall
-</span><span style="color:#75715e">component of VSI. See bellow for more details.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages:
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/findByIpAddress
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getFirewallServiceComponent
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+                <pre><code>/*
+Get the firewall associated to a VSI.
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-  	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+On this case we'll first retrieve the Virtual Guest ID by using the method Virtual_Guest::findByIpAddress,
+and finally we'll use the method Virtual_Guest::getFirewallServiceComponent in order to get the firewall
+component of VSI. See bellow for more details.
+
+Important manual pages:
+http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/findByIpAddress
+http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getFirewallServiceComponent
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+*/
+package main
+
+import (
+	&quot;fmt&quot;
+  	&quot;encoding/json&quot;
+	&quot;github.com/softlayer/softlayer-go/session&quot;
+	&quot;github.com/softlayer/softlayer-go/services&quot;
 )
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+func main() {
+	// SoftLayer API username and key
+	username := &quot;set me&quot;
+	apikey   := &quot;set me&quot;
 
-	<span style="color:#75715e">// The Ip Address used by a VSI
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">ipAddress</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;159.8.52.188&#34;</span>
+	// The Ip Address used by a VSI
+	ipAddress := &quot;159.8.52.188&quot;
 
-	<span style="color:#75715e">// Create SoftLayer API session
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
+	// Create SoftLayer API session
+	sess := session.New(username, apikey)
 
-	<span style="color:#75715e">// Get SoftLayer_Virtual_Guest service
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">service</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetVirtualGuestService</span>(<span style="color:#a6e22e">sess</span>)
+	// Get SoftLayer_Virtual_Guest service
+	service := services.GetVirtualGuestService(sess)
 
-	<span style="color:#75715e">// Call findByIpAddress() method in order to retrieve the VSI
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">vsi</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">FindByIpAddress</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">ipAddress</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to find VSI&#39;s through Ip Address:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// Call findByIpAddress() method in order to retrieve the VSI
+	vsi, err := service.FindByIpAddress(&amp;ipAddress)
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to find VSI's through Ip Address:\n - %s\n&quot;, err)
+		return
 	} 
 
-	<span style="color:#75715e">// Call getFirewallServiceComponent() method in order to retrieve the Firewall from VSI
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">firewall</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">vsi</span>.<span style="color:#a6e22e">Id</span>).<span style="color:#a6e22e">GetFirewallServiceComponent</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to get firewall component from VSI:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// Call getFirewallServiceComponent() method in order to retrieve the Firewall from VSI
+	firewall, err := service.Id(*vsi.Id).GetFirewallServiceComponent()
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to get firewall component from VSI:\n - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">// Following helps to print the result in json format.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">MarshalIndent</span>(<span style="color:#a6e22e">firewall</span>,<span style="color:#e6db74">&#34;&#34;</span>,<span style="color:#e6db74">&#34;     &#34;</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-		<span style="color:#66d9ef">return</span>
+	// Following helps to print the result in json format.
+	jsonFormat, jsonErr := json.MarshalIndent(firewall,&quot;&quot;,&quot;     &quot;)
+	if jsonErr != nil {
+		fmt.Println(jsonErr)
+		return
 	}
-	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
-}</pre></div>
+	fmt.Println(string(jsonFormat))
+}
+
+</code></pre>
             </div>
         </div>
 

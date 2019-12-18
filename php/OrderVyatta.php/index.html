@@ -144,149 +144,151 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;<span style="color:#960050;background-color:#1e0010">?</span><span style="color:#a6e22e">php</span>
-<span style="color:#75715e">/**
-</span><span style="color:#75715e"> * Order a Network Gateway Appliance (Vyatta)
-</span><span style="color:#75715e"> * 
-</span><span style="color:#75715e"> * The script orders a (Vyatta) high availability pair
-</span><span style="color:#75715e"> * it uses the SoftLayer_Product_Order::placeOrder to make the order
-</span><span style="color:#75715e"> * For more information see below:
-</span><span style="color:#75715e"> * 
-</span><span style="color:#75715e"> * Important manual pages:
-</span><span style="color:#75715e"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-</span><span style="color:#75715e"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
-</span><span style="color:#75715e"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-</span><span style="color:#75715e"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span style="color:#75715e"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span style="color:#75715e"> * 
-</span><span style="color:#75715e"> * License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e"> * Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e"> */</span>
-<span style="color:#a6e22e">require_once</span> (<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">Softlayer</span><span style="color:#f92672">/</span><span style="color:#a6e22e">SoapClient</span>.<span style="color:#a6e22e">class</span>.<span style="color:#a6e22e">php</span><span style="color:#960050;background-color:#1e0010">&#39;</span>);
+                <pre><code>&lt;?php
+/**
+ * Order a Network Gateway Appliance (Vyatta)
+ * 
+ * The script orders a (Vyatta) high availability pair
+ * it uses the SoftLayer_Product_Order::placeOrder to make the order
+ * For more information see below:
+ * 
+ * Important manual pages:
+ * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+ * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
+ * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+ * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+ * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+ * 
+ * License: http://sldn.softlayer.com/article/License
+ * Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+ */
+require_once ('Softlayer/SoapClient.class.php');
 
-<span style="color:#75715e">// Your SoftLayer API username and key.
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">username</span> = <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">set</span> <span style="color:#a6e22e">me</span><span style="color:#960050;background-color:#1e0010">&#39;</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">key</span> = <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">set</span> <span style="color:#a6e22e">me</span><span style="color:#960050;background-color:#1e0010">&#39;</span>;
+// Your SoftLayer API username and key.
+$username = 'set me';
+$key = 'set me';
 
-<span style="color:#75715e">/**
-</span><span style="color:#75715e"> * Build a skeleton SoftLayer_Hardware_Server object to model the hostname and
-</span><span style="color:#75715e"> * domain we want for our server. If you set quantity greater than 1 then you
-</span><span style="color:#75715e"> * need to define one hostname/domain pair per server you wish to order. 
-</span><span style="color:#75715e"> */</span>
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode1</span> = <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">stdClass</span>();
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode1</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">hostname</span> = <span style="color:#e6db74">&#34;vyattagw&#34;</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode1</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">domain</span> = <span style="color:#e6db74">&#34;test.com&#34;</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode2</span> = <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">stdClass</span>();
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode2</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">hostname</span> = <span style="color:#e6db74">&#34;vyattagw2&#34;</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode2</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">domain</span> = <span style="color:#e6db74">&#34;test.com&#34;</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderHardware</span> = <span style="color:#a6e22e">array</span>
+/**
+ * Build a skeleton SoftLayer_Hardware_Server object to model the hostname and
+ * domain we want for our server. If you set quantity greater than 1 then you
+ * need to define one hostname/domain pair per server you wish to order. 
+ */
+$hardwareNode1 = new stdClass();
+$hardwareNode1-&gt;hostname = &quot;vyattagw&quot;;
+$hardwareNode1-&gt;domain = &quot;test.com&quot;;
+$hardwareNode2 = new stdClass();
+$hardwareNode2-&gt;hostname = &quot;vyattagw2&quot;;
+$hardwareNode2-&gt;domain = &quot;test.com&quot;;
+$orderHardware = array
 (
-    <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode1</span>,<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">hardwareNode2</span>
+    $hardwareNode1,$hardwareNode2
 );
 
-<span style="color:#75715e">/**
-</span><span style="color:#75715e"> * Build a skeleton SoftLayer_Product_Item_Price objects. These objects contain
-</span><span style="color:#75715e"> * much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id
-</span><span style="color:#75715e"> * to know what you want to order.
-</span><span style="color:#75715e"> *
-</span><span style="color:#75715e"> * Every item in SoftLayer&#39;s product catalog is assigned an id. Use these ids
-</span><span style="color:#75715e"> * to tell the SoftLayer API which options you want in your new server. Use
-</span><span style="color:#75715e"> * the getActivePackages() method in the SoftLayer_Account API service to get
-</span><span style="color:#75715e"> * a list of available item and price options per available package.
-</span><span style="color:#75715e"> */</span>
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">prices</span> = <span style="color:#a6e22e">array</span>
+/**
+ * Build a skeleton SoftLayer_Product_Item_Price objects. These objects contain
+ * much more than ids, but SoftLayer's ordering system only needs the price's id
+ * to know what you want to order.
+ *
+ * Every item in SoftLayer's product catalog is assigned an id. Use these ids
+ * to tell the SoftLayer API which options you want in your new server. Use
+ * the getActivePackages() method in the SoftLayer_Account API service to get
+ * a list of available item and price options per available package.
+ */
+$prices = array
 (
-    <span style="color:#ae81ff">13738</span>,  
-    <span style="color:#ae81ff">21010</span>,  
-    <span style="color:#ae81ff">36044</span>,  
-    <span style="color:#ae81ff">876</span>,  
-    <span style="color:#ae81ff">1267</span>, 
-    <span style="color:#ae81ff">342</span>,  
-    <span style="color:#ae81ff">273</span>, 
-    <span style="color:#ae81ff">17129</span>,
-    <span style="color:#ae81ff">55</span>,  
-    <span style="color:#ae81ff">58</span>,  
-    <span style="color:#ae81ff">420</span>, 
-    <span style="color:#ae81ff">418</span>, 
-    <span style="color:#ae81ff">21</span>,  
-    <span style="color:#ae81ff">57</span>,  
-    <span style="color:#ae81ff">906</span>,
+    13738,  
+    21010,  
+    36044,  
+    876,  
+    1267, 
+    342,  
+    273, 
+    17129,
+    55,  
+    58,  
+    420, 
+    418, 
+    21,  
+    57,  
+    906,
 );
 
-<span style="color:#75715e">/**
-</span><span style="color:#75715e"> * Converting our item list into an array of skeleton
-</span><span style="color:#75715e"> * SoftLayer_Product_Item_Price objects. These objects contain much more than
-</span><span style="color:#75715e"> * ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id to know what
-</span><span style="color:#75715e"> * you want to order.
-</span><span style="color:#75715e"> * 
-</span><span style="color:#75715e"> */</span>
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderPrices</span> = <span style="color:#a6e22e">array</span>();
+/**
+ * Converting our item list into an array of skeleton
+ * SoftLayer_Product_Item_Price objects. These objects contain much more than
+ * ids, but SoftLayer's ordering system only needs the price's id to know what
+ * you want to order.
+ * 
+ */
+$orderPrices = array();
  
-<span style="color:#a6e22e">foreach</span> (<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">prices</span> <span style="color:#a6e22e">as</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">priceId</span>){
-    <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">price</span> = <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">stdClass</span>();
-    <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">price</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">id</span> = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">priceId</span>;
-    <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderPrices</span>[] = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">price</span>;
+foreach ($prices as $priceId){
+    $price = new stdClass();
+    $price-&gt;id = $priceId;
+    $orderPrices[] = $price;
 }
 
-<span style="color:#75715e">/**
-</span><span style="color:#75715e"> * Where you&#39;d like your new server provisioned.
-</span><span style="color:#75715e"> * This can either be the id of the datacenter
-</span><span style="color:#75715e"> * you wish your new server to be provisioned in
-</span><span style="color:#75715e"> * 
-</span><span style="color:#75715e"> */</span>
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">location</span> = <span style="color:#ae81ff">265592</span>;
-<span style="color:#75715e">// The id of the SoftLayer_Product_Package you wish to order.
-</span><span style="color:#75715e">// In this case the Network Gateway Appliance (Vyatta) package id is 174.
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">packageId</span> = <span style="color:#ae81ff">174</span>;
-<span style="color:#75715e">// The number of servers you wish to order.
-</span><span style="color:#75715e">// If you wish a high availability pair you must specify 2 as quantity.
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">quantity</span> = <span style="color:#ae81ff">2</span>;
-<span style="color:#75715e">// Build a SoftLayer_Container_Product_Order object containing
-</span><span style="color:#75715e">// the order you wish to place.
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainer</span> = <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">stdClass</span>();
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainer</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">location</span>    = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">location</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainer</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">packageId</span>   = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">packageId</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainer</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">prices</span>      = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderPrices</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainer</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">quantity</span>    = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">quantity</span>;
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainer</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">hardware</span>    = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderHardware</span>;
+/**
+ * Where you'd like your new server provisioned.
+ * This can either be the id of the datacenter
+ * you wish your new server to be provisioned in
+ * 
+ */
+$location = 265592;
+// The id of the SoftLayer_Product_Package you wish to order.
+// In this case the Network Gateway Appliance (Vyatta) package id is 174.
+$packageId = 174;
+// The number of servers you wish to order.
+// If you wish a high availability pair you must specify 2 as quantity.
+$quantity = 2;
+// Build a SoftLayer_Container_Product_Order object containing
+// the order you wish to place.
+$orderContainer = new stdClass();
+$orderContainer-&gt;location    = $location;
+$orderContainer-&gt;packageId   = $packageId;
+$orderContainer-&gt;prices      = $orderPrices;
+$orderContainer-&gt;quantity    = $quantity;
+$orderContainer-&gt;hardware    = $orderHardware;
 
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainers</span> = <span style="color:#a6e22e">array</span>();
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainers</span>[<span style="color:#ae81ff">0</span>] = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainer</span>;
+$orderContainers = array();
+$orderContainers[0] = $orderContainer;
 
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderData</span> = <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">stdClass</span>();
-<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderData</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">orderContainers</span> = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderContainers</span>;
+$orderData = new stdClass();
+$orderData-&gt;orderContainers = $orderContainers;
 
 
-<span style="color:#75715e">// Create a SoftLayer API client object
-</span><span style="color:#75715e"></span><span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">softLayerProductOrder</span> = <span style="color:#a6e22e">SoftLayer_SoapClient</span>::<span style="color:#a6e22e">getClient</span>(<span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">SoftLayer_Product_Order</span><span style="color:#960050;background-color:#1e0010">&#39;</span>, <span style="color:#a6e22e">null</span>, <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">username</span>, <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">key</span>);
+// Create a SoftLayer API client object
+$softLayerProductOrder = SoftLayer_SoapClient::getClient('SoftLayer_Product_Order', null, $username, $key);
 
-<span style="color:#75715e">// Place the order for the new server.
-</span><span style="color:#75715e"></span><span style="color:#a6e22e">try</span> {
-    <span style="color:#75715e">// Re-declare the order template as a SOAP variable, so the SoftLayer
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// ordering system knows what type of order you&#39;re placing.
-</span><span style="color:#75715e"></span>    <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderTemplate</span> = <span style="color:#a6e22e">new</span> <span style="color:#a6e22e">SoapVar</span>
+// Place the order for the new server.
+try {
+    // Re-declare the order template as a SOAP variable, so the SoftLayer
+    // ordering system knows what type of order you're placing.
+    $orderTemplate = new SoapVar
     (
-        <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderData</span>,
-        <span style="color:#a6e22e">SOAP_ENC_OBJECT</span>,
-        <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">SoftLayer_Container_Product_Order</span><span style="color:#960050;background-color:#1e0010">&#39;</span>,
-        <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">http</span>:<span style="color:#75715e">//api.service.softlayer.com/soap/v3/&#39;
-</span><span style="color:#75715e"></span>    );
+        $orderData,
+        SOAP_ENC_OBJECT,
+        'SoftLayer_Container_Product_Order',
+        'http://api.service.softlayer.com/soap/v3/'
+    );
   
-    <span style="color:#75715e">/**
-</span><span style="color:#75715e">     * verifyOrder() will check your order for errors. Replace this with a call
-</span><span style="color:#75715e">     * to placeOrder() when you&#39;re ready to order. Both calls return a receipt
-</span><span style="color:#75715e">     * object that you can use for your records.
-</span><span style="color:#75715e">     *
-</span><span style="color:#75715e">     * Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
-</span><span style="color:#75715e">     * provisioning process. When it&#39;s done you&#39;ll have a new
-</span><span style="color:#75715e">     * SoftLayer_Hardware_Server object and server ready to use.
-</span><span style="color:#75715e">     * 
-</span><span style="color:#75715e">     */</span>
-    <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">receipt</span> = <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">softLayerProductOrder</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">verifyOrder</span>(<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">orderTemplate</span>);
-    <span style="color:#a6e22e">print_r</span>(<span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">receipt</span>);
-} <span style="color:#a6e22e">catch</span> (<span style="color:#a6e22e">Exception</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">e</span>) {
-    <span style="color:#a6e22e">echo</span> <span style="color:#960050;background-color:#1e0010">&#39;</span><span style="color:#a6e22e">Unable</span> <span style="color:#a6e22e">to</span> <span style="color:#a6e22e">place</span> <span style="color:#a6e22e">server</span> <span style="color:#a6e22e">order</span>: <span style="color:#960050;background-color:#1e0010">&#39;</span> . <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">e</span><span style="color:#f92672">-</span>&gt;<span style="color:#a6e22e">getMessage</span>();
-}</pre></div>
+    /**
+     * verifyOrder() will check your order for errors. Replace this with a call
+     * to placeOrder() when you're ready to order. Both calls return a receipt
+     * object that you can use for your records.
+     *
+     * Once your order is placed it'll go through SoftLayer's approval and
+     * provisioning process. When it's done you'll have a new
+     * SoftLayer_Hardware_Server object and server ready to use.
+     * 
+     */
+    $receipt = $softLayerProductOrder-&gt;verifyOrder($orderTemplate);
+    print_r($receipt);
+} catch (Exception $e) {
+    echo 'Unable to place server order: ' . $e-&gt;getMessage();
+}
+
+</code></pre>
             </div>
         </div>
 

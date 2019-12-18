@@ -136,134 +136,136 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">/*
-</span><span style="color:#75715e">Retrieve all billing invoice items from account.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">This script prints all billing invoice items from account, on this case we&#39;ll use a large object
-</span><span style="color:#75715e">mask in order to retrieve a lot of data. To avoid API errors related to &#34;Time out&#34; or or &#34;size limit&#34;,
-</span><span style="color:#75715e">first we&#39;ll get de ID of all SoftLayer_Billing_Invoice objects between two dates, on this case we&#39;ll
-</span><span style="color:#75715e">use the method SoftLayer_Account::getInvoices. After that, through loops we will retrieve all invoice
-</span><span style="color:#75715e">items, here we&#39;ll use the method SoftLayer_Billing_Invoice::getItems and &#34;result limits&#34; to avoid errors.
-</span><span style="color:#75715e">See below for more information.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Example based on question:
-</span><span style="color:#75715e">http://stackoverflow.com/questions/43666868/getting-error-internal-error-on-postman-and-getting-error-can-not-deseriali
-</span><span style="color:#75715e">http://stackoverflow.com/questions/43640651/softlayer-rest-call-giving-multiple-entries-for-invoice-in-json-response-when-ob
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Account
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getInvoices
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Invoice/getItems
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Invoice_Item
-</span><span style="color:#75715e">https://sldn.softlayer.com/article/object-Filters
-</span><span style="color:#75715e">https://sldn.softlayer.com/article/object-Masks
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+                <pre><code>/*
+Retrieve all billing invoice items from account.
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-	<span style="color:#e6db74">&#34;strings&#34;</span>
-	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+This script prints all billing invoice items from account, on this case we'll use a large object
+mask in order to retrieve a lot of data. To avoid API errors related to &quot;Time out&quot; or or &quot;size limit&quot;,
+first we'll get de ID of all SoftLayer_Billing_Invoice objects between two dates, on this case we'll
+use the method SoftLayer_Account::getInvoices. After that, through loops we will retrieve all invoice
+items, here we'll use the method SoftLayer_Billing_Invoice::getItems and &quot;result limits&quot; to avoid errors.
+See below for more information.
+
+Example based on question:
+http://stackoverflow.com/questions/43666868/getting-error-internal-error-on-postman-and-getting-error-can-not-deseriali
+http://stackoverflow.com/questions/43640651/softlayer-rest-call-giving-multiple-entries-for-invoice-in-json-response-when-ob
+
+Important manual pages
+http://sldn.softlayer.com/reference/services/SoftLayer_Account
+http://sldn.softlayer.com/reference/services/SoftLayer_Account/getInvoices
+http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Invoice/getItems
+http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Invoice_Item
+https://sldn.softlayer.com/article/object-Filters
+https://sldn.softlayer.com/article/object-Masks
+
+License: http://sldn.softlayer.com/article/License
+Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+*/
+package main
+
+import (
+	&quot;fmt&quot;
+	&quot;strings&quot;
+	&quot;encoding/json&quot;
+	&quot;github.com/softlayer/softlayer-go/session&quot;
+	&quot;github.com/softlayer/softlayer-go/services&quot;
 )
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+func main() {
+	// SoftLayer API username and key
+	username := &quot;set me&quot;
+	apikey   := &quot;set me&quot;
 
-	<span style="color:#75715e">// Create a session
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
+	// Create a session
+	sess := session.New(username, apikey)
 
-	<span style="color:#75715e">// Get SoftLayer_Account and SoftLayer_Billing_Invoice services
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">accountService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetAccountService</span>(<span style="color:#a6e22e">sess</span>)
-	<span style="color:#a6e22e">invoiceService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetBillingInvoiceService</span>(<span style="color:#a6e22e">sess</span>)
+	// Get SoftLayer_Account and SoftLayer_Billing_Invoice services
+	accountService := services.GetAccountService(sess)
+	invoiceService := services.GetBillingInvoiceService(sess)
 
-	<span style="color:#75715e">// Object mask to get the ID of all SoftLayer_Billing_Invoice objects
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">mask</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;id;createDate;typeCode&#34;</span>
+	// Object mask to get the ID of all SoftLayer_Billing_Invoice objects
+	mask := &quot;id;createDate;typeCode&quot;
 
-	<span style="color:#75715e">// Object mask to get information about SoftLayer_Billing_Invoice_Items
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">itemMask</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;id;recurringFee;recurringTaxAmount;oneTimeFee;oneTimeTaxAmount;description;&#34;</span> <span style="color:#f92672">+</span>
-		    <span style="color:#e6db74">&#34;hostName;domainName;hourlyRecurringFee;laborFee;laborTaxAmount;setupFee;&#34;</span> <span style="color:#f92672">+</span>
-		    <span style="color:#e6db74">&#34;setupTaxAmount;category[name];location[longName];billingItem[id;activeFlag;&#34;</span> <span style="color:#f92672">+</span>
-		    <span style="color:#e6db74">&#34;hourlyFlag;allowCancellationFlag;cancellationDate;orderItem[id;order[id;&#34;</span> <span style="color:#f92672">+</span>
-		    <span style="color:#e6db74">&#34;userRecord[id,username]]]]&#34;</span>
+	// Object mask to get information about SoftLayer_Billing_Invoice_Items
+	itemMask := &quot;id;recurringFee;recurringTaxAmount;oneTimeFee;oneTimeTaxAmount;description;&quot; +
+		    &quot;hostName;domainName;hourlyRecurringFee;laborFee;laborTaxAmount;setupFee;&quot; +
+		    &quot;setupTaxAmount;category[name];location[longName];billingItem[id;activeFlag;&quot; +
+		    &quot;hourlyFlag;allowCancellationFlag;cancellationDate;orderItem[id;order[id;&quot; +
+		    &quot;userRecord[id,username]]]]&quot;
 
-	<span style="color:#75715e">// Filter to get all RECURRING invoices between two dates
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">filter</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">`{&#34;invoices&#34;:{
-</span><span style="color:#e6db74">	                  &#34;createDate&#34;:{
-</span><span style="color:#e6db74">			       &#34;operation&#34;:&#34;betweenDate&#34;,
-</span><span style="color:#e6db74">			       &#34;options&#34;:[{
-</span><span style="color:#e6db74">			            &#34;name&#34;:&#34;startDate&#34;,
-</span><span style="color:#e6db74">			            &#34;value&#34;:[&#34;03/25/2017&#34;]
-</span><span style="color:#e6db74">			       },{
-</span><span style="color:#e6db74">			            &#34;name&#34;:&#34;endDate&#34;,
-</span><span style="color:#e6db74">			            &#34;value&#34;: [&#34;04/24/2017&#34;]
-</span><span style="color:#e6db74">			       }]
-</span><span style="color:#e6db74">			  },
-</span><span style="color:#e6db74">			  &#34;typeCode&#34;:{
-</span><span style="color:#e6db74">			       &#34;operation&#34;:&#34;RECURRING&#34;
-</span><span style="color:#e6db74">			  }
-</span><span style="color:#e6db74">		    }}`</span>
+	// Filter to get all RECURRING invoices between two dates
+	filter := `{&quot;invoices&quot;:{
+	                  &quot;createDate&quot;:{
+			       &quot;operation&quot;:&quot;betweenDate&quot;,
+			       &quot;options&quot;:[{
+			            &quot;name&quot;:&quot;startDate&quot;,
+			            &quot;value&quot;:[&quot;03/25/2017&quot;]
+			       },{
+			            &quot;name&quot;:&quot;endDate&quot;,
+			            &quot;value&quot;: [&quot;04/24/2017&quot;]
+			       }]
+			  },
+			  &quot;typeCode&quot;:{
+			       &quot;operation&quot;:&quot;RECURRING&quot;
+			  }
+		    }}`
 
-	<span style="color:#75715e">// Call method getInvoices() in order to retrieve SoftLayer_Billing_Invoice objects.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">invoices</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">accountService</span>.<span style="color:#a6e22e">Filter</span>(<span style="color:#a6e22e">filter</span>).<span style="color:#a6e22e">Mask</span>(<span style="color:#a6e22e">mask</span>).<span style="color:#a6e22e">GetInvoices</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to retrieve invoices:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
+	// Call method getInvoices() in order to retrieve SoftLayer_Billing_Invoice objects.
+	invoices, err := accountService.Filter(filter).Mask(mask).GetInvoices()
+	if err != nil {
+		fmt.Printf(&quot;\n Unable to retrieve invoices:\n - %s\n&quot;, err)
+		return
 	}
 
-	<span style="color:#75715e">// Following loop is to get and print all items of each retrieved invoice
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">invoice</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">invoices</span> {
+	// Following loop is to get and print all items of each retrieved invoice
+	for _, invoice := range invoices {
 
-		<span style="color:#75715e">// Print Id, createDate and typeCode of each invoice
-</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n\nINVOICE ID: %d\t CREATE DATE: %s\t TYPE CODE: %s\n\n&#34;</span>,
-			<span style="color:#a6e22e">invoice</span>.<span style="color:#a6e22e">Id</span>, <span style="color:#a6e22e">invoice</span>.<span style="color:#a6e22e">CreateDate</span>, <span style="color:#f92672">*</span><span style="color:#a6e22e">invoice</span>.<span style="color:#a6e22e">TypeCode</span>)
+		// Print Id, createDate and typeCode of each invoice
+		fmt.Printf(&quot;\n\nINVOICE ID: %d\t CREATE DATE: %s\t TYPE CODE: %s\n\n&quot;,
+			invoice.Id, invoice.CreateDate, *invoice.TypeCode)
 
-		<span style="color:#75715e">// Some invoices have hundred of items and to avoid limitSize or timeout errors
-</span><span style="color:#75715e"></span>		<span style="color:#75715e">// we&#39;ll use result limits in order to get items 100 by 100.
-</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">limit</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">100</span>
-		<span style="color:#a6e22e">offset</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>
-		<span style="color:#a6e22e">hasItems</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">true</span>
+		// Some invoices have hundred of items and to avoid limitSize or timeout errors
+		// we'll use result limits in order to get items 100 by 100.
+		limit := 100
+		offset := 0
+		hasItems := true
 
-		<span style="color:#75715e">// Following loop is used to get and print items 100 by 100.
-</span><span style="color:#75715e"></span>		<span style="color:#75715e">// &#39;hasItems&#39; will turn FALSE if there isn&#39;t more items, the loop will end and
-</span><span style="color:#75715e"></span>		<span style="color:#75715e">// code will continue with next invoice.
-</span><span style="color:#75715e"></span>		<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">hasItems</span> {
-			<span style="color:#75715e">// Call SoftLayer_Billing_Invoice::getItems method
-</span><span style="color:#75715e"></span>			<span style="color:#a6e22e">items</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span>  <span style="color:#a6e22e">invoiceService</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">invoice</span>.<span style="color:#a6e22e">Id</span>).<span style="color:#a6e22e">Mask</span>(<span style="color:#a6e22e">itemMask</span>).<span style="color:#a6e22e">Limit</span>(<span style="color:#a6e22e">limit</span>).<span style="color:#a6e22e">Offset</span>(<span style="color:#a6e22e">offset</span>).<span style="color:#a6e22e">GetItems</span>()
-			<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-				<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to retrieve invoice&#39;s items:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-				<span style="color:#66d9ef">return</span>
+		// Following loop is used to get and print items 100 by 100.
+		// 'hasItems' will turn FALSE if there isn't more items, the loop will end and
+		// code will continue with next invoice.
+		for hasItems {
+			// Call SoftLayer_Billing_Invoice::getItems method
+			items, err :=  invoiceService.Id(*invoice.Id).Mask(itemMask).Limit(limit).Offset(offset).GetItems()
+			if err != nil {
+				fmt.Printf(&quot;\n Unable to retrieve invoice's items:\n - %s\n&quot;, err)
+				return
 			}
 
-			<span style="color:#75715e">// Following will print retrieved invoices
-</span><span style="color:#75715e"></span>			<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">item</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">items</span> {
-				<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Marshal</span>(<span style="color:#a6e22e">item</span>)
-				<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-					<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-					<span style="color:#66d9ef">return</span>
+			// Following will print retrieved invoices
+			for _, item := range items {
+				jsonFormat, jsonErr := json.Marshal(item)
+				if jsonErr != nil {
+					fmt.Println(jsonErr)
+					return
 				}
-				<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n%s&#34;</span>, string(<span style="color:#a6e22e">jsonFormat</span>))
+				fmt.Printf(&quot;\n%s&quot;, string(jsonFormat))
 			}
 
-			<span style="color:#75715e">// hasItems will turn FALSE if invoice doesn&#39;t have more items and code will
-</span><span style="color:#75715e"></span>			<span style="color:#75715e">// continue with next invoice.
-</span><span style="color:#75715e"></span>			<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">items</span>) &gt; <span style="color:#ae81ff">0</span> {
-				<span style="color:#a6e22e">offset</span> <span style="color:#f92672">+=</span> <span style="color:#a6e22e">limit</span>
-			} <span style="color:#66d9ef">else</span> {
-				<span style="color:#a6e22e">hasItems</span> = <span style="color:#66d9ef">false</span>
+			// hasItems will turn FALSE if invoice doesn't have more items and code will
+			// continue with next invoice.
+			if len(items) &gt; 0 {
+				offset += limit
+			} else {
+				hasItems = false
 			}
 		}
 
-		<span style="color:#75715e">// Print a single separator between invoices
-</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n\n%s&#34;</span>, <span style="color:#a6e22e">strings</span>.<span style="color:#a6e22e">Repeat</span>(<span style="color:#e6db74">&#34;-&#34;</span>, <span style="color:#ae81ff">150</span>))
+		// Print a single separator between invoices
+		fmt.Printf(&quot;\n\n%s&quot;, strings.Repeat(&quot;-&quot;, 150))
 	}
-}</pre></div>
+}
+
+</code></pre>
             </div>
         </div>
 

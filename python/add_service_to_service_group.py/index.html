@@ -134,7 +134,7 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&#34;&#34;&#34;
+                <pre><code>&quot;&quot;&quot;
 Add a new service to a service group.
 
 Important manual pages:
@@ -148,85 +148,87 @@ http://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet_IpAddress/
 
 License: http://sldn.softlayer.com/article/License
 Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-&#34;&#34;&#34;
+&quot;&quot;&quot;
 
 import SoftLayer
 import json
 
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
+USERNAME = 'set me'
+API_KEY = 'set me'
 
 loadBalancerId = 79945
 
 serviceGroupId = 138193
 
-destinationIpAddress = &#34;169.53.15.53&#34;
+destinationIpAddress = &quot;169.53.15.53&quot;
 
 destinationPort = 40
 
 weight = 10
 
-notes = &#34;my service group note&#34;
+notes = &quot;my service group note&quot;
 
 enabled = True
 
-healthCheck = &#34;Ping&#34;
+healthCheck = &quot;Ping&quot;
 
 client = SoftLayer.Client(username=USERNAME, api_key=API_KEY)
-loadBalancerService = client[&#39;SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_VirtualIpAddress&#39;]
-healthService = client[&#39;SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_Health_Check_Type&#39;]
-ipService = client[&#39;SoftLayer_Network_Subnet_IpAddress&#39;]
-heaqlthFilter = {&#34;name&#34;: {&#34;operation&#34;: healthCheck}}
-objectMask = &#34;mask[sslActiveFlag, notes, sslEnabledFlag, loadBalancerHardware[hostname,datacenterName,location,locationPathString], ipAddress, virtualServers[notes,port,id,allocation,serviceGroups[services[groupReferences[weight],healthChecks[type[id,name],attributes],ipAddress[id,ipAddress]],routingMethod,routingType]]]&#34;
+loadBalancerService = client['SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_VirtualIpAddress']
+healthService = client['SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_Health_Check_Type']
+ipService = client['SoftLayer_Network_Subnet_IpAddress']
+heaqlthFilter = {&quot;name&quot;: {&quot;operation&quot;: healthCheck}}
+objectMask = &quot;mask[sslActiveFlag, notes, sslEnabledFlag, loadBalancerHardware[hostname,datacenterName,location,locationPathString], ipAddress, virtualServers[notes,port,id,allocation,serviceGroups[services[groupReferences[weight],healthChecks[type[id,name],attributes],ipAddress[id,ipAddress]],routingMethod,routingType]]]&quot;
 
 try:
     healthCheck = healthService.getAllObjects(filter=heaqlthFilter)
 except SoftLayer.SoftLayerAPIError as e:
-    print(&#34;Unable to get the health check. faultCode=%s, faultString=%s&#34; % (e.faultCode, e.faultString))
+    print(&quot;Unable to get the health check. faultCode=%s, faultString=%s&quot; % (e.faultCode, e.faultString))
     exit(1)
 
 try:
     destinationIpAddress = ipService.findByIpv4Address(destinationIpAddress)
 except SoftLayer.SoftLayerAPIError as e:
-    print(&#34;Unable to get the IP address. faultCode=%s, faultString=%s&#34; % (e.faultCode, e.faultString))
+    print(&quot;Unable to get the IP address. faultCode=%s, faultString=%s&quot; % (e.faultCode, e.faultString))
     exit(1)
 
 try:
     loadBalancer = loadBalancerService.getObject(id=loadBalancerId, mask=objectMask)
 except SoftLayer.SoftLayerAPIError as e:
-    print(&#34;Unable to get the load balancer. faultCode=%s, faultString=%s&#34; % (e.faultCode, e.faultString))
+    print(&quot;Unable to get the load balancer. faultCode=%s, faultString=%s&quot; % (e.faultCode, e.faultString))
     exit(1)
 
 serviceGroup = {}
-for i in range(len(loadBalancer[&#39;virtualServers&#39;])):
-    for j in range(len(loadBalancer[&#39;virtualServers&#39;][i][&#39;serviceGroups&#39;])):
-        if loadBalancer[&#39;virtualServers&#39;][i][&#39;serviceGroups&#39;][j][&#39;id&#39;] == serviceGroupId:
-            serviceGroup = loadBalancer[&#39;virtualServers&#39;][i][&#39;serviceGroups&#39;][j]
+for i in range(len(loadBalancer['virtualServers'])):
+    for j in range(len(loadBalancer['virtualServers'][i]['serviceGroups'])):
+        if loadBalancer['virtualServers'][i]['serviceGroups'][j]['id'] == serviceGroupId:
+            serviceGroup = loadBalancer['virtualServers'][i]['serviceGroups'][j]
             break
 
-if &#39;id&#39; not in serviceGroup:
-    print(&#34;Unable to get the service group id: &#34; + str(serviceGroupId) + &#34; in the load balancer&#34;)
+if 'id' not in serviceGroup:
+    print(&quot;Unable to get the service group id: &quot; + str(serviceGroupId) + &quot; in the load balancer&quot;)
 else:
     newService = {}
-    newService[&#39;enabled&#39;] = enabled
-    newService[&#39;groupReferences&#39;] = []
+    newService['enabled'] = enabled
+    newService['groupReferences'] = []
     groupReferences = {}
-    groupReferences[&#39;weight&#39;] = weight
-    newService[&#39;groupReferences&#39;].append(groupReferences)
-    newService[&#39;healthChecks&#39;] = []
+    groupReferences['weight'] = weight
+    newService['groupReferences'].append(groupReferences)
+    newService['healthChecks'] = []
     healthChecks = {}
-    healthChecks[&#39;healthCheckTypeId&#39;] = healthCheck[0][&#39;id&#39;]
-    newService[&#39;healthChecks&#39;].append(healthChecks)
-    newService[&#39;ipAddressId&#39;] = destinationIpAddress[&#39;id&#39;]
-    newService[&#39;port&#39;] = destinationPort
-    newService[&#39;notes&#39;] = notes
-    loadBalancer[&#39;virtualServers&#39;][i][&#39;serviceGroups&#39;][j][&#39;services&#39;].append(newService)
+    healthChecks['healthCheckTypeId'] = healthCheck[0]['id']
+    newService['healthChecks'].append(healthChecks)
+    newService['ipAddressId'] = destinationIpAddress['id']
+    newService['port'] = destinationPort
+    newService['notes'] = notes
+    loadBalancer['virtualServers'][i]['serviceGroups'][j]['services'].append(newService)
     try:
         result = loadBalancerService.editObject(loadBalancer, id=loadBalancerId)
-        print(json.dumps(result, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
+        print(json.dumps(result, sort_keys=True, indent=2, separators=(',', ': ')))
     except SoftLayer.SoftLayerAPIError as e:
-        print(&#34;Unable to add the service to the service group. faultCode=%s, faultString=%s&#34; % (e.faultCode, e.faultString))
-    exit(1)</pre></div>
+        print(&quot;Unable to add the service to the service group. faultCode=%s, faultString=%s&quot; % (e.faultCode, e.faultString))
+    exit(1)
+
+</code></pre>
             </div>
         </div>
 
