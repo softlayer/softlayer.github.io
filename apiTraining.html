@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The SoftLayer API</title>
+    <meta charset="utf-8">
+    <style>
+      body { 
+        font-family: monospace; 
+        font-size: 2em;
+      }
+      h1 {
+        font-family: monospace;
+        color: #F2B632;
+      } 
+      h2 {
+        font-family: monospace;
+        color: #8834A5;
+      }
+      h3 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      h4 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Courier New'; }
+      /*.remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }*/
+      .remark-slide-content {
+        background-color: #252839;
+        color: #E1F4EC;
+        font-size: 25px;
+        padding: 0em 1em 1em 1em;
+      }
+    img {background-color: #E1F4EC ;}
+    .columnA {float:left; width: 49%;}
+    .columnB {float:right; width: 49%; }
+    .columnD {float:right; width: 40%; }
+    .columnC {float:right; width: 60%; }
+    a {color:#A57712; }
+    hr {border-color: #8834A5; background-color:#8834A5; border-width: 2px; border-style: solid; }
+    li {margin-bottom: .5em; margin-top: .5em;}
+    blockquote { 
+        color: #F2B632;
+        font-family: Palatino;
+        font-weight: normal;
+        font-size: 35px;
+     }
+     .MathJax {
+     font-size: 8em !important;
+     color: #D69ECA !important;
+    }
+    th {
+      color:#A57712 ;
+    }
+    .brightGold {
+      color: #F2B632
+    }
+    .lightPurple {
+      color: #8834A5 ;
+    }
+    .bigO {
+      height: 475px;
+    }
+    .remark-code{
+        font-size: 20px;
+    }
+    .darkGold {
+      color: #A57712 ;
+    }
+    </style>
+<!-- <link rel="stylesheet" href="/remark/default.min.css"> -->
+  </head>
+  <body>
+    <!--#A57712  Dark Gold-->
+    <!--#E1F4EC  White Gold -->
+    <!--#F2B632  Bright Gold -->
+    <!--#27182C  Dark Purple -->
+    <!--#8834A5  Light Purple -->
+    <!--#D69ECA  White Purple -->
+    <textarea id="source">
+
+
+
+class: center, middle
+# .center[SoftLayer API]
+### .center[How it works, and what to do when it doesn't]
+Christopher Gallo, Senior API Developer
+
+---
+
+
+# Christopher Gallo
+- Responsible for helping customers use the API
+- Maintain sldn.softlayer.com
+- Maintain the SLCLI (softlayer-python library), and other open source libraries
+- 10+ years working at SoftLayer, in a variety of roles.
+
+---
+
+# .center[Anatomy of an API Call]
+
+.center[https://api.softlayer.com]
+
+- Public Internet Endpoint.
+
+.center[https://api.service.softlayer.com]
+
+- Private Network Endpoint
+- Only difference is the SoftLayer_Resource_Metadata service.
+
+
+
+---
+
+Specify the endpoint type and version
+
+## api.softlayer.com/<span class='brightGold'>rest</span>/<span class='darkGold'>v3.1</span>
+
+.columnA[
+### Types
+- REST
+- SOAP
+- XMLRPC
+- Mobile
+
+### Versions
+- v3
+- v3.1
+]
+
+.columnB[
+<img src='https://i.imgur.com/P00TpJ5.png'/ width="90%">
+]
+
+---
+
+API is broken down into "Services", which contain a collection of methods that perform some action.
+
+<br>
+
+## api.softlayer.com/rest/v3.1/<span class='brightGold'>SoftLayer_Service
+
+<br>
+
+Data returned by the API is broken down into "Datatypes". Services usually have a matching datatype, but not all data types have a matching service.
+
+- https://sldn.softlayer.com/reference
+
+</br>
+
+
+---
+Methods tell the API which action to actually run in a class/service.
+
+
+## api.softlayer.com/rest/v3.1/ SoftLayer_Service/<span class='brightGold'>method</span>
+
+- https://sldn.softlayer.com/reference/services/SoftLayer_Account/getObject/
+
+```bash
+$ curl -s -u $SL_USER:$SL_APIKEY \
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getObject.json'
+{"accountManagedResourcesFlag":false,"accountStatusId":1001,"address1":"4849 Alpha Rd","allowedPptpVpnQuantity":0,"brandId":2,"city":"Dallas", LOTS OF DATA}
+```
+
+---
+Some methods require an InitParamter, listed in the documentation. For REST calls, this goes between the Service and Method. 
+For SOAP/XML requests, this is set in the header.
+
+## api.softlayer.com/rest/v3.1/SoftLayer_Service/ <span class='brightGold'>initParameter</span>/method
+
+- https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getObject/
+
+```bash
+$  curl -s  -u $SL_USER:$SL_APIKEY \
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/100317048/getObject'
+{"accountId":307608,"createDate":"2020-04-07T04:01:49-06:00","dedicatedAccountHostOnlyFlag":false,"domain":"chechu.com", OTHER DATA}
+```
+
+---
+
+You can control the format of the returned data by adding .FORMAT to the end of the URI. This is optional, JSON is assumed for REST calls.
+
+
+## api.softlayer.com/SoftLayer_Service/ initParameter/method<span class='brightGold'>.json</span>
+
+### Available formats
+- json
+- txt
+- xml
+
+---
+
+
+Object Masks are specified as URL parameters, and take the form of a nested array, starting at the data type returned by the method.
+
+## api.softlayer.com/SoftLayer_Service/ initParameter/method <span class='brightGold'>?objectMask=mask[id,name,relationalProperty[id, name]]
+
+```bash
+$ curl -s -g  -u $SL_USER:$SL_APIKEY  'https://api.softlayer.com/rest/v3.1/
+SoftLayer_Virtual_Guest/100317048/getObject?objectMask=mask[id,hostname]'
+{"hostname":"activedirectory","id":100317048}
+```
+
+> -g for curl lets you use un-escaped brackets
+> 
+> -s for curl silences transport output
+
+---
+
+## What is an object mask?
+
+- https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getObject/
+
+Returns a [SoftLayer_Virtual_Guest datatype](https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest/)
+
+Think of a datatype as a table in a database. 
+
+- Local Properties
+  + Selecting a local property "deselects" all the other default properties that would normally be returned.
+  + This is ideal to reduce the size of the data returned.
+- Relational Properties
+  + Selecting these "joins" in other tables to the query
+  + Have their own set of local and relational properties
+- Count Properties
+  + Returns a count of how many of these an object has.
+
+---
+
+```python
+mask[
+  id, # local
+  hostname, # local
+  datacenter[ # relational, SoftLayer_Location datatype
+    id, # local to SoftLayer_Location
+    name, # local to  SoftLayer_Location
+    timezone # relational, SoftLayer_Locale_Timezone
+  ]
+]
+```
+
+```bash
+$ curl -s  -g  -u $SL_USER:$SL_APIKEY  'https://api.softlayer.com/rest/v3.1/
+SoftLayer_Virtual_Guest/100317048/getObject
+* ?objectMask=mask[id,hostname,datacenter[id,name,timezone]]'
+{
+  "hostname":"activedirectory","id":100317048,
+  "datacenter":{
+    "id":1854895, "name":"dal13",
+    "timezone":{
+      "id":114, "longName":"(GMT-06:00) America\/Dallas - CST",
+      "name":"America\/Chicago", "offset":"-0600",  "shortName":"CST"}
+  }
+}
+```
+
+---
+
+## Object Filters
+While object masks let you select which columns from a query you want. Object Filters let you select which rows from the query you want. These are essentially the `WHERE` clause for any given query.
+
+- https://sldn.softlayer.com/article/object-filters/
+
+### Gotchas
+- Filters generally start the top level at the Service's datatype, NOT the return datatype.
+- Errors and Bad filters can be silently ignored.
+- Can only filter the number of rows in the returned datatype. Can not limit rows from any of the relational properties.
+- `OPTIONS` are an array of usually a single property.
+
+---
+
+## ObjectFilter Example
+
+```bash
+curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/
+SoftLayer_Account/getVirtualGuests.json
+* ?objectFilter={"virtualGuests":{"hostname":{"operation":"adns"}}}'
+[{"domain":"vmware.chechu.com","fullyQualifiedDomainName":"adns.vmware.chechu.com","hostname":"adns","id":100250634, OTHERDATA}}]
+```
+
+---
+## Result Limits
+
+Allows you to 'page' through results. Only useable if the return datatype is an array (marked by `[]`)
+
+Added as a URL parameter like `resultLimit=<OFFSET>,<LIMIT>`
+
+`SoftLayer-Total-Items` header tells you how many total items to expect.
+
+```bash
+curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/
+* SoftLayer_Account/getTickets.json?resultLimit=0%2C10'
+```
+
+<br>
+*NOTE* SQL still needs to compute the query, so adding a limit will not solve errors that are caused by SQL taking too long to return.
+
+---
+
+## All of the Above
+
+```bash
+$ curl -s  -v -g  -u $SL_USER:$SL_APIKEY 
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getVirtualGuests.json
+?objectFilter={"virtualGuests":{"hostname":{"operation":"adns"}}}
+&objectMask=mask[id,hostname]
+&resultLimit=0,10'
+
+[{"hostname":"adns","id":100250634}]
+
+< HTTP/1.1 200 OK
+< Date: Tue, 21 Apr 2020 21:44:04 GMT
+< Server: Apache
+< X-Frame-Options: SAMEORIGIN
+*< SoftLayer-Total-Items: 1
+< Content-Length: 36
+< Vary: Accept-Encoding
+< Connection: close
+< Content-Type: application/json
+< Strict-Transport-Security: max-age=31536000
+
+```
+
+---
+
+## Parameters
+
+- Any method that takes in parameters requires a POST request. 
+- Parameters are NOT named in the request, but order does matter. Should match the order from the documentation.
+
+- [SoftLayer_Dns_Domain::createNsRecord()](https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/createNsRecord/)
+
+
+```bash
+curl -u $SL_USER:$SL_APIKEY -X POST 
+-d '{"parameters": ["ns1.sltesting.com.", "192.168.1.1", 3600]}'
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/
+3217092/createNsRecord.json'
+```
+
+
+---
+
+- Some parameters are Objects or arrays themselves, and are specified in a JSON format
+
+[SoftLayer_Dns_Domain_ResourceRecord::createObject()](https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/)
+
+```bash
+curl -u $SL_USER:$SL_APIKEY -X POST 
+-d '{"parameters": [{"data": "126.123.123.1",
+  "host": "test", "type": "NS", "ttl": 3600, "domainId": 3217096}]}'
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/
+createObject'
+```
+
+### Basic Format
+
+```json
+{"parameters":[
+  "parameter1",
+  {"parameter2": "is an object parameter"},
+  [{"parameter3": "is an array"}, {"of other objects"}]
+]}
+```
+
+
+---
+
+## SLCLI 
+[SLCLI Docs](https://softlayer-python.readthedocs.io/en/latest/)
+[SLCLI Project](https://github.com/softlayer/softlayer-python)
+
+
+```bash
+$ slcli call-api --help
+Usage: slcli call-api [OPTIONS] SERVICE METHOD [PARAMETERS]...
+
+  Call arbitrary API endpoints with the given SERVICE and METHOD.
+
+Options:
+  --id TEXT                       Init parameter
+  --mask TEXT                     String-based object mask
+  --limit INTEGER                 Result limit
+  --offset INTEGER                Result offset
+  -v, --verbose                   Sets the debug noise level, specify multiple
+                                  times for more verbosity.
+  --format [table|raw|json|jsonraw] Output format  [default: raw]
+  --json-filter TEXT              A JSON string to be passed in as the object
+     filter to the API call. Remember to use  double quotes ("") for variable
+     names. Can NOT be used with --filter. Dont use whitespace outside of 
+     strings, or the slcli might have trouble parsing it.
+
+
+
+  ```
+
+---
+
+## SLCLI Debugging
+
+```bash
+$  slcli -vvv  call-api SoftLayer_Account getObject
+
+Calling: SoftLayer_Account::getObject(id=None, mask='', filter='{}', args=(), limit=None, offset=None))
+
+Starting new HTTPS connection (1): api.softlayer.com:443
+https://api.softlayer.com:443 "GET /rest/v3.1/SoftLayer_Account/getObject.json HTTP/1.1" 200 5053
+
+Returned Data:
+{'accountManagedResourcesFlag': False, 'accountStatusId': 1001, 'address1': '4849 Alpha Rd',  LOTS OF OUTPUT }
+
+execution_time    0.319053s
+api_calls         SoftLayer_Account::getObject (0.207001s)
+
+id      None
+mask
+filter  {}
+limit   None
+offset  None
+
+curl -u $SL_USER:$SL_APIKEY -X GET -H "Accept: */*" -H "Accept-Encoding: gzip, deflate, compress"  'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getObject.json'
+
+```
+
+---
+
+## SLCLI Debugging
+
+```bash
+$ slcli -vvv --format=json call-api [SERVICE] [METHOD] 
+[--id <ID>]
+[--json-filter <JSON>] 
+[--mask <mask[]>]
+[--limit <limit>]
+[--offset <offset>]
+[param1]
+[param2]
+[param3]
+[paramX]
+```
+
+[Code Debugging](https://softlayer-python.readthedocs.io/en/latest/api/client/#debugging)
+
+---
+
+## SLCLI XML
+
+- Debug output depends on the endpoint you are using. 
+  + REST endpoint will output a curl call. 
+  + XMLRPC endpoint will output a basic python program with payload.
+
+---
+
+## IBMCLOUD SL
+
+[IBMCLOUD CLI](https://cloud.ibm.com/docs/cli?topic=cloud-cli-getting-started) has a function call `sl` which mimics the slcli.
+
+Developed as a seperate product, but still supported to some extent.
+Has a similar call-api  function.
+
+`IBMCLOUD_TRACE=true` to enable API call output, all in REST.
+
+---
+
+## Debugging
+
+- What you need to know before opening a support ticket
+  + Code snippet using a supported library is fine, Pure curl call is better.
+  + api user is helpful. Never write down API key.
+  + Did this work in the past, or trying to get it to work.
+  + How reproduceable is it?
+  + The actual error the SL API returned.
+    * `SoftLayer_Exception_<WHATEVER>`
+    * Internal Server Error
+
+---
+
+## Common Errors
+- [Exception Handling](https://sldn.softlayer.com/article/exception-handling-softlayer-api/) [Timeout Handling](https://sldn.softlayer.com/article/how-solve-error-fetching-http-headers/)
+
+- `SoftLayer_Exception_ObjectNotFound` or `SoftLayer_Exception_NotFound`
+  + Object doesn't exist, or user doesn't have access. Check initParameters
+- `SoftLayer_Exception_WebService_BadRequest`
+  + Generic error meaning your request wasn't parseable. Check the objectMaks/objectFilter/parameters for formatting errors.
+- `SoftLayer_Exception_Public` / `Internal Server Error`
+  + Generally means you asked for too much data. Check the objectMask, reduce number of relational properties. Use a result Limit
+  + Sometimes can indicate a deeper problem, check splunk for more details.
+- `Timeout`
+  + Query was too complicated for the database to calculate in time, was forceibly closed. Check object mask, or possible object filters.
+
+---
+
+
+## DATA OVERLOAD
+
+```bash
+$> time curl -s -v -u $SL_USER:$SL_APIKEY -g \
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getInvoices.json?objectMask=mask[id]'
+< HTTP/1.1 200 OK
+< SoftLayer-Total-Items: 7922
+< Content-Length: 123508 (0.123508 MB)
+real    0m1.163s
+```
+
+```bash
+$> time curl -v -u $SL_USER:$SL_APIKEY -g 'https://api.softlayer.com/rest/v3.1/
+SoftLayer_Account/getInvoices.json?objectMask=mask[id,invoiceTopLevelItems]'
+
+< HTTP/1.0 200 OK
+{"error":"Internal Error","code":"SoftLayer_Exception_Public"}
+real    0m16.731s
+```
+
+```bash
+$> time curl -v -u $SL_USER:$SL_APIKEY -g 'https://api.softlayer.com/rest/v3.1/
+SoftLayer_Account/getInvoices.json?objectMask=mask[id,account]'
+
+< HTTP/1.0 500 Internal Server Error
+< SoftLayer-Total-Items: 7922
+[5 bytes data] # returns nothing
+real    0m8.428s
+```
+
+???
+Data overload is the most common problem. Here are 3 API calls to the same method.
+
+First works just fine.
+Second fails, but has a 200 OK HTTP code
+Third Fails with a 500 HTTP code, but no message.
+
+---
+
+## DATA OVERLOAD
+
+```bash
+$> time curl -v -u $SL_USER:$SL_APIKEY -g 'https://api.softlayer.com/rest/v3.1/
+SoftLayer_Account/getInvoices.json?objectMask=mask[id,invoiceTopLevelItems]&resultLimit=0,2000'
+  0     0    0     0    0     0      0      0 --:--:--  0:00:09 --:--:--     0{ [5 bytes data]
+  0     0    0     0    0     0      0      0 --:--:--  0:00:09 --:--:--     0
+< HTTP/1.1 200 OK
+< Date: Thu, 30 Apr 2020 22:03:35 GMT
+< SoftLayer-Total-Items: 7925
+*< Content-Length: 1706185 ( 1.706185 MB)
+100 1666k  100 1666k    0     0   165k      0  0:00:10  0:00:10 --:--:--  436k
+real    0m10.103s
+```
+
+```bash
+$> time curl -v -u $SL_USER:$SL_APIKEY -g 'https://api.softlayer.com/rest/v3.1/
+SoftLayer_Account/getInvoices.json?objectMask=mask[id,account]&resultLimit=0,2000'
+  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0{ [5 bytes data]
+  0     0    0     0    0     0      0      0 --:--:--  0:00:03 --:--:--     0
+< HTTP/1.1 200 OK
+< Date: Thu, 30 Apr 2020 21:57:02 GMT
+< SoftLayer-Total-Items: 7925
+*< Content-Length: 133522001 ( 133.522001 MB)
+100  127M  100  127M    0     0  8221k      0  0:00:15  0:00:15 --:--:-- 10.7M
+real    0m19.761s
+```
+
+???
+First call takes 9 seconds to return, indicating a long time pulling data from the DB.
+
+Second call takes 3 seconds to return, but a very large Content-Length, indicting too much data was returned.
+
+---
+
+## Contributing
+
+- [SLCLI](https://github.com/softlayer/softlayer-python) Python
+  + https://github.com/softlayer/softlayer-python
+- [SLDN](https://github.com/softlayer/githubio_source) Markdown
+  + https://github.com/softlayer/githubio_source
+
+
+</textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <!-- <script src="/remark/jquery-2.2.4.min.js"></script> -->
+    <!-- <script src="/remark/highlight.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        highlightStyle: 'default',
+        ratio: '16:9',
+        highlightLines: true
+      });
+      MathJax.Hub.Config({
+          tex2jax: {
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+      });
+      var hljs = hljs1.initHighlightingOnLoad();
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>
