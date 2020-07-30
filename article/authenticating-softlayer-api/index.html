@@ -218,17 +218,22 @@ UUID          ApiKey-1c505b6d-9e81-4b87-b929-f9493c2dea63
 <p><em>NOTICE</em> SoftLayer_User_Customer::getPortalLoginToken does not support the REST endpoint. You will need to send in your request with an XML or SOAP call.</p>
 <p><em>NOTICE</em> This method also doesn't work with IBMid username/passwords</p>
 <h2 id="temporary-ibmid-token">Temporary IBMid Token</h2>
-<p>It is possible to use the IBMid authentication service to make softlayer API calls.</p>
+<p>It is possible to use the IBMid authentication service to make softlayer API calls. See <a href="https://cloud.ibm.com/apidocs/iam-identity-token-api">IAM Token API</a> for more specific details.</p>
 <h3 id="get-the-imstoken">Get the IMS_TOKEN</h3>
 <p>For most users, you will need your username and password, send that to <a href="https://iam.ng.bluemix.net/oidc/token">https://iam.ng.bluemix.net/oidc/token</a>, and you will be given a token that can be used to make SoftLayer(IMS) api calls.</p>
 <pre><code>IBMUSER=myemail@email.com
 IBMPASS=123qweasdzxc
-curl -s -u 'bx:bx' -k -X POST --header 'Content-Type: application/x-www-form-urlencoded' --header 'Accept: application/json' -d &quot;grant_type=password&amp;response_type=cloud_iam,ims_portal&amp;username=$IBMUSER&amp;password=$IBMPASS&quot; https://iam.ng.bluemix.net/oidc/token
+curl -s -u 'bx:bx' -k -X POST --header 'Content-Type: application/x-www-form-urlencoded' --header 'Accept: application/json' -d &quot;grant_type=password&amp;response_type=cloud_iam,ims_portal&amp;username=$IBMUSER&amp;password=$IBMPASS&quot; https://iam.cloud.ibm.com/identity/token
 </code></pre><p>For users with an IBM email, you will need to use the SSO endpoint (the above example will also mention this if you try your username/password)</p>
-<p>Tokens are retrieved from <a href="https://iam-id-1.ng.bluemix.net/identity/passcode">https://iam-id-1.ng.bluemix.net/identity/passcode</a></p>
+<p>Tokens are retrieved from <a href="https://iam.cloud.ibm.com/identity/passcode">https://iam.cloud.ibm.com/identity/passcode</a></p>
 <pre><code>TOKEN=qwe124cxzv
-curl -s -u 'bx:bx' -k -X POST --header 'Content-Type: application/x-www-form-urlencoded' --header 'Accept: application/json' -d &quot;grant_type=urn:ibm:params:oauth:grant-type:passcode&amp;passcode=$TOKEN&amp;response_type=cloud_iam,ims_portal&quot; https://iam.ng.bluemix.net/oidc/token
-</code></pre><p>In the response, will be a data field call <code>ims_token</code> which will let you authenticate to the SoftLayer API until the token expires (which should also be in the returned data)</p>
+curl -s -u 'bx:bx' -k -X POST --header 'Content-Type: application/x-www-form-urlencoded' --header 'Accept: application/json' -d &quot;grant_type=urn:ibm:params:oauth:grant-type:passcode&amp;passcode=$TOKEN&amp;response_type=cloud_iam,ims_portal&quot; https://iam.cloud.ibm.com/identity/token
+</code></pre><h4 id="accesstoken">ACCESS_TOKEN</h4>
+<p>In the response there will be a data field called &lsquo;access_token&rsquo;, which is a JWT token you can use for API authentication. Simply add it as a &ldquo;Authorization: Bearer $TOKEN&rdquo; HTTP header.</p>
+<pre><code>curl -H &quot;Authorization: Bearer zzzzzzzzzzzzzzzzzzzzzzzzzzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasssssssssssssssssssssssssssssssdddddddddddddddddddddddddddddddddddddd ETC ETC ETC.&quot; 'https://api.sotlayer.com/rest/v3.1/SoftLayer_Account/getObject'
+</code></pre><p>There will also be a <code>refresh_token</code> which will only work to get you a new token.</p>
+<h4 id="imstoken">IMS_TOKEN</h4>
+<p>In the response there will be a data field call <code>ims_token</code> which will let you authenticate to the SoftLayer API until the token expires (which should also be in the returned data)</p>
 <p>The REST endpoint doesn't support authenticating with tokens, but the MOBILE endpoint works, along with the SOAP/XML endpoints.</p>
 <pre><code>curl -u USERID:IMS_TOKEN 'https://api.softlayer.com/mobile/v3.1/SoftLayer_Account/getObject'
 </code></pre><p>In the authentication header, you will set <code>userId</code> and <code>authToken</code>,  instead of <code>username</code> and <code>apiKey</code>. A call to SoftLayer_Customer::getObject would look like this in XML.</p>
