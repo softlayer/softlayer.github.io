@@ -139,100 +139,100 @@ if (!doNotTrack) {
 				
                 
 				
-                <pre><code>/*
-Cancel a bare metal server
+                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">/*
+</span><span style="color:#75715e">Cancel a bare metal server
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">This script looks for a server by hostname to cancel it. The server will be cancelled immediately if
+</span><span style="color:#75715e">it is billed Hourly, for Monthly server the cancellation will be made after next bill date.
+</span><span style="color:#75715e">To cancel the server we will call to cancelItem() method of SoftLayer_Billing_Item service since
+</span><span style="color:#75715e">cancelService() method cannot be used for Bare Metal Servers. See below for more details.
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">Important manual pages:
+</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware
+</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/editObject
+</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem
+</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
+</span><span style="color:#75715e">https://sldn.softlayer.com/article/object-Masks
+</span><span style="color:#75715e">https://sldn.softlayer.com/article/object-filters
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
+</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span><span style="color:#75715e">*/</span>
+<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
-This script looks for a server by hostname to cancel it. The server will be cancelled immediately if
-it is billed Hourly, for Monthly server the cancellation will be made after next bill date.
-To cancel the server we will call to cancelItem() method of SoftLayer_Billing_Item service since
-cancelService() method cannot be used for Bare Metal Servers. See below for more details.
-
-Important manual pages:
-http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware
-http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/editObject
-http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem
-http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
-https://sldn.softlayer.com/article/object-Masks
-https://sldn.softlayer.com/article/object-filters
-
-License: http://sldn.softlayer.com/article/License
-Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-*/
-package main
-
-import (
-	&quot;fmt&quot;
-	&quot;github.com/softlayer/softlayer-go/session&quot;
-	&quot;github.com/softlayer/softlayer-go/services&quot;
-	&quot;github.com/softlayer/softlayer-go/filter&quot;
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
 )
 
-func main() {
-	// SoftLayer API username and key
-	username   := &quot;set me&quot;
-	apikey     := &quot;set me&quot;
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#75715e">// SoftLayer API username and key
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+	<span style="color:#a6e22e">apikey</span>     <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
 
-	// The hostname of server you wish to cancel.
-	serverName := &quot;set me&quot;
+	<span style="color:#75715e">// The hostname of server you wish to cancel.
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">serverName</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
 
-	// In order to cancel billing item of server we need to set following values
-	cancelAssociatedBillingItems := false
-	reason := &quot;No longer needed&quot;
-	customerNote := &quot;BMS - canceled&quot;
+	<span style="color:#75715e">// In order to cancel billing item of server we need to set following values
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">cancelAssociatedBillingItems</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">false</span>
+	<span style="color:#a6e22e">reason</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;No longer needed&#34;</span>
+	<span style="color:#a6e22e">customerNote</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;BMS - canceled&#34;</span>
 
-	// Create SoftLayer API session
-	sess := session.New(username, apikey)
+	<span style="color:#75715e">// Create SoftLayer API session
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
 
-	// Get SoftLayer_Account, SoftLayer_Hardware_Server, and SoftLayer_Billing_Item services
-	accountService  := services.GetAccountService(sess)
-	hardwareService := services.GetHardwareServerService(sess)
-	billingService  := services.GetBillingItemService(sess)
+	<span style="color:#75715e">// Get SoftLayer_Account, SoftLayer_Hardware_Server, and SoftLayer_Billing_Item services
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">accountService</span>  <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetAccountService</span>(<span style="color:#a6e22e">sess</span>)
+	<span style="color:#a6e22e">hardwareService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetHardwareServerService</span>(<span style="color:#a6e22e">sess</span>)
+	<span style="color:#a6e22e">billingService</span>  <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetBillingItemService</span>(<span style="color:#a6e22e">sess</span>)
 
-	// Following filter and mask helps to get the ID of bare metal server
-	filter := filter.Build(filter.Path(&quot;hardware.hostname&quot;).Eq(serverName))
-	mask   := &quot;id;hostname;hourlyBillingFlag&quot;
+	<span style="color:#75715e">// Following filter and mask helps to get the ID of bare metal server
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">filter</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">filter</span>.<span style="color:#a6e22e">Build</span>(<span style="color:#a6e22e">filter</span>.<span style="color:#a6e22e">Path</span>(<span style="color:#e6db74">&#34;hardware.hostname&#34;</span>).<span style="color:#a6e22e">Eq</span>(<span style="color:#a6e22e">serverName</span>))
+	<span style="color:#a6e22e">mask</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;id;hostname;hourlyBillingFlag&#34;</span>
 
-	// Call the getHardware() method to get list of servers that matches with the filter
-	hardware, err := accountService.Mask(mask).Filter(filter).GetHardware()
-	if err != nil {
-		fmt.Printf(&quot;\n Unable to find server '&quot; + serverName + &quot;'\n - %s\n&quot;, err)
-		return
+	<span style="color:#75715e">// Call the getHardware() method to get list of servers that matches with the filter
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">hardware</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">accountService</span>.<span style="color:#a6e22e">Mask</span>(<span style="color:#a6e22e">mask</span>).<span style="color:#a6e22e">Filter</span>(<span style="color:#a6e22e">filter</span>).<span style="color:#a6e22e">GetHardware</span>()
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to find server &#39;&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">serverName</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;&#39;\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
+		<span style="color:#66d9ef">return</span>
 	}
 
-	// If server name was not found we throw a message
-	if len(hardware) &lt; 1 {
-		fmt.Printf(&quot;\n Unable to find server '%s'\n&quot;, serverName)
-	} else {
-		// Get the SoftLayer_Billing_Item by calling the method getBillingItem() of service
-		// SoftLayer_Hardware_Server
-		billingItem, err := hardwareService.Id(*hardware[0].Id).GetBillingItem()
-		if err != nil {
-			fmt.Printf(&quot;\n Unable to get the billing item of server \n - %s\n&quot;, err)
-			return
+	<span style="color:#75715e">// If server name was not found we throw a message
+</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">hardware</span>) &lt; <span style="color:#ae81ff">1</span> {
+		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to find server &#39;%s&#39;\n&#34;</span>, <span style="color:#a6e22e">serverName</span>)
+	} <span style="color:#66d9ef">else</span> {
+		<span style="color:#75715e">// Get the SoftLayer_Billing_Item by calling the method getBillingItem() of service
+</span><span style="color:#75715e"></span>		<span style="color:#75715e">// SoftLayer_Hardware_Server
+</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">billingItem</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">hardwareService</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">hardware</span>[<span style="color:#ae81ff">0</span>].<span style="color:#a6e22e">Id</span>).<span style="color:#a6e22e">GetBillingItem</span>()
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to get the billing item of server \n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
+			<span style="color:#66d9ef">return</span>
 		}
 
-		// If server is billed hourly it will be cancelled immediately, for monthly server
-		// the cancellation will be made after next bill date.
-		cancelImmediately := hardware[0].HourlyBillingFlag
+		<span style="color:#75715e">// If server is billed hourly it will be cancelled immediately, for monthly server
+</span><span style="color:#75715e"></span>		<span style="color:#75715e">// the cancellation will be made after next bill date.
+</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">cancelImmediately</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">hardware</span>[<span style="color:#ae81ff">0</span>].<span style="color:#a6e22e">HourlyBillingFlag</span>
 
-		// Call the cancelItem() method in order to cancel the bare metal server
-		result, err := billingService.Id(*billingItem.Id).CancelItem( cancelImmediately,
-			&amp;cancelAssociatedBillingItems, &amp;reason, &amp;customerNote )
-		if err != nil {
-			fmt.Printf(&quot;\n Unable to cancel the server '&quot; + serverName + &quot;'\n - %s\n&quot;, err)
-			return
+		<span style="color:#75715e">// Call the cancelItem() method in order to cancel the bare metal server
+</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">result</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">billingService</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">billingItem</span>.<span style="color:#a6e22e">Id</span>).<span style="color:#a6e22e">CancelItem</span>( <span style="color:#a6e22e">cancelImmediately</span>,
+			<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">cancelAssociatedBillingItems</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">reason</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">customerNote</span> )
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to cancel the server &#39;&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">serverName</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;&#39;\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
+			<span style="color:#66d9ef">return</span>
 		}
 
-		// Print final result
-		if result {
-			fmt.Printf(&quot;\n Server '%s' was successfuly cancelled\n&quot;, serverName)
-		} else {
-			fmt.Printf(&quot;\n Server '%s' could not be cancelled\n&quot;, serverName)
+		<span style="color:#75715e">// Print final result
+</span><span style="color:#75715e"></span>		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">result</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Server &#39;%s&#39; was successfuly cancelled\n&#34;</span>, <span style="color:#a6e22e">serverName</span>)
+		} <span style="color:#66d9ef">else</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Server &#39;%s&#39; could not be cancelled\n&#34;</span>, <span style="color:#a6e22e">serverName</span>)
 		}
 	}
 }
 
-</code></pre>
+</code></pre></div>
             </div>
         </div>
 
