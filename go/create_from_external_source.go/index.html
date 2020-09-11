@@ -137,91 +137,91 @@ if (!doNotTrack) {
 				
                 
 				
-                <pre><code>/*
-Create Image Template from external source
+                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">/*
+</span><span style="color:#75715e">Create Image Template from external source
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">This script creates a transaction to import a disk image from an external source and create
+</span><span style="color:#75715e">a standard image template
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">Important manual pages:
+</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest_Block_Device_Template_Group/createFromExternalSource
+</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Virtual_Guest_Block_Device_Template_Configuration
+</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_Block_Device_Template_Group
+</span><span style="color:#75715e">
+</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
+</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span><span style="color:#75715e">*/</span>
+<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
-This script creates a transaction to import a disk image from an external source and create
-a standard image template
-
-Important manual pages:
-http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest_Block_Device_Template_Group/createFromExternalSource
-http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Virtual_Guest_Block_Device_Template_Configuration
-http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_Block_Device_Template_Group
-
-License: http://sldn.softlayer.com/article/License
-Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-*/
-package main
-
-import (
-	&quot;fmt&quot;
-	&quot;github.com/softlayer/softlayer-go/datatypes&quot;
-	&quot;github.com/softlayer/softlayer-go/services&quot;
-	&quot;github.com/softlayer/softlayer-go/session&quot;
-	&quot;github.com/softlayer/softlayer-go/sl&quot;
-	&quot;encoding/json&quot;
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
 )
 
-func main() {
-	// SoftLayer API username and key.
-	username  := &quot;set me&quot;
-	apikey    := &quot;set me&quot;
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#75715e">// SoftLayer API username and key.
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span>  <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+	<span style="color:#a6e22e">apikey</span>    <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
 
-	// Declare the name, note to be applied to the imported template
-	name := &quot;ExportImageTemplateTest&quot;
-	note := &quot;Test - create from external source&quot;
+	<span style="color:#75715e">// Declare the name, note to be applied to the imported template
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">name</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;ExportImageTemplateTest&#34;</span>
+	<span style="color:#a6e22e">note</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;Test - create from external source&#34;</span>
 
-	/*
-	Declare referenceCode of the operating system software description, some available options:
-	   CENTOS_6_32, CENTOS_6_64, CENTOS_7_64, REDHAT_6_32, REDHAT_6_64, REDHAT_7_64, UBUNTU_12_32,
-	   UBUNTU_12_64, UBUNTU_14_32, UBUNTU_14_64, WIN_2003-STD-SP2-5_32, WIN_2003-STD-SP2-5_64,
-	   WIN_2008-STD-R2-SP1_64, WIN_2012-STD_64.
-	*/
-	operatingSystemReferenceCode := &quot;CENTOS_6_64&quot;
+	<span style="color:#75715e">/*
+</span><span style="color:#75715e">	Declare referenceCode of the operating system software description, some available options:
+</span><span style="color:#75715e">	   CENTOS_6_32, CENTOS_6_64, CENTOS_7_64, REDHAT_6_32, REDHAT_6_64, REDHAT_7_64, UBUNTU_12_32,
+</span><span style="color:#75715e">	   UBUNTU_12_64, UBUNTU_14_32, UBUNTU_14_64, WIN_2003-STD-SP2-5_32, WIN_2003-STD-SP2-5_64,
+</span><span style="color:#75715e">	   WIN_2008-STD-R2-SP1_64, WIN_2012-STD_64.
+</span><span style="color:#75715e">	*/</span>
+	<span style="color:#a6e22e">operatingSystemReferenceCode</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;CENTOS_6_64&#34;</span>
 
-	// Declare storage, cluster, container and filename used to create the URL where image
-	// will be copied.
-	storageName   := &quot;SLOS307608-40&quot;
-	clusterName   := &quot;sao01&quot;
-	containerName := &quot;softlayer_container&quot;
-	fileName      := &quot;centos6test.vhd&quot;
+	<span style="color:#75715e">// Declare storage, cluster, container and filename used to create the URL where image
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// will be copied.
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">storageName</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;SLOS307608-40&#34;</span>
+	<span style="color:#a6e22e">clusterName</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;sao01&#34;</span>
+	<span style="color:#a6e22e">containerName</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;softlayer_container&#34;</span>
+	<span style="color:#a6e22e">fileName</span>      <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;centos6test.vhd&#34;</span>
 
-	// Build URL where image is hosted
-	swift := fmt.Sprintf(&quot;swift://%s@%s/%s/%s&quot;, storageName, clusterName, containerName, fileName )
+	<span style="color:#75715e">// Build URL where image is hosted
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">swift</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;swift://%s@%s/%s/%s&#34;</span>, <span style="color:#a6e22e">storageName</span>, <span style="color:#a6e22e">clusterName</span>, <span style="color:#a6e22e">containerName</span>, <span style="color:#a6e22e">fileName</span> )
 
-	// Build the Container_Virtual_Guest_Block_Device_Template_Configuration object
-	configuration := datatypes.Container_Virtual_Guest_Block_Device_Template_Configuration{
-		Name: sl.String(name),
-		Note: sl.String(note),
-		OperatingSystemReferenceCode: sl.String(operatingSystemReferenceCode),
-		Uri: sl.String(swift),
+	<span style="color:#75715e">// Build the Container_Virtual_Guest_Block_Device_Template_Configuration object
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">configuration</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Container_Virtual_Guest_Block_Device_Template_Configuration</span>{
+		<span style="color:#a6e22e">Name</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">name</span>),
+		<span style="color:#a6e22e">Note</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">note</span>),
+		<span style="color:#a6e22e">OperatingSystemReferenceCode</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">operatingSystemReferenceCode</span>),
+		<span style="color:#a6e22e">Uri</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">swift</span>),
 	}
 
-	// Create session
-  	sess := session.New(username, apikey)
+	<span style="color:#75715e">// Create session
+</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
 
-	// Get SoftLayer_Virtual_Guest_Block_Device_Template_Group service.
-  	service := services.GetVirtualGuestBlockDeviceTemplateGroupService(sess)
+	<span style="color:#75715e">// Get SoftLayer_Virtual_Guest_Block_Device_Template_Group service.
+</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">service</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetVirtualGuestBlockDeviceTemplateGroupService</span>(<span style="color:#a6e22e">sess</span>)
 
-	// Create standard image from external source.
-  	image, err := service.CreateFromExternalSource(&amp;configuration)
-	if err != nil {
-		fmt.Printf(&quot;\n Unable to create standard image:\n - %s\n&quot;, err)
-		return
+	<span style="color:#75715e">// Create standard image from external source.
+</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">image</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">service</span>.<span style="color:#a6e22e">CreateFromExternalSource</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">configuration</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to create standard image:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
+		<span style="color:#66d9ef">return</span>
 	}
 
-	// Following creates a JSON object which is based on data of the captured image.
-	jsonFormat, JsonErr := json.MarshalIndent(image,&quot;&quot;,&quot;     &quot;)
-	if JsonErr != nil {
-		fmt.Println(JsonErr)
-		return
+	<span style="color:#75715e">// Following creates a JSON object which is based on data of the captured image.
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">JsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">MarshalIndent</span>(<span style="color:#a6e22e">image</span>,<span style="color:#e6db74">&#34;&#34;</span>,<span style="color:#e6db74">&#34;     &#34;</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">JsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">JsonErr</span>)
+		<span style="color:#66d9ef">return</span>
 	}
 
-	// Print result in JSON format
-	fmt.Println(string(jsonFormat))
+	<span style="color:#75715e">// Print result in JSON format
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
 }
 
-</code></pre>
+</code></pre></div>
             </div>
         </div>
 

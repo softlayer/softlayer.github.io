@@ -138,7 +138,7 @@ if (!doNotTrack) {
                 <p>This article will cover how to use the API to manage DNS zones and records. For a higher level documentation on how that all works, check out <a href="https://cloud.ibm.com/docs/infrastructure/dns">DNS Management</a></p>
 <h3 id="setup">Setup</h3>
 <p>All the functions defined in this article will be part of this <code>dnsManager</code> class. Which only sets up the SoftLayer Client, and configures the debugger, which allows you to see the exact API calls being made.</p>
-<pre><code>import SoftLayer
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">import SoftLayer
 from pprint import pprint as pp
 
 class dnsManager():
@@ -152,83 +152,83 @@ class dnsManager():
         for call in self.client.transport.get_last_calls():
             print(self.client.transport.print_reproduceable(call))
 
-if __name__ == &quot;__main__&quot;:
+if __name__ == &#34;__main__&#34;:
     main = dnsManager()
     main.main()
     main.debug()
-</code></pre><h2 id="creating-a-zone">Creating a zone</h2>
+</code></pre></div><h2 id="creating-a-zone">Creating a zone</h2>
 <p>A Zone here can either be a top level domain (domain.com) or a sub-domain (company.domain.com). The NS records for the zone will need to point so ns1.softlayer.com and ns2.softlayer.com.</p>
 <p>To create a zone, we use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/createObject/">SoftLayer_Dns_Domain::createObject()</a> and pass in a structure of type <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain/">SoftLayer_Dns_Domain</a>. You can pass in a list of resourceRecords during domain creating for them to be added as well. You can not however change the SOA record at creation, but can do so by editing the SOA record after it has been created.</p>
 <h3 id="python">Python</h3>
-<pre><code>    def createZone(self):
-        &quot;&quot;&quot;Creates a DNS zone&quot;&quot;&quot;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">    def createZone(self):
+        &#34;&#34;&#34;Creates a DNS zone&#34;&#34;&#34;
 
         zoneTemplate = {
-            'name': 'mydomain.com',
-            'resourceRecords': [
-                {'data': '127.0.0.1', 'host': '@', 'type': 'a' },
-                {'data': '1.2.3.4', 'host': 'zed', 'type': 'a' },
-                {'data': 'zed', 'host': '@', 'type': 'MX' }
+            &#39;name&#39;: &#39;mydomain.com&#39;,
+            &#39;resourceRecords&#39;: [
+                {&#39;data&#39;: &#39;127.0.0.1&#39;, &#39;host&#39;: &#39;@&#39;, &#39;type&#39;: &#39;a&#39; },
+                {&#39;data&#39;: &#39;1.2.3.4&#39;, &#39;host&#39;: &#39;zed&#39;, &#39;type&#39;: &#39;a&#39; },
+                {&#39;data&#39;: &#39;zed&#39;, &#39;host&#39;: &#39;@&#39;, &#39;type&#39;: &#39;MX&#39; }
             ]
         }
 
-        result = self.client.call('SoftLayer_Dns_Domain', 'createObject', zoneTemplate)
+        result = self.client.call(&#39;SoftLayer_Dns_Domain&#39;, &#39;createObject&#39;, zoneTemplate)
         pp(result)
-</code></pre><h3 id="rest">REST</h3>
-<pre><code>curl -u $SL_USER:$SL_APIKEY -X POST -d \
-'{&quot;parameters&quot;: [{&quot;name&quot;: &quot;mydomain.com&quot;, &quot;resourceRecords&quot;: [{&quot;type&quot;: &quot;a&quot;, &quot;host&quot;: &quot;@&quot;, &quot;data&quot;: &quot;127.0.0.1&quot;}, {&quot;type&quot;: &quot;a&quot;, &quot;host&quot;: &quot;zed&quot;, &quot;data&quot;: &quot;1.2.3.4&quot;}, {&quot;type&quot;: &quot;MX&quot;, &quot;host&quot;: &quot;@&quot;, &quot;data&quot;: &quot;zed&quot;}]}]}' \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/createObject.json'
-</code></pre><h2 id="creating-records">Creating Records</h2>
+</code></pre></div><h3 id="rest">REST</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X POST -d \
+&#39;{&#34;parameters&#34;: [{&#34;name&#34;: &#34;mydomain.com&#34;, &#34;resourceRecords&#34;: [{&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;@&#34;, &#34;data&#34;: &#34;127.0.0.1&#34;}, {&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;zed&#34;, &#34;data&#34;: &#34;1.2.3.4&#34;}, {&#34;type&#34;: &#34;MX&#34;, &#34;host&#34;: &#34;@&#34;, &#34;data&#34;: &#34;zed&#34;}]}]}&#39; \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/createObject.json&#39;
+</code></pre></div><h2 id="creating-records">Creating Records</h2>
 <p>A record will be any entry under the zone you just created, so you will need to know the ID of the zone, and use that for the <code>domainId</code> in the record template.</p>
 <p>Much like creating a zone, creating a record is done with a createObject call, but this time in the <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/createObject/">SoftLayer_Dns_Domain_ResourceRecord::createObject</a> method. Use the <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain_ResourceRecord/">SoftLayer_Dns_Domain_ResourceRecord</a> datatype to define exactly how you want the record itself to look. The example below only uses a few of the fields.</p>
-<h3 id="python1">Python</h3>
-<pre><code>    def addRecord(self, zone_id, record):
-        &quot;&quot;&quot;Adds record to zone_id&quot;&quot;&quot;
+<h3 id="python-1">Python</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">    def addRecord(self, zone_id, record):
+        &#34;&#34;&#34;Adds record to zone_id&#34;&#34;&#34;
         recordTemplate = {
-            'domainId': zone_id,  # id of the zone this record will belong to.
-            'data': record['data'],
-            'host': record['host'],
-            'type': record['type']
+            &#39;domainId&#39;: zone_id,  # id of the zone this record will belong to.
+            &#39;data&#39;: record[&#39;data&#39;],
+            &#39;host&#39;: record[&#39;host&#39;],
+            &#39;type&#39;: record[&#39;type&#39;]
         }
-        result = self.client.call('SoftLayer_Dns_Domain_ResourceRecord', 'createObject', recordTemplate)
+        result = self.client.call(&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;, &#39;createObject&#39;, recordTemplate)
         pp(result)
 
-if __name__ == &quot;__main__&quot;:
+if __name__ == &#34;__main__&#34;:
     main = dnsManager()
     my_zone_id = 2986181
-    record = {'data': '4.4.4.4', 'host': 'testa', 'type': 'a'}
+    record = {&#39;data&#39;: &#39;4.4.4.4&#39;, &#39;host&#39;: &#39;testa&#39;, &#39;type&#39;: &#39;a&#39;}
     main.addRecord(my_zone_id, record)
-</code></pre><h3 id="rest1">REST</h3>
-<pre><code>curl -u $SL_USER:$SL_APIKEY -X POST  -d \
-'{&quot;parameters&quot;: [{&quot;type&quot;: &quot;a&quot;, &quot;host&quot;: &quot;testa&quot;, &quot;domainId&quot;: 2986181, &quot;data&quot;: &quot;4.4.4.4&quot;}]}' \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/createObject.json'
-</code></pre><p>The SoftLayer_Dns_Domain service has methods like <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/createARecord/">SoftLayer_Dns_Domain::createARecord</a> which can make creating records easier, but this approach is a little more flexible. They are both capable of creating the same records though, so feel free to use either approach.</p>
+</code></pre></div><h3 id="rest-1">REST</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X POST  -d \
+&#39;{&#34;parameters&#34;: [{&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;testa&#34;, &#34;domainId&#34;: 2986181, &#34;data&#34;: &#34;4.4.4.4&#34;}]}&#39; \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/createObject.json&#39;
+</code></pre></div><p>The SoftLayer_Dns_Domain service has methods like <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/createARecord/">SoftLayer_Dns_Domain::createARecord</a> which can make creating records easier, but this approach is a little more flexible. They are both capable of creating the same records though, so feel free to use either approach.</p>
 <h2 id="viewing">Viewing</h2>
 <p>There are two main ways of getting information about the domain and its records. If you know the Id of the zone, simply use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getObject/">SoftLayer_Dns_Domain::getObject()</a>, otherwise use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getByDomainName/">SoftLayer_Dns_Domain::getByDomainName</a> as shown here.</p>
-<h3 id="python2">Python</h3>
-<pre><code>    def getZone(self, domain_name=None, zone_id=None):
+<h3 id="python-2">Python</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">    def getZone(self, domain_name=None, zone_id=None):
         if (domain_name is None) and (zone_id is None):
-            raise Exception(&quot;domain_name or zone_id is required&quot;)
-        mask = &quot;mask[resourceRecords]&quot;
+            raise Exception(&#34;domain_name or zone_id is required&#34;)
+        mask = &#34;mask[resourceRecords]&#34;
         if zone_id:
-            domain = self.client.call('SoftLayer_Dns_Domain', 'getObject', id=zone_id, mask=mask)
+            domain = self.client.call(&#39;SoftLayer_Dns_Domain&#39;, &#39;getObject&#39;, id=zone_id, mask=mask)
         else:
-            domain = self.client.call('SoftLayer_Dns_Domain', 'getByDomainName', domain_name, mask=mask)
+            domain = self.client.call(&#39;SoftLayer_Dns_Domain&#39;, &#39;getByDomainName&#39;, domain_name, mask=mask)
         pp(domain)
 
-if __name__ == &quot;__main__&quot;:
+if __name__ == &#34;__main__&#34;:
     main = dnsManager()
-    main.getZone(domain_name='mydomain.com')
-</code></pre><h3 id="rest2">REST</h3>
-<pre><code>curl -u $SL_USER:$SL_APIKEY \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getObject.json?objectMask=mask%5BresourceRecords%5D'
+    main.getZone(domain_name=&#39;mydomain.com&#39;)
+</code></pre></div><h3 id="rest-2">REST</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getObject.json?objectMask=mask%5BresourceRecords%5D&#39;
 
 curl -u $SL_USER:$SL_APIKEY -X POST  -d \
-'{&quot;parameters&quot;: [&quot;mydomain.com&quot;]}' \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/getByDomainName.json?objectMask=mask%5BresourceRecords%5D'
-</code></pre><p>You can also get the BIND format zone file with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getZoneFileContents">getZoneFileContents</a> if you need it.</p>
-<pre><code>curl -u $SL_USER:$SL_APIKEY \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getZoneFileContents.json'
+&#39;{&#34;parameters&#34;: [&#34;mydomain.com&#34;]}&#39; \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/getByDomainName.json?objectMask=mask%5BresourceRecords%5D&#39;
+</code></pre></div><p>You can also get the BIND format zone file with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getZoneFileContents">getZoneFileContents</a> if you need it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getZoneFileContents.json&#39;
 
 $ORIGIN mydomain.com.
 $TTL 86400
@@ -243,95 +243,95 @@ $TTL 86400
 @                      86400    IN NS    ns2.softlayer.com.
 @                      86400    IN A     127.0.0.1
 testa                  86400    IN A     5.5.5.5
-</code></pre><h2 id="editing-records">Editing records.</h2>
+</code></pre></div><h2 id="editing-records">Editing records.</h2>
 <p>Editing an existing record uses <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject/">SoftLayer_Dns_Domain_ResourceRecord::editObject()</a>. You will need to know the Id of the Record (not the zone) for this.</p>
-<h3 id="python3">Python</h3>
-<pre><code>    def editRecord(self, record_id, new_data):
-        &quot;&quot;&quot;Edits a record with new_data
+<h3 id="python-3">Python</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">    def editRecord(self, record_id, new_data):
+        &#34;&#34;&#34;Edits a record with new_data
 
         Will return True on success, and exception otherwise.
         new_data should be a structure that has fields that match the local properties of
         https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain_ResourceRecord/
         Only properties sent in will be updated.
-        new_data = {'data':'1.2.3.4', 'ttl':600}
-        &quot;&quot;&quot;
+        new_data = {&#39;data&#39;:&#39;1.2.3.4&#39;, &#39;ttl&#39;:600}
+        &#34;&#34;&#34;
 
-        return self.client.call('SoftLayer_Dns_Domain_ResourceRecord', 'editObject', new_data, id=record_id)
+        return self.client.call(&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;, &#39;editObject&#39;, new_data, id=record_id)
 
-if __name__ == &quot;__main__&quot;:
+if __name__ == &#34;__main__&#34;:
     main = example()
     my_record_id = 118152560
-    my_new_record = {'data': '5.5.5.5'}
+    my_new_record = {&#39;data&#39;: &#39;5.5.5.5&#39;}
     main.editRecord(my_record_id, my_new_record)
-</code></pre><h3 id="rest3">REST</h3>
-<pre><code>curl -u $SL_USER:$SL_APIKEY -X -d  \
-'{&quot;parameters&quot;: [{&quot;data&quot;: &quot;5.5.5.5&quot;}]}' \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/editObject.json'
-</code></pre><h2 id="editing-soa">Editing SOA</h2>
+</code></pre></div><h3 id="rest-3">REST</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X -d  \
+&#39;{&#34;parameters&#34;: [{&#34;data&#34;: &#34;5.5.5.5&#34;}]}&#39; \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/editObject.json&#39;
+</code></pre></div><h2 id="editing-soa">Editing SOA</h2>
 <p>The SOA for every zone will get set to something like this:</p>
-<pre><code>curl -u $SL_USER:$SL_APIKEY \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getSoaResourceRecord.json'
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getSoaResourceRecord.json&#39;
 {
-    &quot;domainId&quot;: 2986181,
-    &quot;responsiblePerson&quot;: &quot;root.mydomain.com.&quot;,
-    &quot;data&quot;: &quot;ns1.softlayer.com.&quot;,
-    &quot;refresh&quot;: 7200,
-    &quot;mxPriority&quot;: null,
-    &quot;host&quot;: &quot;@&quot;,
-    &quot;minimum&quot;: 3600,
-    &quot;retry&quot;: 600,
-    &quot;expire&quot;: 1728000,
-    &quot;ttl&quot;: 86400,
-    &quot;type&quot;: &quot;soa&quot;,
-    &quot;id&quot;: 118151300
+    &#34;domainId&#34;: 2986181,
+    &#34;responsiblePerson&#34;: &#34;root.mydomain.com.&#34;,
+    &#34;data&#34;: &#34;ns1.softlayer.com.&#34;,
+    &#34;refresh&#34;: 7200,
+    &#34;mxPriority&#34;: null,
+    &#34;host&#34;: &#34;@&#34;,
+    &#34;minimum&#34;: 3600,
+    &#34;retry&#34;: 600,
+    &#34;expire&#34;: 1728000,
+    &#34;ttl&#34;: 86400,
+    &#34;type&#34;: &#34;soa&#34;,
+    &#34;id&#34;: 118151300
 }
-</code></pre><p>Which is usually fine, but if you need to change it, you can do the following. You will need to use the editRecords method mentioned above.</p>
-<h3 id="python4">Python</h3>
-<pre><code>    def getSoa(self, zone_id):
-        return self.client.call('SoftLayer_Dns_Domain', 'getSoaResourceRecord', id=zone_id)
+</code></pre></div><p>Which is usually fine, but if you need to change it, you can do the following. You will need to use the editRecords method mentioned above.</p>
+<h3 id="python-4">Python</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">    def getSoa(self, zone_id):
+        return self.client.call(&#39;SoftLayer_Dns_Domain&#39;, &#39;getSoaResourceRecord&#39;, id=zone_id)
 
-if __name__ == &quot;__main__&quot;:
+if __name__ == &#34;__main__&#34;:
     main = example()
     my_zone_id = 2986181
 
     soa = main.getSoa(my_zone_id)
     new_soa = {
-        'data' : 'ns1.mydomain.com.',  # ending '.' is important.
-        'type' : 'soa',
-        'responsiblePerson' : 'root.mydomain.com.'  # ending '.' is important.
+        &#39;data&#39; : &#39;ns1.mydomain.com.&#39;,  # ending &#39;.&#39; is important.
+        &#39;type&#39; : &#39;soa&#39;,
+        &#39;responsiblePerson&#39; : &#39;root.mydomain.com.&#39;  # ending &#39;.&#39; is important.
     }
-    main.editRecord(soa.get('id'), new_soa)
+    main.editRecord(soa.get(&#39;id&#39;), new_soa)
     pp(main.getSoa(my_zone_id))
-</code></pre><h2 id="delete-records-and-zones">Delete Records and Zones</h2>
+</code></pre></div><h2 id="delete-records-and-zones">Delete Records and Zones</h2>
 <p>Deleting a zone or record can be done with deleteObject.</p>
-<h3 id="python5">Python</h3>
-<pre><code>    def deleteZone(self, zone_id):
-        self.client.call('SoftLayer_Dns_Domain', 'deleteObject', id=zone_id)
+<h3 id="python-5">Python</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">    def deleteZone(self, zone_id):
+        self.client.call(&#39;SoftLayer_Dns_Domain&#39;, &#39;deleteObject&#39;, id=zone_id)
     def deleteRecord(self, record_id):
-        self.client.call('SoftLayer_Dns_Domain_ResourceRecord', 'deleteObject', id=record_id)
+        self.client.call(&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;, &#39;deleteObject&#39;, id=record_id)
 
-if __name__ == &quot;__main__&quot;:
+if __name__ == &#34;__main__&#34;:
     main = example()
     my_zone_id = 2986181
     my_record_id = 118152560
     main.deleteRecord(my_record_id)
     main.deleteZone(my_zone_id)
-</code></pre><h3 id="rest4">REST</h3>
+</code></pre></div><h3 id="rest-4">REST</h3>
 <p>You can either user a GET request and specify the deleteObject method, like below.</p>
-<pre><code>curl -u $SL_USER:$SL_APIKEY -X GET \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/deleteObject.json'
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X GET \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/deleteObject.json&#39;
 curl -u $SL_USER:$SL_APIKEY -X GET \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/deleteObject.json'
-</code></pre><p>Or use a DELETE request, and omit the method, like below.</p>
-<pre><code>curl -u $SL_USER:$SL_APIKEY -X DELETE \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560'
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/deleteObject.json&#39;
+</code></pre></div><p>Or use a DELETE request, and omit the method, like below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X DELETE \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560&#39;
 
 curl -u $SL_USER:$SL_APIKEY -X DELETE \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181'
-</code></pre><p>Both will return True on success, and an exception otherwise.</p>
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181&#39;
+</code></pre></div><p>Both will return True on success, and an exception otherwise.</p>
 <h2 id="reverse-records">Reverse Records</h2>
-<p>Reverse PTR records are a special type of DNS zone, as they can't be retrieved from a SoftLayer_Dns_Domain record exactly. Reverse PTR records link a Server or Virtual Guest with an IP. Generally setting this is very important for hosts that send out email (so spam filters can do some checking on the validity of your host).</p>
-<pre><code>dig -x 169.48.5.100
+<p>Reverse PTR records are a special type of DNS zone, as they can&rsquo;t be retrieved from a SoftLayer_Dns_Domain record exactly. Reverse PTR records link a Server or Virtual Guest with an IP. Generally setting this is very important for hosts that send out email (so spam filters can do some checking on the validity of your host).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">dig -x 169.48.5.100
 ; &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; -x 169.48.5.100
 
 ;; QUESTION SECTION:
@@ -340,48 +340,48 @@ curl -u $SL_USER:$SL_APIKEY -X DELETE \
 ;; ANSWER SECTION:
 100.5.48.169.in-addr.arpa. 86371 IN PTR 64.05.30a9.ip4.static.sl-reverse.com.
 
-</code></pre><p>Each server and virtual guest will have a reverse PTR record associated with its primary IP address. You can get those with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getReverseDomainRecords/">SoftLayer_Hardware_Server::getReverseDomainRecords()</a> and <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getReverseDomainRecords">SoftLayer_Virtual_Guest::getReverseDomainRecords()</a></p>
-<h3 id="python6">Python</h3>
-<pre><code>records = self.client.call('SoftLayer_Virtual_Guest', 'getReverseDomainRecords', id=record_id)
-records = self.client.call('SoftLayer_Hardware_Server', 'getReverseDomainRecords', id=record_id)
-</code></pre><p>Once you have the Id of the record, you can use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject/">SoftLayer_Dns_Domain_ResourceRecord::editObject</a> to make changes to it.</p>
-<h3 id="rest5">REST</h3>
+</code></pre></div><p>Each server and virtual guest will have a reverse PTR record associated with its primary IP address. You can get those with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getReverseDomainRecords/">SoftLayer_Hardware_Server::getReverseDomainRecords()</a> and <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getReverseDomainRecords">SoftLayer_Virtual_Guest::getReverseDomainRecords()</a></p>
+<h3 id="python-6">Python</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">records = self.client.call(&#39;SoftLayer_Virtual_Guest&#39;, &#39;getReverseDomainRecords&#39;, id=record_id)
+records = self.client.call(&#39;SoftLayer_Hardware_Server&#39;, &#39;getReverseDomainRecords&#39;, id=record_id)
+</code></pre></div><p>Once you have the Id of the record, you can use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject/">SoftLayer_Dns_Domain_ResourceRecord::editObject</a> to make changes to it.</p>
+<h3 id="rest-5">REST</h3>
 <p>In this example 1111111 is the id of the virtual guest, and 222222 is the resulting id from getReverseDomainRecords.</p>
-<pre><code>curl -u $SL_USER:$SL_APIKEY \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/1111111/getReverseDomainRecords.json' | python -m json.tool
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/1111111/getReverseDomainRecords.json&#39; | python -m json.tool
 
 [
     {
-        &quot;id&quot;: 88847,
-        &quot;name&quot;: &quot;184.193.173.in-addr.arpa&quot;,
-        &quot;networkAddress&quot;: &quot;173.193.184.0&quot;,
-        &quot;resourceRecords&quot;: [
+        &#34;id&#34;: 88847,
+        &#34;name&#34;: &#34;184.193.173.in-addr.arpa&#34;,
+        &#34;networkAddress&#34;: &#34;173.193.184.0&#34;,
+        &#34;resourceRecords&#34;: [
             {
-                &quot;data&quot;: &quot;pg-test-01.mydomain.com.&quot;,
-                &quot;domainId&quot;: 88847,
-                &quot;expire&quot;: null,
-                &quot;host&quot;: &quot;164&quot;,
-                &quot;id&quot;: 222222,
-                &quot;isGatewayAddress&quot;: false,
-                &quot;minimum&quot;: null,
-                &quot;mxPriority&quot;: null,
-                &quot;refresh&quot;: null,
-                &quot;retry&quot;: null,
-                &quot;ttl&quot;: 7200,
-                &quot;type&quot;: &quot;ptr&quot;
+                &#34;data&#34;: &#34;pg-test-01.mydomain.com.&#34;,
+                &#34;domainId&#34;: 88847,
+                &#34;expire&#34;: null,
+                &#34;host&#34;: &#34;164&#34;,
+                &#34;id&#34;: 222222,
+                &#34;isGatewayAddress&#34;: false,
+                &#34;minimum&#34;: null,
+                &#34;mxPriority&#34;: null,
+                &#34;refresh&#34;: null,
+                &#34;retry&#34;: null,
+                &#34;ttl&#34;: 7200,
+                &#34;type&#34;: &#34;ptr&#34;
             }
         ],
-        &quot;serial&quot;: 2020010600,
-        &quot;updateDate&quot;: &quot;2020-01-06T17:03:27-06:00&quot;
+        &#34;serial&#34;: 2020010600,
+        &#34;updateDate&#34;: &#34;2020-01-06T17:03:27-06:00&#34;
     }
 ]
 
 
 
 curl -u $SL_USER:$SL_APIKEY -X POST  -d \
-'{&quot;parameters&quot;: [{&quot;data&quot;: &quot;pg-test-01.mydomain.com&quot;}]}' \
-'https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/222222/editObject.json'
-</code></pre><p>The SLCLI has <code>dns-sync</code> commands for both <a href="https://softlayer-python.readthedocs.io/en/latest/cli/vs/#vs-dns-sync">virtual</a> and <a href="https://softlayer-python.readthedocs.io/en/latest/cli/hardware/#hw-dns-sync">hardware</a> servers.</p>
+&#39;{&#34;parameters&#34;: [{&#34;data&#34;: &#34;pg-test-01.mydomain.com&#34;}]}&#39; \
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/222222/editObject.json&#39;
+</code></pre></div><p>The SLCLI has <code>dns-sync</code> commands for both <a href="https://softlayer-python.readthedocs.io/en/latest/cli/vs/#vs-dns-sync">virtual</a> and <a href="https://softlayer-python.readthedocs.io/en/latest/cli/hardware/#hw-dns-sync">hardware</a> servers.</p>
 
             </div>
         </div>
