@@ -12,8 +12,8 @@
     <link rel="canonical" href="https://sldn.softlayer.com/python/order_quote_advanced/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
-    <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/custom.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/monokai.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/highlight/solarized_dark.css" rel="stylesheet">
 
     <script src="https://sldn.softlayer.com/js/highlight.pack.js"></script>
@@ -25,7 +25,15 @@
 
     <script src="https://sldn.softlayer.com/js/jquery-3.3.1.min.js"></script> 
     <script src="https://sldn.softlayer.com/js/sldn.js"></script>
-    <script src="https://sldn.softlayer.com/js/fontawesome-all.js"></script>
+
+
+    <link href="https://sldn.softlayer.com/fontawesome/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/brands.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/solid.min.css" rel="stylesheet" type="text/css">
+    
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/solid.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/brands.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/fontawesome.min.js"></script>
 
     <script>
 		$(document).ready(function() {
@@ -160,30 +168,30 @@ if (!doNotTrack) {
 <h3 id="python-output">Python Output</h3>
 <p>The sample code will output something like this. Quotes can be PENDING, which means they might expire if you don&rsquo;t call <a href="https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/saveQuote/">SoftLayer_Billing_Order_Quote::saveQuote(id=quoteId)</a> before its expiration date. SAVED quotes will stick around until you call <a href="https://softlayer.github.io/reference/services/SoftLayer_Billing_Order_Quote/deleteQuote/">SoftLayer_Billing_Order_Quote::deleteQuote(id=quoteId)</a>
 The quoteId in the first column is what will be used for placing the order. Description is just the topLevelBillingItem for the quote.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">ID, createDate, name, status, order count, description
-2460465, 2018-07-23T14:20:59-06:00, Ruber, SAVED, 0, Single Intel Xeon E3-1270 v3 <span style="color:#f92672">(</span><span style="color:#ae81ff">4</span> Cores, 3.50 GHz<span style="color:#f92672">)</span>
-2457385, 2018-07-17T14:23:54-06:00, AJCB-TESTWITHSSHKEYS, PENDING, 0, Single Intel Xeon E3-1270 v3 <span style="color:#f92672">(</span><span style="color:#ae81ff">4</span> Cores, 3.50 GHz<span style="color:#f92672">)</span>
-1528487, 2015-09-25T15:37:27-06:00, test-quote, SAVED, 3, <span style="color:#ae81ff">1</span> x 2.0 GHz Core
+<div class="highlight"><pre class="chroma"><code class="language-shell" data-lang="shell">ID, createDate, name, status, order count, description
+2460465, 2018-07-23T14:20:59-06:00, Ruber, SAVED, 0, Single Intel Xeon E3-1270 v3 <span class="o">(</span><span class="m">4</span> Cores, 3.50 GHz<span class="o">)</span>
+2457385, 2018-07-17T14:23:54-06:00, AJCB-TESTWITHSSHKEYS, PENDING, 0, Single Intel Xeon E3-1270 v3 <span class="o">(</span><span class="m">4</span> Cores, 3.50 GHz<span class="o">)</span>
+1528487, 2015-09-25T15:37:27-06:00, test-quote, SAVED, 3, <span class="m">1</span> x 2.0 GHz Core
 </code></pre></div><h2 id="finding-the-dc-id">Finding the DC id</h2>
 <p>Now we need to figure out which DC we want to place the order in.
 The way we are going to do this, is by checking the quote&rsquo;s top level item, and see what DCs that package is available in. Using <a href="https://softlayer.github.io/reference/services/SoftLayer_Location/getDatacenters/">SoftLayer_Location::getDatacenters()</a> would show you all datacenters, and not all packages are available in all datacenters.</p>
 <h3 id="rest-call">REST Call</h3>
 <p><code>'https://api.softlayer.com/rest/v3.1/SoftLayer_Billing_Order_Quote/&lt;QUOTEID&gt;/getObject.json?objectMask=mask[id,+order[id,orderTopLevelItems[id,package[id,availableLocations[location[longName,id]]]]]]'</code></p>
 <h3 id="python">Python</h3>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listLocationsForQuote</span>(self, quoteId):
-    mask<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&#34;</span>
-    locations <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]<span style="color:#f92672">.</span>getObject(id<span style="color:#f92672">=</span>quoteId, mask<span style="color:#f92672">=</span>mask)
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">listLocationsForQuote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quoteId</span><span class="p">):</span>
+    <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&#34;</span>
+    <span class="n">locations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Billing_Order_Quote&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">quoteId</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
     
-    package_id <span style="color:#f92672">=</span> locations[<span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74">&#39;id&#39;</span>]
-    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Package {} is available in the following locations...&#34;</span><span style="color:#f92672">.</span>format(package_id))
-    <span style="color:#66d9ef">for</span> dc <span style="color:#f92672">in</span> locations[<span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74">&#39;availableLocations&#39;</span>]:
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;{}, id={}&#34;</span><span style="color:#f92672">.</span>format(dc[<span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74">&#39;longName&#39;</span>], dc[<span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74">&#39;id&#39;</span>]))
-</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">Package <span style="color:#ae81ff">46</span> is available in the following locations...
-Seattle 1, id<span style="color:#f92672">=</span><span style="color:#ae81ff">18171</span>
-Dallas 5, id<span style="color:#f92672">=</span><span style="color:#ae81ff">138124</span>
-Houston 2, id<span style="color:#f92672">=</span><span style="color:#ae81ff">142775</span>
-Dallas 7, id<span style="color:#f92672">=</span><span style="color:#ae81ff">142776</span>
-San Jose 1, id<span style="color:#f92672">=</span><span style="color:#ae81ff">168642</span>
+    <span class="n">package_id</span> <span class="o">=</span> <span class="n">locations</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;orderTopLevelItems&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;package&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Package {} is available in the following locations...&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">package_id</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">dc</span> <span class="ow">in</span> <span class="n">locations</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;orderTopLevelItems&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;package&#39;</span><span class="p">][</span><span class="s1">&#39;availableLocations&#39;</span><span class="p">]:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;{}, id={}&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dc</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;longName&#39;</span><span class="p">],</span> <span class="n">dc</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]))</span>
+</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-shell" data-lang="shell">Package <span class="m">46</span> is available in the following locations...
+Seattle 1, <span class="nv">id</span><span class="o">=</span><span class="m">18171</span>
+Dallas 5, <span class="nv">id</span><span class="o">=</span><span class="m">138124</span>
+Houston 2, <span class="nv">id</span><span class="o">=</span><span class="m">142775</span>
+Dallas 7, <span class="nv">id</span><span class="o">=</span><span class="m">142776</span>
+San Jose 1, <span class="nv">id</span><span class="o">=</span><span class="m">168642</span>
 ...
 </code></pre></div><h2 id="building-our-new-order">Building our new order</h2>
 <p>Ok, now we have a quote, a dc, now we just need to build our order out.</p>
@@ -197,19 +205,19 @@ San Jose 1, id<span style="color:#f92672">=</span><span style="color:#ae81ff">16
 <blockquote>
 <p>If you are ordering baremetal, you need to change container[&lsquo;hardware&rsquo;], if you are ordering virtual guests, you need to change container[&lsquo;virtualGuests&rsquo;]</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">guests <span style="color:#f92672">=</span> {
-    <span style="color:#e6db74">&#39;hostname&#39;</span>: <span style="color:#e6db74">&#39;quotetest&#39;</span>, 
-    <span style="color:#e6db74">&#39;domain&#39;</span>: <span style="color:#e6db74">&#39;example.com&#39;</span>
-}
-quote <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]
-quote_container <span style="color:#f92672">=</span> quote<span style="color:#f92672">.</span>getRecalculatedOrderContainer(id<span style="color:#f92672">=</span>quote_id)
-container <span style="color:#f92672">=</span> quote_container
-container[<span style="color:#e6db74">&#39;complexType&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;SoftLayer_Container_Product_Order_Virtual_Guest&#34;</span>
-container[<span style="color:#e6db74">&#39;quantity&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
-container[<span style="color:#e6db74">&#39;virtualGuests&#39;</span>] <span style="color:#f92672">=</span> []
-container[<span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
-container[<span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
-container[<span style="color:#e6db74">&#39;location&#39;</span>] <span style="color:#f92672">=</span> dc_id
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">guests</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="s1">&#39;quotetest&#39;</span><span class="p">,</span> 
+    <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="s1">&#39;example.com&#39;</span>
+<span class="p">}</span>
+<span class="n">quote</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Billing_Order_Quote&#39;</span><span class="p">]</span>
+<span class="n">quote_container</span> <span class="o">=</span> <span class="n">quote</span><span class="o">.</span><span class="n">getRecalculatedOrderContainer</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">quote_id</span><span class="p">)</span>
+<span class="n">container</span> <span class="o">=</span> <span class="n">quote_container</span>
+<span class="n">container</span><span class="p">[</span><span class="s1">&#39;complexType&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest&#34;</span>
+<span class="n">container</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">container</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">container</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">guests</span><span class="p">)</span>
+<span class="n">container</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">guests</span><span class="p">)</span>
+<span class="n">container</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc_id</span>
 </code></pre></div><p>The <code>container['virtualGuests']</code> array should have 1 entry for each server you want to order. Since I am ordering 2 servers, I appeneded 2 entries to the array.</p>
 <h3 id="complex-types">Complex Types</h3>
 <p><code>getRecalculatedOrderContainer</code> will return a generic Container_Product_Order type, so you will need to specify the correct type to be able to actually place an order. Orders can occasionally work without specifying this complexType, but its better to be sure. There are quite a lot of container types, the full list can be found here: <a href="https://softlayer.github.io/reference/softlayerapi/">https://softlayer.github.io/reference/softlayerapi/</a> , and search for <code>Container_Product_Order</code> to see all the options.</p>
@@ -226,7 +234,7 @@ container[<span style="color:#e6db74">&#39;location&#39;</span>] <span style="co
 <p>To have SSH keys installed on a server at order time, we need to specify them in the [sshKeys]https://softlayer.github.io/reference/datatypes/SoftLayer_Container_Product_Order_SshKeys/) property. This property is at the container level, NOT the guest level, even though guests have a sshKey property.
 This propety is an array of sshKeys, which itself is an array of ids. This means that there needs to be 1 array of keys per server you are ordering, and the order they are applied should match the order they are listed in the virtualGuests propety. <code>sshKeys[0] =&gt; virtualGuests[0]</code>, <code>sshKeys[1] =&gt; virtualGuests[1]</code> and so on.</p>
 <p>An sshKey itself should look like this</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">sshKey = {
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">sshKey = {
     &#39;sshKeyIds&#39; : [1234, 456, 11111]
 }
 container[&#39;sshKeys&#39;].append(sshKey)
@@ -237,14 +245,14 @@ container[&#39;sshKeys&#39;].append(sshKey)
 <blockquote>
 <p>Post provision scripts need to be HTTPS to be executed, HTTP scripts just get downloaded</p>
 </blockquote>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">scriptUrl = &#39;https://somesite.com/script.sh&#39;
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">scriptUrl = &#39;https://somesite.com/script.sh&#39;
 container[&#39;provisionScripts&#39;] = [scriptUrl, scriptUrl]
 </code></pre></div><h3 id="vlans-and-subnets">Vlans and Subnets</h3>
 <p>Vlans and Subnets need to be specified at the guest level, not the container level. You will also need the VLAN/Subnet ID, which is different than the vlan number which can be a bit confusing to new api users.</p>
 <p>Public Vlans and Public Subnets need to be added to the <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest/#primaryNetworkComponent">primaryNetworkComponent</a>.
 Private Vlans and Private Subnets need to be added to the <a href="https://softlayer.github.io/reference/datatypes/SoftLayer_Virtual_Guest/#primaryBackendNetworkComponent">primaryBackendNetworkComponent</a></p>
 <p>This example selects a specific VLAN for the primaryNetwork, and a specific Subnet for the primaryBackendNetwork. You can have both a specific vlan and specific network, assuming the subnet is already routed to the vlan you specified.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">guest = {
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">guest = {
     &#39;hostname&#39;: &#39;tester&#39;,
     &#39;domain&#39;: &#39;example.com&#39;,
     &#39;primaryNetworkComponent&#39;: {
@@ -255,135 +263,135 @@ Private Vlans and Private Subnets need to be added to the <a href="https://softl
 }
 </code></pre></div><h3 id="image-templates">Image Templates</h3>
 <p>Instead of specifying a fresh operating system, you can have a server provisioned from a imageTemplate by specifying its ID.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">container[&#39;imageTemplateId&#39;] = image_id
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">container[&#39;imageTemplateId&#39;] = image_id
 </code></pre></div><p>This ISN&rsquo;T an array, so the imageTemplate here will get applied to all guests in the order.</p>
 <h2 id="the-whole-script">The Whole Script</h2>
 <p>This is the script I use when testing out bits of the ordering API, and hopefully it will be helpful in building your own way to order image templates.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
 
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
 
-    <span style="color:#66d9ef">def</span> __init__(self):
-        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
-        debugger <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>DebugTransport(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport)
-        self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport <span style="color:#f92672">=</span> debugger
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">orderQuote</span>(self, quote_id, dc_id <span style="color:#f92672">=</span> None, image_id <span style="color:#f92672">=</span> None, private_vlan <span style="color:#f92672">=</span> None, public_vlan <span style="color:#f92672">=</span> None):
-        <span style="color:#75715e"># If you have more than 1 server in the quote, you will need to append</span>
-        <span style="color:#75715e"># a copy of this for each VSI, with hostnames changed as needed</span>
-        guests <span style="color:#f92672">=</span> {
-            <span style="color:#e6db74">&#39;hostname&#39;</span>: <span style="color:#e6db74">&#39;quotetest&#39;</span>, 
-            <span style="color:#e6db74">&#39;domain&#39;</span>: <span style="color:#e6db74">&#39;example.com&#39;</span>
-        }
-        <span style="color:#66d9ef">if</span> public_vlan:
-            guests<span style="color:#f92672">.</span>update({
-                <span style="color:#e6db74">&#39;primaryNetworkComponent&#39;</span>: {
-                    <span style="color:#e6db74">&#34;networkVlan&#34;</span>: {<span style="color:#e6db74">&#34;id&#34;</span>: int(public_vlan)}}})
-        <span style="color:#66d9ef">if</span> private_vlan:
-            guests<span style="color:#f92672">.</span>update({
-                <span style="color:#e6db74">&#34;primaryBackendNetworkComponent&#34;</span>: {
-                    <span style="color:#e6db74">&#34;networkVlan&#34;</span>: {<span style="color:#e6db74">&#34;id&#34;</span>: int(private_vlan)}}})
+    <span class="k">def</span> <span class="nf">orderQuote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quote_id</span><span class="p">,</span> <span class="n">dc_id</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">image_id</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">private_vlan</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">public_vlan</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="c1"># If you have more than 1 server in the quote, you will need to append</span>
+        <span class="c1"># a copy of this for each VSI, with hostnames changed as needed</span>
+        <span class="n">guests</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="s1">&#39;quotetest&#39;</span><span class="p">,</span> 
+            <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="s1">&#39;example.com&#39;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">public_vlan</span><span class="p">:</span>
+            <span class="n">guests</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&#34;networkVlan&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">public_vlan</span><span class="p">)}}})</span>
+        <span class="k">if</span> <span class="n">private_vlan</span><span class="p">:</span>
+            <span class="n">guests</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                <span class="s2">&#34;primaryBackendNetworkComponent&#34;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&#34;networkVlan&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">private_vlan</span><span class="p">)}}})</span>
 
-        quote <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]
-        quote_container <span style="color:#f92672">=</span> quote<span style="color:#f92672">.</span>getRecalculatedOrderContainer(id<span style="color:#f92672">=</span>quote_id)
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;================= QUOTE CONTAINER =================&#34;</span>)
-        pp(quote_container)
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;================= QUOTE CONTAINER =================&#34;</span>)
+        <span class="n">quote</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Billing_Order_Quote&#39;</span><span class="p">]</span>
+        <span class="n">quote_container</span> <span class="o">=</span> <span class="n">quote</span><span class="o">.</span><span class="n">getRecalculatedOrderContainer</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">quote_id</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;================= QUOTE CONTAINER =================&#34;</span><span class="p">)</span>
+        <span class="n">pp</span><span class="p">(</span><span class="n">quote_container</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;================= QUOTE CONTAINER =================&#34;</span><span class="p">)</span>
 
-        container <span style="color:#f92672">=</span> quote_container
-        container[<span style="color:#e6db74">&#39;complexType&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;SoftLayer_Container_Product_Order_Virtual_Guest&#34;</span>
-        container[<span style="color:#e6db74">&#39;quantity&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
-        container[<span style="color:#e6db74">&#39;virtualGuests&#39;</span>] <span style="color:#f92672">=</span> []
-        container[<span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
-        container[<span style="color:#e6db74">&#39;virtualGuests&#39;</span>]<span style="color:#f92672">.</span>append(guests)
+        <span class="n">container</span> <span class="o">=</span> <span class="n">quote_container</span>
+        <span class="n">container</span><span class="p">[</span><span class="s1">&#39;complexType&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest&#34;</span>
+        <span class="n">container</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">container</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">container</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">guests</span><span class="p">)</span>
+        <span class="n">container</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">guests</span><span class="p">)</span>
 
-        <span style="color:#75715e"># container[&#39;provisionScripts&#39;] = [&#39;https://gist.githubusercontent.com/myscript.py&#39;]</span>
-        sshKeys <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;sshKeyIds&#39;</span>: [<span style="color:#ae81ff">395515</span>, <span style="color:#ae81ff">87634</span>]}
-        container[<span style="color:#e6db74">&#39;sshKeys&#39;</span>] <span style="color:#f92672">=</span> [sshKeys, sshKeys]
+        <span class="c1"># container[&#39;provisionScripts&#39;] = [&#39;https://gist.githubusercontent.com/myscript.py&#39;]</span>
+        <span class="n">sshKeys</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">395515</span><span class="p">,</span> <span class="mi">87634</span><span class="p">]}</span>
+        <span class="n">container</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">sshKeys</span><span class="p">,</span> <span class="n">sshKeys</span><span class="p">]</span>
 
-        <span style="color:#66d9ef">if</span> image_id <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
-            container[<span style="color:#e6db74">&#39;imageTemplateId&#39;</span>] <span style="color:#f92672">=</span> image_id
+        <span class="k">if</span> <span class="n">image_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">container</span><span class="p">[</span><span class="s1">&#39;imageTemplateId&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">image_id</span>
 
-        <span style="color:#66d9ef">if</span> dc_id <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
-            container[<span style="color:#e6db74">&#39;location&#39;</span>] <span style="color:#f92672">=</span> dc_id
+        <span class="k">if</span> <span class="n">dc_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">container</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc_id</span>
 
-        <span style="color:#75715e"># result = self.client[&#39;Billing_Order_Quote&#39;].verifyOrder(container, id=quote_id)</span>
-        result <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]<span style="color:#f92672">.</span>placeOrder(container, id<span style="color:#f92672">=</span>quote_id)
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;================= RECEIPT CONTAINER =================&#34;</span>)
-        pp(result)
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;================= RECEIPT CONTAINER =================&#34;</span>)
+        <span class="c1"># result = self.client[&#39;Billing_Order_Quote&#39;].verifyOrder(container, id=quote_id)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Billing_Order_Quote&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">placeOrder</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">quote_id</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;================= RECEIPT CONTAINER =================&#34;</span><span class="p">)</span>
+        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;================= RECEIPT CONTAINER =================&#34;</span><span class="p">)</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listQuotes</span>(self):
-        <span style="color:#75715e"># https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Order_Quote/</span>
-        mask <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;mask[order[id, orderTotalAmount, orderTopLevelItems[id, description]], ordersFromQuoteCount]&#34;</span>
-        quotes <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getActiveQuotes(mask<span style="color:#f92672">=</span>mask)
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;ID, createDate, name, status, order count, description&#34;</span>)
-        <span style="color:#66d9ef">for</span> quote <span style="color:#f92672">in</span> quotes:
-            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;{}, {}, {}, {}, {}, {}&#34;</span><span style="color:#f92672">.</span>format(
-                quote[<span style="color:#e6db74">&#39;id&#39;</span>], quote[<span style="color:#e6db74">&#39;createDate&#39;</span>], quote[<span style="color:#e6db74">&#39;name&#39;</span>], quote[<span style="color:#e6db74">&#39;status&#39;</span>], 
-                quote[<span style="color:#e6db74">&#39;ordersFromQuoteCount&#39;</span>], quote[<span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;description&#39;</span>])
-            )
+    <span class="k">def</span> <span class="nf">listQuotes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># https://softlayer.github.io/reference/datatypes/SoftLayer_Billing_Order_Quote/</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[order[id, orderTotalAmount, orderTopLevelItems[id, description]], ordersFromQuoteCount]&#34;</span>
+        <span class="n">quotes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getActiveQuotes</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;ID, createDate, name, status, order count, description&#34;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">quote</span> <span class="ow">in</span> <span class="n">quotes</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&#34;{}, {}, {}, {}, {}, {}&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">quote</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">quote</span><span class="p">[</span><span class="s1">&#39;createDate&#39;</span><span class="p">],</span> <span class="n">quote</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">quote</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">],</span> 
+                <span class="n">quote</span><span class="p">[</span><span class="s1">&#39;ordersFromQuoteCount&#39;</span><span class="p">],</span> <span class="n">quote</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;orderTopLevelItems&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+            <span class="p">)</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listLocations</span>(self):
-        locations <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;SoftLayer_Location&#39;</span>]<span style="color:#f92672">.</span>getDatacenters()
-        pp(locations)
+    <span class="k">def</span> <span class="nf">listLocations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">locations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Location&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getDatacenters</span><span class="p">()</span>
+        <span class="n">pp</span><span class="p">(</span><span class="n">locations</span><span class="p">)</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listLocationsForQuote</span>(self, quoteId):
-        mask<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&#34;</span>
-        locations <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;Billing_Order_Quote&#39;</span>]<span style="color:#f92672">.</span>getObject(id<span style="color:#f92672">=</span>quoteId, mask<span style="color:#f92672">=</span>mask)
+    <span class="k">def</span> <span class="nf">listLocationsForQuote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quoteId</span><span class="p">):</span>
+        <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[id, order[id, orderTopLevelItems[id, package[id, availableLocations[location[longName, id]]]]]]&#34;</span>
+        <span class="n">locations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Billing_Order_Quote&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">quoteId</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
-        package_id <span style="color:#f92672">=</span> locations[<span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74">&#39;id&#39;</span>]
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Package {} is available in the following locations...&#34;</span><span style="color:#f92672">.</span>format(package_id))
-        <span style="color:#66d9ef">for</span> dc <span style="color:#f92672">in</span> locations[<span style="color:#e6db74">&#39;order&#39;</span>][<span style="color:#e6db74">&#39;orderTopLevelItems&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;package&#39;</span>][<span style="color:#e6db74">&#39;availableLocations&#39;</span>]:
-            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;{}, id={}&#34;</span><span style="color:#f92672">.</span>format(dc[<span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74">&#39;longName&#39;</span>], dc[<span style="color:#e6db74">&#39;location&#39;</span>][<span style="color:#e6db74">&#39;id&#39;</span>]))
+        <span class="n">package_id</span> <span class="o">=</span> <span class="n">locations</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;orderTopLevelItems&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;package&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Package {} is available in the following locations...&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">package_id</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">dc</span> <span class="ow">in</span> <span class="n">locations</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;orderTopLevelItems&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;package&#39;</span><span class="p">][</span><span class="s1">&#39;availableLocations&#39;</span><span class="p">]:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&#34;{}, id={}&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dc</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;longName&#39;</span><span class="p">],</span> <span class="n">dc</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]))</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listSshKeys</span>(self):
-        keys <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getSshKeys()
-        pp(keys)
+    <span class="k">def</span> <span class="nf">listSshKeys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getSshKeys</span><span class="p">()</span>
+        <span class="n">pp</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listImageTemplates</span>(self):
-        mask <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;mask[id,name,note]&#34;</span>
-        imageTemplates <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getPrivateBlockDeviceTemplateGroups(mask<span style="color:#f92672">=</span>mask)
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;ID - Name - Note&#34;</span>)
-        <span style="color:#66d9ef">for</span> template <span style="color:#f92672">in</span> imageTemplates:
-            <span style="color:#66d9ef">try</span>:
-                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (template[<span style="color:#e6db74">&#39;id&#39;</span>], template[<span style="color:#e6db74">&#39;name&#39;</span>], template[<span style="color:#e6db74">&#39;note&#39;</span>]))
-            <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyError</span>:
-                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> - </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (template[<span style="color:#e6db74">&#39;id&#39;</span>], template[<span style="color:#e6db74">&#39;name&#39;</span>], <span style="color:#e6db74">&#39;None&#39;</span>))
+    <span class="k">def</span> <span class="nf">listImageTemplates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[id,name,note]&#34;</span>
+        <span class="n">imageTemplates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getPrivateBlockDeviceTemplateGroups</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;ID - Name - Note&#34;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">imageTemplates</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">template</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">template</span><span class="p">[</span><span class="s1">&#39;note&#39;</span><span class="p">]))</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">template</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="s1">&#39;None&#39;</span><span class="p">))</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">listVlansInLocation</span>(self, location_id):
-        mask <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;mask[id,vlanNumber,primaryRouter[hostname,datacenter[id,name]]]&#34;</span>
-        objfilter2 <span style="color:#f92672">=</span> { <span style="color:#e6db74">&#34;networkVlans&#34;</span>:    
-                        {<span style="color:#e6db74">&#34;primaryRouter&#34;</span>: 
-                            {<span style="color:#e6db74">&#34;datacenter&#34;</span>: { <span style="color:#e6db74">&#34;id&#34;</span> : {<span style="color:#e6db74">&#34;operation&#34;</span>:location_id} } }
-                        }
-                    }
-        subnets <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getNetworkVlans(mask<span style="color:#f92672">=</span>mask,filter<span style="color:#f92672">=</span>objfilter2)
-        <span style="color:#66d9ef">for</span> subnet <span style="color:#f92672">in</span> subnets:
-            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> ( subnet[<span style="color:#e6db74">&#39;id&#39;</span>], subnet[<span style="color:#e6db74">&#39;vlanNumber&#39;</span>], subnet[<span style="color:#e6db74">&#39;primaryRouter&#39;</span>][<span style="color:#e6db74">&#39;hostname&#39;</span>]))
+    <span class="k">def</span> <span class="nf">listVlansInLocation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location_id</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[id,vlanNumber,primaryRouter[hostname,datacenter[id,name]]]&#34;</span>
+        <span class="n">objfilter2</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&#34;networkVlans&#34;</span><span class="p">:</span>    
+                        <span class="p">{</span><span class="s2">&#34;primaryRouter&#34;</span><span class="p">:</span> 
+                            <span class="p">{</span><span class="s2">&#34;datacenter&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="s2">&#34;id&#34;</span> <span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">location_id</span><span class="p">}</span> <span class="p">}</span> <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+        <span class="n">subnets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkVlans</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span><span class="nb">filter</span><span class="o">=</span><span class="n">objfilter2</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">subnet</span> <span class="ow">in</span> <span class="n">subnets</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span> <span class="n">subnet</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">subnet</span><span class="p">[</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">],</span> <span class="n">subnet</span><span class="p">[</span><span class="s1">&#39;primaryRouter&#39;</span><span class="p">][</span><span class="s1">&#39;hostname&#39;</span><span class="p">]))</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">debug</span>(self):
-        <span style="color:#66d9ef">for</span> call <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>get_last_calls():
-            <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>print_reproduceable(call))
+    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
+            <span class="k">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
 
 
-<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
-    quote_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1528487</span>
-    main <span style="color:#f92672">=</span> example()
-    <span style="color:#75715e"># main.listImageTemplates()</span>
-    <span style="color:#75715e"># main.listQuotes()</span>
-    <span style="color:#75715e"># main.listLocationsForQuote(quote_id)</span>
-    <span style="color:#75715e"># main.listLocations()</span>
-    dal13 <span style="color:#f92672">=</span> <span style="color:#ae81ff">1854895</span>
-    ams03 <span style="color:#f92672">=</span> <span style="color:#ae81ff">814994</span>
-    dal09 <span style="color:#f92672">=</span> <span style="color:#ae81ff">449494</span>
-    <span style="color:#75715e"># main.listSshKeys()</span>
-    <span style="color:#75715e"># main.listVlansInLocation(dal13)</span>
-    backend_vlan <span style="color:#f92672">=</span> <span style="color:#ae81ff">2068355</span> <span style="color:#75715e">#951, bcr01a.dal13</span>
-    front_vlan <span style="color:#f92672">=</span> <span style="color:#ae81ff">2068353</span> <span style="color:#75715e"># 907, fcr01a.dal13</span>
-    main<span style="color:#f92672">.</span>orderQuote(quote_id, dc_id<span style="color:#f92672">=</span>dal13, public_vlan<span style="color:#f92672">=</span>front_vlan,private_vlan<span style="color:#f92672">=</span>backend_vlan)
-    main<span style="color:#f92672">.</span>debug()
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+    <span class="n">quote_id</span> <span class="o">=</span> <span class="mi">1528487</span>
+    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+    <span class="c1"># main.listImageTemplates()</span>
+    <span class="c1"># main.listQuotes()</span>
+    <span class="c1"># main.listLocationsForQuote(quote_id)</span>
+    <span class="c1"># main.listLocations()</span>
+    <span class="n">dal13</span> <span class="o">=</span> <span class="mi">1854895</span>
+    <span class="n">ams03</span> <span class="o">=</span> <span class="mi">814994</span>
+    <span class="n">dal09</span> <span class="o">=</span> <span class="mi">449494</span>
+    <span class="c1"># main.listSshKeys()</span>
+    <span class="c1"># main.listVlansInLocation(dal13)</span>
+    <span class="n">backend_vlan</span> <span class="o">=</span> <span class="mi">2068355</span> <span class="c1">#951, bcr01a.dal13</span>
+    <span class="n">front_vlan</span> <span class="o">=</span> <span class="mi">2068353</span> <span class="c1"># 907, fcr01a.dal13</span>
+    <span class="n">main</span><span class="o">.</span><span class="n">orderQuote</span><span class="p">(</span><span class="n">quote_id</span><span class="p">,</span> <span class="n">dc_id</span><span class="o">=</span><span class="n">dal13</span><span class="p">,</span> <span class="n">public_vlan</span><span class="o">=</span><span class="n">front_vlan</span><span class="p">,</span><span class="n">private_vlan</span><span class="o">=</span><span class="n">backend_vlan</span><span class="p">)</span>
+    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
 </code></pre></div><h4 id="notes">Notes</h4>
 <p>When placing an order from a quote, it is important to note the following.</p>
 <ol>
@@ -397,50 +405,25 @@ Private Vlans and Private Subnets need to be added to the <a href="https://softl
     </div>
     <hr>
     <div class="row">
-            
-        <div class="col-md-6">
-            
-<div class="panel panel-default">
-    <div class="panel-heading" style="padding: 2px 15px;">
-        <h4>More Documentation</h4>
-    </div>
-    <div class="panel-body">
-        <a href="https://softlayer.github.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
-        <a href="https://github.com/softlayer/softlayer-java"><i class="fab fa-github"></i> softlayer-java<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fab fa-github"></i> softlayer-perl<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fab fa-github"></i> softlayer-php<br></a>
-        <a href="https://github.com/softlayer/softlayer-python"><i class="fab fa-github"></i> softlayer-python<br></a>
-        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fab fa-github"></i> softlayer-ruby<br></a>
+        <div class="row">
+            <div class="col-md-6">
+    <div class="well well-sm" style="word-wrap: break-word;"> 
+        <strong>Feedback? <span class="fas fa-comment"/></strong>
+            <p>
+                If this article contains any error, or leaves any of your questions unanswered, please help us out by 
+                opening up a github issue.<br>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20Advanced%20Quote%20Ordering&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2forder_quote_advanced%2f"> Open an issue</a>
+                <i class="fab fa-github" alt="github"></i>
+            </p>
     </div>
 </div>
-
-<div class="panel panel-default">
-    <div class="panel-heading text-center" style="padding: 2px 15px;">
-      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fab fa-facebook-square" alt="facebook"></i> </a>
-      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fab fa-twitter" alt="twitter"></i> </a>
-      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fab fa-linkedin"></i> </a>
-      <a href="https://github.com/softlayer/softlayer.github.io"><i class="fab fa-github" alt="github"></i> </a>
-
-    </div>
-</div>
-
         </div>
-        <div class="col-md-6">
-            <div class="well well-sm" style="word-wrap: break-word;"> 
-                <strong>Feedback? <span class="fa fa-comment"/></strong>
-                    <p>
-                        We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Advanced%20Quote%20Ordering&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2forder_quote_advanced%2f"><span class="fa fa-github-square"/> Open an issue</a>
-                    </p>
-            </div>
-        </div>
-
     </div>
         <footer>
             <div class="row">
                 <hr>
                 <div class="col-sm-12">
-                    <p>&copy; SoftLayer 2015<br>
+                    <p>&copy; SoftLayer 2020<br>
                     Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
                 </div>
             </div>
