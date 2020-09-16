@@ -12,8 +12,8 @@
     <link rel="canonical" href="https://sldn.softlayer.com/go/order_endurance_storage_as_a_service.go/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
-    <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/custom.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/monokai.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/highlight/solarized_dark.css" rel="stylesheet">
 
     <script src="https://sldn.softlayer.com/js/highlight.pack.js"></script>
@@ -25,7 +25,15 @@
 
     <script src="https://sldn.softlayer.com/js/jquery-3.3.1.min.js"></script> 
     <script src="https://sldn.softlayer.com/js/sldn.js"></script>
-    <script src="https://sldn.softlayer.com/js/fontawesome-all.js"></script>
+
+
+    <link href="https://sldn.softlayer.com/fontawesome/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/brands.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/solid.min.css" rel="stylesheet" type="text/css">
+    
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/solid.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/brands.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/fontawesome.min.js"></script>
 
     <script>
 		$(document).ready(function() {
@@ -141,71 +149,71 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">/*
-</span><span style="color:#75715e">Order a block storage (endurance) As a Service
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">The script orders a block storage (endurance) device As a Service, with 80GB storage and 0.25 IOPS.
-</span><span style="color:#75715e">Since softlayer-go client doesn&#39;t have the new datatype containers used in control portal, to order
-</span><span style="color:#75715e">a SoftLayer_Container_Product_Order_Network_Storage_AsAService object we will make a REST request
-</span><span style="color:#75715e">by using the source code located in /utils/slapi/softlayer_service_request.go file.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages:
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_AsAService
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
+                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
+</span><span class="cm">Order a block storage (endurance) As a Service
+</span><span class="cm">
+</span><span class="cm">The script orders a block storage (endurance) device As a Service, with 80GB storage and 0.25 IOPS.
+</span><span class="cm">Since softlayer-go client doesn&#39;t have the new datatype containers used in control portal, to order
+</span><span class="cm">a SoftLayer_Container_Product_Order_Network_Storage_AsAService object we will make a REST request
+</span><span class="cm">by using the source code located in /utils/slapi/softlayer_service_request.go file.
+</span><span class="cm">
+</span><span class="cm">Important manual pages:
+</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_AsAService
+</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+</span><span class="cm">
+</span><span class="cm">License: http://sldn.softlayer.com/article/License
+</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span><span class="cm">*/</span>
 
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+<span class="kn">package</span> <span class="nx">main</span>
 
-<span style="color:#75715e">// Change imports depending where is located the file softlayer_service_request.go
-</span><span style="color:#75715e"></span><span style="color:#f92672">import</span> <span style="color:#e6db74">&#34;../utils/slapi&#34;</span>
+<span class="c1">// Change imports depending where is located the file softlayer_service_request.go
+</span><span class="c1"></span><span class="kn">import</span> <span class="s">&#34;../utils/slapi&#34;</span>
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
 
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+	<span class="c1">// SoftLayer API username and key
+</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
 
-	<span style="color:#75715e">// Build the SoftLayer request you want to send to the API by using REST
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">slRequest</span> <span style="color:#f92672">:=</span>  <span style="color:#a6e22e">slapi</span>.<span style="color:#a6e22e">SoftLayerServiceRequest</span>{
-		<span style="color:#a6e22e">Endpoint</span>: <span style="color:#e6db74">&#34;https://api.softlayer.com/rest/v3&#34;</span>,
-		<span style="color:#a6e22e">ServiceName</span>: <span style="color:#e6db74">&#34;SoftLayer_Product_Order&#34;</span>,
-		<span style="color:#a6e22e">Method</span>: <span style="color:#e6db74">&#34;verifyOrder&#34;</span>,
-	}
+	<span class="c1">// Build the SoftLayer request you want to send to the API by using REST
+</span><span class="c1"></span>	<span class="nx">slRequest</span> <span class="o">:=</span>  <span class="nx">slapi</span><span class="p">.</span><span class="nx">SoftLayerServiceRequest</span><span class="p">{</span>
+		<span class="nx">Endpoint</span><span class="p">:</span> <span class="s">&#34;https://api.softlayer.com/rest/v3&#34;</span><span class="p">,</span>
+		<span class="nx">ServiceName</span><span class="p">:</span> <span class="s">&#34;SoftLayer_Product_Order&#34;</span><span class="p">,</span>
+		<span class="nx">Method</span><span class="p">:</span> <span class="s">&#34;verifyOrder&#34;</span><span class="p">,</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// Build the Parameters object that will be send in the Body request
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">parameters</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">`{&#34;parameters&#34; : [
-</span><span style="color:#e6db74">				{
-</span><span style="color:#e6db74">					&#34;complexType&#34;: &#34;SoftLayer_Container_Product_Order_Network_Storage_AsAService&#34;,
-</span><span style="color:#e6db74">    					&#34;location&#34;: &#34;MEXICO&#34;,
-</span><span style="color:#e6db74">    					&#34;quantity&#34;: 1,
-</span><span style="color:#e6db74">					&#34;packageId&#34;: 759,
-</span><span style="color:#e6db74">					&#34;prices&#34;: [
-</span><span style="color:#e6db74">        					{ &#34;id&#34;: 189443 },
-</span><span style="color:#e6db74">        					{ &#34;id&#34;: 189433 },
-</span><span style="color:#e6db74">        					{ &#34;id&#34;: 192043 },
-</span><span style="color:#e6db74">						{ &#34;id&#34;: 192233 },
-</span><span style="color:#e6db74">						{ &#34;id&#34;: 192053 }
-</span><span style="color:#e6db74">    					],
-</span><span style="color:#e6db74">					&#34;volumeSize&#34;: 80,
-</span><span style="color:#e6db74">    					&#34;osFormatType&#34;: {
-</span><span style="color:#e6db74">        					&#34;keyName&#34;: &#34;LINUX&#34;,
-</span><span style="color:#e6db74">        					&#34;complexType&#34;: &#34;SoftLayer_Network_Storage_Iscsi_OS_Type&#34;
-</span><span style="color:#e6db74">    					}
-</span><span style="color:#e6db74">        			}
-</span><span style="color:#e6db74">		    	]}`</span>
+	<span class="c1">// Build the Parameters object that will be send in the Body request
+</span><span class="c1"></span>	<span class="nx">parameters</span> <span class="o">:=</span> <span class="s">`{&#34;parameters&#34; : [
+</span><span class="s">				{
+</span><span class="s">					&#34;complexType&#34;: &#34;SoftLayer_Container_Product_Order_Network_Storage_AsAService&#34;,
+</span><span class="s">    					&#34;location&#34;: &#34;MEXICO&#34;,
+</span><span class="s">    					&#34;quantity&#34;: 1,
+</span><span class="s">					&#34;packageId&#34;: 759,
+</span><span class="s">					&#34;prices&#34;: [
+</span><span class="s">        					{ &#34;id&#34;: 189443 },
+</span><span class="s">        					{ &#34;id&#34;: 189433 },
+</span><span class="s">        					{ &#34;id&#34;: 192043 },
+</span><span class="s">						{ &#34;id&#34;: 192233 },
+</span><span class="s">						{ &#34;id&#34;: 192053 }
+</span><span class="s">    					],
+</span><span class="s">					&#34;volumeSize&#34;: 80,
+</span><span class="s">    					&#34;osFormatType&#34;: {
+</span><span class="s">        					&#34;keyName&#34;: &#34;LINUX&#34;,
+</span><span class="s">        					&#34;complexType&#34;: &#34;SoftLayer_Network_Storage_Iscsi_OS_Type&#34;
+</span><span class="s">    					}
+</span><span class="s">        			}
+</span><span class="s">		    	]}`</span>
 
-	<span style="color:#75715e">// Send API request
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">response</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">slapi</span>.<span style="color:#a6e22e">RestRequest</span>(<span style="color:#a6e22e">slapi</span>.<span style="color:#a6e22e">UrlRequest</span>(<span style="color:#a6e22e">slRequest</span>), <span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">parameters</span>, <span style="color:#e6db74">&#34;POST&#34;</span>)
+	<span class="c1">// Send API request
+</span><span class="c1"></span>	<span class="nx">response</span> <span class="o">:=</span> <span class="nx">slapi</span><span class="p">.</span><span class="nf">RestRequest</span><span class="p">(</span><span class="nx">slapi</span><span class="p">.</span><span class="nf">UrlRequest</span><span class="p">(</span><span class="nx">slRequest</span><span class="p">),</span> <span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">parameters</span><span class="p">,</span> <span class="s">&#34;POST&#34;</span><span class="p">)</span>
 
-	<span style="color:#75715e">// Following prints the result in a pretty json format
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">slapi</span>.<span style="color:#a6e22e">PrintJsonFormat</span>(<span style="color:#a6e22e">response</span>,<span style="color:#66d9ef">true</span>)
-}
+	<span class="c1">// Following prints the result in a pretty json format
+</span><span class="c1"></span>	<span class="nx">slapi</span><span class="p">.</span><span class="nf">PrintJsonFormat</span><span class="p">(</span><span class="nx">response</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span>
+<span class="p">}</span>
 
 </code></pre></div>
             </div>
@@ -214,50 +222,25 @@ if (!doNotTrack) {
     </div>
     <hr>
     <div class="row">
-            
-        <div class="col-md-6">
-            
-<div class="panel panel-default">
-    <div class="panel-heading" style="padding: 2px 15px;">
-        <h4>More Documentation</h4>
-    </div>
-    <div class="panel-body">
-        <a href="https://softlayer.github.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
-        <a href="https://github.com/softlayer/softlayer-java"><i class="fab fa-github"></i> softlayer-java<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fab fa-github"></i> softlayer-perl<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fab fa-github"></i> softlayer-php<br></a>
-        <a href="https://github.com/softlayer/softlayer-python"><i class="fab fa-github"></i> softlayer-python<br></a>
-        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fab fa-github"></i> softlayer-ruby<br></a>
+        <div class="row">
+            <div class="col-md-6">
+    <div class="well well-sm" style="word-wrap: break-word;"> 
+        <strong>Feedback? <span class="fas fa-comment"/></strong>
+            <p>
+                If this article contains any error, or leaves any of your questions unanswered, please help us out by 
+                opening up a github issue.<br>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20go%20-%20order_endurance_storage_as_a_service.go&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fgo%2forder_endurance_storage_as_a_service.go%2f"> Open an issue</a>
+                <i class="fab fa-github" alt="github"></i>
+            </p>
     </div>
 </div>
-
-<div class="panel panel-default">
-    <div class="panel-heading text-center" style="padding: 2px 15px;">
-      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fab fa-facebook-square" alt="facebook"></i> </a>
-      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fab fa-twitter" alt="twitter"></i> </a>
-      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fab fa-linkedin"></i> </a>
-      <a href="https://github.com/softlayer/softlayer.github.io"><i class="fab fa-github" alt="github"></i> </a>
-
-    </div>
-</div>
-
         </div>
-        <div class="col-md-6">
-            <div class="well well-sm" style="word-wrap: break-word;"> 
-                <strong>Feedback? <span class="fa fa-comment"/></strong>
-                    <p>
-                        We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20go%20-%20order_endurance_storage_as_a_service.go&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fgo%2forder_endurance_storage_as_a_service.go%2f"><span class="fa fa-github-square"/> Open an issue</a>
-                    </p>
-            </div>
-        </div>
-
     </div>
         <footer>
             <div class="row">
                 <hr>
                 <div class="col-sm-12">
-                    <p>&copy; SoftLayer 2015<br>
+                    <p>&copy; SoftLayer 2020<br>
                     Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
                 </div>
             </div>

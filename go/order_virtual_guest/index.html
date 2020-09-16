@@ -12,8 +12,8 @@
     <link rel="canonical" href="https://sldn.softlayer.com/go/order_virtual_guest/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
-    <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/custom.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/monokai.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/highlight/solarized_dark.css" rel="stylesheet">
 
     <script src="https://sldn.softlayer.com/js/highlight.pack.js"></script>
@@ -25,7 +25,15 @@
 
     <script src="https://sldn.softlayer.com/js/jquery-3.3.1.min.js"></script> 
     <script src="https://sldn.softlayer.com/js/sldn.js"></script>
-    <script src="https://sldn.softlayer.com/js/fontawesome-all.js"></script>
+
+
+    <link href="https://sldn.softlayer.com/fontawesome/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/brands.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/solid.min.css" rel="stylesheet" type="text/css">
+    
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/solid.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/brands.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/fontawesome.min.js"></script>
 
     <script>
 		$(document).ready(function() {
@@ -144,232 +152,232 @@ if (!doNotTrack) {
                 
 				
                 <p><strong>Note:</strong> See the <code>Parameters</code> struct to know what data you can set at order time.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-	<span style="color:#e6db74">&#34;os&#34;</span>
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;encoding/json&#34;</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;os&#34;</span>
 
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-)
+	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+<span class="p">)</span>
 
-<span style="color:#75715e">// Create the session and services
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">sess</span> = <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>()
-<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">packageService</span> = <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetProductPackageService</span>(<span style="color:#a6e22e">sess</span>)
-<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">orderService</span> = <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetProductOrderService</span>(<span style="color:#a6e22e">sess</span>)
+<span class="c1">// Create the session and services
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">sess</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+<span class="kd">var</span> <span class="nx">packageService</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">orderService</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
 
-<span style="color:#75715e">// Parameters will help us to reduce the number of argumments in a function
-</span><span style="color:#75715e">// and not all of them are required. e.g. hostID, reservedCapacityID,sshKeys, etc.
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Parameters</span> <span style="color:#66d9ef">struct</span> {
-	<span style="color:#a6e22e">hostname</span>           <span style="color:#66d9ef">string</span>
-	<span style="color:#a6e22e">domain</span>             <span style="color:#66d9ef">string</span>
-	<span style="color:#a6e22e">pkgName</span>            <span style="color:#66d9ef">string</span>
-	<span style="color:#a6e22e">flavor</span>             <span style="color:#66d9ef">string</span>
-	<span style="color:#a6e22e">hourly</span>             <span style="color:#66d9ef">bool</span>
-	<span style="color:#a6e22e">hostID</span>             <span style="color:#66d9ef">int</span> <span style="color:#75715e">// To order in an specific dedicated host
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">reservedCapacityID</span> <span style="color:#66d9ef">int</span> <span style="color:#75715e">// To order in a reerved capacity
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">location</span>           <span style="color:#66d9ef">string</span>
-	<span style="color:#a6e22e">items</span>              []<span style="color:#66d9ef">string</span>
-	<span style="color:#a6e22e">publicVlanID</span>       <span style="color:#66d9ef">int</span>
-	<span style="color:#a6e22e">privateVlanID</span>      <span style="color:#66d9ef">int</span>
-	<span style="color:#a6e22e">sshKeys</span>            []<span style="color:#66d9ef">int</span>
-	<span style="color:#a6e22e">postScripts</span>        []<span style="color:#66d9ef">string</span>
-}
+<span class="c1">// Parameters will help us to reduce the number of argumments in a function
+</span><span class="c1">// and not all of them are required. e.g. hostID, reservedCapacityID,sshKeys, etc.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Parameters</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">hostname</span>           <span class="kt">string</span>
+	<span class="nx">domain</span>             <span class="kt">string</span>
+	<span class="nx">pkgName</span>            <span class="kt">string</span>
+	<span class="nx">flavor</span>             <span class="kt">string</span>
+	<span class="nx">hourly</span>             <span class="kt">bool</span>
+	<span class="nx">hostID</span>             <span class="kt">int</span> <span class="c1">// To order in an specific dedicated host
+</span><span class="c1"></span>	<span class="nx">reservedCapacityID</span> <span class="kt">int</span> <span class="c1">// To order in a reerved capacity
+</span><span class="c1"></span>	<span class="nx">location</span>           <span class="kt">string</span>
+	<span class="nx">items</span>              <span class="p">[]</span><span class="kt">string</span>
+	<span class="nx">publicVlanID</span>       <span class="kt">int</span>
+	<span class="nx">privateVlanID</span>      <span class="kt">int</span>
+	<span class="nx">sshKeys</span>            <span class="p">[]</span><span class="kt">int</span>
+	<span class="nx">postScripts</span>        <span class="p">[]</span><span class="kt">string</span>
+<span class="p">}</span>
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// KeyNames of the items
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">items</span> <span style="color:#f92672">:=</span> []<span style="color:#66d9ef">string</span>{
-		<span style="color:#e6db74">&#34;1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&#34;</span>,
-		<span style="color:#e6db74">&#34;BANDWIDTH_0_GB_2&#34;</span>, <span style="color:#e6db74">&#34;1_IP_ADDRESS&#34;</span>,
-		<span style="color:#e6db74">&#34;OS_UBUNTU_16_04_LTS_XENIAL_XERUS_MINIMAL_64_BIT_FOR_VSI&#34;</span>,
-		<span style="color:#e6db74">&#34;REBOOT_REMOTE_CONSOLE&#34;</span>, <span style="color:#e6db74">&#34;NESSUS_VULNERABILITY_ASSESSMENT_REPORTING&#34;</span>,
-		<span style="color:#e6db74">&#34;MONITORING_HOST_PING&#34;</span>, <span style="color:#e6db74">&#34;NOTIFICATION_EMAIL_AND_TICKET&#34;</span>, <span style="color:#e6db74">&#34;AUTOMATED_NOTIFICATION&#34;</span>,
-		<span style="color:#e6db74">&#34;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#34;</span>,
-	}
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// KeyNames of the items
+</span><span class="c1"></span>	<span class="nx">items</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+		<span class="s">&#34;1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&#34;</span><span class="p">,</span>
+		<span class="s">&#34;BANDWIDTH_0_GB_2&#34;</span><span class="p">,</span> <span class="s">&#34;1_IP_ADDRESS&#34;</span><span class="p">,</span>
+		<span class="s">&#34;OS_UBUNTU_16_04_LTS_XENIAL_XERUS_MINIMAL_64_BIT_FOR_VSI&#34;</span><span class="p">,</span>
+		<span class="s">&#34;REBOOT_REMOTE_CONSOLE&#34;</span><span class="p">,</span> <span class="s">&#34;NESSUS_VULNERABILITY_ASSESSMENT_REPORTING&#34;</span><span class="p">,</span>
+		<span class="s">&#34;MONITORING_HOST_PING&#34;</span><span class="p">,</span> <span class="s">&#34;NOTIFICATION_EMAIL_AND_TICKET&#34;</span><span class="p">,</span> <span class="s">&#34;AUTOMATED_NOTIFICATION&#34;</span><span class="p">,</span>
+		<span class="s">&#34;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#34;</span><span class="p">,</span>
+	<span class="p">}</span>
 	
-	<span style="color:#a6e22e">parameters</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">Parameters</span>{
-		<span style="color:#a6e22e">hostname</span>:      <span style="color:#e6db74">&#34;myhostname&#34;</span>,
-		<span style="color:#a6e22e">domain</span>:        <span style="color:#e6db74">&#34;domain.com&#34;</span>,
-		<span style="color:#a6e22e">publicVlanID</span>:  <span style="color:#ae81ff">2068353</span>,
-		<span style="color:#a6e22e">privateVlanID</span>: <span style="color:#ae81ff">2068355</span>,
-		<span style="color:#75715e">// CLOUD_SERVER, SUSPEND_CLOUD_SERVER, PUBLIC_CLOUD_SERVER or TRANSIENT_CLOUD_SERVER
-</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">pkgName</span>:     <span style="color:#e6db74">&#34;SUSPEND_CLOUD_SERVER&#34;</span>,
-		<span style="color:#a6e22e">flavor</span>:      <span style="color:#e6db74">&#34;M1_1X8X25&#34;</span>, <span style="color:#75715e">// Remove this if you want to order a CLOUD_SERVER
-</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">location</span>:    <span style="color:#e6db74">&#34;DALLAS13&#34;</span>,
-		<span style="color:#a6e22e">hourly</span>:      <span style="color:#66d9ef">true</span>, <span style="color:#75715e">// Suspended and transient vsis can only be hourly
-</span><span style="color:#75715e"></span>		<span style="color:#a6e22e">items</span>:       <span style="color:#a6e22e">items</span>,
-		<span style="color:#a6e22e">sshKeys</span>:     []<span style="color:#66d9ef">int</span>{<span style="color:#ae81ff">1253845</span>, <span style="color:#ae81ff">1312903</span>},
-		<span style="color:#a6e22e">postScripts</span>: []<span style="color:#66d9ef">string</span>{<span style="color:#e6db74">&#34;https://xx.xx.xx.xx/folder/file.sh&#34;</span>},
-	}
+	<span class="nx">parameters</span> <span class="o">:=</span> <span class="nx">Parameters</span><span class="p">{</span>
+		<span class="nx">hostname</span><span class="p">:</span>      <span class="s">&#34;myhostname&#34;</span><span class="p">,</span>
+		<span class="nx">domain</span><span class="p">:</span>        <span class="s">&#34;domain.com&#34;</span><span class="p">,</span>
+		<span class="nx">publicVlanID</span><span class="p">:</span>  <span class="mi">2068353</span><span class="p">,</span>
+		<span class="nx">privateVlanID</span><span class="p">:</span> <span class="mi">2068355</span><span class="p">,</span>
+		<span class="c1">// CLOUD_SERVER, SUSPEND_CLOUD_SERVER, PUBLIC_CLOUD_SERVER or TRANSIENT_CLOUD_SERVER
+</span><span class="c1"></span>		<span class="nx">pkgName</span><span class="p">:</span>     <span class="s">&#34;SUSPEND_CLOUD_SERVER&#34;</span><span class="p">,</span>
+		<span class="nx">flavor</span><span class="p">:</span>      <span class="s">&#34;M1_1X8X25&#34;</span><span class="p">,</span> <span class="c1">// Remove this if you want to order a CLOUD_SERVER
+</span><span class="c1"></span>		<span class="nx">location</span><span class="p">:</span>    <span class="s">&#34;DALLAS13&#34;</span><span class="p">,</span>
+		<span class="nx">hourly</span><span class="p">:</span>      <span class="kc">true</span><span class="p">,</span> <span class="c1">// Suspended and transient vsis can only be hourly
+</span><span class="c1"></span>		<span class="nx">items</span><span class="p">:</span>       <span class="nx">items</span><span class="p">,</span>
+		<span class="nx">sshKeys</span><span class="p">:</span>     <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1253845</span><span class="p">,</span> <span class="mi">1312903</span><span class="p">},</span>
+		<span class="nx">postScripts</span><span class="p">:</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;https://xx.xx.xx.xx/folder/file.sh&#34;</span><span class="p">},</span>
+	<span class="p">}</span>
 
-	<span style="color:#a6e22e">OrderVirtualServer</span>(<span style="color:#a6e22e">parameters</span>)
-}
+	<span class="nf">OrderVirtualServer</span><span class="p">(</span><span class="nx">parameters</span><span class="p">)</span>
+<span class="p">}</span>
 
-<span style="color:#75715e">// OrderVirtualServer place/verify the order
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">OrderVirtualServer</span>(<span style="color:#a6e22e">args</span> <span style="color:#a6e22e">Parameters</span>) {
+<span class="c1">// OrderVirtualServer place/verify the order
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">OrderVirtualServer</span><span class="p">(</span><span class="nx">args</span> <span class="nx">Parameters</span><span class="p">)</span> <span class="p">{</span>
 
-	<span style="color:#75715e">// Get the packageId and prices
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">packageID</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">GetPackageID</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">pkgName</span>)
-	<span style="color:#a6e22e">prices</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">GetPrices</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">packageID</span>, <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">items</span>)
+	<span class="c1">// Get the packageId and prices
+</span><span class="c1"></span>	<span class="nx">packageID</span> <span class="o">:=</span> <span class="nf">GetPackageID</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">pkgName</span><span class="p">)</span>
+	<span class="nx">prices</span> <span class="o">:=</span> <span class="nf">GetPrices</span><span class="p">(</span><span class="o">*</span><span class="nx">packageID</span><span class="p">,</span> <span class="nx">args</span><span class="p">.</span><span class="nx">items</span><span class="p">)</span>
 
-	<span style="color:#75715e">// Build the Virtual_Guest array object
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">virtualGuests</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">BuildArrayVirtualGuests</span>(<span style="color:#a6e22e">args</span>)
+	<span class="c1">// Build the Virtual_Guest array object
+</span><span class="c1"></span>	<span class="nx">virtualGuests</span> <span class="o">:=</span> <span class="nf">BuildArrayVirtualGuests</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span>
 
-	<span style="color:#75715e">// Build the Container_Product_Order with the basic required data
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">containerOrder</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Container_Product_Order</span>{
-		<span style="color:#a6e22e">PackageId</span>:        <span style="color:#a6e22e">packageID</span>,
-		<span style="color:#a6e22e">Location</span>:         <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">location</span>),
-		<span style="color:#a6e22e">VirtualGuests</span>:    <span style="color:#a6e22e">virtualGuests</span>,
-		<span style="color:#a6e22e">Prices</span>:           <span style="color:#a6e22e">prices</span>,
-		<span style="color:#a6e22e">UseHourlyPricing</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Bool</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">hourly</span>),
-	}
-	<span style="color:#75715e">// Add presetId to the Container_Product_Order if a flavor exists
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">flavor</span> <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;&#34;</span> {
-		<span style="color:#a6e22e">containerOrder</span>.<span style="color:#a6e22e">PresetId</span> = <span style="color:#a6e22e">GetPresetID</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">packageID</span>, <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">flavor</span>)
-	}
-	<span style="color:#75715e">// Add sshKeys if Parameters struct has this value set
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">sshKeys</span>) &gt; <span style="color:#ae81ff">0</span> {
-		<span style="color:#a6e22e">containerOrder</span>.<span style="color:#a6e22e">SshKeys</span> = []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Container_Product_Order_SshKeys</span>{
-			{<span style="color:#a6e22e">SshKeyIds</span>: <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">sshKeys</span>},
-		}
-	}
-	<span style="color:#75715e">// Add post provision scripts if Parameters struct has this value set
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">postScripts</span>) &gt; <span style="color:#ae81ff">0</span> {
-		<span style="color:#a6e22e">containerOrder</span>.<span style="color:#a6e22e">ProvisionScripts</span> = <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">postScripts</span>
-	}
+	<span class="c1">// Build the Container_Product_Order with the basic required data
+</span><span class="c1"></span>	<span class="nx">containerOrder</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span><span class="p">{</span>
+		<span class="nx">PackageId</span><span class="p">:</span>        <span class="nx">packageID</span><span class="p">,</span>
+		<span class="nx">Location</span><span class="p">:</span>         <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">location</span><span class="p">),</span>
+		<span class="nx">VirtualGuests</span><span class="p">:</span>    <span class="nx">virtualGuests</span><span class="p">,</span>
+		<span class="nx">Prices</span><span class="p">:</span>           <span class="nx">prices</span><span class="p">,</span>
+		<span class="nx">UseHourlyPricing</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">hourly</span><span class="p">),</span>
+	<span class="p">}</span>
+	<span class="c1">// Add presetId to the Container_Product_Order if a flavor exists
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">args</span><span class="p">.</span><span class="nx">flavor</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+		<span class="nx">containerOrder</span><span class="p">.</span><span class="nx">PresetId</span> <span class="p">=</span> <span class="nf">GetPresetID</span><span class="p">(</span><span class="o">*</span><span class="nx">packageID</span><span class="p">,</span> <span class="nx">args</span><span class="p">.</span><span class="nx">flavor</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="c1">// Add sshKeys if Parameters struct has this value set
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">sshKeys</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">containerOrder</span><span class="p">.</span><span class="nx">SshKeys</span> <span class="p">=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_SshKeys</span><span class="p">{</span>
+			<span class="p">{</span><span class="nx">SshKeyIds</span><span class="p">:</span> <span class="nx">args</span><span class="p">.</span><span class="nx">sshKeys</span><span class="p">},</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="c1">// Add post provision scripts if Parameters struct has this value set
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">postScripts</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">containerOrder</span><span class="p">.</span><span class="nx">ProvisionScripts</span> <span class="p">=</span> <span class="nx">args</span><span class="p">.</span><span class="nx">postScripts</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// Build the order template that will be used to order the virtual server
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">orderTemplate</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Container_Product_Order_Virtual_Guest</span>{
-		<span style="color:#a6e22e">Container_Product_Order_Hardware_Server</span>: <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Container_Product_Order_Hardware_Server</span>{
-			<span style="color:#a6e22e">Container_Product_Order</span>: <span style="color:#a6e22e">containerOrder</span>,
-		},
-	}
+	<span class="c1">// Build the order template that will be used to order the virtual server
+</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Virtual_Guest</span><span class="p">{</span>
+		<span class="nx">Container_Product_Order_Hardware_Server</span><span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Hardware_Server</span><span class="p">{</span>
+			<span class="nx">Container_Product_Order</span><span class="p">:</span> <span class="nx">containerOrder</span><span class="p">,</span>
+		<span class="p">},</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// Add the hostId or reserved capacity if they were added in the parameters
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">hostID</span> &gt; <span style="color:#ae81ff">0</span> {
-		<span style="color:#a6e22e">orderTemplate</span>.<span style="color:#a6e22e">HostId</span> = <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">hostID</span>)
-	}
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">reservedCapacityID</span> &gt; <span style="color:#ae81ff">0</span> {
-		<span style="color:#a6e22e">orderTemplate</span>.<span style="color:#a6e22e">ReservedCapacityId</span> = <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">reservedCapacityID</span>)
-	}
+	<span class="c1">// Add the hostId or reserved capacity if they were added in the parameters
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">args</span><span class="p">.</span><span class="nx">hostID</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">HostId</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">hostID</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">args</span><span class="p">.</span><span class="nx">reservedCapacityID</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">ReservedCapacityId</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">reservedCapacityID</span><span class="p">)</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">// you are ready to order.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">receipt</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">orderService</span>.<span style="color:#a6e22e">VerifyOrder</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">orderTemplate</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Unable to verify/place the order: %s&#34;</span>, <span style="color:#a6e22e">err</span>)
-	}
+	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">orderService</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to verify/place the order: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// pretty print
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">MarshalIndent</span>(<span style="color:#a6e22e">receipt</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;   &#34;</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-		<span style="color:#66d9ef">return</span>
-	}
-	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
-}
+	<span class="c1">// pretty print
+</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;   &#34;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+<span class="p">}</span>
 
-<span style="color:#75715e">// GetPackageID returns the package id
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">GetPackageID</span>(<span style="color:#a6e22e">keyName</span> <span style="color:#66d9ef">string</span>) <span style="color:#f92672">*</span><span style="color:#66d9ef">int</span> {
-	<span style="color:#a6e22e">objFilter</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">filter</span>.<span style="color:#a6e22e">Path</span>(<span style="color:#e6db74">&#34;keyName&#34;</span>).<span style="color:#a6e22e">Eq</span>(<span style="color:#a6e22e">keyName</span>).<span style="color:#a6e22e">Build</span>()
-	<span style="color:#a6e22e">packages</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">packageService</span>.<span style="color:#a6e22e">Mask</span>(<span style="color:#e6db74">&#34;mask[id]&#34;</span>).<span style="color:#a6e22e">Filter</span>(<span style="color:#a6e22e">objFilter</span>).<span style="color:#a6e22e">GetAllObjects</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Package %s doesn&#39;t exists\n&#34;</span>, <span style="color:#a6e22e">keyName</span>)
-		<span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Exit</span>(<span style="color:#ae81ff">1</span>)
-	}
-	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">packages</span>[<span style="color:#ae81ff">0</span>].<span style="color:#a6e22e">Id</span>
-}
+<span class="c1">// GetPackageID returns the package id
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">GetPackageID</span><span class="p">(</span><span class="nx">keyName</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="kt">int</span> <span class="p">{</span>
+	<span class="nx">objFilter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;keyName&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">keyName</span><span class="p">).</span><span class="nf">Build</span><span class="p">()</span>
+	<span class="nx">packages</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">packageService</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="s">&#34;mask[id]&#34;</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">objFilter</span><span class="p">).</span><span class="nf">GetAllObjects</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Package %s doesn&#39;t exists\n&#34;</span><span class="p">,</span> <span class="nx">keyName</span><span class="p">)</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">packages</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span>
+<span class="p">}</span>
 
-<span style="color:#75715e">// GetPresetID returns the presetID of a flavor
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">GetPresetID</span>(<span style="color:#a6e22e">packageID</span> <span style="color:#66d9ef">int</span>, <span style="color:#a6e22e">flavor</span> <span style="color:#66d9ef">string</span>) <span style="color:#f92672">*</span><span style="color:#66d9ef">int</span> {
-	<span style="color:#a6e22e">objFilter</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">filter</span>.<span style="color:#a6e22e">Path</span>(<span style="color:#e6db74">&#34;keyName&#34;</span>).<span style="color:#a6e22e">Eq</span>(<span style="color:#a6e22e">flavor</span>).<span style="color:#a6e22e">Build</span>()
-	<span style="color:#a6e22e">presets</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">packageService</span>.<span style="color:#a6e22e">Filter</span>(<span style="color:#a6e22e">objFilter</span>).<span style="color:#a6e22e">Id</span>(<span style="color:#a6e22e">packageID</span>).<span style="color:#a6e22e">GetActivePresets</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Flavor %s doesn&#39;t exists\n&#34;</span>, <span style="color:#a6e22e">flavor</span>)
-		<span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Exit</span>(<span style="color:#ae81ff">1</span>)
-	}
-	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">presets</span>[<span style="color:#ae81ff">0</span>].<span style="color:#a6e22e">Id</span>
-}
+<span class="c1">// GetPresetID returns the presetID of a flavor
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">GetPresetID</span><span class="p">(</span><span class="nx">packageID</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">flavor</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="kt">int</span> <span class="p">{</span>
+	<span class="nx">objFilter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;keyName&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">flavor</span><span class="p">).</span><span class="nf">Build</span><span class="p">()</span>
+	<span class="nx">presets</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">packageService</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">objFilter</span><span class="p">).</span><span class="nf">Id</span><span class="p">(</span><span class="nx">packageID</span><span class="p">).</span><span class="nf">GetActivePresets</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Flavor %s doesn&#39;t exists\n&#34;</span><span class="p">,</span> <span class="nx">flavor</span><span class="p">)</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">presets</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span>
+<span class="p">}</span>
 
-<span style="color:#75715e">// GetPrices returns the list of prices
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">GetPrices</span>(<span style="color:#a6e22e">packageID</span> <span style="color:#66d9ef">int</span>, <span style="color:#a6e22e">itemKeyNames</span> []<span style="color:#66d9ef">string</span>) []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Product_Item_Price</span> {
-	<span style="color:#a6e22e">objMask</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;mask[id,itemCategory,keyName,prices[categories]]&#34;</span>
+<span class="c1">// GetPrices returns the list of prices
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">GetPrices</span><span class="p">(</span><span class="nx">packageID</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">itemKeyNames</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
+	<span class="nx">objMask</span> <span class="o">:=</span> <span class="s">&#34;mask[id,itemCategory,keyName,prices[categories]]&#34;</span>
 
-	<span style="color:#a6e22e">items</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">packageService</span>.<span style="color:#a6e22e">Mask</span>(<span style="color:#a6e22e">objMask</span>).<span style="color:#a6e22e">Id</span>(<span style="color:#a6e22e">packageID</span>).<span style="color:#a6e22e">GetItems</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Unable to retrieve items: %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Exit</span>(<span style="color:#ae81ff">1</span>)
-	}
+	<span class="nx">items</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">packageService</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">objMask</span><span class="p">).</span><span class="nf">Id</span><span class="p">(</span><span class="nx">packageID</span><span class="p">).</span><span class="nf">GetItems</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to retrieve items: %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
 
-	<span style="color:#a6e22e">prices</span> <span style="color:#f92672">:=</span> make([]<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Product_Item_Price</span>, len(<span style="color:#a6e22e">itemKeyNames</span>))
+	<span class="nx">prices</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">itemKeyNames</span><span class="p">))</span>
 
-	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">idx</span>, <span style="color:#a6e22e">itemKeyName</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">itemKeyNames</span> {
-		<span style="color:#a6e22e">prices</span>[<span style="color:#a6e22e">idx</span>].<span style="color:#a6e22e">Id</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">GetPriceIDIfMatch</span>(<span style="color:#a6e22e">itemKeyName</span>, <span style="color:#a6e22e">items</span>)
-		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
-			<span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Exit</span>(<span style="color:#ae81ff">1</span>)
-		}
-	}
+	<span class="k">for</span> <span class="nx">idx</span><span class="p">,</span> <span class="nx">itemKeyName</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">itemKeyNames</span> <span class="p">{</span>
+		<span class="nx">prices</span><span class="p">[</span><span class="nx">idx</span><span class="p">].</span><span class="nx">Id</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nf">GetPriceIDIfMatch</span><span class="p">(</span><span class="nx">itemKeyName</span><span class="p">,</span> <span class="nx">items</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+			<span class="nx">os</span><span class="p">.</span><span class="nf">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
 
-	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">prices</span>
-}
+	<span class="k">return</span> <span class="nx">prices</span>
+<span class="p">}</span>
 
-<span style="color:#75715e">// GetPriceIDIfMatch returns a priceID or error if keyName doesnt exists
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">GetPriceIDIfMatch</span>(<span style="color:#a6e22e">keyName</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">items</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Product_Item</span>) (<span style="color:#a6e22e">priceID</span> <span style="color:#f92672">*</span><span style="color:#66d9ef">int</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) {
-	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">matchingItem</span> <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Product_Item</span>
-	<span style="color:#75715e">// find the item keyname
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">item</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">items</span> {
-		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">keyName</span> <span style="color:#f92672">==</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">item</span>.<span style="color:#a6e22e">KeyName</span> {
-			<span style="color:#a6e22e">matchingItem</span> = <span style="color:#a6e22e">item</span>
-			<span style="color:#66d9ef">break</span>
-		}
-	}
-	<span style="color:#75715e">// returns error if keyName doesn&#39;t exists in the items list
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">matchingItem</span>.<span style="color:#a6e22e">KeyName</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>, <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Errorf</span>(<span style="color:#e6db74">&#34;The item %s doesn&#39;t exists in the package&#34;</span>, <span style="color:#a6e22e">keyName</span>)
-	}
-	<span style="color:#75715e">// find the standard priceID
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">price</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">matchingItem</span>.<span style="color:#a6e22e">Prices</span> {
-		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">price</span>.<span style="color:#a6e22e">LocationGroupId</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
-			<span style="color:#a6e22e">priceID</span> = <span style="color:#a6e22e">price</span>.<span style="color:#a6e22e">Id</span>
-			<span style="color:#66d9ef">break</span>
-		}
-	}
+<span class="c1">// GetPriceIDIfMatch returns a priceID or error if keyName doesnt exists
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">GetPriceIDIfMatch</span><span class="p">(</span><span class="nx">keyName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">items</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">(</span><span class="nx">priceID</span> <span class="o">*</span><span class="kt">int</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">matchingItem</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span>
+	<span class="c1">// find the item keyname
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">keyName</span> <span class="o">==</span> <span class="o">*</span><span class="nx">item</span><span class="p">.</span><span class="nx">KeyName</span> <span class="p">{</span>
+			<span class="nx">matchingItem</span> <span class="p">=</span> <span class="nx">item</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="c1">// returns error if keyName doesn&#39;t exists in the items list
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">matchingItem</span><span class="p">.</span><span class="nx">KeyName</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;The item %s doesn&#39;t exists in the package&#34;</span><span class="p">,</span> <span class="nx">keyName</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="c1">// find the standard priceID
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">price</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">matchingItem</span><span class="p">.</span><span class="nx">Prices</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">price</span><span class="p">.</span><span class="nx">LocationGroupId</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">priceID</span> <span class="p">=</span> <span class="nx">price</span><span class="p">.</span><span class="nx">Id</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
 
-	<span style="color:#66d9ef">return</span>
-}
+	<span class="k">return</span>
+<span class="p">}</span>
 
-<span style="color:#75715e">// BuildArrayVirtualGuests builds the esqueleton of Virtual_Guest array
-</span><span style="color:#75715e"></span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">BuildArrayVirtualGuests</span>(<span style="color:#a6e22e">args</span> <span style="color:#a6e22e">Parameters</span>) []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Virtual_Guest</span> {
-	<span style="color:#a6e22e">virtualGuests</span> <span style="color:#f92672">:=</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Virtual_Guest</span>{
-		{
-			<span style="color:#a6e22e">Hostname</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">hostname</span>),
-			<span style="color:#a6e22e">Domain</span>:   <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">domain</span>),
-		},
-	}
+<span class="c1">// BuildArrayVirtualGuests builds the esqueleton of Virtual_Guest array
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">BuildArrayVirtualGuests</span><span class="p">(</span><span class="nx">args</span> <span class="nx">Parameters</span><span class="p">)</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span> <span class="p">{</span>
+	<span class="nx">virtualGuests</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{</span>
+		<span class="p">{</span>
+			<span class="nx">Hostname</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">hostname</span><span class="p">),</span>
+			<span class="nx">Domain</span><span class="p">:</span>   <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">domain</span><span class="p">),</span>
+		<span class="p">},</span>
+	<span class="p">}</span>
 
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">privateVlanID</span> &gt; <span style="color:#ae81ff">0</span> {
-		<span style="color:#a6e22e">virtualGuests</span>[<span style="color:#ae81ff">0</span>].<span style="color:#a6e22e">PrimaryBackendNetworkComponent</span> = <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Virtual_Guest_Network_Component</span>{
-			<span style="color:#a6e22e">NetworkVlan</span>: <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Vlan</span>{
-				<span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">privateVlanID</span>),
-			},
-		}
-	}
+	<span class="k">if</span> <span class="nx">args</span><span class="p">.</span><span class="nx">privateVlanID</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">virtualGuests</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">PrimaryBackendNetworkComponent</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest_Network_Component</span><span class="p">{</span>
+			<span class="nx">NetworkVlan</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Vlan</span><span class="p">{</span>
+				<span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">privateVlanID</span><span class="p">),</span>
+			<span class="p">},</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
 
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">publicVlanID</span> &gt; <span style="color:#ae81ff">0</span> {
-		<span style="color:#a6e22e">virtualGuests</span>[<span style="color:#ae81ff">0</span>].<span style="color:#a6e22e">PrimaryNetworkComponent</span> = <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Virtual_Guest_Network_Component</span>{
-			<span style="color:#a6e22e">NetworkVlan</span>: <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Vlan</span>{
-				<span style="color:#a6e22e">Id</span>: <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#a6e22e">args</span>.<span style="color:#a6e22e">publicVlanID</span>),
-			},
-		}
-	}
-	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">virtualGuests</span>
-}
+	<span class="k">if</span> <span class="nx">args</span><span class="p">.</span><span class="nx">publicVlanID</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">virtualGuests</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">PrimaryNetworkComponent</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest_Network_Component</span><span class="p">{</span>
+			<span class="nx">NetworkVlan</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Vlan</span><span class="p">{</span>
+				<span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">publicVlanID</span><span class="p">),</span>
+			<span class="p">},</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">virtualGuests</span>
+<span class="p">}</span>
 
 </code></pre></div>
             </div>
@@ -378,50 +386,25 @@ if (!doNotTrack) {
     </div>
     <hr>
     <div class="row">
-            
-        <div class="col-md-6">
-            
-<div class="panel panel-default">
-    <div class="panel-heading" style="padding: 2px 15px;">
-        <h4>More Documentation</h4>
-    </div>
-    <div class="panel-body">
-        <a href="https://softlayer.github.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
-        <a href="https://github.com/softlayer/softlayer-java"><i class="fab fa-github"></i> softlayer-java<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fab fa-github"></i> softlayer-perl<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fab fa-github"></i> softlayer-php<br></a>
-        <a href="https://github.com/softlayer/softlayer-python"><i class="fab fa-github"></i> softlayer-python<br></a>
-        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fab fa-github"></i> softlayer-ruby<br></a>
+        <div class="row">
+            <div class="col-md-6">
+    <div class="well well-sm" style="word-wrap: break-word;"> 
+        <strong>Feedback? <span class="fas fa-comment"/></strong>
+            <p>
+                If this article contains any error, or leaves any of your questions unanswered, please help us out by 
+                opening up a github issue.<br>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20go%20-%20Order%20a%20Virtual%20Server&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fgo%2forder_virtual_guest%2f"> Open an issue</a>
+                <i class="fab fa-github" alt="github"></i>
+            </p>
     </div>
 </div>
-
-<div class="panel panel-default">
-    <div class="panel-heading text-center" style="padding: 2px 15px;">
-      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fab fa-facebook-square" alt="facebook"></i> </a>
-      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fab fa-twitter" alt="twitter"></i> </a>
-      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fab fa-linkedin"></i> </a>
-      <a href="https://github.com/softlayer/softlayer.github.io"><i class="fab fa-github" alt="github"></i> </a>
-
-    </div>
-</div>
-
         </div>
-        <div class="col-md-6">
-            <div class="well well-sm" style="word-wrap: break-word;"> 
-                <strong>Feedback? <span class="fa fa-comment"/></strong>
-                    <p>
-                        We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20go%20-%20Order%20a%20Virtual%20Server&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fgo%2forder_virtual_guest%2f"><span class="fa fa-github-square"/> Open an issue</a>
-                    </p>
-            </div>
-        </div>
-
     </div>
         <footer>
             <div class="row">
                 <hr>
                 <div class="col-sm-12">
-                    <p>&copy; SoftLayer 2015<br>
+                    <p>&copy; SoftLayer 2020<br>
                     Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
                 </div>
             </div>

@@ -12,8 +12,8 @@
     <link rel="canonical" href="https://sldn.softlayer.com/python/securitygroup_vsis/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
-    <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/custom.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/monokai.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/highlight/solarized_dark.css" rel="stylesheet">
 
     <script src="https://sldn.softlayer.com/js/highlight.pack.js"></script>
@@ -25,7 +25,15 @@
 
     <script src="https://sldn.softlayer.com/js/jquery-3.3.1.min.js"></script> 
     <script src="https://sldn.softlayer.com/js/sldn.js"></script>
-    <script src="https://sldn.softlayer.com/js/fontawesome-all.js"></script>
+
+
+    <link href="https://sldn.softlayer.com/fontawesome/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/brands.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/solid.min.css" rel="stylesheet" type="text/css">
+    
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/solid.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/brands.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/fontawesome.min.js"></script>
 
     <script>
 		$(document).ready(function() {
@@ -136,102 +144,102 @@ if (!doNotTrack) {
                 
 				
                 <h2 id="creating-a-vsi-with-security-groups">Creating a VSI with security groups</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#75715e"># For nice debug output</span>
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="c1"># For nice debug output</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
 
-<span style="color:#75715e"># Create a client for use with the VSManager</span>
-client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
-vs_mgr <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>VSManager(client)
+<span class="c1"># Create a client for use with the VSManager</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<span class="n">vs_mgr</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">VSManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
 
-http_sg_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">384757</span>
-ssh_sg_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">576973</span>
+<span class="n">http_sg_id</span> <span class="o">=</span> <span class="mi">384757</span>
+<span class="n">ssh_sg_id</span> <span class="o">=</span> <span class="mi">576973</span>
 
-<span style="color:#75715e"># Allow only HTTP on the public interface of the VSI</span>
-public_groups <span style="color:#f92672">=</span> [http_sg_id]
+<span class="c1"># Allow only HTTP on the public interface of the VSI</span>
+<span class="n">public_groups</span> <span class="o">=</span> <span class="p">[</span><span class="n">http_sg_id</span><span class="p">]</span>
 
-<span style="color:#75715e"># Allow HTTP and SSH on the private interface of the VSI</span>
-private_groups <span style="color:#f92672">=</span> [http_sg_id, ssh_sg_id]
+<span class="c1"># Allow HTTP and SSH on the private interface of the VSI</span>
+<span class="n">private_groups</span> <span class="o">=</span> <span class="p">[</span><span class="n">http_sg_id</span><span class="p">,</span> <span class="n">ssh_sg_id</span><span class="p">]</span>
 
-<span style="color:#75715e"># If we didn&#39;t want to set any security groups on an interface</span>
-<span style="color:#75715e"># (which allows all traffic), we don&#39;t set the associated</span>
-<span style="color:#75715e"># creation kwarg</span>
+<span class="c1"># If we didn&#39;t want to set any security groups on an interface</span>
+<span class="c1"># (which allows all traffic), we don&#39;t set the associated</span>
+<span class="c1"># creation kwarg</span>
 
-create_kwargs <span style="color:#f92672">=</span> {
-    <span style="color:#e6db74">&#39;hostname&#39;</span>: <span style="color:#e6db74">&#39;sg-vsi&#39;</span>,
-    <span style="color:#e6db74">&#39;domain&#39;</span>: <span style="color:#e6db74">&#39;mycompany.com&#39;</span>,
-    <span style="color:#e6db74">&#39;os_code&#39;</span>: <span style="color:#e6db74">&#39;UBUNTU_LATEST_64&#39;</span>,
-    <span style="color:#e6db74">&#39;datacenter&#39;</span>: <span style="color:#e6db74">&#39;dal13&#39;</span>,
-    <span style="color:#e6db74">&#39;cpus&#39;</span>: <span style="color:#ae81ff">1</span>,
-    <span style="color:#e6db74">&#39;memory&#39;</span>: <span style="color:#ae81ff">1024</span>,
-    <span style="color:#e6db74">&#39;hourly&#39;</span>: True,
-    <span style="color:#e6db74">&#39;disks&#39;</span>: (<span style="color:#e6db74">&#39;100&#39;</span>,),
-    <span style="color:#e6db74">&#39;public_security_groups&#39;</span>: public_groups,
-    <span style="color:#e6db74">&#39;private_security_groups&#39;</span>: private_groups,
-}
+<span class="n">create_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="s1">&#39;sg-vsi&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="s1">&#39;mycompany.com&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;os_code&#39;</span><span class="p">:</span> <span class="s1">&#39;UBUNTU_LATEST_64&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;datacenter&#39;</span><span class="p">:</span> <span class="s1">&#39;dal13&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;cpus&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">&#39;memory&#39;</span><span class="p">:</span> <span class="mi">1024</span><span class="p">,</span>
+    <span class="s1">&#39;hourly&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="s1">&#39;disks&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;100&#39;</span><span class="p">,),</span>
+    <span class="s1">&#39;public_security_groups&#39;</span><span class="p">:</span> <span class="n">public_groups</span><span class="p">,</span>
+    <span class="s1">&#39;private_security_groups&#39;</span><span class="p">:</span> <span class="n">private_groups</span><span class="p">,</span>
+<span class="p">}</span>
 
-<span style="color:#66d9ef">try</span>:
-    vsi <span style="color:#f92672">=</span> vs_mgr<span style="color:#f92672">.</span>create_instance(<span style="color:#f92672">**</span>create_kwargs)
-    pp(vsi)
-<span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
-    pp(<span style="color:#e6db74">&#39;Failed... Unable to create VSI with security group: faultCode=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, faultString=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#39;</span>
-       <span style="color:#f92672">%</span> (e<span style="color:#f92672">.</span>faultCode, e<span style="color:#f92672">.</span>faultString))
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">vsi</span> <span class="o">=</span> <span class="n">vs_mgr</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span><span class="o">**</span><span class="n">create_kwargs</span><span class="p">)</span>
+    <span class="n">pp</span><span class="p">(</span><span class="n">vsi</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">pp</span><span class="p">(</span><span class="s1">&#39;Failed... Unable to create VSI with security group: faultCode=</span><span class="si">%s</span><span class="s1">, faultString=</span><span class="si">%s</span><span class="s1">&#39;</span>
+       <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
 </code></pre></div><h2 id="attach-an-existing-vsi-to-security-groups">Attach an existing VSI to security groups</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#75715e"># For nice debug output</span>
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="c1"># For nice debug output</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
 
-<span style="color:#75715e"># Create a client for use with the NetworkManager and VSManager</span>
-client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
-net_mgr <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>NetworkManager(client)
-vs_mgr <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>VSManager(client)
+<span class="c1"># Create a client for use with the NetworkManager and VSManager</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<span class="n">net_mgr</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">NetworkManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<span class="n">vs_mgr</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">VSManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
 
-http_sg_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">384757</span>
-vsi_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">4018735</span>
-private_interface <span style="color:#f92672">=</span> False
-port_number <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">if</span> private_interface <span style="color:#66d9ef">else</span> <span style="color:#ae81ff">1</span>
-network_component_mask <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;networkComponents[id, port]&#39;</span>
+<span class="n">http_sg_id</span> <span class="o">=</span> <span class="mi">384757</span>
+<span class="n">vsi_id</span> <span class="o">=</span> <span class="mi">4018735</span>
+<span class="n">private_interface</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">port_number</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">private_interface</span> <span class="k">else</span> <span class="mi">1</span>
+<span class="n">network_component_mask</span> <span class="o">=</span> <span class="s1">&#39;networkComponents[id, port]&#39;</span>
 
-<span style="color:#66d9ef">try</span>:
-    vsi_components <span style="color:#f92672">=</span> vs_mgr<span style="color:#f92672">.</span>get_instance(vsi_id, mask<span style="color:#f92672">=</span>network_component_mask)
-    component_to_attach <span style="color:#f92672">=</span> [comp <span style="color:#66d9ef">for</span> comp <span style="color:#f92672">in</span> vsi_components[<span style="color:#e6db74">&#39;networkComponents&#39;</span>]
-                           <span style="color:#66d9ef">if</span> comp[<span style="color:#e6db74">&#39;port&#39;</span>] <span style="color:#f92672">==</span> port_number][<span style="color:#ae81ff">0</span>]
-    result <span style="color:#f92672">=</span> net_mgr<span style="color:#f92672">.</span>attach_securitygroup_component(http_sg_id,
-                                                    component_to_attach[<span style="color:#e6db74">&#39;id&#39;</span>])
-    pp(result)
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">vsi_components</span> <span class="o">=</span> <span class="n">vs_mgr</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">vsi_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">network_component_mask</span><span class="p">)</span>
+    <span class="n">component_to_attach</span> <span class="o">=</span> <span class="p">[</span><span class="n">comp</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">vsi_components</span><span class="p">[</span><span class="s1">&#39;networkComponents&#39;</span><span class="p">]</span>
+                           <span class="k">if</span> <span class="n">comp</span><span class="p">[</span><span class="s1">&#39;port&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">port_number</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">net_mgr</span><span class="o">.</span><span class="n">attach_securitygroup_component</span><span class="p">(</span><span class="n">http_sg_id</span><span class="p">,</span>
+                                                    <span class="n">component_to_attach</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+    <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
     
-    <span style="color:#75715e"># If this is the first time the server is being associated with security groups,</span>
-    <span style="color:#75715e"># a reboot is required for the security group to take effect on the VSI</span>
-    client[<span style="color:#e6db74">&#39;Virtual_Guest&#39;</span>]<span style="color:#f92672">.</span>rebootSoft(id<span style="color:#f92672">=</span>vsi_id)
-<span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
-    pp(<span style="color:#e6db74">&#39;Failed... Unable to associate VSI with security group: faultCode=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, faultString=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#39;</span>
-       <span style="color:#f92672">%</span> (e<span style="color:#f92672">.</span>faultCode, e<span style="color:#f92672">.</span>faultString))
+    <span class="c1"># If this is the first time the server is being associated with security groups,</span>
+    <span class="c1"># a reboot is required for the security group to take effect on the VSI</span>
+    <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">rebootSoft</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">vsi_id</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">pp</span><span class="p">(</span><span class="s1">&#39;Failed... Unable to associate VSI with security group: faultCode=</span><span class="si">%s</span><span class="s1">, faultString=</span><span class="si">%s</span><span class="s1">&#39;</span>
+       <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
 </code></pre></div><h2 id="detach-a-vsi-from-a-security-group">Detach a VSI from a security group</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#75715e"># For nice debug output</span>
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="c1"># For nice debug output</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
 
-<span style="color:#75715e"># Create a client for use with the NetworkManager and VSManager</span>
-client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
-net_mgr <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>NetworkManager(client)
-vs_mgr <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>VSManager(client)
+<span class="c1"># Create a client for use with the NetworkManager and VSManager</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<span class="n">net_mgr</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">NetworkManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<span class="n">vs_mgr</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">VSManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
 
-http_sg_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">384757</span>
-vsi_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">4018735</span>
-private_interface <span style="color:#f92672">=</span> False
-port_number <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">if</span> private_interface <span style="color:#66d9ef">else</span> <span style="color:#ae81ff">1</span>
-network_component_mask <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;networkComponents[id, port]&#39;</span>
+<span class="n">http_sg_id</span> <span class="o">=</span> <span class="mi">384757</span>
+<span class="n">vsi_id</span> <span class="o">=</span> <span class="mi">4018735</span>
+<span class="n">private_interface</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="n">port_number</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">private_interface</span> <span class="k">else</span> <span class="mi">1</span>
+<span class="n">network_component_mask</span> <span class="o">=</span> <span class="s1">&#39;networkComponents[id, port]&#39;</span>
 
-<span style="color:#66d9ef">try</span>:
-    vsi_components <span style="color:#f92672">=</span> vs_mgr<span style="color:#f92672">.</span>get_instance(vsi_id, mask<span style="color:#f92672">=</span>network_component_mask)
-    component_to_detach <span style="color:#f92672">=</span> [comp <span style="color:#66d9ef">for</span> comp <span style="color:#f92672">in</span> vsi_components[<span style="color:#e6db74">&#39;networkComponents&#39;</span>]
-                           <span style="color:#66d9ef">if</span> comp[<span style="color:#e6db74">&#39;port&#39;</span>] <span style="color:#f92672">==</span> port_number][<span style="color:#ae81ff">0</span>]
-    net_mgr<span style="color:#f92672">.</span>detach_securitygroup_component(http_sg_id,
-                                           component_to_detach[<span style="color:#e6db74">&#39;id&#39;</span>])
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">vsi_components</span> <span class="o">=</span> <span class="n">vs_mgr</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="n">vsi_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">network_component_mask</span><span class="p">)</span>
+    <span class="n">component_to_detach</span> <span class="o">=</span> <span class="p">[</span><span class="n">comp</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">vsi_components</span><span class="p">[</span><span class="s1">&#39;networkComponents&#39;</span><span class="p">]</span>
+                           <span class="k">if</span> <span class="n">comp</span><span class="p">[</span><span class="s1">&#39;port&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">port_number</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">net_mgr</span><span class="o">.</span><span class="n">detach_securitygroup_component</span><span class="p">(</span><span class="n">http_sg_id</span><span class="p">,</span>
+                                           <span class="n">component_to_detach</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
     
-<span style="color:#66d9ef">except</span> SoftLayer<span style="color:#f92672">.</span>SoftLayerAPIError <span style="color:#66d9ef">as</span> e:
-    pp(<span style="color:#e6db74">&#39;Failed... Unable to disassociate VSI with security group: faultCode=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, faultString=</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#39;</span>
-       <span style="color:#f92672">%</span> (e<span style="color:#f92672">.</span>faultCode, e<span style="color:#f92672">.</span>faultString))
+<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">pp</span><span class="p">(</span><span class="s1">&#39;Failed... Unable to disassociate VSI with security group: faultCode=</span><span class="si">%s</span><span class="s1">, faultString=</span><span class="si">%s</span><span class="s1">&#39;</span>
+       <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
 </code></pre></div>
             </div>
         </div>
@@ -239,50 +247,25 @@ network_component_mask <span style="color:#f92672">=</span> <span style="color:#
     </div>
     <hr>
     <div class="row">
-            
-        <div class="col-md-6">
-            
-<div class="panel panel-default">
-    <div class="panel-heading" style="padding: 2px 15px;">
-        <h4>More Documentation</h4>
-    </div>
-    <div class="panel-body">
-        <a href="https://softlayer.github.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
-        <a href="https://github.com/softlayer/softlayer-java"><i class="fab fa-github"></i> softlayer-java<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fab fa-github"></i> softlayer-perl<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fab fa-github"></i> softlayer-php<br></a>
-        <a href="https://github.com/softlayer/softlayer-python"><i class="fab fa-github"></i> softlayer-python<br></a>
-        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fab fa-github"></i> softlayer-ruby<br></a>
+        <div class="row">
+            <div class="col-md-6">
+    <div class="well well-sm" style="word-wrap: break-word;"> 
+        <strong>Feedback? <span class="fas fa-comment"/></strong>
+            <p>
+                If this article contains any error, or leaves any of your questions unanswered, please help us out by 
+                opening up a github issue.<br>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20VSIs%20and%20security%20groups&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fsecuritygroup_vsis%2f"> Open an issue</a>
+                <i class="fab fa-github" alt="github"></i>
+            </p>
     </div>
 </div>
-
-<div class="panel panel-default">
-    <div class="panel-heading text-center" style="padding: 2px 15px;">
-      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fab fa-facebook-square" alt="facebook"></i> </a>
-      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fab fa-twitter" alt="twitter"></i> </a>
-      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fab fa-linkedin"></i> </a>
-      <a href="https://github.com/softlayer/softlayer.github.io"><i class="fab fa-github" alt="github"></i> </a>
-
-    </div>
-</div>
-
         </div>
-        <div class="col-md-6">
-            <div class="well well-sm" style="word-wrap: break-word;"> 
-                <strong>Feedback? <span class="fa fa-comment"/></strong>
-                    <p>
-                        We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20VSIs%20and%20security%20groups&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fsecuritygroup_vsis%2f"><span class="fa fa-github-square"/> Open an issue</a>
-                    </p>
-            </div>
-        </div>
-
     </div>
         <footer>
             <div class="row">
                 <hr>
                 <div class="col-sm-12">
-                    <p>&copy; SoftLayer 2015<br>
+                    <p>&copy; SoftLayer 2020<br>
                     Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
                 </div>
             </div>

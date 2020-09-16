@@ -12,8 +12,8 @@
     <link rel="canonical" href="https://sldn.softlayer.com/python/bandwidthData/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
-    <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/custom.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/monokai.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/highlight/solarized_dark.css" rel="stylesheet">
 
     <script src="https://sldn.softlayer.com/js/highlight.pack.js"></script>
@@ -25,7 +25,15 @@
 
     <script src="https://sldn.softlayer.com/js/jquery-3.3.1.min.js"></script> 
     <script src="https://sldn.softlayer.com/js/sldn.js"></script>
-    <script src="https://sldn.softlayer.com/js/fontawesome-all.js"></script>
+
+
+    <link href="https://sldn.softlayer.com/fontawesome/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/brands.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/solid.min.css" rel="stylesheet" type="text/css">
+    
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/solid.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/brands.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/fontawesome.min.js"></script>
 
     <script>
 		$(document).ready(function() {
@@ -143,133 +151,133 @@ if (!doNotTrack) {
 <p>This is especially problematic when requesting rollups for 12 and 24 hour periods. For these, the collection boundary starts at 00:00 UTC. So if you are in CST timezone for example, your request of data from <code>2019-02-03T00:00:00</code> to <code>2019-02-04T00:00:00</code> will get aligned to <code>2019-02-03T18:00:00-06:00</code> and <code>2019-02-03T18:00:00-06:00</code></p>
 <p>So if you are interested in daily values of your bandwidth, make sure to understand you should send in your requests in UTC so everything aligns to what you requested. This script does this for you, which should hopefully help.</p>
 <p><em>NOTE</em> Bandwidth from the Metric_TrackingObject is going to be in <code>octets</code>, or bytes.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74"> Softlayer Stores in octets (bytes), sizes printed are in Giga Bytes (octets / 1024^3)
-</span><span style="color:#e6db74">Sum values are a running total for the time period requested.
-</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
+</span><span class="s2"> Softlayer Stores in octets (bytes), sizes printed are in Giga Bytes (octets / 1024^3)
+</span><span class="s2">Sum values are a running total for the time period requested.
+</span><span class="s2">&#34;&#34;&#34;</span>
  
-<span style="color:#f92672">import</span> SoftLayer
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
-<span style="color:#f92672">import</span> logging
-<span style="color:#f92672">import</span> datetime
-<span style="color:#f92672">import</span> calendar
-<span style="color:#f92672">import</span>  click
+<span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">calendar</span>
+<span class="kn">import</span>  <span class="nn">click</span>
  
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dateToEpoch</span>(ctx, param, value):
-    <span style="color:#e6db74">&#34;&#34;&#34;A handy function to take a &#39;YYYY-MM-DD&#39; date and return a datetime object
-</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
-    <span style="color:#66d9ef">try</span>:
-        datetime_object <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>strptime(value, <span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>)
-        datetime_object<span style="color:#f92672">.</span>replace(tzinfo<span style="color:#f92672">=</span>datetime<span style="color:#f92672">.</span>timezone<span style="color:#f92672">.</span>utc)
-        <span style="color:#66d9ef">return</span> datetime_object
-    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">ValueError</span>:
-        <span style="color:#66d9ef">raise</span> click<span style="color:#f92672">.</span>BadParameter(<span style="color:#e6db74">&#39;Unable to parse date: </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#39;</span> <span style="color:#f92672">%</span> value)
+<span class="k">def</span> <span class="nf">dateToEpoch</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;A handy function to take a &#39;YYYY-MM-DD&#39; date and return a datetime object
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">datetime_object</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">datetime_object</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">datetime_object</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">BadParameter</span><span class="p">(</span><span class="s1">&#39;Unable to parse date: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">value</span><span class="p">)</span>
  
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
  
-    <span style="color:#66d9ef">def</span> __init__(self, start, end):
-        <span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">       :param int start: epoch time to start at. Should align to 00:00 UTC
-</span><span style="color:#e6db74">       :param int end: epoch time to end at. Should align to 00:00 UTC
-</span><span style="color:#e6db74">       &#34;&#34;&#34;</span>
-        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
-        debugger <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>DebugTransport(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport)
-        self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport <span style="color:#f92672">=</span> debugger
-        self<span style="color:#f92672">.</span>start <span style="color:#f92672">=</span> start
-        self<span style="color:#f92672">.</span>end <span style="color:#f92672">=</span> end
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;
+</span><span class="s2">       :param int start: epoch time to start at. Should align to 00:00 UTC
+</span><span class="s2">       :param int end: epoch time to end at. Should align to 00:00 UTC
+</span><span class="s2">       &#34;&#34;&#34;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">end</span>
  
-        <span style="color:#75715e"># logger = logging.getLogger()</span>
-        <span style="color:#75715e"># logger.addHandler(logging.StreamHandler())</span>
+        <span class="c1"># logger = logging.getLogger()</span>
+        <span class="c1"># logger.addHandler(logging.StreamHandler())</span>
    
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">debug</span>(self):
-        <span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">        Useful for printing out the exact API calls that were used. If using the rest transport, will print cure-able commands.
-</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
-        <span style="color:#66d9ef">for</span> call <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>get_last_calls():
-            <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>transport<span style="color:#f92672">.</span>print_reproduceable(call))
+    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;
+</span><span class="s2">        Useful for printing out the exact API calls that were used. If using the rest transport, will print cure-able commands.
+</span><span class="s2">        &#34;&#34;&#34;</span>
+        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
+            <span class="k">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
  
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(self):
-        <span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">        Goes through the server and virtualGuest list of servers. Uses pagination to step through large server lists.
-</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Getting reports from </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> -&gt; </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (self<span style="color:#f92672">.</span>start, self<span style="color:#f92672">.</span>end))
-        mask <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;&#34;mask[id,hostname,fullyQualifiedDomainName,metricTrackingObject[id]]&#34;&#34;&#34;</span>
-        servers <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Account&#39;</span>, <span style="color:#e6db74">&#39;getHardware&#39;</span>, mask<span style="color:#f92672">=</span>mask, iter<span style="color:#f92672">=</span>True, limit<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
-        <span style="color:#66d9ef">for</span> server <span style="color:#f92672">in</span> servers:
-            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> server[<span style="color:#e6db74">&#39;fullyQualifiedDomainName&#39;</span>])
-            data <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>getBWReport(server[<span style="color:#e6db74">&#39;metricTrackingObject&#39;</span>][<span style="color:#e6db74">&#39;id&#39;</span>])
-            self<span style="color:#f92672">.</span>detailedReport(server, data)
+    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;
+</span><span class="s2">        Goes through the server and virtualGuest list of servers. Uses pagination to step through large server lists.
+</span><span class="s2">        &#34;&#34;&#34;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Getting reports from </span><span class="si">%s</span><span class="s2"> -&gt; </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">))</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id,hostname,fullyQualifiedDomainName,metricTrackingObject[id]]&#34;&#34;&#34;</span>
+        <span class="n">servers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getHardware&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">server</span><span class="p">[</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">])</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBWReport</span><span class="p">(</span><span class="n">server</span><span class="p">[</span><span class="s1">&#39;metricTrackingObject&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">detailedReport</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
  
-        guests <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Account&#39;</span>, <span style="color:#e6db74">&#39;getVirtualGuests&#39;</span>, mask<span style="color:#f92672">=</span>mask, iter<span style="color:#f92672">=</span>True, limit<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
-        <span style="color:#66d9ef">for</span> server <span style="color:#f92672">in</span> guests:
-            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> server[<span style="color:#e6db74">&#39;fullyQualifiedDomainName&#39;</span>])
-            data <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>getBWReport(server[<span style="color:#e6db74">&#39;metricTrackingObject&#39;</span>][<span style="color:#e6db74">&#39;id&#39;</span>])
-            self<span style="color:#f92672">.</span>detailedReport(server, data)
+        <span class="n">guests</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getVirtualGuests&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">guests</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">server</span><span class="p">[</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">])</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getBWReport</span><span class="p">(</span><span class="n">server</span><span class="p">[</span><span class="s1">&#39;metricTrackingObject&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">detailedReport</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
  
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">detailedReport</span>(self, server, data):
-        <span style="color:#e6db74">&#34;&#34;&#34;Prints out the collected data, does sime date formatting to make it look nice. 
-</span><span style="color:#e6db74">
-</span><span style="color:#e6db74">        This bit only works in py3.7 because it supports the -06:00 TZ format (part of %z). If you are not using py3.7, you could just print out the date as is, which would be in your local timezone.
-</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Start Date             , End Data               , In , Out, In Sum, Out Sum&#34;</span>)
-        bw_data <span style="color:#f92672">=</span> {}
-        total_in <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-        total_out <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-        <span style="color:#66d9ef">for</span> point <span style="color:#f92672">in</span> data:
-            start_date <span style="color:#f92672">=</span> point[<span style="color:#e6db74">&#39;dateTime&#39;</span>]
-            counter <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>convert(point[<span style="color:#e6db74">&#39;counter&#39;</span>])
-            <span style="color:#66d9ef">if</span> point[<span style="color:#e6db74">&#39;type&#39;</span>] <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;publicIn_net_octet&#39;</span>:
-                bw_data[start_date] <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;in&#39;</span>: counter}
-            <span style="color:#66d9ef">elif</span> point[<span style="color:#e6db74">&#39;type&#39;</span>] <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;publicOut_net_octet&#39;</span>:
-                bw_data[start_date][<span style="color:#e6db74">&#39;out&#39;</span>] <span style="color:#f92672">=</span> counter
-        <span style="color:#66d9ef">for</span> point <span style="color:#f92672">in</span> bw_data:
-            <span style="color:#75715e"># make a datetime object out of the date SL gave us, convert it BACK to UTC</span>
-            start_date <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>strptime(point, <span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">T%H:%M:%S%z&#39;</span>)<span style="color:#f92672">.</span>astimezone(datetime<span style="color:#f92672">.</span>timezone<span style="color:#f92672">.</span>utc)
-            <span style="color:#75715e"># since our rollup is 86400, our end date is + 86400 sceonds</span>
-            end_date <span style="color:#f92672">=</span> start_date <span style="color:#f92672">+</span> datetime<span style="color:#f92672">.</span>timedelta(seconds<span style="color:#f92672">=</span><span style="color:#ae81ff">86400</span>)
-            total_in <span style="color:#f92672">=</span> round(total_in <span style="color:#f92672">+</span> float(bw_data[point][<span style="color:#e6db74">&#39;in&#39;</span>]),<span style="color:#ae81ff">4</span>)
-            total_out <span style="color:#f92672">=</span> round(total_out <span style="color:#f92672">+</span> float(bw_data[point][<span style="color:#e6db74">&#39;out&#39;</span>]),<span style="color:#ae81ff">4</span>)
-            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (
-                start_date<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74"> %H:%M:%S %Z&#34;</span>),
-                end_date<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74"> %H:%M:%S %Z&#34;</span>),
-                bw_data[point][<span style="color:#e6db74">&#39;in&#39;</span>],
-                bw_data[point][<span style="color:#e6db74">&#39;out&#39;</span>],
-                total_in,
-                total_out)
-            )
+    <span class="k">def</span> <span class="nf">detailedReport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;Prints out the collected data, does sime date formatting to make it look nice. 
+</span><span class="s2">
+</span><span class="s2">        This bit only works in py3.7 because it supports the -06:00 TZ format (part of %z). If you are not using py3.7, you could just print out the date as is, which would be in your local timezone.
+</span><span class="s2">        &#34;&#34;&#34;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Start Date             , End Data               , In , Out, In Sum, Out Sum&#34;</span><span class="p">)</span>
+        <span class="n">bw_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">total_in</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_out</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;dateTime&#39;</span><span class="p">]</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="s1">&#39;counter&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;publicIn_net_octet&#39;</span><span class="p">:</span>
+                <span class="n">bw_data</span><span class="p">[</span><span class="n">start_date</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;in&#39;</span><span class="p">:</span> <span class="n">counter</span><span class="p">}</span>
+            <span class="k">elif</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;publicOut_net_octet&#39;</span><span class="p">:</span>
+                <span class="n">bw_data</span><span class="p">[</span><span class="n">start_date</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">counter</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">bw_data</span><span class="p">:</span>
+            <span class="c1"># make a datetime object out of the date SL gave us, convert it BACK to UTC</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S%z&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+            <span class="c1"># since our rollup is 86400, our end date is + 86400 sceonds</span>
+            <span class="n">end_date</span> <span class="o">=</span> <span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">86400</span><span class="p">)</span>
+            <span class="n">total_in</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">total_in</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">bw_data</span><span class="p">[</span><span class="n">point</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">]),</span><span class="mi">4</span><span class="p">)</span>
+            <span class="n">total_out</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">total_out</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">bw_data</span><span class="p">[</span><span class="n">point</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">]),</span><span class="mi">4</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">start_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&#34;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S %Z&#34;</span><span class="p">),</span>
+                <span class="n">end_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&#34;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S %Z&#34;</span><span class="p">),</span>
+                <span class="n">bw_data</span><span class="p">[</span><span class="n">point</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">],</span>
+                <span class="n">bw_data</span><span class="p">[</span><span class="n">point</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">],</span>
+                <span class="n">total_in</span><span class="p">,</span>
+                <span class="n">total_out</span><span class="p">)</span>
+            <span class="p">)</span>
  
  
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getBWReport</span>(self, tracking_id):
-        <span style="color:#e6db74">&#34;&#34;&#34;
-</span><span style="color:#e6db74">        start and end here are getting converted to epoch time so we don&#39;t have to worry about properly specifying a timezone. 
-</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;getBWReport&#34;</span>)
-        start <span style="color:#f92672">=</span> calendar<span style="color:#f92672">.</span>timegm(self<span style="color:#f92672">.</span>start<span style="color:#f92672">.</span>timetuple())
-        end <span style="color:#f92672">=</span> calendar<span style="color:#f92672">.</span>timegm(self<span style="color:#f92672">.</span>end<span style="color:#f92672">.</span>timetuple())
-        data <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Metric_Tracking_Object&#39;</span>, <span style="color:#e6db74">&#39;getBandwidthData&#39;</span>, start, end, <span style="color:#e6db74">&#39;public&#39;</span>, <span style="color:#ae81ff">86400</span>, id<span style="color:#f92672">=</span>tracking_id)
-        <span style="color:#75715e"># pp(data)</span>
-        <span style="color:#66d9ef">return</span> data
+    <span class="k">def</span> <span class="nf">getBWReport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracking_id</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;
+</span><span class="s2">        start and end here are getting converted to epoch time so we don&#39;t have to worry about properly specifying a timezone. 
+</span><span class="s2">        &#34;&#34;&#34;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;getBWReport&#34;</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">calendar</span><span class="o">.</span><span class="n">timegm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">timetuple</span><span class="p">())</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">calendar</span><span class="o">.</span><span class="n">timegm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">timetuple</span><span class="p">())</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="s1">&#39;getBandwidthData&#39;</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="s1">&#39;public&#39;</span><span class="p">,</span> <span class="mi">86400</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">tracking_id</span><span class="p">)</span>
+        <span class="c1"># pp(data)</span>
+        <span class="k">return</span> <span class="n">data</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">convert</span>(self, bytes):
-        <span style="color:#66d9ef">return</span>  round(int(bytes) <span style="color:#f92672">/</span> (<span style="color:#ae81ff">1024</span> <span style="color:#f92672">**</span><span style="color:#ae81ff">3</span> ),<span style="color:#ae81ff">2</span>)
+    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="k">return</span>  <span class="nb">round</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">**</span><span class="mi">3</span> <span class="p">),</span><span class="mi">2</span><span class="p">)</span>
  
-<span style="color:#a6e22e">@click.command</span>()
-<span style="color:#a6e22e">@click.option</span>(<span style="color:#e6db74">&#39;--start&#39;</span>, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;2019-01-01&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Start date, YYYY-MM-DD&#39;</span>, callback<span style="color:#f92672">=</span>dateToEpoch)
-<span style="color:#a6e22e">@click.option</span>(<span style="color:#e6db74">&#39;--end&#39;</span>, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;2019-02-01&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;End Date, YYYY-MM-DD&#39;</span>, callback<span style="color:#f92672">=</span>dateToEpoch)
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(start, end):
-    main <span style="color:#f92672">=</span> example(start, end)
-    main<span style="color:#f92672">.</span>main()
-    <span style="color:#75715e"># Uncomment this to print out the API calls made.</span>
-    <span style="color:#75715e">#main.debug()</span>
+<span class="nd">@click.command</span><span class="p">()</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;--start&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;2019-01-01&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Start date, YYYY-MM-DD&#39;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">dateToEpoch</span><span class="p">)</span>
+<span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;--end&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;2019-02-01&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;End Date, YYYY-MM-DD&#39;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">dateToEpoch</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+    <span class="c1"># Uncomment this to print out the API calls made.</span>
+    <span class="c1">#main.debug()</span>
  
-<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
-    main()
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
 
 </code></pre></div><h3 id="rest-calls-made">REST Calls made</h3>
 <p>Get server list, with tracking object Ids</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X GET &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getHardware.json?objectMask=mask%5Bid%2Chostname%2CfullyQualifiedDomainName%2CmetricTrackingObject%5Bid%5D%5D&amp;resultLimit=0%2C2&#39;
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X GET &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getHardware.json?objectMask=mask%5Bid%2Chostname%2CfullyQualifiedDomainName%2CmetricTrackingObject%5Bid%5D%5D&amp;resultLimit=0%2C2&#39;
 </code></pre></div><p>Get bandwidth data</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X POST  -d &#39;{&#34;parameters&#34;: [1546300800, 1548979200, &#34;public&#34;, 86400]}&#39; &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Metric_Tracking_Object/26570093/getBandwidthData.json&#39;
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X POST  -d &#39;{&#34;parameters&#34;: [1546300800, 1548979200, &#34;public&#34;, 86400]}&#39; &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Metric_Tracking_Object/26570093/getBandwidthData.json&#39;
 </code></pre></div><h3 id="summary-reports">Summary Reports</h3>
 <p>Possible values for <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Metric_Data_Type/">Metric_Data_Type</a>. All summaryTypes must be the same for each request.</p>
 <h4 id="keyname">KeyName</h4>
@@ -289,197 +297,197 @@ if (!doNotTrack) {
 <li>timeaverage</li>
 </ul>
 <p><em>NOTE</em> When sending in a string time to the API, it is assumed the time is in CST/CDT. Use epoch time if you specifically want the data from a different timezone.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
-<span style="color:#f92672">import</span> datetime
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
 
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
-    <span style="color:#66d9ef">def</span> __init__(self):
-        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getSummaryReport</span>(self, tracking_id, start_date, end_date, types<span style="color:#f92672">=</span>None, summaryPeriod<span style="color:#f92672">=</span><span style="color:#ae81ff">3600</span>):
-        <span style="color:#e6db74">&#34;&#34;&#34;Gets a nice summary bandwidth report&#34;&#34;&#34;</span>
-        <span style="color:#66d9ef">if</span> types <span style="color:#f92672">is</span> None:
-            types <span style="color:#f92672">=</span> [{
-                <span style="color:#e6db74">&#39;keyName&#39;</span>: <span style="color:#e6db74">&#39;PUBLICIN&#39;</span>,
-                <span style="color:#e6db74">&#39;summaryType&#39;</span>: <span style="color:#e6db74">&#39;sum&#39;</span>
-            }]
-        data <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;SoftLayer_Metric_Tracking_Object&#39;</span>, <span style="color:#e6db74">&#39;getSummaryData&#39;</span>, start_date, end_date, types, summaryPeriod, id<span style="color:#f92672">=</span>tracking_id)
-        <span style="color:#66d9ef">return</span> data
+    <span class="k">def</span> <span class="nf">getSummaryReport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracking_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">summaryPeriod</span><span class="o">=</span><span class="mi">3600</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;Gets a nice summary bandwidth report&#34;&#34;&#34;</span>
+        <span class="k">if</span> <span class="n">types</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">types</span> <span class="o">=</span> <span class="p">[{</span>
+                <span class="s1">&#39;keyName&#39;</span><span class="p">:</span> <span class="s1">&#39;PUBLICIN&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;summaryType&#39;</span><span class="p">:</span> <span class="s1">&#39;sum&#39;</span>
+            <span class="p">}]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="s1">&#39;getSummaryData&#39;</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">types</span><span class="p">,</span> <span class="n">summaryPeriod</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">tracking_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getHardwareTrackingId</span>(self, hardware_id):
-        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Hardware_Server&#39;</span>, <span style="color:#e6db74">&#39;getMetricTrackingObject&#39;</span>, id<span style="color:#f92672">=</span>hardware_id)
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getVirtualTrackingId</span>(self, vsi_id):
-        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Virtual_Guest&#39;</span>, <span style="color:#e6db74">&#39;getMetricTrackingObject&#39;</span>, id<span style="color:#f92672">=</span>vsi_id)
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">convert</span>(self, bytes):
-        <span style="color:#66d9ef">return</span>  round(int(bytes) <span style="color:#f92672">/</span> (<span style="color:#ae81ff">1024</span> <span style="color:#f92672">**</span><span style="color:#ae81ff">3</span> ),<span style="color:#ae81ff">2</span>)
+    <span class="k">def</span> <span class="nf">getHardwareTrackingId</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hardware_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;getMetricTrackingObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">hardware_id</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">getVirtualTrackingId</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vsi_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getMetricTrackingObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vsi_id</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="k">return</span>  <span class="nb">round</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">**</span><span class="mi">3</span> <span class="p">),</span><span class="mi">2</span><span class="p">)</span>
 
-<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
-    vsi_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">75764043</span>
-    main <span style="color:#f92672">=</span> example()
-    trackingObject <span style="color:#f92672">=</span> main<span style="color:#f92672">.</span>getVirtualTrackingId(vsi_id)
-    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Tracking ID is {}&#34;</span><span style="color:#f92672">.</span>format(trackingObject<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;id&#39;</span>)))
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+    <span class="n">vsi_id</span> <span class="o">=</span> <span class="mi">75764043</span>
+    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+    <span class="n">trackingObject</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getVirtualTrackingId</span><span class="p">(</span><span class="n">vsi_id</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Tracking ID is {}&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trackingObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)))</span>
 
-    start_date <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>today()
-    end_date <span style="color:#f92672">=</span> start_date <span style="color:#f92672">+</span> datetime<span style="color:#f92672">.</span>timedelta(days<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
-    time_format <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#34;</span>
-    <span style="color:#75715e"># image = main.getGraph(trackingObject.get(&#39;id&#39;), start_date.strftime(time_format), end_date.strftime(time_format))</span>
+    <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="n">end_date</span> <span class="o">=</span> <span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">time_format</span> <span class="o">=</span> <span class="s2">&#34;%Y-%m-</span><span class="si">%d</span><span class="s2">&#34;</span>
+    <span class="c1"># image = main.getGraph(trackingObject.get(&#39;id&#39;), start_date.strftime(time_format), end_date.strftime(time_format))</span>
 
-    <span style="color:#75715e"># print(&#34;Graph Title: {}&#34;.format(image.get(&#39;graphTitle&#39;)))</span>
-    <span style="color:#75715e"># main.saveImage(image)</span>
-    summary_types <span style="color:#f92672">=</span> [
-        {<span style="color:#e6db74">&#34;keyName&#34;</span>: <span style="color:#e6db74">&#34;PUBLICIN&#34;</span>, <span style="color:#e6db74">&#34;summaryType&#34;</span>: <span style="color:#e6db74">&#34;sum&#34;</span>},
-        {<span style="color:#e6db74">&#34;keyName&#34;</span>: <span style="color:#e6db74">&#34;PUBLICOUT&#34;</span>, <span style="color:#e6db74">&#34;summaryType&#34;</span>: <span style="color:#e6db74">&#34;sum&#34;</span>}
-    ]
-    summary <span style="color:#f92672">=</span> main<span style="color:#f92672">.</span>getSummaryReport(trackingObject<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;id&#39;</span>), start_date<span style="color:#f92672">.</span>strftime(time_format), end_date<span style="color:#f92672">.</span>strftime(time_format), summary_types)
+    <span class="c1"># print(&#34;Graph Title: {}&#34;.format(image.get(&#39;graphTitle&#39;)))</span>
+    <span class="c1"># main.saveImage(image)</span>
+    <span class="n">summary_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="s2">&#34;PUBLICIN&#34;</span><span class="p">,</span> <span class="s2">&#34;summaryType&#34;</span><span class="p">:</span> <span class="s2">&#34;sum&#34;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="s2">&#34;PUBLICOUT&#34;</span><span class="p">,</span> <span class="s2">&#34;summaryType&#34;</span><span class="p">:</span> <span class="s2">&#34;sum&#34;</span><span class="p">}</span>
+    <span class="p">]</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getSummaryReport</span><span class="p">(</span><span class="n">trackingObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">start_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">time_format</span><span class="p">),</span> <span class="n">end_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">time_format</span><span class="p">),</span> <span class="n">summary_types</span><span class="p">)</span>
 
-    <span style="color:#75715e"># Print out a daily summary of the summary...</span>
-    i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-    <span style="color:#66d9ef">while</span> i <span style="color:#f92672">&lt;</span> len(summary):
-        <span style="color:#75715e"># Get the time, convert to UTC to avoid confusion.</span>
-        <span style="color:#75715e"># %z only works in py3.7+. You may have to mangle the TZ data otherwise.</span>
-        the_date <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>strptime(summary[i][<span style="color:#e6db74">&#39;dateTime&#39;</span>], <span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">T%H:%M:%S%z&#39;</span>)<span style="color:#f92672">.</span>astimezone(datetime<span style="color:#f92672">.</span>timezone<span style="color:#f92672">.</span>utc)
-        <span style="color:#66d9ef">print</span>(the_date<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74"> %H:%M&#34;</span>))
-        output <span style="color:#f92672">=</span> []
-        <span style="color:#66d9ef">for</span> sum_type <span style="color:#f92672">in</span> summary_types:
-            text <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;{}: {} MB&#34;</span><span style="color:#f92672">.</span>format(sum_type[<span style="color:#e6db74">&#39;keyName&#39;</span>], main<span style="color:#f92672">.</span>convert(summary[i][<span style="color:#e6db74">&#39;counter&#39;</span>]))
-            output<span style="color:#f92672">.</span>append(text)
-            i <span style="color:#f92672">=</span> i <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
-        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;, &#34;</span><span style="color:#f92672">.</span>join(output))
+    <span class="c1"># Print out a daily summary of the summary...</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">summary</span><span class="p">):</span>
+        <span class="c1"># Get the time, convert to UTC to avoid confusion.</span>
+        <span class="c1"># %z only works in py3.7+. You may have to mangle the TZ data otherwise.</span>
+        <span class="n">the_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;dateTime&#39;</span><span class="p">],</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S%z&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">the_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&#34;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M&#34;</span><span class="p">))</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sum_type</span> <span class="ow">in</span> <span class="n">summary_types</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">&#34;{}: {} MB&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sum_type</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span> <span class="n">main</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;counter&#39;</span><span class="p">]))</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&#34;, &#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output</span><span class="p">))</span>
 
 </code></pre></div><h3 id="simple-server-bandwidth">Simple Server Bandwidth</h3>
 <p>This example just gets the current billing cycle usage for a given server.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#f92672">import</span> pprint
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
 
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
 
-    <span style="color:#66d9ef">def</span> __init__(self):
-        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(self):
-        pp <span style="color:#f92672">=</span> pprint<span style="color:#f92672">.</span>PrettyPrinter(indent<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
-        theMask <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;mask[inboundPrivateBandwidthUsage,inboundPublicBandwidthUsage,outboundPrivateBandwidthUsage,outboundPublicBandwidthUsage]&#34;</span>
-        result <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;SoftLayer_Account&#39;</span>]<span style="color:#f92672">.</span>getHardware()
-        <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;server_name,public_in,public_out,private_in,private_out&#34;</span>
+    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">pp</span> <span class="o">=</span> <span class="n">pprint</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">theMask</span> <span class="o">=</span> <span class="s2">&#34;mask[inboundPrivateBandwidthUsage,inboundPublicBandwidthUsage,outboundPrivateBandwidthUsage,outboundPublicBandwidthUsage]&#34;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getHardware</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s2">&#34;server_name,public_in,public_out,private_in,private_out&#34;</span>
         
-        <span style="color:#66d9ef">for</span> server <span style="color:#f92672">in</span> result:
-            <span style="color:#75715e">#getHardware() only returns SoftLayer_Hardware, which doesn&#39;t have the private bw usage metrics, for some reason.</span>
-            <span style="color:#75715e"># So we just use SoftLayer_Hardware_Server here, which has more detailed information</span>
-            serverInfo <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client[<span style="color:#e6db74">&#39;SoftLayer_Hardware_Server&#39;</span>]<span style="color:#f92672">.</span>getObject(id<span style="color:#f92672">=</span>server[<span style="color:#e6db74">&#39;id&#39;</span>],mask<span style="color:#f92672">=</span>theMask)
+        <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+            <span class="c1">#getHardware() only returns SoftLayer_Hardware, which doesn&#39;t have the private bw usage metrics, for some reason.</span>
+            <span class="c1"># So we just use SoftLayer_Hardware_Server here, which has more detailed information</span>
+            <span class="n">serverInfo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">server</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span><span class="n">mask</span><span class="o">=</span><span class="n">theMask</span><span class="p">)</span>
 
-            <span style="color:#75715e"># use .get() to avoid exceptions</span>
-            pubin <span style="color:#f92672">=</span> serverInfo<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;inboundPublicBandwidthUsage&#39;</span>, <span style="color:#e6db74">&#39;--&#39;</span>)
-            pubout <span style="color:#f92672">=</span> serverInfo<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;outboundPublicBandwidthUsage&#39;</span>, <span style="color:#e6db74">&#39;--&#39;</span>)
-            privin <span style="color:#f92672">=</span>serverInfo<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;inboundPrivateBandwidthUsage&#39;</span>, <span style="color:#e6db74">&#39;--&#39;</span>)
-            privout <span style="color:#f92672">=</span> serverInfo<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;outboundPrivateBandwidthUsage&#39;</span>, <span style="color:#e6db74">&#39;--&#39;</span>)
+            <span class="c1"># use .get() to avoid exceptions</span>
+            <span class="n">pubin</span> <span class="o">=</span> <span class="n">serverInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;inboundPublicBandwidthUsage&#39;</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">)</span>
+            <span class="n">pubout</span> <span class="o">=</span> <span class="n">serverInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;outboundPublicBandwidthUsage&#39;</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">)</span>
+            <span class="n">privin</span> <span class="o">=</span><span class="n">serverInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;inboundPrivateBandwidthUsage&#39;</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">)</span>
+            <span class="n">privout</span> <span class="o">=</span> <span class="n">serverInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;outboundPrivateBandwidthUsage&#39;</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">)</span>
 
-            <span style="color:#66d9ef">print</span>(serverInfo[<span style="color:#e6db74">&#39;fullyQualifiedDomainName&#39;</span>] <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;,&#34;</span>),
-            <span style="color:#66d9ef">print</span>(pubin <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;,&#34;</span>),
-            <span style="color:#66d9ef">print</span>(pubout <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;,&#34;</span>),
-            <span style="color:#66d9ef">print</span>(privin <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;,&#34;</span>),
-            <span style="color:#66d9ef">print</span>(privout)
+            <span class="k">print</span><span class="p">(</span><span class="n">serverInfo</span><span class="p">[</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&#34;,&#34;</span><span class="p">),</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">pubin</span> <span class="o">+</span> <span class="s2">&#34;,&#34;</span><span class="p">),</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">pubout</span> <span class="o">+</span> <span class="s2">&#34;,&#34;</span><span class="p">),</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">privin</span> <span class="o">+</span> <span class="s2">&#34;,&#34;</span><span class="p">),</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">privout</span><span class="p">)</span>
 
 
-<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
-    main <span style="color:#f92672">=</span> example()
-    main<span style="color:#f92672">.</span>main()
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
 </code></pre></div><h3 id="virtual-guest-getcurrentbandwidthsummary-and-getbandwidthdatabydate">Virtual Guest getCurrentBandwidthSummary and getBandwidthDataByDate</h3>
 <p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getBandwidthDataByDate/">getBandwidthDataByDate</a>
 <a href="http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getCurrentBandwidthSummary">getCurrentBandwidthSummary</a></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#f92672">import</span> datetime
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
 
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
 
-    <span style="color:#66d9ef">def</span> __init__(self):
-        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getCurrentBandwidthSummary</span>(self, vsi_id):
-        summary <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Virtual_Guest&#39;</span>, <span style="color:#e6db74">&#39;getCurrentBandwidthSummary&#39;</span>, id<span style="color:#f92672">=</span>serverId)
-        <span style="color:#66d9ef">return</span> summary
+    <span class="k">def</span> <span class="nf">getCurrentBandwidthSummary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vsi_id</span><span class="p">):</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getCurrentBandwidthSummary&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">serverId</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">summary</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getBandwidthDataByDate</span>(self, vsi_id, start_date, end_date, direction)
-        <span style="color:#e6db74">&#34;&#34;&#34;direction should be &#39;public&#39;, &#39;private&#39;, &#39;both&#39;&#34;&#34;&#34;</span>
-        template <span style="color:#f92672">=</span> {
-            <span style="color:#e6db74">&#39;startDateTime&#39;</span>: start_date,
-            <span style="color:#e6db74">&#39;endDateTime&#39;</span>: end_date,
-            <span style="color:#e6db74">&#39;networkType&#39;</span>: direction
-        }
-        bandwidth <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Virtual_Guest&#39;</span>)<span style="color:#f92672">.</span>getBandwidthDataByDate(template, id<span style="color:#f92672">=</span>vsi_id)
-        <span style="color:#66d9ef">return</span> bandwidth
+    <span class="k">def</span> <span class="nf">getBandwidthDataByDate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vsi_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span>
+        <span class="s2">&#34;&#34;&#34;direction should be &#39;public&#39;, &#39;private&#39;, &#39;both&#39;&#34;&#34;&#34;</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;startDateTime&#39;</span><span class="p">:</span> <span class="n">start_date</span><span class="p">,</span>
+            <span class="s1">&#39;endDateTime&#39;</span><span class="p">:</span> <span class="n">end_date</span><span class="p">,</span>
+            <span class="s1">&#39;networkType&#39;</span><span class="p">:</span> <span class="n">direction</span>
+        <span class="p">}</span>
+        <span class="n">bandwidth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">getBandwidthDataByDate</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vsi_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bandwidth</span>
 
 
-<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
-    vsi_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">12345667</span>
-    main <span style="color:#f92672">=</span> example()
-    summary <span style="color:#f92672">=</span> main<span style="color:#f92672">.</span>getCurrentBandwidthSummary(vsi_id)
-    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Summary&#34;</span>)
-    pp(summary)
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+    <span class="n">vsi_id</span> <span class="o">=</span> <span class="mi">12345667</span>
+    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getCurrentBandwidthSummary</span><span class="p">(</span><span class="n">vsi_id</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Summary&#34;</span><span class="p">)</span>
+    <span class="n">pp</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
 
-    start_date <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>today()
-    end_date <span style="color:#f92672">=</span> start_date <span style="color:#f92672">+</span> datetime<span style="color:#f92672">.</span>timedelta(days<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
-    bw_by_date <span style="color:#f92672">=</span> main<span style="color:#f92672">.</span>getBandwidthDataByDate(vsi_id, start_date, end_date)
-    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Bandwidth By Date&#34;</span>)
-    pp(bw_by_date)
+    <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="n">end_date</span> <span class="o">=</span> <span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">bw_by_date</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getBandwidthDataByDate</span><span class="p">(</span><span class="n">vsi_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Bandwidth By Date&#34;</span><span class="p">)</span>
+    <span class="n">pp</span><span class="p">(</span><span class="n">bw_by_date</span><span class="p">)</span>
 </code></pre></div><h3 id="get-the-bandwidth-graph">Get the Bandwidth Graph</h3>
 <p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Metric_Tracking_Object/getBandwidthGraph/">getBandwidthGraph</a></p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> SoftLayer
-<span style="color:#f92672">from</span> pprint <span style="color:#f92672">import</span> pprint <span style="color:#66d9ef">as</span> pp
-<span style="color:#f92672">import</span> datetime
-<span style="color:#f92672">import</span> base64
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">base64</span>
 
-<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">example</span>():
+<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
 
-    <span style="color:#66d9ef">def</span> __init__(self):
-        self<span style="color:#f92672">.</span>client <span style="color:#f92672">=</span> SoftLayer<span style="color:#f92672">.</span>Client()
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getGraph</span>(self, tracking_id, startDateTime, endDateTime, graphType<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;public&#39;</span>,
-                 fontSize<span style="color:#f92672">=</span><span style="color:#ae81ff">8</span>, graphWidth<span style="color:#f92672">=</span><span style="color:#ae81ff">800</span>, graphHeight<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>, doNotShowTimeZone<span style="color:#f92672">=</span>False):
-        <span style="color:#e6db74">&#34;&#34;&#34;Returns a bandwidth graph&#34;&#34;&#34;</span>
-        image <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;SoftLayer_Metric_Tracking_Object&#39;</span>, <span style="color:#e6db74">&#39;getBandwidthGraph&#39;</span>,
-                                 startDateTime, endDateTime, graphType, fontSize, graphWidth,
-                                 graphHeight, doNotShowTimeZone, id<span style="color:#f92672">=</span>tracking_id)
-        <span style="color:#75715e"># pp(image)</span>
-        <span style="color:#66d9ef">return</span> image
+    <span class="k">def</span> <span class="nf">getGraph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tracking_id</span><span class="p">,</span> <span class="n">startDateTime</span><span class="p">,</span> <span class="n">endDateTime</span><span class="p">,</span> <span class="n">graphType</span><span class="o">=</span><span class="s1">&#39;public&#39;</span><span class="p">,</span>
+                 <span class="n">fontSize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">graphWidth</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">graphHeight</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">doNotShowTimeZone</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;Returns a bandwidth graph&#34;&#34;&#34;</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="s1">&#39;getBandwidthGraph&#39;</span><span class="p">,</span>
+                                 <span class="n">startDateTime</span><span class="p">,</span> <span class="n">endDateTime</span><span class="p">,</span> <span class="n">graphType</span><span class="p">,</span> <span class="n">fontSize</span><span class="p">,</span> <span class="n">graphWidth</span><span class="p">,</span>
+                                 <span class="n">graphHeight</span><span class="p">,</span> <span class="n">doNotShowTimeZone</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">tracking_id</span><span class="p">)</span>
+        <span class="c1"># pp(image)</span>
+        <span class="k">return</span> <span class="n">image</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">saveImage</span>(self, image):
-        <span style="color:#e6db74">&#34;&#34;&#34;image should be data returned from getBandwidthGraph&#34;&#34;&#34;</span>
-        <span style="color:#75715e"># Graph title will usually be the FQDN of the server</span>
-        path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;{}.png&#39;</span><span style="color:#f92672">.</span>format(image<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;graphTitle&#39;</span>))
-        <span style="color:#75715e"># open the file in write+binary mode</span>
-        file <span style="color:#f92672">=</span> open(path, <span style="color:#e6db74">&#39;wb&#39;</span>)
-        image_data <span style="color:#f92672">=</span> image<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;graphImage&#39;</span>)
+    <span class="k">def</span> <span class="nf">saveImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;image should be data returned from getBandwidthGraph&#34;&#34;&#34;</span>
+        <span class="c1"># Graph title will usually be the FQDN of the server</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="s1">&#39;{}.png&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;graphTitle&#39;</span><span class="p">))</span>
+        <span class="c1"># open the file in write+binary mode</span>
+        <span class="nb">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span>
+        <span class="n">image_data</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;graphImage&#39;</span><span class="p">)</span>
 
-        <span style="color:#75715e"># REST API returns a &#39;&#39; encapsulated string, so we need to remove those, and then base64decode</span>
-        <span style="color:#66d9ef">if</span> isinstance(image_data, str):
-            png <span style="color:#f92672">=</span> base64<span style="color:#f92672">.</span>b64decode(image_data<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34;&#39;&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>))
-        <span style="color:#75715e"># XML-RPC returns raw binary, so we just need to get its data out.</span>
-        <span style="color:#66d9ef">else</span>:
-            png <span style="color:#f92672">=</span> image_data<span style="color:#f92672">.</span>data
+        <span class="c1"># REST API returns a &#39;&#39; encapsulated string, so we need to remove those, and then base64decode</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image_data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">png</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">image_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34;&#39;&#34;</span><span class="p">,</span><span class="s2">&#34;&#34;</span><span class="p">))</span>
+        <span class="c1"># XML-RPC returns raw binary, so we just need to get its data out.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">png</span> <span class="o">=</span> <span class="n">image_data</span><span class="o">.</span><span class="n">data</span>
 
-        file<span style="color:#f92672">.</span>write(png)
-        file<span style="color:#f92672">.</span>close()
+        <span class="nb">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">png</span><span class="p">)</span>
+        <span class="nb">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getHardwareTrackingId</span>(self, hardware_id):
-        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Hardware_Server&#39;</span>, <span style="color:#e6db74">&#39;getMetricTrackingObject&#39;</span>, id<span style="color:#f92672">=</span>hardware_id)
-    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getVirtualTrackingId</span>(self, vsi_id):
-        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#39;Virtual_Guest&#39;</span>, <span style="color:#e6db74">&#39;getMetricTrackingObject&#39;</span>, id<span style="color:#f92672">=</span>vsi_id)
+    <span class="k">def</span> <span class="nf">getHardwareTrackingId</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hardware_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;getMetricTrackingObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">hardware_id</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">getVirtualTrackingId</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vsi_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getMetricTrackingObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vsi_id</span><span class="p">)</span>
 
-<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
-    vsi_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">75764043</span>
-    main <span style="color:#f92672">=</span> example()
-    trackingObject <span style="color:#f92672">=</span> main<span style="color:#f92672">.</span>getVirtualTrackingId(vsi_id)
-    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Tracking ID is {}&#34;</span><span style="color:#f92672">.</span>format(trackingObject<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;id&#39;</span>)))
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+    <span class="n">vsi_id</span> <span class="o">=</span> <span class="mi">75764043</span>
+    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+    <span class="n">trackingObject</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getVirtualTrackingId</span><span class="p">(</span><span class="n">vsi_id</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Tracking ID is {}&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trackingObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)))</span>
 
-    start_date <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>today()
-    end_date <span style="color:#f92672">=</span> start_date <span style="color:#f92672">+</span> datetime<span style="color:#f92672">.</span>timedelta(days<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
-    time_format <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#34;</span>
-    image <span style="color:#f92672">=</span> main<span style="color:#f92672">.</span>getGraph(trackingObject<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;id&#39;</span>), start_date<span style="color:#f92672">.</span>strftime(time_format), end_date<span style="color:#f92672">.</span>strftime(time_format))
+    <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="n">end_date</span> <span class="o">=</span> <span class="n">start_date</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">time_format</span> <span class="o">=</span> <span class="s2">&#34;%Y-%m-</span><span class="si">%d</span><span class="s2">&#34;</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getGraph</span><span class="p">(</span><span class="n">trackingObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">start_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">time_format</span><span class="p">),</span> <span class="n">end_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">time_format</span><span class="p">))</span>
 
-    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Graph Title: {}&#34;</span><span style="color:#f92672">.</span>format(image<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;graphTitle&#39;</span>)))
-    main<span style="color:#f92672">.</span>saveImage(image)
+    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Graph Title: {}&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;graphTitle&#39;</span><span class="p">)))</span>
+    <span class="n">main</span><span class="o">.</span><span class="n">saveImage</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
 </code></pre></div>
             </div>
         </div>
@@ -487,50 +495,25 @@ if (!doNotTrack) {
     </div>
     <hr>
     <div class="row">
-            
-        <div class="col-md-6">
-            
-<div class="panel panel-default">
-    <div class="panel-heading" style="padding: 2px 15px;">
-        <h4>More Documentation</h4>
-    </div>
-    <div class="panel-body">
-        <a href="https://softlayer.github.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
-        <a href="https://github.com/softlayer/softlayer-java"><i class="fab fa-github"></i> softlayer-java<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fab fa-github"></i> softlayer-perl<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fab fa-github"></i> softlayer-php<br></a>
-        <a href="https://github.com/softlayer/softlayer-python"><i class="fab fa-github"></i> softlayer-python<br></a>
-        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fab fa-github"></i> softlayer-ruby<br></a>
+        <div class="row">
+            <div class="col-md-6">
+    <div class="well well-sm" style="word-wrap: break-word;"> 
+        <strong>Feedback? <span class="fas fa-comment"/></strong>
+            <p>
+                If this article contains any error, or leaves any of your questions unanswered, please help us out by 
+                opening up a github issue.<br>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20Bandwidth%20Usage%20Reports&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fbandwidthData%2f"> Open an issue</a>
+                <i class="fab fa-github" alt="github"></i>
+            </p>
     </div>
 </div>
-
-<div class="panel panel-default">
-    <div class="panel-heading text-center" style="padding: 2px 15px;">
-      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fab fa-facebook-square" alt="facebook"></i> </a>
-      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fab fa-twitter" alt="twitter"></i> </a>
-      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fab fa-linkedin"></i> </a>
-      <a href="https://github.com/softlayer/softlayer.github.io"><i class="fab fa-github" alt="github"></i> </a>
-
-    </div>
-</div>
-
         </div>
-        <div class="col-md-6">
-            <div class="well well-sm" style="word-wrap: break-word;"> 
-                <strong>Feedback? <span class="fa fa-comment"/></strong>
-                    <p>
-                        We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20python%20-%20Bandwidth%20Usage%20Reports&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fbandwidthData%2f"><span class="fa fa-github-square"/> Open an issue</a>
-                    </p>
-            </div>
-        </div>
-
     </div>
         <footer>
             <div class="row">
                 <hr>
                 <div class="col-sm-12">
-                    <p>&copy; SoftLayer 2015<br>
+                    <p>&copy; SoftLayer 2020<br>
                     Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
                 </div>
             </div>

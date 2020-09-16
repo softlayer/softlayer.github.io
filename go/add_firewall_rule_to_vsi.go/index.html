@@ -12,8 +12,8 @@
     <link rel="canonical" href="https://sldn.softlayer.com/go/add_firewall_rule_to_vsi.go/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
-    <link href="https://sldn.softlayer.com/css/fa-svg-with-js.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/custom.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/monokai.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/highlight/solarized_dark.css" rel="stylesheet">
 
     <script src="https://sldn.softlayer.com/js/highlight.pack.js"></script>
@@ -25,7 +25,15 @@
 
     <script src="https://sldn.softlayer.com/js/jquery-3.3.1.min.js"></script> 
     <script src="https://sldn.softlayer.com/js/sldn.js"></script>
-    <script src="https://sldn.softlayer.com/js/fontawesome-all.js"></script>
+
+
+    <link href="https://sldn.softlayer.com/fontawesome/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/brands.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/solid.min.css" rel="stylesheet" type="text/css">
+    
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/solid.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/brands.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/fontawesome.min.js"></script>
 
     <script>
 		$(document).ready(function() {
@@ -143,139 +151,139 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#75715e">/*
-</span><span style="color:#75715e">Add firewall rules to the Firewall in a VSI.
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">Important manual pages:
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getFirewallServiceComponent
-</span><span style="color:#75715e">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Firewall_Update_Request/createObject
-</span><span style="color:#75715e">
-</span><span style="color:#75715e">License: http://sldn.softlayer.com/article/License
-</span><span style="color:#75715e">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span style="color:#75715e">*/</span>
-<span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
+</span><span class="cm">Add firewall rules to the Firewall in a VSI.
+</span><span class="cm">
+</span><span class="cm">Important manual pages:
+</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getFirewallServiceComponent
+</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Firewall_Update_Request/createObject
+</span><span class="cm">
+</span><span class="cm">License: http://sldn.softlayer.com/article/License
+</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span><span class="cm">*/</span>
+<span class="kn">package</span> <span class="nx">main</span>
 
-<span style="color:#f92672">import</span> (
-	<span style="color:#e6db74">&#34;fmt&#34;</span>
-  	<span style="color:#e6db74">&#34;encoding/json&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span style="color:#e6db74">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-)
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;fmt&#34;</span>
+  	<span class="s">&#34;encoding/json&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+<span class="p">)</span>
 
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-	<span style="color:#75715e">// SoftLayer API username and key
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">username</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
-	<span style="color:#a6e22e">apikey</span>   <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;set me&#34;</span>
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// SoftLayer API username and key
+</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
 
-	<span style="color:#75715e">// The id of Virtual server you wish to retrieve it firewall rules
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">vsiId</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">33051333</span>
+	<span class="c1">// The id of Virtual server you wish to retrieve it firewall rules
+</span><span class="c1"></span>	<span class="nx">vsiId</span> <span class="o">:=</span> <span class="mi">33051333</span>
 
-	<span style="color:#75715e">// Build the Network_Firewall_Update_Request_Rule object with the rules you want to add.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">rulesToAdd</span> <span style="color:#f92672">:=</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request_Rule</span>{
-		{
-			<span style="color:#a6e22e">Action</span>                    : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;permit&#34;</span>),
-			<span style="color:#a6e22e">Protocol</span>                  : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;tcp&#34;</span>),
-			<span style="color:#a6e22e">Version</span> 	          : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">4</span>),
-			<span style="color:#a6e22e">SourceIpAddress</span>           : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;10.10.10.3&#34;</span>),
-			<span style="color:#a6e22e">DestinationIpAddress</span>      : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;169.57.65.166&#34;</span>),
-			<span style="color:#a6e22e">SourceIpCidr</span>              : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">16</span>),
-			<span style="color:#a6e22e">OrderValue</span>                : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">3</span>),
-			<span style="color:#a6e22e">DestinationPortRangeStart</span> : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8081</span>),
-			<span style="color:#a6e22e">DestinationPortRangeEnd</span>   : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8085</span>),
-		},
-		{
-			<span style="color:#a6e22e">Action</span>                    : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;deny&#34;</span>),
-			<span style="color:#a6e22e">Protocol</span>                  : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;udp&#34;</span>),
-			<span style="color:#a6e22e">Version</span> 	          : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">4</span>),
-			<span style="color:#a6e22e">SourceIpAddress</span>           : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;10.10.10.3&#34;</span>),
-			<span style="color:#a6e22e">DestinationIpAddress</span>      : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;169.57.65.166&#34;</span>),
-			<span style="color:#a6e22e">SourceIpCidr</span>              : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">16</span>),
-			<span style="color:#a6e22e">OrderValue</span>                : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">4</span>),
-			<span style="color:#a6e22e">DestinationPortRangeStart</span> : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8081</span>),
-			<span style="color:#a6e22e">DestinationPortRangeEnd</span>   : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#ae81ff">8085</span>),
-		},
-	}
+	<span class="c1">// Build the Network_Firewall_Update_Request_Rule object with the rules you want to add.
+</span><span class="c1"></span>	<span class="nx">rulesToAdd</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Firewall_Update_Request_Rule</span><span class="p">{</span>
+		<span class="p">{</span>
+			<span class="nx">Action</span>                    <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;permit&#34;</span><span class="p">),</span>
+			<span class="nx">Protocol</span>                  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">),</span>
+			<span class="nx">Version</span> 	          <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+			<span class="nx">SourceIpAddress</span>           <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;10.10.10.3&#34;</span><span class="p">),</span>
+			<span class="nx">DestinationIpAddress</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;169.57.65.166&#34;</span><span class="p">),</span>
+			<span class="nx">SourceIpCidr</span>              <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span>
+			<span class="nx">OrderValue</span>                <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+			<span class="nx">DestinationPortRangeStart</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">8081</span><span class="p">),</span>
+			<span class="nx">DestinationPortRangeEnd</span>   <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">8085</span><span class="p">),</span>
+		<span class="p">},</span>
+		<span class="p">{</span>
+			<span class="nx">Action</span>                    <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;deny&#34;</span><span class="p">),</span>
+			<span class="nx">Protocol</span>                  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;udp&#34;</span><span class="p">),</span>
+			<span class="nx">Version</span> 	          <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+			<span class="nx">SourceIpAddress</span>           <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;10.10.10.3&#34;</span><span class="p">),</span>
+			<span class="nx">DestinationIpAddress</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;169.57.65.166&#34;</span><span class="p">),</span>
+			<span class="nx">SourceIpCidr</span>              <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span>
+			<span class="nx">OrderValue</span>                <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+			<span class="nx">DestinationPortRangeStart</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">8081</span><span class="p">),</span>
+			<span class="nx">DestinationPortRangeEnd</span>   <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">8085</span><span class="p">),</span>
+		<span class="p">},</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// Create SoftLayer API session
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">sess</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">session</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">username</span>, <span style="color:#a6e22e">apikey</span>)
+	<span class="c1">// Create SoftLayer API session
+</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
 
-	<span style="color:#75715e">// Get SoftLayer_Virtual_Guest and SoftLayer_Network_Component_Firewall services
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">guestService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetVirtualGuestService</span>(<span style="color:#a6e22e">sess</span>)
-	<span style="color:#a6e22e">firewallService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetNetworkComponentFirewallService</span>(<span style="color:#a6e22e">sess</span>)
-	<span style="color:#a6e22e">firewallUpdateService</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">services</span>.<span style="color:#a6e22e">GetNetworkFirewallUpdateRequestService</span>(<span style="color:#a6e22e">sess</span>)
+	<span class="c1">// Get SoftLayer_Virtual_Guest and SoftLayer_Network_Component_Firewall services
+</span><span class="c1"></span>	<span class="nx">guestService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+	<span class="nx">firewallService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkComponentFirewallService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+	<span class="nx">firewallUpdateService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkFirewallUpdateRequestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
 
-	<span style="color:#75715e">// 1. Get Firewall Component from VSI
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">firewall</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">guestService</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#a6e22e">vsiId</span>).<span style="color:#a6e22e">GetFirewallServiceComponent</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to get firewall component:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
-	}
+	<span class="c1">// 1. Get Firewall Component from VSI
+</span><span class="c1"></span>  	<span class="nx">firewall</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">guestService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vsiId</span><span class="p">).</span><span class="nf">GetFirewallServiceComponent</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get firewall component:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// 2. Retrieve all current rules
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">oldRules</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">firewallService</span>.<span style="color:#a6e22e">Id</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">firewall</span>.<span style="color:#a6e22e">Id</span>).<span style="color:#a6e22e">GetRules</span>()
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to get firewall rules:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
-	}
+	<span class="c1">// 2. Retrieve all current rules
+</span><span class="c1"></span>  	<span class="nx">oldRules</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">firewallService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">firewall</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">GetRules</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get firewall rules:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">/*
-</span><span style="color:#75715e">	Previous step returns an array of SoftLayer_Network_Component_Firewall_Rule objects
-</span><span style="color:#75715e">	and we need to convert it to an array of SoftLayer_Network_Firewall_Update_Request_Rule
-</span><span style="color:#75715e">	objects in order to join all rules. For that reason the method converTo() was created for
-</span><span style="color:#75715e">	this script.
-</span><span style="color:#75715e">	*/</span>
-	<span style="color:#a6e22e">rules</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">convertToFirewallRules</span>(<span style="color:#a6e22e">oldRules</span>).([]<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request_Rule</span>)
+	<span class="cm">/*
+</span><span class="cm">	Previous step returns an array of SoftLayer_Network_Component_Firewall_Rule objects
+</span><span class="cm">	and we need to convert it to an array of SoftLayer_Network_Firewall_Update_Request_Rule
+</span><span class="cm">	objects in order to join all rules. For that reason the method converTo() was created for
+</span><span class="cm">	this script.
+</span><span class="cm">	*/</span>
+	<span class="nx">rules</span> <span class="o">:=</span> <span class="nf">convertToFirewallRules</span><span class="p">(</span><span class="nx">oldRules</span><span class="p">).([]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Firewall_Update_Request_Rule</span><span class="p">)</span>
 
-	<span style="color:#75715e">// 3. Join the existent rules with the new rules to add.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">rulesToAdd</span> = append(<span style="color:#a6e22e">rules</span>, <span style="color:#a6e22e">rulesToAdd</span><span style="color:#f92672">...</span>)
+	<span class="c1">// 3. Join the existent rules with the new rules to add.
+</span><span class="c1"></span>	<span class="nx">rulesToAdd</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">rules</span><span class="p">,</span> <span class="nx">rulesToAdd</span><span class="o">...</span><span class="p">)</span>
 
-	<span style="color:#75715e">// 4. Build the skeleton of SoftLayer_Network_Firewall_Update_Request that will be used to
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">//    update the firewall rules
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">template</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request</span> {
-		<span style="color:#a6e22e">NetworkComponentFirewallId</span> : <span style="color:#a6e22e">sl</span>.<span style="color:#a6e22e">Int</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">firewall</span>.<span style="color:#a6e22e">Id</span>),
-		<span style="color:#a6e22e">Rules</span>: <span style="color:#a6e22e">rulesToAdd</span>,
-	}
+	<span class="c1">// 4. Build the skeleton of SoftLayer_Network_Firewall_Update_Request that will be used to
+</span><span class="c1"></span>	<span class="c1">//    update the firewall rules
+</span><span class="c1"></span>  	<span class="nx">template</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Firewall_Update_Request</span> <span class="p">{</span>
+		<span class="nx">NetworkComponentFirewallId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">firewall</span><span class="p">.</span><span class="nx">Id</span><span class="p">),</span>
+		<span class="nx">Rules</span><span class="p">:</span> <span class="nx">rulesToAdd</span><span class="p">,</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// 5. Call to SoftLayer_Network_Firewall_Update_Request::createObject() method in order to
-</span><span style="color:#75715e"></span>	<span style="color:#75715e">//    replace all firewall rules (update)
-</span><span style="color:#75715e"></span>  	<span style="color:#a6e22e">updateRequest</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">firewallUpdateService</span>.<span style="color:#a6e22e">CreateObject</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">template</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n Unable to replace/update all firewall rules:\n - %s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-		<span style="color:#66d9ef">return</span>
-	}
+	<span class="c1">// 5. Call to SoftLayer_Network_Firewall_Update_Request::createObject() method in order to
+</span><span class="c1"></span>	<span class="c1">//    replace all firewall rules (update)
+</span><span class="c1"></span>  	<span class="nx">updateRequest</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">firewallUpdateService</span><span class="p">.</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">template</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to replace/update all firewall rules:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// Following helps to print the result in json format.
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">jsonFormat</span>, <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Marshal</span>(<span style="color:#a6e22e">updateRequest</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">jsonErr</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">jsonErr</span>)
-		<span style="color:#66d9ef">return</span>
-	}
-	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">jsonFormat</span>))
-}
+	<span class="c1">// Following helps to print the result in json format.
+</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">updateRequest</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+<span class="p">}</span>
 
-<span style="color:#75715e">/*
-</span><span style="color:#75715e">Following method converts an object type SoftLayer_Network_Component_Firewall_Rule to
-</span><span style="color:#75715e">SoftLayer_Network_Firewall_Update_Request_Rule
-</span><span style="color:#75715e">*/</span>
-<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">convertToFirewallRules</span>(<span style="color:#a6e22e">object</span> <span style="color:#66d9ef">interface</span>{}) <span style="color:#66d9ef">interface</span>{} {
+<span class="cm">/*
+</span><span class="cm">Following method converts an object type SoftLayer_Network_Component_Firewall_Rule to
+</span><span class="cm">SoftLayer_Network_Firewall_Update_Request_Rule
+</span><span class="cm">*/</span>
+<span class="kd">func</span> <span class="nf">convertToFirewallRules</span><span class="p">(</span><span class="nx">object</span> <span class="kd">interface</span><span class="p">{})</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
 
-	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">result</span> []<span style="color:#a6e22e">datatypes</span>.<span style="color:#a6e22e">Network_Firewall_Update_Request_Rule</span>
+	<span class="kd">var</span> <span class="nx">result</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Firewall_Update_Request_Rule</span>
 
-	<span style="color:#75715e">// Get the encoded JSON of object
-</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">encoded</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Marshal</span>(<span style="color:#a6e22e">object</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
-	}
+	<span class="c1">// Get the encoded JSON of object
+</span><span class="c1"></span>	<span class="nx">encoded</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">object</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
 
-	<span style="color:#75715e">// Inverse the encoded JSON and return an Network_Firewall_Update_Request_Rule
-</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Unmarshal</span>(<span style="color:#a6e22e">encoded</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">result</span>); <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;%s\n&#34;</span>, <span style="color:#a6e22e">err</span>)
-	}
+	<span class="c1">// Inverse the encoded JSON and return an Network_Firewall_Update_Request_Rule
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">encoded</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">result</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
 
-	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">result</span>
-}
+	<span class="k">return</span> <span class="nx">result</span>
+<span class="p">}</span>
 </code></pre></div>
             </div>
         </div>
@@ -283,50 +291,25 @@ if (!doNotTrack) {
     </div>
     <hr>
     <div class="row">
-            
-        <div class="col-md-6">
-            
-<div class="panel panel-default">
-    <div class="panel-heading" style="padding: 2px 15px;">
-        <h4>More Documentation</h4>
-    </div>
-    <div class="panel-body">
-        <a href="https://softlayer.github.com/reference/softlayerapi"><i class="fa fa-link"></i> SoftLayer API Reference<br></a>
-        <a href="https://github.com/softlayer/softlayer-java"><i class="fab fa-github"></i> softlayer-java<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-perl-client"><i class="fab fa-github"></i> softlayer-perl<br></a>
-        <a href="https://github.com/softlayer/softlayer-api-php-client"><i class="fab fa-github"></i> softlayer-php<br></a>
-        <a href="https://github.com/softlayer/softlayer-python"><i class="fab fa-github"></i> softlayer-python<br></a>
-        <a href="https://github.com/softlayer/softlayer-ruby"><i class="fab fa-github"></i> softlayer-ruby<br></a>
+        <div class="row">
+            <div class="col-md-6">
+    <div class="well well-sm" style="word-wrap: break-word;"> 
+        <strong>Feedback? <span class="fas fa-comment"/></strong>
+            <p>
+                If this article contains any error, or leaves any of your questions unanswered, please help us out by 
+                opening up a github issue.<br>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20go%20-%20add_firewall_rule_to_vsi.go&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fgo%2fadd_firewall_rule_to_vsi.go%2f"> Open an issue</a>
+                <i class="fab fa-github" alt="github"></i>
+            </p>
     </div>
 </div>
-
-<div class="panel panel-default">
-    <div class="panel-heading text-center" style="padding: 2px 15px;">
-      <a href="https://www.facebook.com/IBMBluemixIaaS/"><i class="fab fa-facebook-square" alt="facebook"></i> </a>
-      <a href="https://twitter.com/IBMBluemixIaaS"><i class="fab fa-twitter" alt="twitter"></i> </a>
-      <a href="http://www.linkedin.com/company/softlayer-technologies-inc-" alt="linked-in"><i class="fab fa-linkedin"></i> </a>
-      <a href="https://github.com/softlayer/softlayer.github.io"><i class="fab fa-github" alt="github"></i> </a>
-
-    </div>
-</div>
-
         </div>
-        <div class="col-md-6">
-            <div class="well well-sm" style="word-wrap: break-word;"> 
-                <strong>Feedback? <span class="fa fa-comment"/></strong>
-                    <p>
-                        We would love to hear it<br>
-                        <a class="" href="https://github.com/softlayer/api_examples/issues/new?title=Feedback%20for%20go%20-%20add_firewall_rule_to_vsi.go&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fgo%2fadd_firewall_rule_to_vsi.go%2f"><span class="fa fa-github-square"/> Open an issue</a>
-                    </p>
-            </div>
-        </div>
-
     </div>
         <footer>
             <div class="row">
                 <hr>
                 <div class="col-sm-12">
-                    <p>&copy; SoftLayer 2015<br>
+                    <p>&copy; SoftLayer 2020<br>
                     Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
                 </div>
             </div>
