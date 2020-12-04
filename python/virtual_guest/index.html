@@ -149,6 +149,9 @@ if (!doNotTrack) {
 <p>For these examples, the following class structure will be used. Since most of these examples will share a lot of the initialization code, this class will help reduce the noise level.</p>
 <p>All these examples will have a function definition that can simply be added to the <code>example</code> class and run with a call from the <code>if __name__ == &quot;__main__&quot;:</code> block.</p>
 <div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+
+<span class="kn">from</span> <span class="nn">SoftLayer.managers.ordering</span> <span class="kn">import</span> <span class="n">OrderingManager</span>
+
 <span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
 
 <span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
@@ -225,7 +228,41 @@ if (!doNotTrack) {
             <span class="k">print</span><span class="p">(</span><span class="s2">&#34;Unable to create VSI. {} {}&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
 </code></pre></div><p><code>getCreateOptions</code> has a lot of irrelevant output, and trimming that out takes a bit of code to complete that gets in the way of this example. See <a href="https://github.com/softlayer/softlayer-python/blob/master/SoftLayer/CLI/virt/create_options.py">SoftLayer/CLI/virt/create_options.py</a> for how the SLCLI handles the output.</p>
 <p>SLCLI also has this as a command feature. See  <a href="https://softlayer-python.readthedocs.io/en/latest/cli/vs/#virtual-create"><code>slcli vs create</code></a> and <a href="https://softlayer-python.readthedocs.io/en/latest/cli/vs/#virtual-create-options"><code>slcli vs create-options</code></a></p>
-<h2 id="add-tags">Add tags</h2>
+<h2 id="create-with-ordering-manager">Create with Ordering Manager</h2>
+<p>This example uses <a href="https://softlayer-api-python-client.readthedocs.io/en/latest/api/managers/ordering/">Ordering  Manager</a> for interacting with the API, it is using  the PUBLIC_CLOUD_SERVER package
+and include sshkeys and a post provision script.</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">    <span class="k">def</span> <span class="nf">create_vsi</span><span class="p">():</span>
+        <span class="n">vsi_mgr</span> <span class="o">=</span> <span class="n">OrderingManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+    
+        <span class="n">package</span> <span class="o">=</span> <span class="s1">&#39;PUBLIC_CLOUD_SERVER&#39;</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="s1">&#39;DALLAS13&#39;</span>
+        <span class="n">preset</span> <span class="o">=</span> <span class="s1">&#39;B1_2X8X100&#39;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BANDWIDTH_0_GB_2&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;MONITORING_HOST_PING&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;NOTIFICATION_EMAIL_AND_TICKET&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;OS_DEBIAN_9_X_STRETCH_LAMP_64_BIT&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;1_IP_ADDRESS&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;1_IPV6_ADDRESS&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;1_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;REBOOT_REMOTE_CONSOLE&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;AUTOMATED_NOTIFICATION&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#39;</span><span class="p">,</span>
+                 <span class="p">]</span>
+    
+        <span class="n">complex_type</span> <span class="o">=</span> <span class="s1">&#39;SoftLayer_Container_Product_Order_Virtual_Guest&#39;</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;virtualGuests&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;hostname&#34;</span><span class="p">:</span> <span class="s2">&#34;test&#34;</span><span class="p">,</span> <span class="s2">&#34;domain&#34;</span><span class="p">:</span> <span class="s2">&#34;ibm.com&#34;</span><span class="p">}],</span>
+                  <span class="s2">&#34;provisionScripts&#34;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;https://examples.provisioning.org&#34;</span><span class="p">],</span>
+                  <span class="s2">&#34;sshKeys&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;sshKeyIds&#34;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1234</span><span class="p">,</span> <span class="mi">1235</span><span class="p">]}]</span>
+                  <span class="p">}</span>
+        <span class="n">billing_hourly</span> <span class="o">=</span> <span class="bp">True</span>
+    
+        <span class="c1"># uses vsi_mgr.place_order instead of  vsi_mgr.verify_order to create the vsi</span>
+    
+        <span class="n">vsi</span> <span class="o">=</span> <span class="n">vsi_mgr</span><span class="o">.</span><span class="n">verify_order</span><span class="p">(</span><span class="n">package</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="n">complex_type</span><span class="o">=</span><span class="n">complex_type</span><span class="p">,</span>
+                                        <span class="n">hourly</span><span class="o">=</span><span class="n">billing_hourly</span><span class="p">,</span> <span class="n">preset_keyname</span><span class="o">=</span><span class="n">preset</span><span class="p">,</span> <span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">,</span> <span class="n">quantity</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">pp</span><span class="p">(</span><span class="n">vsi</span><span class="p">)</span>
+
+</code></pre></div><h2 id="add-tags">Add tags</h2>
 <p>Tags cannot be set at create time, they can only be added after a VSI has been provisioned, or at least gotten an <code>id</code>.</p>
 <p><a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/setTags/">SoftLayer_Virtual_Guest::setTags()</a> will either return <code>True</code>, or an <code>Exception</code>.</p>
 <div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
