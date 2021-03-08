@@ -611,6 +611,53 @@ AUTOMATED_NOTIFICATION \
 
 </code></pre></div><p>Turns into:</p>
 <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">curl -u $SL_USER:$SL_APIKEY -X POST -H &#34;Accept: */*&#34; -H &#34;Accept-Encoding: gzip, deflate, compress&#34; -d &#39;{&#34;parameters&#34;: [{&#34;orderContainers&#34;: [{&#34;hardware&#34;: [{&#34;domain&#34;: &#34;test-cgallo.com&#34;, &#34;hostname&#34;: &#34;testOrderCANCEL&#34;}, {&#34;primaryBackendNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2257307}}}], &#34;packageId&#34;: 257, &#34;quantity&#34;: 1, &#34;location&#34;: 1854895, &#34;useHourlyPricing&#34;: false, &#34;complexType&#34;: &#34;SoftLayer_Container_Product_Order_Hardware_Server&#34;, &#34;prices&#34;: [{&#34;id&#34;: 49515}, {&#34;id&#34;: 49415}, {&#34;id&#34;: 48999}, {&#34;id&#34;: 876}, {&#34;id&#34;: 49759}, {&#34;id&#34;: 50357}, {&#34;id&#34;: 274}, {&#34;id&#34;: 21}, {&#34;id&#34;: 906}, {&#34;id&#34;: 418}, {&#34;id&#34;: 57}, {&#34;id&#34;: 56}, {&#34;id&#34;: 420}, {&#34;id&#34;: 58}]}]}]}&#39; &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Product_Order/verifyOrder.json&#39;
+</code></pre></div><h2 id="step-by-step-example-with-ibmcloud-cli">Step by Step Example with ibmcloud CLI</h2>
+<p>These commands will use the <code>ibmcloud sl</code> command, but it works the same way as <code>slcli</code>. The only big difference is <code>ibmcloud</code> requires Items be a comma seperated list, where <code>slcli</code> requires them be space seperated.</p>
+<p>Here we want to order a Cascade Lake Dual Xeon server.</p>
+<h4 id="get-the-package">Get the package.</h4>
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">$ ibmcloud sl order package-list | grep -i Cascade
+1105   Dual Intel Xeon Processor Cascade Lake Scalable Family (4 Drives)         DUAL_INTEL_XEON_PROCESSOR_CASCADE_LAKE_SCALABLE_FAMILY_4_DRIVES   BARE_METAL_CPU
+1107   Dual Intel Xeon Processor Cascade Lake Scalable Family (12 Drives)        DUAL_INTEL_XEON_PROC_CASCADE_LAKE_SCALABLE_FAMILY_12_DRIVES       BARE_METAL_CPU
+</code></pre></div><h4 id="get-the-items">Get the Items</h4>
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">ibmcloud sl order item-list DUAL_INTEL_XEON_PROCESSOR_CASCADE_LAKE_SCALABLE_FAMILY_4_DRIVES
+</code></pre></div><p>From that list you&rsquo;ll need to select the Processor (<code>INTEL_XEON_4210_2_20</code>), RAM (<code>RAM_32_GB_DDR4_2133_ECC_NON_REG</code>), OS (<code>OS_DEBIAN_10_X_BUSTER_MINIMAL_64_BIT</code>), Port Speed (<code>1_GBPS_REDUNDANT_PUBLIC_PRIVATE_NETWORK_UPLINKS</code>, assuming you wanted redundany, but unbonded is an option of too), RAID (<code>DISK_CONTROLLER_RAID</code>), DISKS ( 2 of <code>HARD_DRIVE_2_00_TB_SATA_2</code> or <code>HARD_DRIVE_1_9_TB_SSD</code> if you wanted the SSD drives) and a few other required items (<code>BANDWIDTH_1000_GB</code>, <code>REBOOT_KVM_OVER_IP</code>, <code>1_IP_ADDRESS</code>, <code>UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT</code>, <code>NOTIFICATION_EMAIL_AND_TICKET </code>, <code>AUTOMATED_NOTIFICATION</code>, <code>MONITORING_HOST_PING</code>)</p>
+<h4 id="optional-ssh-keys">(Optional) SSH Keys</h4>
+<p>The <code>ibmcloud sl</code> command doesn&rsquo;t have a built in way of showing ssh-keys (The <code>SLCLI</code>, which is what the <code>ibmcloud sl</code> command is based from, does if that is useful: <a href="https://softlayer-python.readthedocs.io/en/latest/cli/sshkey/)">https://softlayer-python.readthedocs.io/en/latest/cli/sshkey/)</a>. However you can still get the ssh key id from the following:</p>
+<p><code>ibmcloud sl call-api SoftLayer_Account getSshKeys</code>
+you&rsquo;ll need the <code>id</code> field that corresponds to the SSH key you want installed on the server.</p>
+<h4 id="optional-subnets-and-vlans">(Optional) Subnets and Vlans</h4>
+<p>You&rsquo;ll need the subnet and vlan ID for provisioning.
+<code>ibmcloud sl subnet list</code>
+<code>ibmcloud sl vlan list</code></p>
+<h4 id="raid-configuration">Raid Configuration</h4>
+<p>To get all the Raid Type options, use the following command:
+<code>ibmcloud sl call-api SoftLayer_Configuration_Storage_Group_Array_Type getAllObjects</code>
+RAID1 is id=2</p>
+<p>To get all the partition templates available, run the following
+<code>ibmcloud sl call-api SoftLayer_Hardware_Component_Partition_OperatingSystem getObject --init 1 --mask=&quot;mask[partitionTemplates[data]]&quot;</code>
+Linux basic is id=1 (1G /swap, .25G /boot, / set to &lsquo;grow&rsquo;)</p>
+<h4 id="extras">&ldquo;Extras&rdquo;</h4>
+<p>Extras is a JSON string that corresponds to <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server/">https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server/</a>
+It is here you will put your SSH keys, post provision scripts, domain/hostname and other bits of information.</p>
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">{
+    &#34;hardware&#34;:[{
+        &#34;hostname&#34;:&#34;ordering-test&#34;,
+        &#34;domain&#34;:&#34;ibm.com&#34;,
+        &#34;primaryBackendNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;primarySubnet&#34;:{&#34;id&#34;: 1942931}}},
+        &#34;primaryNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2843340}},
+    }],
+    &#34;storageGroups&#34;:[{
+        &#34;arrayTypeId&#34;: 2,
+        &#34;arraySize&#34;: 2000,
+        &#34;hardDrives&#34;: [0,1],
+        &#34;partitionTemplateId&#34;: 1
+    }],
+    &#34;sshKeys&#34;: [{&#34;sshKeyIds&#34;:[87634,92868]}],
+    &#34;provisionScripts&#34;: [&#34;https://pastebin.com/raw/SCp607Tm&#34;]
+}
+</code></pre></div><h4 id="everything-together">Everything Together</h4>
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">ibmcloud sl order place DUAL_INTEL_XEON_PROCESSOR_CASCADE_LAKE_SCALABLE_FAMILY_4_DRIVES  DALLAS13  INTEL_XEON_4210_2_20,RAM_32_GB_DDR4_2133_ECC_NON_REG,OS_DEBIAN_10_X_BUSTER_MINIMAL_64_BIT,1_GBPS_REDUNDANT_PUBLIC_PRIVATE_NETWORK_UPLINKS,DISK_CONTROLLER_RAID,HARD_DRIVE_2_00_TB_SATA_2,HARD_DRIVE_2_00_TB_SATA_2,BANDWIDTH_1000_GB,REBOOT_KVM_OVER_IP,1_IP_ADDRESS,UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT,NOTIFICATION_EMAIL_AND_TICKET,MONITORING_HOST_PING,AUTOMATED_NOTIFICATION --complex-type SoftLayer_Container_Product_Order_Hardware_Server --extras &#39;{&#34;hardware&#34;:[{&#34;hostname&#34;:&#34;cgallo-test&#34;,&#34;domain&#34;:&#34;cgallo.com&#34;,&#34;primaryBackendNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;primarySubnet&#34;:{&#34;id&#34;: 1942931}}},&#34;primaryNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2848660}}}],&#34;storageGroups&#34;:[{&#34;arrayTypeId&#34;: 2,&#34;arraySize&#34;: 2000,&#34;hardDrives&#34;: [0,1],&#34;partitionTemplateId&#34;: 1}],&#34;sshKeys&#34;: [{&#34;sshKeyIds&#34;:[87634,92868]}],&#34;provisionScripts&#34;: [&#34;https://pastebin.com/raw/SCp607Tm&#34;]}&#39; --billing monthly --verify
+</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">slcli order place DUAL_INTEL_XEON_PROCESSOR_CASCADE_LAKE_SCALABLE_FAMILY_4_DRIVES  DALLAS13  INTEL_XEON_4210_2_20 RAM_32_GB_DDR4_2133_ECC_NON_REG OS_DEBIAN_10_X_BUSTER_MINIMAL_64_BIT 1_GBPS_REDUNDANT_PUBLIC_PRIVATE_NETWORK_UPLINKS DISK_CONTROLLER_RAID HARD_DRIVE_2_00_TB_SATA_2 HARD_DRIVE_2_00_TB_SATA_2 BANDWIDTH_1000_GB REBOOT_KVM_OVER_IP 1_IP_ADDRESS UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT NOTIFICATION_EMAIL_AND_TICKET MONITORING_HOST_PING AUTOMATED_NOTIFICATION --complex-type SoftLayer_Container_Product_Order_Hardware_Server --extras &#39;{&#34;hardware&#34;:[{&#34;hostname&#34;:&#34;cgallo-test&#34;,&#34;domain&#34;:&#34;cgallo.com&#34;,&#34;primaryBackendNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;primarySubnet&#34;:{&#34;id&#34;: 1942931}}},&#34;primaryNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2848660}}}],&#34;storageGroups&#34;:[{&#34;arrayTypeId&#34;: 2,&#34;arraySize&#34;: 2000,&#34;hardDrives&#34;: [0,1],&#34;partitionTemplateId&#34;: 1}],&#34;sshKeys&#34;: [{&#34;sshKeyIds&#34;:[87634,92868]}],&#34;provisionScripts&#34;: [&#34;https://pastebin.com/raw/SCp607Tm&#34;]}&#39; --billing monthly --verify
 </code></pre></div>
             </div>
         </div>
