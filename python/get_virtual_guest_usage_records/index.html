@@ -123,12 +123,16 @@ if (!doNotTrack) {
 
                 <strong>Classes <span class="fa fa-book"/></strong>
                 
+                    <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Account">SoftLayer_Account</a>
+                
                     <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest">SoftLayer_Virtual_Guest</a>
                 
                     <a class="label label-primary" href="https://sldn.softlayer.com/reference/services/SoftLayer_Metric_Tracking_Object">SoftLayer_Metric_Tracking_Object</a>
                 
                 <br>
                 <strong>Tags <span class="fa fa-tags"/></strong>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/account">account</a>
                 
                     <a class="label label-danger" href="https://sldn.softlayer.com/tags/metric">metric</a>
                 
@@ -152,11 +156,15 @@ if (!doNotTrack) {
 <span class="k">class</span> <span class="nc">Virtual</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">virtual_service</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Account&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">virtual_service</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metric_service</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Metric_Tracking_Object&#39;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_get_metric_tracking_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">virtual_service</span><span class="o">.</span><span class="n">getMetricTrackingObjectId</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_virtual_guest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_service</span><span class="o">.</span><span class="n">getVirtualGuests</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;id&#39;</span>
 
     <span class="k">def</span> <span class="nf">_calculate_averages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">records</span><span class="p">):</span>
         <span class="c1"># total usage and how many records per item type</span>
@@ -226,6 +234,21 @@ if (!doNotTrack) {
 
     <span class="c1"># there is only 1 memory and its value must be divided by 2^30 to convert it to GB</span>
     <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">MEMORY AVERAGE: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory_averages</span><span class="p">[</span><span class="s1">&#39;memory_usage&#39;</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&#34; GB&#34;</span><span class="p">)</span>
+
+    <span class="n">virtuals</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_virtual_guest</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">guest</span> <span class="ow">in</span> <span class="n">virtuals</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_metric_tracking_object</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">guest_id</span> <span class="o">=</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+            <span class="n">cpu_records</span><span class="p">,</span> <span class="n">cpu_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_cpu_usage</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span>
+                                                              <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+            <span class="n">memory_records</span><span class="p">,</span> <span class="n">memory_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_memory_usage</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span>
+                                                                       <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+
+
+            <span class="k">if</span> <span class="n">memory_averages</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="s1">&#39;memory_usage&#39;</span><span class="p">):</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">THE VIRTUAL GUEST: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]))</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&#34;MEMORY AVERAGE: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory_averages</span><span class="p">[</span><span class="s1">&#39;memory_usage&#39;</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span> 
+                 <span class="k">print</span><span class="p">(</span><span class="s2">&#34;CPU AVERAGE: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cpu_averages</span><span class="p">[</span><span class="s1">&#39;cpu0&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&#34; GB&#34;</span><span class="p">)</span>
 </code></pre></div>
             </div>
         </div>
