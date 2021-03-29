@@ -142,6 +142,15 @@ if (!doNotTrack) {
                 
                 
                 <p>Many of the methods in the SoftLayer API return arrays of data types. In these cases it may be useful to limit the number of results that the API retrieves from your method call. Fortunately SoftLayer provides an easy way to accomplish this via a method analogous to the SQL <tt>LIMIT</tt> statement that you can apply in the header of your method calls. Result limits are optional for  all method calls, and a method&rsquo;s manual page states whether or not it can use a result limit. Methods that retrieve only one item cannot use result limits.</p>
+<h4 id="result-order">Result Order</h4>
+<blockquote>
+<p>Unless explicitly set, the order of the API results are dependant on the order they are returned from the database, which might be inconsistent between different API calls.</p>
+</blockquote>
+<p>To explicity set an order to the results of your query, you need to use an <a href="https://sldn.softlayer.com/article/object-filters/">Object Filter</a> on a unique field, <code>id</code> would usually be a good choice. Just remember that you cannot filter and sort by the same property.</p>
+<p>For example:</p>
+<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">slcli -vvv --format=table call-api SoftLayer_Account getHardware --mask=&#34;mask[id,hostname,domain]&#34; --json-filter=&#39;{&#34;hardware&#34;:{&#34;id&#34;:{&#34;operation&#34;:&#34;orderBy&#34;,&#34;options&#34;:[{&#34;name&#34;:&#34;sort&#34;,&#34;value&#34;:[&#34;DESC&#34;]}]}}}&#39;
+&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getHardware.json?objectMask=mask[id,hostname,domain]&amp;objectFilter={&#34;hardware&#34;:{&#34;id&#34;:{&#34;operation&#34;:&#34;orderBy&#34;,&#34;options&#34;:[{&#34;name&#34;:&#34;sort&#34;,&#34;value&#34;:[&#34;DESC&#34;]}]}}}&amp;resultLimit=0,10&#39;
+</code></pre></div><p>While subsequent queries might maintain the same order, its not gauranteed unless you put an <code>orderBy</code> clause in your objectFilter.</p>
 <h2 id="structure">Structure</h2>
 <p>A result limit is an object of the type <code>resultLimit</code> with two integer properties, <code>limit</code> and <code>offset</code>. The result limit&rsquo;s <code>limit</code> defines how many items you wish your limit result set to while its <code>offset</code> defines the starting point in your result set list to begin your limit. For instance, if you want to only retrieve 10 items in an API call starting with item 5 then your <code>limit</code> is 10 and <code>offset</code> is 5.</p>
 <h2 id="creating-a-result-limit">Creating a Result Limit</h2>
