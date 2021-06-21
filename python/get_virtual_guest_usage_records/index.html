@@ -53,7 +53,6 @@ if (!doNotTrack) {
 	ga('send', 'pageview');
 }
 </script>
-
 </head>
 
 <body>
@@ -151,23 +150,32 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-py" data-lang="py"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+                <p>This example will print out the average memory and CPU usage for a given time period for all virtual guests on your account.</p>
+<h3 id="time-format">Time Format</h3>
+<p>Use the following time format for any requests. <code>YYYY-MM-DDTHH:MM:SS</code> or Epoch Time will work. These times are all tracked in CST, and the response will be in your users local timezone. When requesting data on day boundaries, your start time should be <code>00:00</code> and end time should be <code>23:59</code></p>
+<h3 id="notes">Notes</h3>
+<p>The metric tracking api can be a bit slow, depending on how much data you are requesting, so if your request times out, try lowering how much time you are asking for.</p>
+<p>Not all virtual guests will have a metric tracking object, for example any suspended virtual guest, or VMWare guest will not be tracked.</p>
+<div class="highlight"><pre class="chroma"><code class="language-py" data-lang="py"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="k">class</span> <span class="nc">Virtual</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">virtual_service</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Account&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">virtual_service</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">metric_service</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Metric_Tracking_Object&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_get_metric_tracking_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">virtual_service</span><span class="o">.</span><span class="n">getMetricTrackingObjectId</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_get_virtual_guest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">account_service</span><span class="o">.</span><span class="n">getVirtualGuests</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;id&#39;</span>
+    <span class="k">def</span> <span class="nf">get_virtual_guest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;This method gets the basic data for each virtual guest on an account
+</span><span class="s2">
+</span><span class="s2">        The mask is a minimal mask to make the request quicker.
+</span><span class="s2">        &#34;&#34;&#34;</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[id, hostname, domain, metricTrackingObjectId, startCpus]&#34;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getVirtualGuests&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_calculate_averages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">records</span><span class="p">):</span>
-        <span class="c1"># total usage and how many records per item type</span>
+        <span class="s2">&#34;&#34;&#34;Calculates the average for metric tracking object entries over their time period
+</span><span class="s2">
+</span><span class="s2">        basicaly sum(items) / count(items)
+</span><span class="s2">        &#34;&#34;&#34;</span>
         <span class="n">total</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
             <span class="n">counter</span><span class="p">,</span> <span class="n">date_time</span><span class="p">,</span> <span class="n">item_type</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
@@ -176,79 +184,108 @@ if (!doNotTrack) {
         <span class="c1"># average of each item_type</span>
         <span class="n">averages</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">total</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">average</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">average</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
             <span class="n">averages</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="n">average</span>
 
         <span class="k">return</span> <span class="n">averages</span>
 
-    <span class="k">def</span> <span class="nf">get_cpu_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
-        <span class="n">metric_object_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_metric_tracking_object</span><span class="p">(</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="n">guest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">virtual_service</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;id,startCpus&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-
-        <span class="c1"># build the SoftLayer_Container_Metric_Data_Type array</span>
+    <span class="k">def</span> <span class="nf">get_cpu_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;Formats and executes an API call to get CPU usage data for a guest
+</span><span class="s2">
+</span><span class="s2">        Each CPU is tracked individually so its required to know how many CPUs a guest has
+</span><span class="s2">        returns cpu_records, which is the raw data returned from the API
+</span><span class="s2">        returns averages, which is the averaged data in a simple dictionary
+</span><span class="s2">        &#34;&#34;&#34;</span>
         <span class="n">valid_types</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1"># it sets the valid types list according number of cpu items in the virtual server</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;startCpus&#39;</span><span class="p">]):</span>
-            <span class="n">valid_type</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="s2">&#34;CPU&#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;cpu&#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&#34;summaryType&#34;</span><span class="p">:</span> <span class="s2">&#34;max&#34;</span><span class="p">}</span>
+            <span class="n">valid_type</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="s2">&#34;CPU&#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;cpu&#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&#34;summaryType&#34;</span><span class="p">:</span> <span class="s2">&#34;average&#34;</span><span class="p">}</span>
             <span class="n">valid_types</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">valid_type</span><span class="p">)</span>
 
-        <span class="n">cpu_records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_service</span><span class="o">.</span><span class="n">getSummaryData</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span>
-                                                         <span class="n">valid_types</span><span class="p">,</span> <span class="mi">3600</span><span class="p">,</span>
-                                                         <span class="nb">id</span><span class="o">=</span><span class="n">metric_object_id</span><span class="p">)</span>
+        <span class="n">cpu_records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="s1">&#39;getSummaryData&#39;</span><span class="p">,</span>
+                                        <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">valid_types</span><span class="p">,</span> <span class="mi">86400</span><span class="p">,</span>
+                                        <span class="nb">id</span><span class="o">=</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;metricTrackingObjectId&#39;</span><span class="p">])</span>
 
         <span class="k">return</span> <span class="n">cpu_records</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_averages</span><span class="p">(</span><span class="n">cpu_records</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_memory_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
-        <span class="n">metric_object_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_metric_tracking_object</span><span class="p">(</span><span class="n">guest_id</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_cpu_usage_per_cpu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;Formats and executes an API call to get CPU usage data for a guest
+</span><span class="s2">
+</span><span class="s2">        Making 1 API call per CPU is usually faster than getting all CPUs in 1 API call.
+</span><span class="s2">        Each CPU is tracked individually so its required to know how many CPUs a guest has
+</span><span class="s2">        returns cpu_records, which is the raw data returned from the API
+</span><span class="s2">        returns averages, which is the averaged data in a simple dictionary
+</span><span class="s2">        &#34;&#34;&#34;</span>
+        
+        <span class="n">cpu_records</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># it sets the valid types list according number of cpu items in the virtual server</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;startCpus&#39;</span><span class="p">]):</span>
+            <span class="n">valid_types</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="s2">&#34;CPU&#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;cpu&#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="s2">&#34;summaryType&#34;</span><span class="p">:</span> <span class="s2">&#34;average&#34;</span><span class="p">}]</span>
 
-        <span class="c1"># build the SoftLayer_Container_Metric_Data_Type array</span>
-        <span class="n">valid_types</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="s2">&#34;MEMORY_USAGE&#34;</span><span class="p">,</span> <span class="s2">&#34;summaryType&#34;</span><span class="p">:</span> <span class="s2">&#34;max&#34;</span><span class="p">,</span> <span class="s2">&#34;unit&#34;</span><span class="p">:</span> <span class="s2">&#34;GB&#34;</span><span class="p">}]</span>
 
-        <span class="n">memory_records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_service</span><span class="o">.</span><span class="n">getSummaryData</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span>
-                                                            <span class="n">valid_types</span><span class="p">,</span> <span class="mi">3600</span><span class="p">,</span>
-                                                            <span class="nb">id</span><span class="o">=</span><span class="n">metric_object_id</span><span class="p">)</span>
+            <span class="n">result</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="s1">&#39;getSummaryData&#39;</span><span class="p">,</span>
+                                            <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">valid_types</span><span class="p">,</span> <span class="mi">86400</span><span class="p">,</span>
+                                            <span class="nb">id</span><span class="o">=</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;metricTrackingObjectId&#39;</span><span class="p">])</span>
+
+            <span class="c1"># Need to add each datapoint to the cpu_records list</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                <span class="n">cpu_records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cpu_records</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_averages</span><span class="p">(</span><span class="n">cpu_records</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_memory_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
+        <span class="s2">&#34;&#34;&#34;Formats and executes an API call to get memory usage data for a guest
+</span><span class="s2">
+</span><span class="s2">        returns memory_records, which is the raw data returned from the API
+</span><span class="s2">        returns averages, which is the averaged data in a simple dictionary
+</span><span class="s2">        &#34;&#34;&#34;</span>
+        <span class="n">valid_types</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="s2">&#34;MEMORY_USAGE&#34;</span><span class="p">,</span> <span class="s2">&#34;summaryType&#34;</span><span class="p">:</span> <span class="s2">&#34;average&#34;</span><span class="p">,</span> <span class="s2">&#34;unit&#34;</span><span class="p">:</span> <span class="s2">&#34;GB&#34;</span><span class="p">}]</span>
+
+        <span class="n">memory_records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="s1">&#39;getSummaryData&#39;</span><span class="p">,</span>
+                                          <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">valid_types</span><span class="p">,</span> <span class="mi">86400</span><span class="p">,</span>
+                                          <span class="nb">id</span><span class="o">=</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;metricTrackingObjectId&#39;</span><span class="p">])</span>
 
         <span class="k">return</span> <span class="n">memory_records</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_averages</span><span class="p">(</span><span class="n">memory_records</span><span class="p">)</span>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
 
-    <span class="n">guest_id</span> <span class="o">=</span> <span class="mi">55984279</span>
-    <span class="n">start_date</span> <span class="o">=</span> <span class="s1">&#39;2019-02-04T00:00:00&#39;</span>
-    <span class="n">end_date</span> <span class="o">=</span> <span class="s1">&#39;2019-04-09T23:59:59&#39;</span>
+    <span class="n">start_date</span> <span class="o">=</span> <span class="s1">&#39;2021-05-01T00:00:00&#39;</span>
+    <span class="n">end_date</span> <span class="o">=</span> <span class="s1">&#39;2021-05-31T23:59:59&#39;</span>
+    
+    <span class="c1"># Dates in EPOCH format can be used as well</span>
+    <span class="c1"># start_date = &#39;1623700798&#39;</span>
+    <span class="c1"># end_date = &#39;1623707798&#39;</span>
 
     <span class="n">virtual</span> <span class="o">=</span> <span class="n">Virtual</span><span class="p">()</span>
-    <span class="n">cpu_records</span><span class="p">,</span> <span class="n">cpu_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_cpu_usage</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
-    <span class="n">memory_records</span><span class="p">,</span> <span class="n">memory_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_memory_usage</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
-
-    <span class="c1"># print records and cpu usage</span>
-    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;CPU USAGE RECORDS:&#34;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">cpu_records</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
-
-    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">CPU AVERAGES:&#34;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">cpu</span> <span class="ow">in</span> <span class="n">cpu_averages</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">cpu</span> <span class="o">+</span> <span class="s2">&#34;: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cpu_averages</span><span class="p">[</span><span class="n">cpu</span><span class="p">]))</span>
-
-    <span class="c1"># print records and memory usage</span>
-    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">MEMORY USAGE RECORDS:&#34;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">memory_records</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
-
-    <span class="c1"># there is only 1 memory and its value must be divided by 2^30 to convert it to GB</span>
-    <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">MEMORY AVERAGE: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory_averages</span><span class="p">[</span><span class="s1">&#39;memory_usage&#39;</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&#34; GB&#34;</span><span class="p">)</span>
-
+    <span class="c1"># Get all virtual guests on our account</span>
     <span class="n">virtuals</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_virtual_guest</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">guest</span> <span class="ow">in</span> <span class="n">virtuals</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_metric_tracking_object</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
-            <span class="n">guest_id</span> <span class="o">=</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-            <span class="n">cpu_records</span><span class="p">,</span> <span class="n">cpu_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_cpu_usage</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span>
-                                                              <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
-            <span class="n">memory_records</span><span class="p">,</span> <span class="n">memory_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_memory_usage</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span>
-                                                                       <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+        <span class="c1"># Make sure the guest object has a tracking ID.</span>
+        <span class="k">if</span> <span class="n">guest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;metricTrackingObjectId&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cpu_records</span><span class="p">,</span> <span class="n">cpu_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_cpu_usage_per_cpu</span><span class="p">(</span><span class="n">guest</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+                <span class="n">memory_records</span><span class="p">,</span> <span class="n">memory_averages</span> <span class="o">=</span> <span class="n">virtual</span><span class="o">.</span><span class="n">get_memory_usage</span><span class="p">(</span><span class="n">guest</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+                <span class="c1"># Check to make sure we actually have data for the time period</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">memory_records</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span>  <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">cpu_records</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="p">:</span>
+                    <span class="n">mem_avg</span> <span class="o">=</span> <span class="s2">&#34;No Data&#34;</span>
+                    <span class="n">cpu_avg</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;No Data&#34;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Convert memory to GB</span>
+                    <span class="n">mem_avg</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">memory_averages</span><span class="p">[</span><span class="s1">&#39;memory_usage&#39;</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">),</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">cpu_avg</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="c1"># Convert CPU averages to a nice string format.</span>
+                    <span class="k">for</span> <span class="n">cpu</span> <span class="ow">in</span> <span class="n">cpu_averages</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">cpu_avg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cpu</span><span class="p">,</span> <span class="n">cpu_averages</span><span class="p">[</span><span class="n">cpu</span><span class="p">]))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">],</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">],</span> <span class="n">mem_avg</span><span class="p">,</span> <span class="s2">&#34;, &#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cpu_avg</span><span class="p">)))</span>
+            <span class="c1"># In case of an API error, just print the error and continue.</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">],</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">],</span> <span class="n">e</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2"> (id=</span><span class="si">{}</span><span class="s2">) No Metric Tracking Object found&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">],</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">],</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]))</span>
+        <span class="c1"># This script can take a long time to run, this forces output to print immediately</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 
-
-            <span class="k">if</span> <span class="n">memory_averages</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="s1">&#39;memory_usage&#39;</span><span class="p">):</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">THE VIRTUAL GUEST: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]))</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&#34;MEMORY AVERAGE: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory_averages</span><span class="p">[</span><span class="s1">&#39;memory_usage&#39;</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">))</span> 
-                 <span class="k">print</span><span class="p">(</span><span class="s2">&#34;CPU AVERAGE: &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cpu_averages</span><span class="p">[</span><span class="s1">&#39;cpu0&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&#34; GB&#34;</span><span class="p">)</span>
 </code></pre></div>
             </div>
         </div>

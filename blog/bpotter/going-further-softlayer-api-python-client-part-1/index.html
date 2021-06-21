@@ -53,7 +53,6 @@ if (!doNotTrack) {
 	ga('send', 'pageview');
 }
 </script>
-
 </head>
 
 <body>
@@ -162,7 +161,7 @@ client = SoftLayer.Client(username=myuser, api_key=mykey, endpoint_url=SoftLayer
 </p>
 <p>What other properties are of interest here? I learned the hard way that VLAN numbers aren’t unique in SoftLayer, not within an account, not within a data center, not even within a pod. The best way to uniquely specify a VLAN is to include the primary router it is on. Look at the list of relational properties and you’ll see one called primaryRouter, which clearly is better than the property called secondaryRouter.  Click on the link in the primaryRouter section and it takes you to a page for the <a href="http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Router">Hardware_Router</a> data type. It turns out hostname is the best router property (I’ll explain how to figure that out later), so primaryRouter.hostname will be the second property listed in your mask. You also want to know the subnets that are part of this VLAN, so go back to the Network_Vlan page and you’ll find another relational property called primarySubnets. Follow that link to the <a href="http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet">Network_Subnet</a> data type page, and you’ll see two local properties named networkIdentifier and cidr. Add these to your mask and it becomes: 
   </p>
-<p><code>mask = &lsquo;vlanNumber, primaryRouter.hostname, subnets.networkIdentifier, subnets.cidr'</code></p>
+<p><code>mask = &lsquo;vlanNumber, primaryRouter.hostname, subnets.networkIdentifier, subnets.cidr&rsquo;</code></p>
   <p>Putting it all together, here’s your first SoftLayer API python program:</p>
 <p><code>import SoftLayer
 import pprint</p>
@@ -182,7 +181,7 @@ pprint.pprint(allVlans)</code></p>
   <li>networkIdentifier and cidr in Network_Subnet
   </ul>
   <p>This wasn’t by accident; it was very intentional. If at any level in the data type hierarchy you don’t specify at least one local property, the SoftLayer API will return all of the local properties for that data type. This can be very useful (combined with pprint) to explore what properties have the values you want. This is because the documentation for each property is often not very specific. But the API call also takes longer, by a non-trivial amount, when it returns a lot of properties. In the example above, if we just change the mask to:</p>
-<p><code>mask = &lsquo;primaryRouter, subnets'</code></p>
+<p><code>mask = &lsquo;primaryRouter, subnets&rsquo;</code></p>
   <p>We still get the properties we are interested in (among others), but code takes 70 percent longer (1.7 seconds compared to the original 1 second in my account that has 90 VLANs), because it
 returns all of the local properties of Network_Vlan, Hardware_Router, and Network_Subnet for every VLAN. Combined with pprint, this is very useful when you are trying to figure out exactly what properties you want (this is how I figured out that hostname was the most useful property of Hardware_Router). Once you are finished exploring, you should limit the data returned to exactly what you need. In one case in my work, an API call took five times longer before I limited the mask like this.
 </p>
