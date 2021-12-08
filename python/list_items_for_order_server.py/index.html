@@ -8,7 +8,7 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>list_items_for_order_server.py - https://sldn.softlayer.com/</title>
+    <title>List items for a Server Order - https://sldn.softlayer.com/</title>
     <link rel="canonical" href="https://sldn.softlayer.com/python/list_items_for_order_server.py/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
@@ -141,7 +141,9 @@ if (!doNotTrack) {
                 <br>
                 <strong>Tags <span class="fa fa-tags"/></strong>
                 
-                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/baremetalservers">baremetalservers</a>
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/server">server</a>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/ordering">ordering</a>
                           
         </div>
     </div>
@@ -150,317 +152,304 @@ if (!doNotTrack) {
 		<div class="col-md-12">
             <div class="well well-sm  article" style="word-wrap: break-word;">
                 <div class="article-title">
-				    <h1>list_items_for_order_server.py</h1>
-                    <small>list_items_for_order_server.py</small>
+				    <h1>List items for a Server Order</h1>
+                    <small>The script displays the available data centers and items for a package.</small>
                 </div>
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="s">&#34;&#34;&#34;
-</span><span class="s">List items to order device.
-</span><span class="s">
-</span><span class="s">The script displays the available data centers and items for a package.
-</span><span class="s">Note: The displayed prices are standard prices.
-</span><span class="s">
-</span><span class="s">Important manual pages
-</span><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getObject
-</span><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItems
-</span><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getConfiguration
-</span><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getPresetConfigurationRequiredFlag
-</span><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getActivePresets
-</span><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Package/
-</span><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Package_Preset/
-</span><span class="s">http://sldn.softlayer.com/article/Object-Masks
-</span><span class="s">http://sldn.softlayer.com/article/Object-Filters
-</span><span class="s">
-</span><span class="s">License: http://sldn.softlayer.com/article/License
-</span><span class="s">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="s">&#34;&#34;&#34;</span>
+                <p>This is an older article, the following might provide better instructions.</p>
+<ul>
+<li><a href="https://sldn.softlayer.com/article/catalog/">The Catalog</a></li>
+<li><a href="https://sldn.softlayer.com/article/understanding-ordering/">SLCLI Ordering</a></li>
+<li><a href="https://sldn.softlayer.com/article/understanding-ordering-basics/">Basic and Advanced Ordering</a></li>
+</ul>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
+</span><span class="s2">List items to order device.
+</span><span class="s2">
+</span><span class="s2">The script displays the available data centers and items for a package.
+</span><span class="s2">Note: The displayed prices are standard prices.
+</span><span class="s2">&#34;&#34;&#34;</span>
 
-<span class="kn">import</span> <span class="nx">SoftLayer</span>
-
-<span class="err">#</span> <span class="nx">Your</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">username</span> <span class="nx">and</span> <span class="nx">key</span><span class="p">.</span>
-<span class="nx">API_USERNAME</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">Set</span><span class="o">-</span><span class="nx">me</span><span class="err">&#39;</span>
-
-<span class="err">#</span> <span class="nx">Generate</span> <span class="nx">one</span> <span class="nx">at</span> <span class="nx">https</span><span class="p">:</span><span class="c1">//control.softlayer.com/account/users
-</span><span class="c1"></span><span class="nx">API_KEY</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">Set</span><span class="o">-</span><span class="nx">me</span><span class="err">&#39;</span>
-
-<span class="nx">package_id</span> <span class="p">=</span> <span class="mi">200</span>
-<span class="err">#</span> <span class="nx">Set</span> <span class="nx">True</span> <span class="nx">to</span> <span class="nx">see</span> <span class="nx">the</span> <span class="nx">hourly</span> <span class="nx">prices</span><span class="p">.</span>
-<span class="err">#</span> <span class="nx">In</span> <span class="k">case</span> <span class="nx">you</span> <span class="nx">see</span> <span class="nx">empty</span> <span class="nx">prices</span> <span class="nx">that</span> <span class="nx">means</span> <span class="nx">the</span> <span class="nx">item</span> <span class="nx">does</span> <span class="nx">not</span> <span class="nx">have</span> <span class="nx">an</span> <span class="nx">hourly</span> <span class="nx">price</span><span class="p">.</span>
-<span class="nx">hourly</span> <span class="p">=</span> <span class="nx">False</span>
-
-<span class="err">#</span> <span class="nx">Some</span> <span class="nx">packages</span> <span class="nx">such</span> <span class="nx">as</span> <span class="nx">the</span> <span class="kn">package</span> <span class="mi">200</span> <span class="nx">requires</span> <span class="nx">a</span> <span class="nx">preset</span> <span class="nx">id</span><span class="p">.</span>
-<span class="err">#</span> <span class="nx">Configure</span> <span class="nx">the</span> <span class="nx">value</span> <span class="nx">with</span> <span class="s">&#34;&#34;</span> <span class="nx">in</span> <span class="k">case</span> <span class="nx">the</span> <span class="nx">packages</span> <span class="nx">do</span> <span class="nx">not</span> <span class="nx">requires</span> <span class="nx">a</span> <span class="nx">preset</span> <span class="nx">id</span><span class="p">.</span>
-<span class="nx">preset_id</span> <span class="p">=</span> <span class="mi">385</span>
-
-<span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nf">create_client_from_env</span><span class="p">(</span><span class="nx">username</span><span class="p">=</span><span class="nx">API_USERNAME</span><span class="p">,</span> <span class="nx">api_key</span><span class="p">=</span><span class="nx">API_KEY</span><span class="p">)</span>
-<span class="nx">package_service</span> <span class="p">=</span> <span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">SoftLayer_Product_Package</span><span class="err">&#39;</span><span class="p">]</span>
+<span class="kn">import</span> <span class="nn">SoftLayer</span>
 
 
-<span class="nx">def</span> <span class="nf">get_all_datacenters_available_for_package</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Get the available datacenters for a package.
-</span><span class="s">        :param int package_id: The package id to get the available data centers.
-</span><span class="s">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
-</span><span class="s">        :returns: An array SoftLayer_Location_Region.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">try</span><span class="p">:</span>
-        <span class="nx">object_mask</span> <span class="p">=</span> <span class="s">&#34;mask[regions[keyname,description,sortOrder,&#34;</span> \
-                      <span class="s">&#34;location[location(SoftLayer_Location_Datacenter)[activePresaleEvents,&#34;</span> \
-                      <span class="s">&#34;priceGroups.id,locationAddress.country,brandCountryRestrictions[locationId, &#34;</span> \
-                      <span class="s">&#34;customerCountryCode]]]]]&#34;</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">package_service</span><span class="p">.</span><span class="nf">getObject</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">mask</span><span class="p">=</span><span class="nx">object_mask</span><span class="p">)</span>
-        <span class="nx">regions</span> <span class="p">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">result</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">regions</span><span class="err">&#39;</span><span class="p">]:</span>
-            <span class="k">for</span> <span class="nx">detail</span> <span class="nx">in</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">location</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">locationPackageDetails</span><span class="err">&#39;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="nx">detail</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">isAvailable</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="nx">and</span> <span class="nx">detail</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">locationId</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">location</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">location</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">]</span> \
-                        <span class="nx">and</span> <span class="nx">detail</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">packageId</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="nx">package_id</span><span class="p">:</span>
-                    <span class="nx">regions</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
-    <span class="nx">except</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nx">SoftLayerAPIError</span> <span class="nx">as</span> <span class="nx">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s">&#34;Unable to get the data centers. \nfaultCode= %s, \nfaultString= %s&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">faultCode</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">faultString</span><span class="p">))</span>
-        <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nx">regions</span>
+<span class="n">package_id</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="c1"># Set True to see the hourly prices.</span>
+<span class="c1"># In case you see empty prices that means the item does not have an hourly price.</span>
+<span class="n">hourly</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># Some packages such as the package 200 requires a preset id.</span>
+<span class="c1"># Configure the value with &#34;&#34; in case the packages do not requires a preset id.</span>
+<span class="n">preset_id</span> <span class="o">=</span> <span class="mi">385</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+<span class="n">package_service</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Package&#39;</span><span class="p">]</span>
 
 
-<span class="nx">def</span> <span class="nf">get_all_items</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Get all the items for a package.
-</span><span class="s">        :param int package_id: The package id to get the available data centers.
-</span><span class="s">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
-</span><span class="s">        :returns: An array of SoftLayer_Product_Item.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">try</span><span class="p">:</span>
-        <span class="nx">object_mask</span> <span class="p">=</span> <span class="s">&#34;mask[categories, prices[pricingLocationGroup, presetConfigurations]]&#34;</span>
-        <span class="nx">items</span> <span class="p">=</span> <span class="nx">package_service</span><span class="p">.</span><span class="nf">getItems</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">mask</span><span class="p">=</span><span class="nx">object_mask</span><span class="p">)</span>
-        <span class="nx">items</span> <span class="p">=</span> <span class="nf">sorted</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">key</span><span class="p">=</span><span class="nx">lambda</span> <span class="nx">item</span><span class="p">:</span> <span class="p">(</span><span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">]))</span>
-    <span class="nx">except</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nx">SoftLayerAPIError</span> <span class="nx">as</span> <span class="nx">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s">&#34;Unable to get the items. faultCode=%s, faultString=%s&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">faultCode</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">faultString</span><span class="p">))</span>
-        <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nx">items</span>
+<span class="k">def</span> <span class="nf">get_all_datacenters_available_for_package</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Get the available datacenters for a package.
+</span><span class="s2">        :param int package_id: The package id to get the available data centers.
+</span><span class="s2">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
+</span><span class="s2">        :returns: An array SoftLayer_Location_Region.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">object_mask</span> <span class="o">=</span> <span class="s2">&#34;mask[regions[keyname,description,sortOrder,&#34;</span> \
+                      <span class="s2">&#34;location[location(SoftLayer_Location_Datacenter)[activePresaleEvents,&#34;</span> \
+                      <span class="s2">&#34;priceGroups.id,locationAddress.country,brandCountryRestrictions[locationId, &#34;</span> \
+                      <span class="s2">&#34;customerCountryCode]]]]]&#34;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">package_service</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">object_mask</span><span class="p">)</span>
+        <span class="n">regions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;regions&#39;</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">detail</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;locationPackageDetails&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">detail</span><span class="p">[</span><span class="s1">&#39;isAvailable&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">detail</span><span class="p">[</span><span class="s1">&#39;locationId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> \
+                        <span class="ow">and</span> <span class="n">detail</span><span class="p">[</span><span class="s1">&#39;packageId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">package_id</span><span class="p">:</span>
+                    <span class="n">regions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the data centers. </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">regions</span>
 
 
-<span class="nx">def</span> <span class="nf">get_configuration</span><span class="p">(</span><span class="nx">package_service</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Get the configuration for a package.
-</span><span class="s">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
-</span><span class="s">        :returns: An array of SoftLayer_Product_Package_Order_Configuration.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">try</span><span class="p">:</span>
-        <span class="nx">object_mask</span> <span class="p">=</span> <span class="s">&#34;mask[itemCategory]&#34;</span>
-        <span class="nx">items</span> <span class="p">=</span> <span class="nx">package_service</span><span class="p">.</span><span class="nf">getConfiguration</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">mask</span><span class="p">=</span><span class="nx">object_mask</span><span class="p">)</span>
-    <span class="nx">except</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nx">SoftLayerAPIError</span> <span class="nx">as</span> <span class="nx">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s">&#34;Unable to get the required categories. faultCode=%s, faultString=%s&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">faultCode</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">faultString</span><span class="p">))</span>
-        <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nx">items</span>
+<span class="k">def</span> <span class="nf">get_all_items</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Get all the items for a package.
+</span><span class="s2">        :param int package_id: The package id to get the available data centers.
+</span><span class="s2">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
+</span><span class="s2">        :returns: An array of SoftLayer_Product_Item.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">object_mask</span> <span class="o">=</span> <span class="s2">&#34;mask[categories, prices[pricingLocationGroup, presetConfigurations]]&#34;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="n">package_service</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">object_mask</span><span class="p">)</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]))</span>
+    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the items. faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">items</span>
 
 
-<span class="nx">def</span> <span class="nf">is_required_option</span><span class="p">(</span><span class="nx">list</span><span class="p">,</span> <span class="nx">category_code</span><span class="p">,</span> <span class="nx">configurations</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Verifies if a category is required in the configurations of the package
-</span><span class="s">       In case it is not required adds the value none to the list parameter.
-</span><span class="s">        :param An array of SoftLayer_Product_Item list: The list of items.
-</span><span class="s">        :param string category_code: The category code to verify if it is required in the package configuration.
-</span><span class="s">        :param An array of SoftLayer_Product_Package_Order_Configuration configurations:
-</span><span class="s">        The configuration of the package.
-</span><span class="s">        :returns: An array of SoftLayer_Product_Item.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">items</span> <span class="p">=</span> <span class="p">[</span><span class="nx">conf</span> <span class="k">for</span> <span class="nx">conf</span> <span class="nx">in</span> <span class="nx">configurations</span> <span class="k">if</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="nx">category_code</span>
-             <span class="nx">and</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">isRequired</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">items</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nx">none</span> <span class="p">=</span> <span class="p">{}</span>
-        <span class="nx">none</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">]</span> <span class="p">=</span> <span class="s">&#34;None&#34;</span>
-        <span class="nx">list</span><span class="p">.</span><span class="nf">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">none</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nx">list</span>
+<span class="k">def</span> <span class="nf">get_configuration</span><span class="p">(</span><span class="n">package_service</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Get the configuration for a package.
+</span><span class="s2">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
+</span><span class="s2">        :returns: An array of SoftLayer_Product_Package_Order_Configuration.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">object_mask</span> <span class="o">=</span> <span class="s2">&#34;mask[itemCategory]&#34;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="n">package_service</span><span class="o">.</span><span class="n">getConfiguration</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">object_mask</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the required categories. faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">items</span>
 
 
-<span class="nx">def</span> <span class="nf">get_filtered_items_category</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">configurations</span><span class="p">,</span> <span class="nx">category_code</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Gets the items which belong to a category code.
-</span><span class="s">        :param An array of SoftLayer_Product_Item items: The list of items.
-</span><span class="s">        :param An array of SoftLayer_Product_Package_Order_Configuration configurations:
-</span><span class="s">        The configuration of the package.
-</span><span class="s">        :param string category_code: The category code to filter.
-</span><span class="s">        :returns: An array of SoftLayer_Product_Item.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">filtered</span> <span class="p">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">items</span><span class="p">:</span>
-        <span class="nx">categories</span> <span class="p">=</span> <span class="p">[</span><span class="nx">category</span> <span class="k">for</span> <span class="nx">category</span> <span class="nx">in</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">categories</span><span class="err">&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="nx">category</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="nx">category_code</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">categories</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nx">filtered</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
-    <span class="nx">filtered</span> <span class="p">=</span> <span class="nf">is_required_option</span><span class="p">(</span><span class="nx">filtered</span><span class="p">,</span> <span class="nx">category_code</span><span class="p">,</span> <span class="nx">configurations</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nx">filtered</span>
+<span class="k">def</span> <span class="nf">is_required_option</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">category_code</span><span class="p">,</span> <span class="n">configurations</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Verifies if a category is required in the configurations of the package
+</span><span class="s2">       In case it is not required adds the value none to the list parameter.
+</span><span class="s2">        :param An array of SoftLayer_Product_Item list: The list of items.
+</span><span class="s2">        :param string category_code: The category code to verify if it is required in the package configuration.
+</span><span class="s2">        :param An array of SoftLayer_Product_Package_Order_Configuration configurations:
+</span><span class="s2">        The configuration of the package.
+</span><span class="s2">        :returns: An array of SoftLayer_Product_Item.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="n">conf</span> <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">configurations</span> <span class="k">if</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category_code</span>
+             <span class="ow">and</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;isRequired&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">none</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">none</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&#34;None&#34;</span>
+        <span class="nb">list</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">none</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">list</span>
 
 
-<span class="nx">def</span> <span class="nf">get_standard_item_price</span><span class="p">(</span><span class="nx">item</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Gets the standard price for an item.
-</span><span class="s">        :param An array of SoftLayer_Product_Item item: The item to get the standard price.
-</span><span class="s">        :returns: A SoftLayer_Product_Item_Price.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">prices</span> <span class="p">=</span> <span class="p">[</span><span class="nx">price</span> <span class="k">for</span> <span class="nx">price</span> <span class="nx">in</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">prices</span><span class="err">&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="nx">price</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">locationGroupId</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#34;&#34;</span><span class="p">]</span>
-    <span class="err">#</span> <span class="nx">We</span> <span class="nx">always</span> <span class="k">return</span> <span class="nx">the</span> <span class="nx">last</span> <span class="nx">standard</span> <span class="nx">price</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">list</span><span class="p">.</span>
-    <span class="k">return</span> <span class="nx">prices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="k">def</span> <span class="nf">get_filtered_items_category</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">configurations</span><span class="p">,</span> <span class="n">category_code</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Gets the items which belong to a category code.
+</span><span class="s2">        :param An array of SoftLayer_Product_Item items: The list of items.
+</span><span class="s2">        :param An array of SoftLayer_Product_Package_Order_Configuration configurations:
+</span><span class="s2">        The configuration of the package.
+</span><span class="s2">        :param string category_code: The category code to filter.
+</span><span class="s2">        :returns: An array of SoftLayer_Product_Item.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="n">categories</span> <span class="o">=</span> <span class="p">[</span><span class="n">category</span> <span class="k">for</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">category</span><span class="p">[</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category_code</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">categories</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">filtered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="n">is_required_option</span><span class="p">(</span><span class="n">filtered</span><span class="p">,</span> <span class="n">category_code</span><span class="p">,</span> <span class="n">configurations</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">filtered</span>
 
 
-<span class="nx">def</span> <span class="nf">display_datacenters</span><span class="p">(</span><span class="nx">datacenters</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Displays the data centers.
-</span><span class="s">        :param An array SoftLayer_Location_Region datacenters: The list of regions.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">tab_spaces_begin</span> <span class="p">=</span> <span class="mi">4</span>
-    <span class="nx">id_label</span> <span class="p">=</span> <span class="s">&#34;LocationId&#34;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nx">id_label</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="nx">tab_spaces_begin</span> <span class="o">+</span> <span class="s">&#34;DATA CENTER&#34;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="nx">datacenter</span> <span class="nx">in</span> <span class="nx">datacenters</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="nx">datacenter</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">location</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">location</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span>
-              <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">id_label</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="nx">datacenter</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">location</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">location</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">])))</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span>
-              <span class="nx">tab_spaces_begin</span> <span class="o">+</span> <span class="nx">datacenter</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">get_standard_item_price</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Gets the standard price for an item.
+</span><span class="s2">        :param An array of SoftLayer_Product_Item item: The item to get the standard price.
+</span><span class="s2">        :returns: A SoftLayer_Product_Item_Price.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">prices</span> <span class="o">=</span> <span class="p">[</span><span class="n">price</span> <span class="k">for</span> <span class="n">price</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">price</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&#34;&#34;</span><span class="p">]</span>
+    <span class="c1"># We always return the last standard price in the list.</span>
+    <span class="k">return</span> <span class="n">prices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">display_datacenters</span><span class="p">(</span><span class="n">datacenters</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Displays the data centers.
+</span><span class="s2">        :param An array SoftLayer_Location_Region datacenters: The list of regions.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">tab_spaces_begin</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">id_label</span> <span class="o">=</span> <span class="s2">&#34;LocationId&#34;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">id_label</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="n">tab_spaces_begin</span> <span class="o">+</span> <span class="s2">&#34;DATA CENTER&#34;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">datacenter</span> <span class="ow">in</span> <span class="n">datacenters</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">datacenter</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span>
+              <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">id_label</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">datacenter</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])))</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span>
+              <span class="n">tab_spaces_begin</span> <span class="o">+</span> <span class="n">datacenter</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
     <span class="nb">print</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">()</span>
     <span class="k">return</span>
 
 
-<span class="nx">def</span> <span class="nf">display_items</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">title</span><span class="p">,</span> <span class="nx">hourly</span><span class="p">,</span> <span class="nx">is_preset</span><span class="p">,</span> <span class="nx">price_preset</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Displays the data centers.
-</span><span class="s">        :param An array SoftLayer_Product_Item items: The list of items to display.
-</span><span class="s">        :param string title: The title of the items.
-</span><span class="s">        :param boolean hourly: A boolean value which indicates if the hourly prices must be displayed.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">tab_spaces_begin</span> <span class="p">=</span> <span class="mi">4</span>
-    <span class="nx">tab_spaces_prices</span> <span class="p">=</span> <span class="mi">4</span>
-    <span class="nx">tab_spaces_desc</span> <span class="p">=</span> <span class="mi">60</span>
-    <span class="nx">price_id_label</span> <span class="p">=</span> <span class="s">&#34;PriceId&#34;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">items</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">items</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">1</span> <span class="nx">or</span> <span class="nx">items</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#34;None&#34;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nx">not</span> <span class="nx">hourly</span><span class="p">:</span>
-                <span class="nx">price_label</span> <span class="p">=</span> <span class="s">&#34;Monthly&#34;</span>
-                <span class="nx">price_key</span> <span class="p">=</span> <span class="s">&#34;recurringFee&#34;</span>
+<span class="k">def</span> <span class="nf">display_items</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">hourly</span><span class="p">,</span> <span class="n">is_preset</span><span class="p">,</span> <span class="n">price_preset</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Displays the data centers.
+</span><span class="s2">        :param An array SoftLayer_Product_Item items: The list of items to display.
+</span><span class="s2">        :param string title: The title of the items.
+</span><span class="s2">        :param boolean hourly: A boolean value which indicates if the hourly prices must be displayed.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">tab_spaces_begin</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">tab_spaces_prices</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">tab_spaces_desc</span> <span class="o">=</span> <span class="mi">60</span>
+    <span class="n">price_id_label</span> <span class="o">=</span> <span class="s2">&#34;PriceId&#34;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&#34;None&#34;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">hourly</span><span class="p">:</span>
+                <span class="n">price_label</span> <span class="o">=</span> <span class="s2">&#34;Monthly&#34;</span>
+                <span class="n">price_key</span> <span class="o">=</span> <span class="s2">&#34;recurringFee&#34;</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="nx">price_label</span> <span class="p">=</span> <span class="s">&#34;Hourly&#34;</span>
-                <span class="nx">price_key</span> <span class="p">=</span> <span class="s">&#34;hourlyRecurringFee&#34;</span>
+                <span class="n">price_label</span> <span class="o">=</span> <span class="s2">&#34;Hourly&#34;</span>
+                <span class="n">price_key</span> <span class="o">=</span> <span class="s2">&#34;hourlyRecurringFee&#34;</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="nx">price_id_label</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="nx">tab_spaces_begin</span> <span class="o">+</span> <span class="nx">title</span><span class="p">.</span><span class="nf">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="nx">tab_spaces_desc</span> <span class="o">+</span> <span class="nx">price_label</span> <span class="o">+</span>
-                  <span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="nx">tab_spaces_prices</span> <span class="o">+</span> <span class="s">&#34;Setup&#34;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">items</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#34;None&#34;</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="nx">price_id_label</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="nx">tab_spaces_begin</span> <span class="o">+</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">price_id_label</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="n">tab_spaces_begin</span> <span class="o">+</span> <span class="n">title</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="n">tab_spaces_desc</span> <span class="o">+</span> <span class="n">price_label</span> <span class="o">+</span>
+                  <span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="n">tab_spaces_prices</span> <span class="o">+</span> <span class="s2">&#34;Setup&#34;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&#34;None&#34;</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">price_id_label</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="n">tab_spaces_begin</span> <span class="o">+</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nx">not</span> <span class="nx">is_preset</span><span class="p">:</span>
-                        <span class="nx">price</span> <span class="p">=</span> <span class="nf">get_standard_item_price</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_preset</span><span class="p">:</span>
+                        <span class="n">price</span> <span class="o">=</span> <span class="n">get_standard_item_price</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="nx">price</span> <span class="p">=</span> <span class="nx">price_preset</span>
-                    <span class="k">if</span> <span class="nx">price_key</span> <span class="nx">in</span> <span class="nx">price</span><span class="p">:</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="nx">price</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">price_id_label</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="nx">price</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">])))</span> <span class="o">+</span> <span class="s">&#34; &#34;</span>
-                              <span class="o">*</span> <span class="nx">tab_spaces_begin</span> <span class="o">+</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">].</span><span class="nf">strip</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#34; &#34;</span>
-                              <span class="o">*</span> <span class="p">(</span><span class="nx">tab_spaces_desc</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nx">title</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">]))</span>
-                              <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nx">price</span><span class="p">[</span><span class="nx">price_key</span><span class="p">]))</span> <span class="o">+</span> <span class="s">&#34;$&#34;</span> <span class="o">+</span> <span class="s">&#34; &#34;</span>
-                              <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">price_label</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nx">price</span><span class="p">[</span><span class="nx">price_key</span><span class="p">]))))</span>
-                              <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">*</span> <span class="nx">tab_spaces_prices</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nx">price</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">setupFee</span><span class="err">&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="s">&#34;$&#34;</span><span class="p">)</span>
+                        <span class="n">price</span> <span class="o">=</span> <span class="n">price_preset</span>
+                    <span class="k">if</span> <span class="n">price_key</span> <span class="ow">in</span> <span class="n">price</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">price</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">price_id_label</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">price</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])))</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span>
+                              <span class="o">*</span> <span class="n">tab_spaces_begin</span> <span class="o">+</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span>
+                              <span class="o">*</span> <span class="p">(</span><span class="n">tab_spaces_desc</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">title</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]))</span>
+                              <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">price</span><span class="p">[</span><span class="n">price_key</span><span class="p">]))</span> <span class="o">+</span> <span class="s2">&#34;$&#34;</span> <span class="o">+</span> <span class="s2">&#34; &#34;</span>
+                              <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">price_label</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">price</span><span class="p">[</span><span class="n">price_key</span><span class="p">]))))</span>
+                              <span class="o">+</span> <span class="s2">&#34; &#34;</span> <span class="o">*</span> <span class="n">tab_spaces_prices</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">price</span><span class="p">[</span><span class="s1">&#39;setupFee&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="s2">&#34;$&#34;</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">()</span>
             <span class="nb">print</span><span class="p">()</span>
     <span class="k">return</span>
 
 
-<span class="nx">def</span> <span class="nf">is_preset_required</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Gets the preset configuration required flag.
-</span><span class="s">        :param int package_id: The package id to get the available data centers.
-</span><span class="s">        :param SoftLayer_Product_Package package_service:
-</span><span class="s">        The SoftLayer Product Package service.
-</span><span class="s">        :returns: An boolean which indicates whether preset is required.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">try</span><span class="p">:</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">package_service</span><span class="p">.</span><span class="nf">getPresetConfigurationRequiredFlag</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">package_id</span><span class="p">)</span>
-    <span class="nx">except</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nx">SoftLayerAPIError</span> <span class="nx">as</span> <span class="nx">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s">&#34;Unable to get the preset configuration required flag. \nfaultCode= %s, \nfaultString= %s&#34;</span>
-              <span class="o">%</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">faultCode</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">faultString</span><span class="p">))</span>
-        <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nx">result</span>
+<span class="k">def</span> <span class="nf">is_preset_required</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Gets the preset configuration required flag.
+</span><span class="s2">        :param int package_id: The package id to get the available data centers.
+</span><span class="s2">        :param SoftLayer_Product_Package package_service:
+</span><span class="s2">        The SoftLayer Product Package service.
+</span><span class="s2">        :returns: An boolean which indicates whether preset is required.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">package_service</span><span class="o">.</span><span class="n">getPresetConfigurationRequiredFlag</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the preset configuration required flag. </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
+              <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
 
 
-<span class="nx">def</span> <span class="nf">getting_package_preset</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">preset_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Gets a SoftLayer_Product_Package_Preset object.
-</span><span class="s">        :param int package_id: The package id to get the available data centers.
-</span><span class="s">        :param int preset_id: The preset id of the SoftLayer_Product_Package_Preset to get.
-</span><span class="s">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
-</span><span class="s">        :returns: A oftLayer_Product_Package_Preset object.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">try</span><span class="p">:</span>
-        <span class="nx">object_mask</span> <span class="p">=</span> <span class="s">&#34;mask[packageConfiguration[itemCategory],categories, &#34;</span> \
-                      <span class="s">&#34;configuration[price[item[prices[pricingLocationGroup]]],category]]&#34;</span>
-        <span class="nx">object_filter</span> <span class="p">=</span> <span class="p">{</span><span class="s">&#34;activePresets&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#34;operation&#34;</span><span class="p">:</span> <span class="nx">preset_id</span><span class="p">}}}</span>
-        <span class="nx">presets</span> <span class="p">=</span> <span class="nx">package_service</span><span class="p">.</span><span class="nf">getActivePresets</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">mask</span><span class="p">=</span><span class="nx">object_mask</span><span class="p">,</span> <span class="nx">filter</span><span class="p">=</span><span class="nx">object_filter</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">presets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s">&#34;The configured preset id: &#39;&#34;</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="nx">preset_id</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#34;&#39; is not valid for the package id: &#39;&#34;</span>
-                  <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="nx">package_id</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#34;&#39;&#34;</span><span class="p">)</span>
-            <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="nx">except</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nx">SoftLayerAPIError</span> <span class="nx">as</span> <span class="nx">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s">&#34;Unable to get the active presets. \nfaultCode= %s, \nfaultString= %s&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">faultCode</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">faultString</span><span class="p">))</span>
-        <span class="nf">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nx">presets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">def</span> <span class="nf">getting_package_preset</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">preset_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Gets a SoftLayer_Product_Package_Preset object.
+</span><span class="s2">        :param int package_id: The package id to get the available data centers.
+</span><span class="s2">        :param int preset_id: The preset id of the SoftLayer_Product_Package_Preset to get.
+</span><span class="s2">        :param SoftLayer_Product_Package package_service: The SoftLayer Product Package service.
+</span><span class="s2">        :returns: A oftLayer_Product_Package_Preset object.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">object_mask</span> <span class="o">=</span> <span class="s2">&#34;mask[packageConfiguration[itemCategory],categories, &#34;</span> \
+                      <span class="s2">&#34;configuration[price[item[prices[pricingLocationGroup]]],category]]&#34;</span>
+        <span class="n">object_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;activePresets&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">preset_id</span><span class="p">}}}</span>
+        <span class="n">presets</span> <span class="o">=</span> <span class="n">package_service</span><span class="o">.</span><span class="n">getActivePresets</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">object_mask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">object_filter</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">presets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;The configured preset id: &#39;&#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">preset_id</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&#34;&#39; is not valid for the package id: &#39;&#34;</span>
+                  <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">package_id</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&#34;&#39;&#34;</span><span class="p">)</span>
+            <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the active presets. </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">presets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
 
-<span class="nx">def</span> <span class="nf">get_filtered_item_preset_category</span><span class="p">(</span><span class="nx">preset_configurations</span><span class="p">,</span> <span class="nx">category_code</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Gets the prices for a preset configuration list which contain an arbitrary category code.
-</span><span class="s">        :param SoftLayer_Product_Package_Preset_Configuration preset_configurations:
-</span><span class="s">        The list of configuration in the preset.
-</span><span class="s">        :param string category_code: The category code to filter.
-</span><span class="s">        :returns: An array SoftLayer_Product_Item_Price.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">filtered</span> <span class="p">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="nx">presetConfiguration</span> <span class="nx">in</span> <span class="nx">preset_configurations</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nx">presetConfiguration</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">category</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="nx">category_code</span><span class="p">:</span>
-            <span class="nx">filtered</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">presetConfiguration</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">price</span><span class="err">&#39;</span><span class="p">])</span>
-    <span class="k">return</span> <span class="nx">filtered</span>
+<span class="k">def</span> <span class="nf">get_filtered_item_preset_category</span><span class="p">(</span><span class="n">preset_configurations</span><span class="p">,</span> <span class="n">category_code</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Gets the prices for a preset configuration list which contain an arbitrary category code.
+</span><span class="s2">        :param SoftLayer_Product_Package_Preset_Configuration preset_configurations:
+</span><span class="s2">        The list of configuration in the preset.
+</span><span class="s2">        :param string category_code: The category code to filter.
+</span><span class="s2">        :returns: An array SoftLayer_Product_Item_Price.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">presetConfiguration</span> <span class="ow">in</span> <span class="n">preset_configurations</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">presetConfiguration</span><span class="p">[</span><span class="s1">&#39;category&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category_code</span><span class="p">:</span>
+            <span class="n">filtered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">presetConfiguration</span><span class="p">[</span><span class="s1">&#39;price&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">filtered</span>
 
 
-<span class="nx">def</span> <span class="nf">get_configurations_not_preset</span><span class="p">(</span><span class="nx">preset</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;Gets the configuration list which contains the categories that can be configurable.
-</span><span class="s">        :param SoftLayer_Product_Package_Preset preset: The preset to get the configuration list.
-</span><span class="s">        :returns: An array of SoftLayer_Product_Package_Order_Configuration.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">configurations</span> <span class="p">=</span> <span class="p">[]</span>
-    <span class="err">#</span> <span class="nx">When</span> <span class="nx">the</span> <span class="kn">package</span> <span class="nx">has</span> <span class="nx">a</span> <span class="nx">preset</span> <span class="nx">configuration</span> <span class="nx">only</span> <span class="nx">a</span> <span class="nx">few</span> <span class="nx">categories</span> <span class="nx">can</span> <span class="nx">be</span> <span class="nx">edited</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">Below</span> <span class="nx">the</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">categories</span> <span class="nx">which</span> <span class="nx">can</span> <span class="nx">be</span> <span class="nx">edited</span><span class="p">.</span>
-    <span class="nx">allowed_list</span> <span class="p">=</span> <span class="p">[</span><span class="s">&#34;bandwidth&#34;</span><span class="p">,</span> <span class="s">&#34;port_speed&#34;</span><span class="p">,</span> <span class="s">&#34;sec_ip_addresses&#34;</span><span class="p">,</span> <span class="s">&#34;pri_ipv6_addresses&#34;</span><span class="p">,</span>
-                    <span class="s">&#34;static_ipv6_addresses&#34;</span><span class="p">,</span> <span class="s">&#34;evault&#34;</span><span class="p">,</span> <span class="s">&#34;os&#34;</span><span class="p">]</span>
-    <span class="k">for</span> <span class="nx">conf</span> <span class="nx">in</span> <span class="nx">preset</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">packageConfiguration</span><span class="err">&#39;</span><span class="p">]:</span>
-        <span class="k">for</span> <span class="nx">allowed</span> <span class="nx">in</span> <span class="nx">allowed_list</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="nx">allowed</span><span class="p">:</span>
-                <span class="nx">configurations</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">conf</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_configurations_not_preset</span><span class="p">(</span><span class="n">preset</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Gets the configuration list which contains the categories that can be configurable.
+</span><span class="s2">        :param SoftLayer_Product_Package_Preset preset: The preset to get the configuration list.
+</span><span class="s2">        :returns: An array of SoftLayer_Product_Package_Order_Configuration.
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">configurations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># When the package has a preset configuration only a few categories can be edited.</span>
+    <span class="c1"># Below the list of categories which can be edited.</span>
+    <span class="n">allowed_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;bandwidth&#34;</span><span class="p">,</span> <span class="s2">&#34;port_speed&#34;</span><span class="p">,</span> <span class="s2">&#34;sec_ip_addresses&#34;</span><span class="p">,</span> <span class="s2">&#34;pri_ipv6_addresses&#34;</span><span class="p">,</span>
+                    <span class="s2">&#34;static_ipv6_addresses&#34;</span><span class="p">,</span> <span class="s2">&#34;evault&#34;</span><span class="p">,</span> <span class="s2">&#34;os&#34;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">preset</span><span class="p">[</span><span class="s1">&#39;packageConfiguration&#39;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">allowed</span> <span class="ow">in</span> <span class="n">allowed_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">allowed</span><span class="p">:</span>
+                <span class="n">configurations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
                 <span class="k">break</span>
-    <span class="k">return</span> <span class="nx">configurations</span>
+    <span class="k">return</span> <span class="n">configurations</span>
 
-<span class="err">#</span> <span class="nx">Getting</span> <span class="nx">the</span> <span class="nx">available</span> <span class="nx">data</span> <span class="nx">centers</span><span class="p">.</span>
-<span class="nx">datacenters</span> <span class="p">=</span> <span class="nf">get_all_datacenters_available_for_package</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">)</span>
-<span class="err">#</span> <span class="nx">Displaying</span> <span class="nx">the</span> <span class="nx">data</span> <span class="nx">centers</span>
-<span class="nf">display_datacenters</span><span class="p">(</span><span class="nx">datacenters</span><span class="p">)</span>
+<span class="c1"># Getting the available data centers.</span>
+<span class="n">datacenters</span> <span class="o">=</span> <span class="n">get_all_datacenters_available_for_package</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">)</span>
+<span class="c1"># Displaying the data centers</span>
+<span class="n">display_datacenters</span><span class="p">(</span><span class="n">datacenters</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="nx">not</span> <span class="nf">is_preset_required</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">):</span>
-    <span class="err">#</span> <span class="nx">Getting</span> <span class="nx">the</span> <span class="nx">items</span> <span class="nx">in</span> <span class="nx">the</span> <span class="kn">package</span>
-    <span class="nx">items</span> <span class="p">=</span> <span class="nf">get_all_items</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">)</span>
-    <span class="err">#</span> <span class="nx">Getting</span> <span class="nx">the</span> <span class="nx">configuration</span> <span class="nx">of</span> <span class="nx">the</span> <span class="kn">package</span>
-    <span class="nx">configurations</span> <span class="p">=</span> <span class="nf">get_configuration</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">)</span>
-    <span class="nx">configurations</span> <span class="p">=</span> <span class="nf">sorted</span><span class="p">(</span><span class="nx">configurations</span><span class="p">,</span> <span class="nx">key</span><span class="p">=</span><span class="nx">lambda</span> <span class="nx">item</span><span class="p">:</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">isRequired</span><span class="err">&#39;</span><span class="p">],</span> <span class="nx">reverse</span><span class="p">=</span><span class="nx">True</span><span class="p">)</span>
-    <span class="err">#</span> <span class="nx">Displaying</span> <span class="nx">the</span> <span class="nx">items</span>
-    <span class="k">for</span> <span class="nx">conf</span> <span class="nx">in</span> <span class="nx">configurations</span><span class="p">:</span>
-        <span class="nx">listItems</span> <span class="p">=</span> <span class="nf">get_filtered_items_category</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">configurations</span><span class="p">,</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">])</span>
-        <span class="nf">display_items</span><span class="p">(</span><span class="nx">listItems</span><span class="p">,</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span><span class="p">],</span> <span class="nx">hourly</span><span class="p">,</span> <span class="nx">False</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">is_preset_required</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">):</span>
+    <span class="c1"># Getting the items in the package</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">get_all_items</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">)</span>
+    <span class="c1"># Getting the configuration of the package</span>
+    <span class="n">configurations</span> <span class="o">=</span> <span class="n">get_configuration</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">)</span>
+    <span class="n">configurations</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">configurations</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;isRequired&#39;</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># Displaying the items</span>
+    <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">configurations</span><span class="p">:</span>
+        <span class="n">listItems</span> <span class="o">=</span> <span class="n">get_filtered_items_category</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">configurations</span><span class="p">,</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">])</span>
+        <span class="n">display_items</span><span class="p">(</span><span class="n">listItems</span><span class="p">,</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">hourly</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&#34;&#34;</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="err">#</span> <span class="nx">Getting</span> <span class="nx">the</span> <span class="nx">preset</span> <span class="nx">configuration</span><span class="p">,</span> <span class="nx">these</span> <span class="nx">items</span> <span class="nx">cannot</span> <span class="nx">be</span> <span class="nx">changed</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">order</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">Review</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Package_Preset for more information.
-</span><span class="c1"></span>    <span class="nx">preset</span> <span class="p">=</span> <span class="nf">getting_package_preset</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">preset_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;*************************************   PRESET CONFIGURATION   *************************************&#34;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="nx">conf</span> <span class="nx">in</span> <span class="nx">preset</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">packageConfiguration</span><span class="err">&#39;</span><span class="p">]:</span>
-        <span class="nx">listConfiguredItems</span> <span class="p">=</span> <span class="nf">get_filtered_item_preset_category</span><span class="p">(</span><span class="nx">preset</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">configuration</span><span class="err">&#39;</span><span class="p">],</span>
-                                                                <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">])</span>
-        <span class="nx">items</span> <span class="p">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">listConfiguredItems</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nx">items</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">listConfiguredItems</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">item</span><span class="err">&#39;</span><span class="p">])</span>
-            <span class="nf">display_items</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">],</span> <span class="nx">hourly</span><span class="p">,</span> <span class="nx">True</span><span class="p">,</span> <span class="nx">listConfiguredItems</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="err">#</span> <span class="nx">Getting</span> <span class="nx">the</span> <span class="nx">items</span> <span class="nx">which</span> <span class="nx">can</span> <span class="nx">be</span> <span class="nx">configured</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">order</span><span class="p">.</span>
-    <span class="nx">configurations</span> <span class="p">=</span> <span class="nf">get_configurations_not_preset</span><span class="p">(</span><span class="nx">preset</span><span class="p">)</span>
-    <span class="err">#</span> <span class="nx">Getting</span> <span class="nx">the</span> <span class="nx">items</span> <span class="nx">in</span> <span class="nx">the</span> <span class="kn">package</span>
-    <span class="nx">items</span> <span class="p">=</span> <span class="nf">get_all_items</span><span class="p">(</span><span class="nx">package_id</span><span class="p">,</span> <span class="nx">package_service</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;*************************************   CONFIGURABLE ITEMS   *************************************&#34;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">)</span>
-    <span class="err">#</span> <span class="nx">Displaying</span> <span class="nx">the</span> <span class="nx">items</span>
-    <span class="k">for</span> <span class="nx">conf</span> <span class="nx">in</span> <span class="nx">configurations</span><span class="p">:</span>
-        <span class="nx">listItems</span> <span class="p">=</span> <span class="nf">get_filtered_items_category</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">configurations</span><span class="p">,</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">categoryCode</span><span class="err">&#39;</span><span class="p">])</span>
-        <span class="nf">display_items</span><span class="p">(</span><span class="nx">listItems</span><span class="p">,</span> <span class="nx">conf</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">itemCategory</span><span class="err">&#39;</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span><span class="p">],</span> <span class="nx">hourly</span><span class="p">,</span> <span class="nx">False</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">)</span>
+    <span class="c1"># Getting the preset configuration, these items cannot be changed in the order.</span>
+    <span class="c1"># Review http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Package_Preset for more information.</span>
+    <span class="n">preset</span> <span class="o">=</span> <span class="n">getting_package_preset</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">preset_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;*************************************   PRESET CONFIGURATION   *************************************&#34;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;&#34;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">preset</span><span class="p">[</span><span class="s1">&#39;packageConfiguration&#39;</span><span class="p">]:</span>
+        <span class="n">listConfiguredItems</span> <span class="o">=</span> <span class="n">get_filtered_item_preset_category</span><span class="p">(</span><span class="n">preset</span><span class="p">[</span><span class="s1">&#39;configuration&#39;</span><span class="p">],</span>
+                                                                <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">])</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">listConfiguredItems</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">listConfiguredItems</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">])</span>
+            <span class="n">display_items</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">],</span> <span class="n">hourly</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">listConfiguredItems</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="c1"># Getting the items which can be configured in the order.</span>
+    <span class="n">configurations</span> <span class="o">=</span> <span class="n">get_configurations_not_preset</span><span class="p">(</span><span class="n">preset</span><span class="p">)</span>
+    <span class="c1"># Getting the items in the package</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">get_all_items</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">package_service</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;*************************************   CONFIGURABLE ITEMS   *************************************&#34;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;&#34;</span><span class="p">)</span>
+    <span class="c1"># Displaying the items</span>
+    <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">configurations</span><span class="p">:</span>
+        <span class="n">listItems</span> <span class="o">=</span> <span class="n">get_filtered_items_category</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">configurations</span><span class="p">,</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">])</span>
+        <span class="n">display_items</span><span class="p">(</span><span class="n">listItems</span><span class="p">,</span> <span class="n">conf</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">hourly</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&#34;&#34;</span><span class="p">)</span>
 
 </code></pre></div>
             </div>
@@ -476,7 +465,7 @@ if (!doNotTrack) {
             <p>
                 If this article contains any error, or leaves any of your questions unanswered, please help us out by 
                 opening up a github issue.<br>
-                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20list_items_for_order_server.py&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2flist_items_for_order_server.py%2f"> Open an issue</a>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20List%20items%20for%20a%20Server%20Order&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2flist_items_for_order_server.py%2f"> Open an issue</a>
                 <i class="fab fa-github" alt="github"></i>
             </p>
     </div>

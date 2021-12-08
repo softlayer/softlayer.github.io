@@ -8,7 +8,7 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>list_planned_events.py - https://sldn.softlayer.com/</title>
+    <title>List Planned Events - https://sldn.softlayer.com/</title>
     <link rel="canonical" href="https://sldn.softlayer.com/python/list_planned_events.py/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
@@ -136,54 +136,66 @@ if (!doNotTrack) {
 		<div class="col-md-12">
             <div class="well well-sm  article" style="word-wrap: break-word;">
                 <div class="article-title">
-				    <h1>list_planned_events.py</h1>
-                    <small>list_planned_events.py</small>
+				    <h1>List Planned Events</h1>
+                    <small>The script retrieves all the planned events that impact your account</small>
                 </div>
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">&#39;&#39;&#39;
-List planned events.
+                <div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s1">&#39;&#39;&#39;
+</span><span class="s1">List planned events.
+</span><span class="s1">
+</span><span class="s1">The script retrieves all the planned events
+</span><span class="s1">&#39;&#39;&#39;</span>
 
-The script retrieves all the planned events in a brand account.
-It displays the same result like in https://agent.softlayer.com/support/event/planned
+<span class="kn">import</span> <span class="nn">SoftLayer.API</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
 
-Important manual pages
-http://sldn.softlayer.com/reference/services/SoftLayer_Notification_Occurrence_Event/getAllObjects
-http://sldn.softlayer.com/reference/datatypes/SoftLayer_Notification_Occurrence_Event
-http://sldn.softlayer.com/article/Object-Filters
-http://sldn.softlayer.com/article/Object-Masks
 
-License: http://sldn.softlayer.com/article/License
-Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-&#39;&#39;&#39;
+<span class="c1"># Gets the current date.</span>
+<span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="n">now</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&#34;%m/</span><span class="si">%d</span><span class="s2">/%Y&#34;</span><span class="p">)</span>
 
-import SoftLayer.API
-import json
-import datetime
+<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
 
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
+<span class="n">eventService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Notification_Occurrence_Event&#39;</span><span class="p">]</span>
+<span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[updateCount, statusCode, notificationOccurrenceEventType[keyName], impactedUsers[user[id], acknowledgedFlag]]&#34;</span>
+<span class="n">objectFilterEndDate</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&#34;endDate&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;greaterThanDate&#34;</span><span class="p">,</span> 
+        <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;date&#34;</span><span class="p">,</span> <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="p">[</span><span class="n">now</span><span class="p">]}]},</span>
+    <span class="s2">&#34;notificationOccurrenceEventType&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;PLANNED&#34;</span><span class="p">}},</span> 
+    <span class="s2">&#34;statusCode&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;in&#34;</span><span class="p">,</span> 
+            <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;data&#34;</span><span class="p">,</span> <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;ACTIVE&#34;</span><span class="p">,</span> <span class="s2">&#34;COMPLETED&#34;</span><span class="p">,</span> <span class="s2">&#34;PUBLISHED&#34;</span><span class="p">]}</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">objectFilterNoEndDate</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&#34;endDate&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s1">&#39;is null&#39;</span><span class="p">},</span> 
+    <span class="s2">&#34;notificationOccurrenceEventType&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;PLANNED&#34;</span><span class="p">}},</span>
+    <span class="s2">&#34;statusCode&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&#34;keyName&#34;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;in&#34;</span><span class="p">,</span>
+            <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;data&#34;</span><span class="p">,</span> <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;ACTIVE&#34;</span><span class="p">,</span> <span class="s2">&#34;COMPLETED&#34;</span><span class="p">,</span> <span class="s2">&#34;PUBLISHED&#34;</span><span class="p">]}</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
 
-# Gets the current date.
-now = datetime.datetime.now()
-now = now.strftime(&#34;%m/%d/%Y&#34;)
-
-client = SoftLayer.create_client_from_env(username=USERNAME, api_key=API_KEY)
-
-eventService = client[&#39;SoftLayer_Notification_Occurrence_Event&#39;]
-objectMask = &#34;mask[updateCount, statusCode, notificationOccurrenceEventType[keyName], impactedUsers[user[id], acknowledgedFlag]]&#34;
-objectFilterEndDate = {&#34;endDate&#34;: {&#34;operation&#34;: &#34;greaterThanDate&#34;, &#34;options&#34;: [{&#34;name&#34;: &#34;date&#34;, &#34;value&#34;: [now]}]}, &#34;notificationOccurrenceEventType&#34;: {&#34;keyName&#34;: {&#34;operation&#34;: &#34;PLANNED&#34;}}, &#34;statusCode&#34;: {&#34;keyName&#34;: {&#34;operation&#34;: &#34;in&#34;, &#34;options&#34;: [{&#34;name&#34;: &#34;data&#34;, &#34;value&#34;: [&#34;ACTIVE&#34;, &#34;COMPLETED&#34;]}, {&#34;name&#34;: &#34;data&#34;, &#34;value&#34;: [&#34;ACTIVE&#34;, &#34;COMPLETED&#34;, &#34;PUBLISHED&#34;]}]}}}
-objectFilterNoEndDate = {&#34;endDate&#34;: {&#34;operation&#34;: &#39;is null&#39;}, &#34;notificationOccurrenceEventType&#34;: {&#34;keyName&#34;: {&#34;operation&#34;: &#34;PLANNED&#34;}}, &#34;statusCode&#34;: {&#34;keyName&#34;: {&#34;operation&#34;: &#34;in&#34;, &#34;options&#34;: [{&#34;name&#34;: &#34;data&#34;, &#34;value&#34;: [&#34;ACTIVE&#34;, &#34;COMPLETED&#34;]}, {&#34;name&#34;: &#34;data&#34;, &#34;value&#34;: [&#34;ACTIVE&#34;, &#34;COMPLETED&#34;, &#34;PUBLISHED&#34;]}]}}}
-
-try:
-    resultEndDate = eventService.getAllObjects(mask=objectMask, filter=objectFilterEndDate)
-    resultNoEndDate = eventService.getAllObjects(mask=objectMask, filter=objectFilterNoEndDate)
-    print(json.dumps(resultEndDate, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
-    print(json.dumps(resultNoEndDate, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
-except SoftLayer.SoftLayerAPIError as e:
-    print(&#34;Unable to list the planned events. &#34;
-          % (e.faultCode, e.faultString))
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">resultEndDate</span> <span class="o">=</span> <span class="n">eventService</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">objectFilterEndDate</span><span class="p">)</span>
+    <span class="n">resultNoEndDate</span> <span class="o">=</span> <span class="n">eventService</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">objectFilterNoEndDate</span><span class="p">)</span>
+    <span class="n">pp</span><span class="p">(</span><span class="n">resultEndDate</span><span class="p">)</span>
+    <span class="n">pp</span><span class="p">(</span><span class="n">resultNoEndDate</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to list the planned events. &#34;</span>
+          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
 
 </code></pre></div>
             </div>
@@ -199,7 +211,7 @@ except SoftLayer.SoftLayerAPIError as e:
             <p>
                 If this article contains any error, or leaves any of your questions unanswered, please help us out by 
                 opening up a github issue.<br>
-                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20list_planned_events.py&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2flist_planned_events.py%2f"> Open an issue</a>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20List%20Planned%20Events&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2flist_planned_events.py%2f"> Open an issue</a>
                 <i class="fab fa-github" alt="github"></i>
             </p>
     </div>
