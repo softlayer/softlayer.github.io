@@ -8,7 +8,7 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>pagination.py - https://sldn.softlayer.com/</title>
+    <title>Pagination Examples - https://sldn.softlayer.com/</title>
     <link rel="canonical" href="https://sldn.softlayer.com/python/pagination.py/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
@@ -115,7 +115,7 @@ if (!doNotTrack) {
     
         <div class="col-md-3">
             <div style="word-wrap: break-word;"> 
-                <h4>November 23, 2017<br></h4>
+                <h4>November 12, 2021<br></h4>
             </div>
         </div>
         <div class="col-md-9">
@@ -136,51 +136,117 @@ if (!doNotTrack) {
 		<div class="col-md-12">
             <div class="well well-sm  article" style="word-wrap: break-word;">
                 <div class="article-title">
-				    <h1>pagination.py</h1>
-                    <small>pagination.py</small>
+				    <h1>Pagination Examples</h1>
+                    <small>A collection of examples on how to properly get large listings of objects from the SoftLayer API using Pagination, Python iterators, and objectFilters.</small>
                 </div>
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">&#34;&#34;&#34;
-Example about pagination
+                <p>When querying the SoftLayer API and using a resultLimit to paginate your results, you should almost always use an <code>OrderBy</code> <a href="https://sldn.softlayer.com/article/object-filters/">objectFilter</a> to sort your results, as by default most results will not have an order imposed on them by the database. It is fairly common for the database to have differeing orders between queries UNLESS an <code>OrderBy</code> filter is used.</p>
+<p>The python client itself has a built in function called <a href="https://softlayer-python.readthedocs.io/en/latest/api/client/#SoftLayer.API.BaseClient.iter_call"><code>iter_call</code></a> which will return a python <a href="https://wiki.python.org/moin/Generators">generator</a>. This generator will only get the next set of results when you need them, which can make doing operations on large datasets feel faster in that you don&rsquo;t have to wait for the entire dataset to be retrieved before obtaining some results.</p>
+<h2 id="the-setup" class="anchor-link"><a href="#the-setup">The Setup</a></h2>
+<p>To avoid having to type the boiler-plate code a lot, assume each of these example function will be a member function of the following <code>Paginator</code> class</p>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
 
-The script retrieves the Bare metal servers in a account
-and displays all the servers using pagination
+<span class="k">class</span> <span class="nc">Paginator</span><span class="p">():</span>
 
-Important manual pages
-http://sldn.softlayer.com/reference/services/SoftLayer_Account
-http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware
-https://softlayer-api-python-client.readthedocs.org/en/latest/api/client/#module-SoftLayer
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DESC</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;orderBy&#34;</span><span class="p">,</span> 
+            <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[{</span>
+                <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;sort&#34;</span><span class="p">,</span> 
+                <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;DESC&#34;</span><span class="p">]</span>
+            <span class="p">}]</span>
+        <span class="p">}</span>
 
-License: http://sldn.softlayer.com/article/License
-Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-&#34;&#34;&#34;
-import SoftLayer
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+    <span class="n">paginator</span> <span class="o">=</span> <span class="n">Paginator</span><span class="p">()</span>
+    <span class="c1"># Then just call whichever function you want to run like this</span>
+    <span class="c1"># paginator.list_servers()</span>
+</code></pre></div><h2 id="simple-example" class="anchor-link"><a href="#simple-example">A simple pagination example</a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
+<span class="k">def</span> <span class="nf">list_servers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">orderBy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;hardware&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">DESC</span><span class="p">}}</span>
+    <span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[id,hostname]&#34;</span>
+    <span class="n">servers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">iter_call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getHardware&#39;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">orderBy</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Id, Hostname&#34;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">server</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hostname&#39;</span><span class="p">)))</span>
 
-# Your SoftLayer API username and key.
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
+</code></pre></div><h2 id="list_users" class="anchor-link"><a href="#list_users">List Users</a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">list_users</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">orderBy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;users&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">DESC</span><span class="p">}}</span>
+    <span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[id,username]&#34;</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">iter_call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getUsers&#39;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">orderBy</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Id, Username&#34;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)))</span>
+</code></pre></div><h2 id="list_gips" class="anchor-link"><a href="#list_gips">List Global Ips</a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">list_global_ips</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">orderBy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;globalIpRecords&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">DESC</span><span class="p">}}</span>
+    <span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[ipAddress,destinationIpAddress[ipAddress,hardware[id,hostname], virtualGuest[id,hostname]]]&#34;</span>
+    <span class="n">globalIps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">iter_call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getGlobalIpRecords&#39;</span><span class="p">,</span>
+                                      <span class="nb">filter</span><span class="o">=</span><span class="n">orderBy</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">globalIp</span> <span class="ow">in</span> <span class="n">globalIps</span><span class="p">:</span>
+        <span class="n">ipAddress</span> <span class="o">=</span> <span class="n">globalIp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ipAddress&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">associatedHostname</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span>
+        <span class="c1"># If the global IP is assigned somewhere, set the hostname its assigned to</span>
+        <span class="k">if</span> <span class="n">globalIp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;destinationIpAddress&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;hardware&#39;</span> <span class="ow">in</span> <span class="n">globalIp</span><span class="p">[</span><span class="s1">&#39;destinationIpAddress&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">associatedHostname</span> <span class="o">=</span> <span class="n">globalIp</span><span class="p">[</span><span class="s1">&#39;destinationIpAddress&#39;</span><span class="p">][</span><span class="s1">&#39;hardware&#39;</span><span class="p">][</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="s1">&#39;virtualGuest&#39;</span> <span class="ow">in</span> <span class="n">globalIp</span><span class="p">[</span><span class="s1">&#39;destinationIpAddress&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">associatedHostname</span> <span class="o">=</span> <span class="n">globalIp</span><span class="p">[</span><span class="s1">&#39;destinationIpAddress&#39;</span><span class="p">][</span><span class="s1">&#39;virtualGuest&#39;</span><span class="p">][</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">associatedHostname</span> <span class="o">=</span> <span class="n">globalIp</span><span class="p">[</span><span class="s1">&#39;destinationIpAddress&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ipAddress&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">associatedHostname</span> <span class="o">!=</span> <span class="s2">&#34;&#34;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> is assigned to </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipAddress</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ipAddress&#39;</span><span class="p">),</span> <span class="n">associatedHostname</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> is unassigned&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ipAddress</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ipAddress&#39;</span><span class="p">)))</span>
+</code></pre></div><h2 id="invoices" class="anchor-link"><a href="#invoices">Invoices</a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
+<span class="k">def</span> <span class="nf">invoices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;This method will go through ALL invoices on an account.
+</span><span class="s2">
+</span><span class="s2">    The older an account is, the more invoices it will have, so queries like this must be split up. Otherwise
+</span><span class="s2">    you will get API errors or timeouts. Once we have the invoice ID, we can get each invoices details seperately
+</span><span class="s2">    which will greatly speed up this process
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">orderBy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;invoices&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">DESC</span><span class="p">}}</span>
 
-client = SoftLayer.Client(username=USERNAME, api_key=API_KEY)
+    <span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[id, createDate, statusCode]&#34;</span>
+    <span class="n">invoices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">iter_call</span><span class="p">(</span><span class="s2">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="s2">&#34;getInvoices&#34;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">orderBy</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Id, Date, Status, Total&#34;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">invoice</span> <span class="ow">in</span> <span class="n">invoices</span><span class="p">:</span>
+        <span class="c1"># For more detail about an invoice, you should use getInvoiceTopLevelItems</span>
+        <span class="n">invoice_detail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s2">&#34;SoftLayer_Billing_Invoice&#34;</span><span class="p">,</span> <span class="s2">&#34;getInvoiceTotalAmount&#34;</span><span class="p">,</span>
+                                          <span class="nb">id</span><span class="o">=</span><span class="n">invoice</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">))</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">clean_time</span><span class="p">(</span><span class="n">invoice</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;createDate&#39;</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">invoice</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">date</span><span class="p">,</span> <span class="n">invoice</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;statusCode&#39;</span><span class="p">),</span> <span class="n">invoice_detail</span><span class="p">))</span>
+</code></pre></div><h2 id="list_subnets" class="anchor-link"><a href="#list_subnets">List Subnets</a></h2>
+<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">list_subnets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="s2">&#34;&#34;&#34;Lists all subnets on an account
+</span><span class="s2">
+</span><span class="s2">    Could also use `getPrivateSubnets` or `getPublicSubnets`
+</span><span class="s2">    &#34;&#34;&#34;</span>
+    <span class="n">orderBy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;subnets&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">DESC</span><span class="p">}}</span>
+    <span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id,networkIdentifier, cidr, subnetType, networkVlan[vlanNumber],
+</span><span class="s2">                         usableIpAddressCount, datacenter[name]]&#34;&#34;&#34;</span>
+    <span class="n">subnets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">iter_call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getSubnets&#39;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">orderBy</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Id, Type, Network, Vlan, Usable IPs, Datacenter&#34;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">subnet</span> <span class="ow">in</span> <span class="n">subnets</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">subnet</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span>
+            <span class="n">subnet</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;subnetType&#39;</span><span class="p">),</span>
+            <span class="n">subnet</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;networkIdentifier&#39;</span><span class="p">),</span>
+            <span class="n">subnet</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cidr&#39;</span><span class="p">),</span>
+            <span class="n">SoftLayer</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">subnet</span><span class="p">,</span> <span class="s1">&#39;networkVlan&#39;</span><span class="p">,</span> <span class="s1">&#39;vlanNumber&#39;</span><span class="p">),</span>
+            <span class="n">subnet</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;usableIpAddressCount&#39;</span><span class="p">),</span>
+            <span class="n">SoftLayer</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">subnet</span><span class="p">,</span> <span class="s1">&#39;datacenter&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">)</span>
+        <span class="p">))</span>        
 
-offset = 0
-limit = 1
-
-accountService = client[&#39;SoftLayer_Account&#39;]
-
-while True:
-    try:
-        result = accountService.getHardware(limit=limit, offset=offset)
-        offset = offset + limit
-        limit = limit + limit
-        print(result)
-        if not result:
-            break
-    except SoftLayer.SoftLayerAPIError as e:
-        print(&#34;Unable to retrieve the servers . &#34; % (e.faultCode, e.faultString))
-    exit(1)
-    
 </code></pre></div>
             </div>
         </div>
@@ -195,7 +261,7 @@ while True:
             <p>
                 If this article contains any error, or leaves any of your questions unanswered, please help us out by 
                 opening up a github issue.<br>
-                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20pagination.py&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fpagination.py%2f"> Open an issue</a>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20Pagination%20Examples&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fpagination.py%2f"> Open an issue</a>
                 <i class="fab fa-github" alt="github"></i>
             </p>
     </div>

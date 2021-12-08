@@ -148,50 +148,43 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">&#34;&#34;&#34;
-List the passwords of the devices in the account.
+                <div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
+</span><span class="s2">List the passwords of the devices in the account.
+</span><span class="s2">&#34;&#34;&#34;</span>
 
-Important manual pages:
-http://sldn.softlayer.com/reference/services/SoftLayer_Search
-http://sldn.softlayer.com/reference/services/SoftLayer_Search/advancedSearch
+<span class="kn">import</span> <span class="nn">SoftLayer</span>
+<span class="kn">import</span> <span class="nn">json</span>
 
-License: http://sldn.softlayer.com/article/License
-Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-&#34;&#34;&#34;
+<span class="c1"># Your SoftLayer API username and key.</span>
+<span class="n">USERNAME</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span>
+<span class="n">API_KEY</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span>
 
-import SoftLayer
-import json
+<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="n">USERNAME</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">API_KEY</span><span class="p">)</span>
+<span class="n">searchService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Search&#39;</span><span class="p">]</span>
 
-# Your SoftLayer API username and key.
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
+<span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[resource(SoftLayer_Hardware)[softwareComponents.passwords,softwareComponents.softwareLicense.softwareDescription.name,softwareComponents.softwareLicense.softwareDescription.operatingSystem,softwareComponents.softwareLicense.softwareDescription.manufacturer,softwareComponents.passwords.id,fullyQualifiedDomainName,id,serviceProviderId,primaryIpAddress,softwareComponents.passwords.password,softwareComponents.passwords.username,softwareComponents.passwords.createDate,softwareComponents.passwords.modifyDate,softwareComponents.passwords.notes,softwareComponents.passwords.port,softwareComponents.softwareLicense.softwareDescription.version,datacenter.longName,datacenter.id],resource(SoftLayer_Hardware_Server)[softwareComponents.passwords,softwareComponents.softwareLicense.softwareDescription.name,softwareComponents.softwareLicense.softwareDescription.operatingSystem,softwareComponents.softwareLicense.softwareDescription.manufacturer,softwareComponents.passwords.id,fullyQualifiedDomainName,id,serviceProviderId,primaryIpAddress,softwareComponents.passwords.password,softwareComponents.passwords.username,softwareComponents.passwords.createDate,softwareComponents.passwords.modifyDate,softwareComponents.passwords.notes,softwareComponents.passwords.port,softwareComponents.softwareLicense.softwareDescription.version,datacenter.longName,datacenter.id],resource(SoftLayer_Virtual_Guest)[softwareComponents.passwords,softwareComponents.softwareLicense.softwareDescription.name,softwareComponents.softwareLicense.softwareDescription.operatingSystem,operatingSystem.softwareLicense.softwareDescription.manufacturer,operatingSystem.softwareLicense.softwareDescription.name,softwareComponents.passwords.id,fullyQualifiedDomainName,id,primaryIpAddress,softwareComponents.passwords.password,softwareComponents.passwords.username,softwareComponents.passwords.createDate,softwareComponents.passwords.modifyDate,softwareComponents.passwords.notes,softwareComponents.passwords.port,operatingSystem.softwareLicense.softwareDescription.operatingSystem,datacenter.longName,datacenter.id]]&#34;</span>
 
-client = SoftLayer.Client(username=USERNAME, api_key=API_KEY)
-searchService = client[&#39;SoftLayer_Search&#39;]
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">devices</span> <span class="o">=</span> <span class="n">searchService</span><span class="o">.</span><span class="n">advancedSearch</span><span class="p">(</span><span class="s2">&#34;_objectType:SoftLayer_Hardware,SoftLayer_Virtual_Guest&#34;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
+    <span class="n">passwords</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;resource&#39;</span> <span class="ow">in</span> <span class="n">device</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">device</span><span class="p">[</span><span class="s1">&#39;resource&#39;</span><span class="p">][</span><span class="s1">&#39;softwareComponents&#39;</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">pas</span> <span class="ow">in</span> <span class="n">component</span><span class="p">[</span><span class="s1">&#39;passwords&#39;</span><span class="p">]:</span>
+                    <span class="n">password</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">password</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">device</span><span class="p">[</span><span class="s1">&#39;resource&#39;</span><span class="p">][</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">]</span>
+                    <span class="n">password</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pas</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+                    <span class="n">password</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pas</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span>
+                    <span class="n">password</span><span class="p">[</span><span class="s1">&#39;softwareComponentId&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                    <span class="n">password</span><span class="p">[</span><span class="s1">&#39;passwordId&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pas</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                    <span class="n">password</span><span class="p">[</span><span class="s1">&#39;deviceId&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">device</span><span class="p">[</span><span class="s1">&#39;resource&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                    <span class="n">passwords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
 
-objectMask = &#34;mask[resource(SoftLayer_Hardware)[softwareComponents.passwords,softwareComponents.softwareLicense.softwareDescription.name,softwareComponents.softwareLicense.softwareDescription.operatingSystem,softwareComponents.softwareLicense.softwareDescription.manufacturer,softwareComponents.passwords.id,fullyQualifiedDomainName,id,serviceProviderId,primaryIpAddress,softwareComponents.passwords.password,softwareComponents.passwords.username,softwareComponents.passwords.createDate,softwareComponents.passwords.modifyDate,softwareComponents.passwords.notes,softwareComponents.passwords.port,softwareComponents.softwareLicense.softwareDescription.version,datacenter.longName,datacenter.id],resource(SoftLayer_Hardware_Server)[softwareComponents.passwords,softwareComponents.softwareLicense.softwareDescription.name,softwareComponents.softwareLicense.softwareDescription.operatingSystem,softwareComponents.softwareLicense.softwareDescription.manufacturer,softwareComponents.passwords.id,fullyQualifiedDomainName,id,serviceProviderId,primaryIpAddress,softwareComponents.passwords.password,softwareComponents.passwords.username,softwareComponents.passwords.createDate,softwareComponents.passwords.modifyDate,softwareComponents.passwords.notes,softwareComponents.passwords.port,softwareComponents.softwareLicense.softwareDescription.version,datacenter.longName,datacenter.id],resource(SoftLayer_Virtual_Guest)[softwareComponents.passwords,softwareComponents.softwareLicense.softwareDescription.name,softwareComponents.softwareLicense.softwareDescription.operatingSystem,operatingSystem.softwareLicense.softwareDescription.manufacturer,operatingSystem.softwareLicense.softwareDescription.name,softwareComponents.passwords.id,fullyQualifiedDomainName,id,primaryIpAddress,softwareComponents.passwords.password,softwareComponents.passwords.username,softwareComponents.passwords.createDate,softwareComponents.passwords.modifyDate,softwareComponents.passwords.notes,softwareComponents.passwords.port,operatingSystem.softwareLicense.softwareDescription.operatingSystem,datacenter.longName,datacenter.id]]&#34;
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">passwords</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
 
-try:
-    devices = searchService.advancedSearch(&#34;_objectType:SoftLayer_Hardware,SoftLayer_Virtual_Guest&#34;, mask=objectMask)
-    passwords = []
-    for device in devices:
-        if &#39;resource&#39; in device:
-            for component in device[&#39;resource&#39;][&#39;softwareComponents&#39;]:
-                for pas in component[&#39;passwords&#39;]:
-                    password = {}
-                    password[&#39;name&#39;] = device[&#39;resource&#39;][&#39;fullyQualifiedDomainName&#39;]
-                    password[&#39;username&#39;] = pas[&#39;username&#39;]
-                    password[&#39;password&#39;] = pas[&#39;password&#39;]
-                    password[&#39;softwareComponentId&#39;] = component[&#39;id&#39;]
-                    password[&#39;passwordId&#39;] = pas[&#39;id&#39;]
-                    password[&#39;deviceId&#39;] = device[&#39;resource&#39;][&#39;id&#39;]
-                    passwords.append(password)
-
-    print(json.dumps(passwords, sort_keys=True, indent=2, separators=(&#39;,&#39;, &#39;: &#39;)))
-
-except SoftLayer.SoftLayerAPIError as e:
-    print(&#34;Unable to get the passwords faultCode=%s, faultString=%s&#34; % (e.faultCode, e.faultString))
-    exit(1)
+<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the passwords faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
 </code></pre></div>
             </div>
