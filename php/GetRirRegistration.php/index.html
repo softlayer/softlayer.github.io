@@ -148,112 +148,112 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">&lt;?php
-/**
- * This script retrieves Subnet Registrations that are displayed in: https://control.softlayer.com/network/rir,
- * Additionally creates a CSV file with this information.
- * The file is stored in &#34;C:\Reports&#34; (Windows OS) path by default, you can modify &#34;path&#34; variable if you wish
- * to change it.
- *
- * Important manual pages:
- * @see http://sldn.softlayer.com/reference/services/SoftLayer_Account/getSubnetRegistrations
- * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet_Registration
- * @see http://sldn.softlayer.com/article/Object-Masks
- * @see http://sldn.softlayer.com/article/Object-Filters
- *
- * @license &lt;http://sldn.softlayer.com/wiki/index.php/license&gt;
- * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
- */
+                <div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
+<span class="sd">/**
+</span><span class="sd"> * This script retrieves Subnet Registrations that are displayed in: https://control.softlayer.com/network/rir,
+</span><span class="sd"> * Additionally creates a CSV file with this information.
+</span><span class="sd"> * The file is stored in &#34;C:\Reports&#34; (Windows OS) path by default, you can modify &#34;path&#34; variable if you wish
+</span><span class="sd"> * to change it.
+</span><span class="sd"> *
+</span><span class="sd"> * Important manual pages:
+</span><span class="sd"> * @see http://sldn.softlayer.com/reference/services/SoftLayer_Account/getSubnetRegistrations
+</span><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet_Registration
+</span><span class="sd"> * @see http://sldn.softlayer.com/article/Object-Masks
+</span><span class="sd"> * @see http://sldn.softlayer.com/article/Object-Filters
+</span><span class="sd"> *
+</span><span class="sd"> * @license &lt;http://sldn.softlayer.com/wiki/index.php/license&gt;
+</span><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span><span class="sd"> */</span>
 
-require_once &#34;C:/Php/SoftLayer/SoftLayer/SoapClient.class.php&#34;;
+<span class="k">require_once</span> <span class="s2">&#34;C:/Php/SoftLayer/SoftLayer/SoapClient.class.php&#34;</span><span class="p">;</span>
 
-/**
- * Your SoftLayer API username
- * @var string
- */
-$username = &#34;set me&#34;;
+<span class="sd">/**
+</span><span class="sd"> * Your SoftLayer API username
+</span><span class="sd"> * @var string
+</span><span class="sd"> */</span>
+<span class="nv">$username</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
 
-/**
- * Your SoftLayer API key
- * Generate one at: https://control.softlayer.com/account/users
- * @var string
- */
-$apiKey = &#34;set me&#34;;
+<span class="sd">/**
+</span><span class="sd"> * Your SoftLayer API key
+</span><span class="sd"> * Generate one at: https://control.softlayer.com/account/users
+</span><span class="sd"> * @var string
+</span><span class="sd"> */</span>
+<span class="nv">$apiKey</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
 
-/**
- * Declare the &#34;path&#34; to create CSV file
- * @var string
- */
-$path = &#34;C:\Reports&#34;;
+<span class="sd">/**
+</span><span class="sd"> * Declare the &#34;path&#34; to create CSV file
+</span><span class="sd"> * @var string
+</span><span class="sd"> */</span>
+<span class="nv">$path</span> <span class="o">=</span> <span class="s2">&#34;C:</span><span class="se">\R</span><span class="s2">eports&#34;</span><span class="p">;</span>
 
-// Create a SoftLayer API client object to the &#34;SoftLayer_Account_Regional_Registry_Detail&#34; service
-$client = SoftLayer_SoapClient::getClient(&#34;SoftLayer_Account&#34;, null, $username, $apiKey);
+<span class="c1">// Create a SoftLayer API client object to the &#34;SoftLayer_Account_Regional_Registry_Detail&#34; service
+</span><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s2">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
 
-// Define object mask to get subnet, personDetails, regionalInternetRegistry and status from each register
-$mask = &#34;mask[registrations[personDetail[properties], status], regionalInternetRegistry]&#34;;
-$client -&gt; setObjectMask($mask);
+<span class="c1">// Define object mask to get subnet, personDetails, regionalInternetRegistry and status from each register
+</span><span class="c1"></span><span class="nv">$mask</span> <span class="o">=</span> <span class="s2">&#34;mask[registrations[personDetail[properties], status], regionalInternetRegistry]&#34;</span><span class="p">;</span>
+<span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$mask</span><span class="p">);</span>
 
-// Declare an objectFilter to retrieve results avoiding subnet registers with &#34;regionalInternetRegistry&#34; to SoftLayer.
-// These kind of registers are not displayed in &#34;https://control.softlayer.com/network/rir&#34;
-$filter = new stdClass();
-$filter -&gt; subnets = new stdClass();
-$filter -&gt; subnets -&gt; regionalInternetRegistry = new stdClass();
-$filter -&gt; subnets -&gt; regionalInternetRegistry -&gt; name = new stdClass();
-$filter -&gt; subnets -&gt; regionalInternetRegistry -&gt; name -&gt; operation = &#34;!~SoftLayer&#34;;
-$client -&gt; setObjectFilter($filter);
+<span class="c1">// Declare an objectFilter to retrieve results avoiding subnet registers with &#34;regionalInternetRegistry&#34; to SoftLayer.
+</span><span class="c1">// These kind of registers are not displayed in &#34;https://control.softlayer.com/network/rir&#34;
+</span><span class="c1"></span><span class="nv">$filter</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">subnets</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">subnets</span> <span class="o">-&gt;</span> <span class="na">regionalInternetRegistry</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">subnets</span> <span class="o">-&gt;</span> <span class="na">regionalInternetRegistry</span> <span class="o">-&gt;</span> <span class="na">name</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">subnets</span> <span class="o">-&gt;</span> <span class="na">regionalInternetRegistry</span> <span class="o">-&gt;</span> <span class="na">name</span> <span class="o">-&gt;</span> <span class="na">operation</span> <span class="o">=</span> <span class="s2">&#34;!~SoftLayer&#34;</span><span class="p">;</span>
+<span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">setObjectFilter</span><span class="p">(</span><span class="nv">$filter</span><span class="p">);</span>
 
-// Define array for Subnet Registrations to create CSV file
-$registers = array();
+<span class="c1">// Define array for Subnet Registrations to create CSV file
+</span><span class="c1"></span><span class="nv">$registers</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
 
-try {
-    // Get all Subnet registrations
-    $result = $client -&gt; getSubnets();
-    foreach ($result as $register) {
-        $id = $register -&gt; id;
-        $subnet = $register -&gt; networkIdentifier . &#34;/&#34; . $register -&gt; cidr;
-        $status = &#34;&#34;;
-        $rir = $register -&gt; regionalInternetRegistry -&gt; name;
-        $personRecord = &#34; &#34;;
-        // Verify if the &#34;status:name&#34; property for each register is null, in order to replace it with &#34;Unregistered&#34; value
-        if (isset($register -&gt; registrations[0] -&gt; status -&gt; name) == NULL) {
-            $status = &#34;Unregistered&#34;;
-        } else {
-            // Get current status name from Subnet Registration
-            $status = $register -&gt; registrations[0] -&gt; status -&gt; name;
-            // Verifying if each register has properties. There exists some cases that a subnet registration doesn&#39;t have properties added.
-            if (isset($register -&gt; registrations[0] -&gt; personDetail -&gt; properties) != NULL) {
-                for ($i = 0; $i &lt; sizeof($register -&gt; registrations[0] -&gt; personDetail -&gt; properties); $i++) {
-                    // Getting property type 61 that corresponds to &#34;Organization&#34; parameter
-                    if (($register -&gt; registrations[0] -&gt; personDetail -&gt; properties[$i] -&gt; propertyTypeId) == 61) {
-                        // Assign &#34;Organization Name&#34; to the person record variable
-                        $personRecord = $register -&gt; registrations[0] -&gt; personDetail -&gt; properties[$i] -&gt; value;
-                    }
-                }
-            }
-        }
-        // Print result
-        echo(&#34;Id: &#34; . $id . &#34;\nSubnet: &#34; . $subnet . &#34;\nStatus Name: &#34; . $status . &#34;\nRIR: &#34; . $rir . &#34;\nPerson Record: &#34; . $personRecord);
-        // Add to &#34;registers&#34; array which will be used to generate CSV file.
-        array_push($registers, array($subnet, $status, $rir, $personRecord));
-        echo(&#34;\n------------------------------------------------------------------------------------\n&#34;);
-    }
-    // Declare titles for CSV file
-    $titles = array(&#34;Subnet&#34;, &#34;Status&#34;, &#34;RIR&#34;, &#34;Person Record&#34;);
-    // Create CSV file
-    $dateTime = new DateTime();
-    $date = $dateTime -&gt; format(&#34;Y-m-d&#34;);
-    $filePath = fopen($path . &#34;\SubnetRegistrations_&#34; . $date . &#34;.csv&#34;, &#34;w&#34;);
-    // Write titles in CSV file
-    fputcsv($filePath, $titles);
-    // Write all registers in CSV file
-    foreach ($registers as $fields) {
-        fputcsv($filePath, $fields);
-    }
-    // Close CSV file
-    fclose($filePath);
-} catch(Exception $e) {
-    echo &#34;Unable to get Subnet Registrations: &#34; . $e -&gt; getMessage();
-}
+<span class="k">try</span> <span class="p">{</span>
+    <span class="c1">// Get all Subnet registrations
+</span><span class="c1"></span>    <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">getSubnets</span><span class="p">();</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$result</span> <span class="k">as</span> <span class="nv">$register</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$id</span> <span class="o">=</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">id</span><span class="p">;</span>
+        <span class="nv">$subnet</span> <span class="o">=</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">networkIdentifier</span> <span class="o">.</span> <span class="s2">&#34;/&#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">cidr</span><span class="p">;</span>
+        <span class="nv">$status</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span><span class="p">;</span>
+        <span class="nv">$rir</span> <span class="o">=</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">regionalInternetRegistry</span> <span class="o">-&gt;</span> <span class="na">name</span><span class="p">;</span>
+        <span class="nv">$personRecord</span> <span class="o">=</span> <span class="s2">&#34; &#34;</span><span class="p">;</span>
+        <span class="c1">// Verify if the &#34;status:name&#34; property for each register is null, in order to replace it with &#34;Unregistered&#34; value
+</span><span class="c1"></span>        <span class="k">if</span> <span class="p">(</span><span class="nx">isset</span><span class="p">(</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">registrations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">status</span> <span class="o">-&gt;</span> <span class="na">name</span><span class="p">)</span> <span class="o">==</span> <span class="k">NULL</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nv">$status</span> <span class="o">=</span> <span class="s2">&#34;Unregistered&#34;</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="c1">// Get current status name from Subnet Registration
+</span><span class="c1"></span>            <span class="nv">$status</span> <span class="o">=</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">registrations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">status</span> <span class="o">-&gt;</span> <span class="na">name</span><span class="p">;</span>
+            <span class="c1">// Verifying if each register has properties. There exists some cases that a subnet registration doesn&#39;t have properties added.
+</span><span class="c1"></span>            <span class="k">if</span> <span class="p">(</span><span class="nx">isset</span><span class="p">(</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">registrations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">personDetail</span> <span class="o">-&gt;</span> <span class="na">properties</span><span class="p">)</span> <span class="o">!=</span> <span class="k">NULL</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">for</span> <span class="p">(</span><span class="nv">$i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nv">$i</span> <span class="o">&lt;</span> <span class="nx">sizeof</span><span class="p">(</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">registrations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">personDetail</span> <span class="o">-&gt;</span> <span class="na">properties</span><span class="p">);</span> <span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">// Getting property type 61 that corresponds to &#34;Organization&#34; parameter
+</span><span class="c1"></span>                    <span class="k">if</span> <span class="p">((</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">registrations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">personDetail</span> <span class="o">-&gt;</span> <span class="na">properties</span><span class="p">[</span><span class="nv">$i</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">propertyTypeId</span><span class="p">)</span> <span class="o">==</span> <span class="mi">61</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="c1">// Assign &#34;Organization Name&#34; to the person record variable
+</span><span class="c1"></span>                        <span class="nv">$personRecord</span> <span class="o">=</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">registrations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">personDetail</span> <span class="o">-&gt;</span> <span class="na">properties</span><span class="p">[</span><span class="nv">$i</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="na">value</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="c1">// Print result
+</span><span class="c1"></span>        <span class="k">echo</span><span class="p">(</span><span class="s2">&#34;Id: &#34;</span> <span class="o">.</span> <span class="nv">$id</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">Subnet: &#34;</span> <span class="o">.</span> <span class="nv">$subnet</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">Status Name: &#34;</span> <span class="o">.</span> <span class="nv">$status</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">RIR: &#34;</span> <span class="o">.</span> <span class="nv">$rir</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">Person Record: &#34;</span> <span class="o">.</span> <span class="nv">$personRecord</span><span class="p">);</span>
+        <span class="c1">// Add to &#34;registers&#34; array which will be used to generate CSV file.
+</span><span class="c1"></span>        <span class="nx">array_push</span><span class="p">(</span><span class="nv">$registers</span><span class="p">,</span> <span class="k">array</span><span class="p">(</span><span class="nv">$subnet</span><span class="p">,</span> <span class="nv">$status</span><span class="p">,</span> <span class="nv">$rir</span><span class="p">,</span> <span class="nv">$personRecord</span><span class="p">));</span>
+        <span class="k">echo</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">------------------------------------------------------------------------------------</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="c1">// Declare titles for CSV file
+</span><span class="c1"></span>    <span class="nv">$titles</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">&#34;Subnet&#34;</span><span class="p">,</span> <span class="s2">&#34;Status&#34;</span><span class="p">,</span> <span class="s2">&#34;RIR&#34;</span><span class="p">,</span> <span class="s2">&#34;Person Record&#34;</span><span class="p">);</span>
+    <span class="c1">// Create CSV file
+</span><span class="c1"></span>    <span class="nv">$dateTime</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DateTime</span><span class="p">();</span>
+    <span class="nv">$date</span> <span class="o">=</span> <span class="nv">$dateTime</span> <span class="o">-&gt;</span> <span class="na">format</span><span class="p">(</span><span class="s2">&#34;Y-m-d&#34;</span><span class="p">);</span>
+    <span class="nv">$filePath</span> <span class="o">=</span> <span class="nx">fopen</span><span class="p">(</span><span class="nv">$path</span> <span class="o">.</span> <span class="s2">&#34;\SubnetRegistrations_&#34;</span> <span class="o">.</span> <span class="nv">$date</span> <span class="o">.</span> <span class="s2">&#34;.csv&#34;</span><span class="p">,</span> <span class="s2">&#34;w&#34;</span><span class="p">);</span>
+    <span class="c1">// Write titles in CSV file
+</span><span class="c1"></span>    <span class="nx">fputcsv</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">,</span> <span class="nv">$titles</span><span class="p">);</span>
+    <span class="c1">// Write all registers in CSV file
+</span><span class="c1"></span>    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$registers</span> <span class="k">as</span> <span class="nv">$fields</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">fputcsv</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">,</span> <span class="nv">$fields</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="c1">// Close CSV file
+</span><span class="c1"></span>    <span class="nx">fclose</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">);</span>
+<span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">echo</span> <span class="s2">&#34;Unable to get Subnet Registrations: &#34;</span> <span class="o">.</span> <span class="nv">$e</span> <span class="o">-&gt;</span> <span class="na">getMessage</span><span class="p">();</span>
+<span class="p">}</span>
 
 </code></pre></div>
             </div>

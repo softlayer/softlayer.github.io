@@ -148,48 +148,48 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">&lt;?php
-require_once (&#39;Softlayer/SoapClient.class.php&#39;);
+                <div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
+<span class="k">require_once</span> <span class="p">(</span><span class="s1">&#39;Softlayer/SoapClient.class.php&#39;</span><span class="p">);</span>
  
-$apiUsername = &#39;&#39;;
-$apiKey = &#39;apikey_goes_here&#39;;
+<span class="nv">$apiUsername</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+<span class="nv">$apiKey</span> <span class="o">=</span> <span class="s1">&#39;apikey_goes_here&#39;</span><span class="p">;</span>
  
-$accountClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Account&#39;, null, $apiUsername, $apiKey);
-$userClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_User_Customer&#39;, null, $apiUsername, $apiKey);
-$virtualGuestClient = SoftLayer_SoapClient::getClient(&#39;SoftLayer_Virtual_Guest&#39;, null, $apiUsername, $apiKey);
+<span class="nv">$accountClient</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$apiUsername</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
+<span class="nv">$userClient</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_User_Customer&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$apiUsername</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
+<span class="nv">$virtualGuestClient</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$apiUsername</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
  
-$accountClient-&gt;setObjectMask(&#34;mask[id, userStatus, username]&#34;);
-$users = $accountClient-&gt;getUsers();
-var_dump($users);
+<span class="nv">$accountClient</span><span class="o">-&gt;</span><span class="na">setObjectMask</span><span class="p">(</span><span class="s2">&#34;mask[id, userStatus, username]&#34;</span><span class="p">);</span>
+<span class="nv">$users</span> <span class="o">=</span> <span class="nv">$accountClient</span><span class="o">-&gt;</span><span class="na">getUsers</span><span class="p">();</span>
+<span class="nx">var_dump</span><span class="p">(</span><span class="nv">$users</span><span class="p">);</span>
  
-$userToDisable = &#39;username&#39;;
+<span class="nv">$userToDisable</span> <span class="o">=</span> <span class="s1">&#39;username&#39;</span><span class="p">;</span>
 
-#$ccis = $userClient-&gt;getVirtualGuests();
-#print ($ccis);
+<span class="c1">#$ccis = $userClient-&gt;getVirtualGuests();
+</span><span class="c1">#print ($ccis);
+</span><span class="c1"></span> 
+<span class="c1">// Loop through each user on the account and identify by username
+</span><span class="c1"></span><span class="k">foreach</span> <span class="p">(</span><span class="nv">$users</span> <span class="k">as</span> <span class="nv">$user</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$user</span><span class="o">-&gt;</span><span class="na">username</span> <span class="o">==</span> <span class="nv">$userToDisable</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// set the userId for the userClient
+</span><span class="c1"></span>        <span class="nv">$userClient</span><span class="o">-&gt;</span><span class="na">setInitParameter</span><span class="p">(</span><span class="nv">$user</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
  
-// Loop through each user on the account and identify by username
-foreach ($users as $user) {
-    if ($user-&gt;username == $userToDisable) {
-        // set the userId for the userClient
-        $userClient-&gt;setInitParameter($user-&gt;id);
+        <span class="c1">// Shutdown a users CCIs
+</span><span class="c1"></span>        <span class="nv">$ccis</span> <span class="o">=</span> <span class="nv">$userClient</span><span class="o">-&gt;</span><span class="na">getVirtualGuests</span><span class="p">();</span>
+        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$ccis</span> <span class="k">as</span> <span class="nv">$cci</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nv">$virtualGuestClient</span><span class="o">-&gt;</span><span class="na">setInitParameter</span><span class="p">(</span><span class="nv">$cci</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
+        <span class="c1">#    $virtualGuestClient-&gt;powerOffSoft();
+</span><span class="c1"></span>            <span class="k">print</span> <span class="p">(</span><span class="nv">$virtualGuestClient</span><span class="p">);</span>
+        <span class="p">}</span>
  
-        // Shutdown a users CCIs
-        $ccis = $userClient-&gt;getVirtualGuests();
-        foreach ($ccis as $cci) {
-            $virtualGuestClient-&gt;setInitParameter($cci-&gt;id);
-        #    $virtualGuestClient-&gt;powerOffSoft();
-            print ($virtualGuestClient);
-        }
- 
-        // Disable the user
-        $templateObject = new stdClass();
-        $templateObject-&gt;id = $user-&gt;id;
-        $templateObject-&gt;userStatusId = 1002; // 1001 for enabled   
-        #$result = $userClient-&gt;editObject($templateObject);
-    }
-}
-?&gt;
-</code></pre></div>
+        <span class="c1">// Disable the user
+</span><span class="c1"></span>        <span class="nv">$templateObject</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+        <span class="nv">$templateObject</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$user</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">;</span>
+        <span class="nv">$templateObject</span><span class="o">-&gt;</span><span class="na">userStatusId</span> <span class="o">=</span> <span class="mi">1002</span><span class="p">;</span> <span class="c1">// 1001 for enabled   
+</span><span class="c1"></span>        <span class="c1">#$result = $userClient-&gt;editObject($templateObject);
+</span><span class="c1"></span>    <span class="p">}</span>
+<span class="p">}</span>
+<span class="cp">?&gt;</span><span class="err">
+</span></code></pre></div>
             </div>
         </div>
 

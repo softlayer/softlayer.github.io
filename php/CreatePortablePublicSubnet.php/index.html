@@ -148,159 +148,159 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">&lt;?php
-/**
- * Create Static Public Subnet.
- *
- * Important manual pages:
- * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
- * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
- * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Subnet
- *
- * @license &lt;http://sldn.softlayer.com/wiki/index.php/License&gt;
- * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
- */
+                <div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
+<span class="sd">/**
+</span><span class="sd"> * Create Static Public Subnet.
+</span><span class="sd"> *
+</span><span class="sd"> * Important manual pages:
+</span><span class="sd"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
+</span><span class="sd"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span><span class="sd"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Subnet
+</span><span class="sd"> *
+</span><span class="sd"> * @license &lt;http://sldn.softlayer.com/wiki/index.php/License&gt;
+</span><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span><span class="sd"> */</span>
 
-require_once(dirname(__FILE__) . &#39;/SoftLayer/SoapClient.class.php&#39;);
+<span class="k">require_once</span><span class="p">(</span><span class="nx">dirname</span><span class="p">(</span><span class="no">__FILE__</span><span class="p">)</span> <span class="o">.</span> <span class="s1">&#39;/SoftLayer/SoapClient.class.php&#39;</span><span class="p">);</span>
 
-/**
- * Set your SoftLayer API username and key.
- */
-$apiUsername = &#39;set me&#39;;
-$apiKey = &#39;set me&#39;;
+<span class="sd">/**
+</span><span class="sd"> * Set your SoftLayer API username and key.
+</span><span class="sd"> */</span>
+<span class="nv">$apiUsername</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
+<span class="nv">$apiKey</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
 
-/**
- * Set the service to use
- */
-$serviceName =&#39;SoftLayer_Product_Order&#39;;
+<span class="sd">/**
+</span><span class="sd"> * Set the service to use
+</span><span class="sd"> */</span>
+<span class="nv">$serviceName</span> <span class="o">=</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">;</span>
 
-$priceId =  13980;
+<span class="nv">$priceId</span> <span class="o">=</span>  <span class="mi">13980</span><span class="p">;</span>
 
-/**
- * The id of the VLAN that you want to route a portable subnet to.
- *
- * @var int
- */
-$endPointVlanId = 331044;
+<span class="sd">/**
+</span><span class="sd"> * The id of the VLAN that you want to route a portable subnet to.
+</span><span class="sd"> *
+</span><span class="sd"> * @var int
+</span><span class="sd"> */</span>
+<span class="nv">$endPointVlanId</span> <span class="o">=</span> <span class="mi">331044</span><span class="p">;</span>
 
-/**
- * The number of subnets you want to order
- *
- * @var int;
- */
-$quantity = 1;
+<span class="sd">/**
+</span><span class="sd"> * The number of subnets you want to order
+</span><span class="sd"> *
+</span><span class="sd"> * @var int;
+</span><span class="sd"> */</span>
+<span class="nv">$quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 
-// Build a SoftLayer_Container_Product_Order_Network_Subnet object containing
-// the order you want to place. Subnets don&#39;t have a package, so set packageId
-// to 0. Since this order is for one item with no sub-options you only have to
-// set a single price id in this order.
-$orderTemplate = new stdClass();
-$orderTemplate-&gt;packageId           = 0;
-$orderTemplate-&gt;prices              = array();
-$orderTemplate-&gt;prices[0]           = new stdClass();
-$orderTemplate-&gt;prices[0]-&gt;id       = $priceId;
-$orderTemplate-&gt;endPointVlanId = $endPointVlanId;
-$orderTemplate-&gt;quantity            = $quantity;
-
-
-$orderTemplate-&gt;itemCategoryQuestionAnswers = array();
-
-// the item category question answers
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 14;
-$itemCategoryQuestionAnswer-&gt;answer = &#39;1&#39;;  // TOTAL_IPS_IN_30_DAYS
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 15;
-$itemCategoryQuestionAnswer-&gt;answer = &#39;3&#39;;  // # TOTAL_IPS_IN_12_MONTHS
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 16;
-$itemCategoryQuestionAnswer-&gt;answer = &#39;Reason for IPs&#39;;  // REASON_FOR_IPS
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 9;
-$itemCategoryQuestionAnswer-&gt;answer = &#39;Contact Name&#39;;  // CONTACT_NAME
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 10;
-$itemCategoryQuestionAnswer-&gt;answer = &#39;Contact Job Title&#39;;  // # CONTACT_JOB_TITLE
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 11;
-$itemCategoryQuestionAnswer-&gt;answer = &#39;contact.email@email.com&#39;;  // # CONTACT_EMAIL
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 12;
-$itemCategoryQuestionAnswer-&gt;answer = &#39;77778727&#39;;  // # CONTACT_PHONE_NUMBER
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-$itemCategoryQuestionAnswer = new stdClass();
-$itemCategoryQuestionAnswer-&gt;categoryId = 313;
-$itemCategoryQuestionAnswer-&gt;categoryCode = &#39;sov_sec_ip_addresses_pub&#39;;
-$itemCategoryQuestionAnswer-&gt;questionId = 13;
-$itemCategoryQuestionAnswer-&gt;answer = true;   // CONTACT_VALIDATED - I agree that the contact information is current and valid.
-$orderTemplate-&gt;itemCategoryQuestionAnswers[] = $itemCategoryQuestionAnswer;
-
-/**
- * Create a client to the API service.
- */
-$client = SoftLayer_SoapClient::getClient($serviceName, null, $apiUsername, $apiKey);
+<span class="c1">// Build a SoftLayer_Container_Product_Order_Network_Subnet object containing
+</span><span class="c1">// the order you want to place. Subnets don&#39;t have a package, so set packageId
+</span><span class="c1">// to 0. Since this order is for one item with no sub-options you only have to
+</span><span class="c1">// set a single price id in this order.
+</span><span class="c1"></span><span class="nv">$orderTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">packageId</span>           <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">prices</span>              <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+<span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">prices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>           <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">prices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">id</span>       <span class="o">=</span> <span class="nv">$priceId</span><span class="p">;</span>
+<span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">endPointVlanId</span> <span class="o">=</span> <span class="nv">$endPointVlanId</span><span class="p">;</span>
+<span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">quantity</span>            <span class="o">=</span> <span class="nv">$quantity</span><span class="p">;</span>
 
 
-// Create a SoftLayer API client object to the SoftLayer_Product_Order service.
-$client = SoftLayer_SoapClient::getClient
-    (
-        &#39;SoftLayer_Product_Order&#39;,
-        null,
-        $apiUsername,
-        $apiKey
-    );
+<span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
 
-// Place the order for the new subnet.
-try {
-    // Re-declare the order template as a SOAP variable, so the SoftLayer
-    // ordering system knows what type of order you&#39;re placing.
-    $orderTemplate = new SoapVar
-    (
-        $orderTemplate,
-        SOAP_ENC_OBJECT,
-        &#39;SoftLayer_Container_Product_Order_Network_Subnet&#39;,
-        &#39;http://api.service.softlayer.com/soap/v3/&#39;
-    );
+<span class="c1">// the item category question answers
+</span><span class="c1"></span><span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">14</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="s1">&#39;1&#39;</span><span class="p">;</span>  <span class="c1">// TOTAL_IPS_IN_30_DAYS
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
 
-    // verifyOrder() will check your order for errors. Replace this with a call
-    // to placeOrder() when you&#39;re ready to order. Both calls return a receipt
-    // object that you can use for your records.
-    //
-    // Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
-    // provisioning process. When it&#39;s done you&#39;ll have a new
-    // SoftLayer_Network_Subnet object ready to use.
-    $receipt = $client-&gt;verifyOrder($orderTemplate);
-    print_r($receipt);
-} catch (Exception $e) {
-    echo &#39;Unable to place subnet order: &#39; . $e-&gt;getMessage();
-}
+<span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="s1">&#39;3&#39;</span><span class="p">;</span>  <span class="c1">// # TOTAL_IPS_IN_12_MONTHS
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
+
+<span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">16</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="s1">&#39;Reason for IPs&#39;</span><span class="p">;</span>  <span class="c1">// REASON_FOR_IPS
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
+
+<span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="s1">&#39;Contact Name&#39;</span><span class="p">;</span>  <span class="c1">// CONTACT_NAME
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
+
+<span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="s1">&#39;Contact Job Title&#39;</span><span class="p">;</span>  <span class="c1">// # CONTACT_JOB_TITLE
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
+
+<span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">11</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="s1">&#39;contact.email@email.com&#39;</span><span class="p">;</span>  <span class="c1">// # CONTACT_EMAIL
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
+
+<span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">12</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="s1">&#39;77778727&#39;</span><span class="p">;</span>  <span class="c1">// # CONTACT_PHONE_NUMBER
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
+
+<span class="nv">$itemCategoryQuestionAnswer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="mi">313</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">categoryCode</span> <span class="o">=</span> <span class="s1">&#39;sov_sec_ip_addresses_pub&#39;</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">questionId</span> <span class="o">=</span> <span class="mi">13</span><span class="p">;</span>
+<span class="nv">$itemCategoryQuestionAnswer</span><span class="o">-&gt;</span><span class="na">answer</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>   <span class="c1">// CONTACT_VALIDATED - I agree that the contact information is current and valid.
+</span><span class="c1"></span><span class="nv">$orderTemplate</span><span class="o">-&gt;</span><span class="na">itemCategoryQuestionAnswers</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$itemCategoryQuestionAnswer</span><span class="p">;</span>
+
+<span class="sd">/**
+</span><span class="sd"> * Create a client to the API service.
+</span><span class="sd"> */</span>
+<span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="nv">$serviceName</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$apiUsername</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
+
+
+<span class="c1">// Create a SoftLayer API client object to the SoftLayer_Product_Order service.
+</span><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span>
+    <span class="p">(</span>
+        <span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span>
+        <span class="k">null</span><span class="p">,</span>
+        <span class="nv">$apiUsername</span><span class="p">,</span>
+        <span class="nv">$apiKey</span>
+    <span class="p">);</span>
+
+<span class="c1">// Place the order for the new subnet.
+</span><span class="c1"></span><span class="k">try</span> <span class="p">{</span>
+    <span class="c1">// Re-declare the order template as a SOAP variable, so the SoftLayer
+</span><span class="c1"></span>    <span class="c1">// ordering system knows what type of order you&#39;re placing.
+</span><span class="c1"></span>    <span class="nv">$orderTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SoapVar</span>
+    <span class="p">(</span>
+        <span class="nv">$orderTemplate</span><span class="p">,</span>
+        <span class="nx">SOAP_ENC_OBJECT</span><span class="p">,</span>
+        <span class="s1">&#39;SoftLayer_Container_Product_Order_Network_Subnet&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;http://api.service.softlayer.com/soap/v3/&#39;</span>
+    <span class="p">);</span>
+
+    <span class="c1">// verifyOrder() will check your order for errors. Replace this with a call
+</span><span class="c1"></span>    <span class="c1">// to placeOrder() when you&#39;re ready to order. Both calls return a receipt
+</span><span class="c1"></span>    <span class="c1">// object that you can use for your records.
+</span><span class="c1"></span>    <span class="c1">//
+</span><span class="c1"></span>    <span class="c1">// Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
+</span><span class="c1"></span>    <span class="c1">// provisioning process. When it&#39;s done you&#39;ll have a new
+</span><span class="c1"></span>    <span class="c1">// SoftLayer_Network_Subnet object ready to use.
+</span><span class="c1"></span>    <span class="nv">$receipt</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">verifyOrder</span><span class="p">(</span><span class="nv">$orderTemplate</span><span class="p">);</span>
+    <span class="nx">print_r</span><span class="p">(</span><span class="nv">$receipt</span><span class="p">);</span>
+<span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">echo</span> <span class="s1">&#39;Unable to place subnet order: &#39;</span> <span class="o">.</span> <span class="nv">$e</span><span class="o">-&gt;</span><span class="na">getMessage</span><span class="p">();</span>
+<span class="p">}</span>
 
 </code></pre></div>
             </div>
