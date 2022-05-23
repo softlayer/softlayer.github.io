@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -154,200 +150,195 @@ if (!doNotTrack) {
 <h2 id="creating-a-virtual-guest">Creating a Virtual Guest</h2>
 <p>These scripts make a paginated API call to <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject/">SoftLayer_Virtual_Guest::createObject()</a> and print the id and the hostname of the new instance.</p>
 <p>The first script calls the method from the <code>main</code> function</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;log&#34;</span>
-
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="c1">// A virtual guest template
-</span><span class="c1">//
-</span><span class="c1">// (use convenience functions to get pointers from literals, as needed)
-</span><span class="c1"></span><span class="kd">var</span> <span class="nx">vGuestTemplate</span> <span class="p">=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{</span>
-	<span class="nx">Hostname</span><span class="p">:</span>                     <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;sample&#34;</span><span class="p">),</span>
-	<span class="nx">Domain</span><span class="p">:</span>                       <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;example.com&#34;</span><span class="p">),</span>
-	<span class="nx">MaxMemory</span><span class="p">:</span>                    <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4096</span><span class="p">),</span>
-	<span class="nx">StartCpus</span><span class="p">:</span>                    <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
-	<span class="nx">Datacenter</span><span class="p">:</span>                   <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Location</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;wdc01&#34;</span><span class="p">)},</span>
-	<span class="nx">OperatingSystemReferenceCode</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;UBUNTU_LATEST&#34;</span><span class="p">),</span>
-	<span class="nx">LocalDiskFlag</span><span class="p">:</span>                <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">true</span><span class="p">),</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// Create a session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-
-	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Create the virtual guest from the template
-</span><span class="c1"></span>	<span class="c1">//
-</span><span class="c1"></span>	<span class="c1">// We also specify an (optional) object mask, to read back some values
-</span><span class="c1"></span>	<span class="nx">vGuest</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="s">&#34;id,hostname,domain&#34;</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">vGuestTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span>
-		<span class="s">&#34;\nNew Virtual Guest with ID %d being provisioned\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vGuest</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div><p>The second script calls the method from the <code>doCreateVMTest</code> function</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-	<span class="nf">doCreateVMTest</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-<span class="p">}</span>
-
-
-<span class="kd">func</span> <span class="nf">doCreateVMTest</span><span class="p">(</span><span class="nx">sess</span> <span class="o">*</span><span class="nx">session</span><span class="p">.</span><span class="nx">Session</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Create a Virtual_Guest instance as a template
-</span><span class="c1"></span>	<span class="nx">vGuestTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{}</span>
-
-	<span class="c1">//Set Creation values - use helpers from the sl package to set pointer values
-</span><span class="c1"></span>	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">Hostname</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;sample&#34;</span><span class="p">)</span>
-	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">Domain</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;example.com&#34;</span><span class="p">)</span>
-	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">MaxMemory</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span>
-	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">StartCpus</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">Datacenter</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Location</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;wdc01&#34;</span><span class="p">)}</span>
-	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">OperatingSystemReferenceCode</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;UBUNTU_LATEST&#34;</span><span class="p">)</span>
-	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">LocalDiskFlag</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
-
-	<span class="nx">vGuest</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="s">&#34;id;domain&#34;</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">vGuestTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\nNew Virtual Guest created with ID %d\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vGuest</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Domain: %s\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vGuest</span><span class="p">.</span><span class="nx">Domain</span><span class="p">)</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="listing-virtual-guests">Listing Virtual Guests</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// A virtual guest template
+</span></span></span><span class="line"><span class="cl"><span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1">// (use convenience functions to get pointers from literals, as needed)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="nx">vGuestTemplate</span> <span class="p">=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Hostname</span><span class="p">:</span>                     <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;sample&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Domain</span><span class="p">:</span>                       <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;example.com&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">MaxMemory</span><span class="p">:</span>                    <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4096</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">StartCpus</span><span class="p">:</span>                    <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Datacenter</span><span class="p">:</span>                   <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Location</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;wdc01&#34;</span><span class="p">)},</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">OperatingSystemReferenceCode</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;UBUNTU_LATEST&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">LocalDiskFlag</span><span class="p">:</span>                <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">true</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create the virtual guest from the template
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// We also specify an (optional) object mask, to read back some values
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vGuest</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="s">&#34;id,hostname,domain&#34;</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">vGuestTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;\nNew Virtual Guest with ID %d being provisioned\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vGuest</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>The second script calls the method from the <code>doCreateVMTest</code> function</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">doCreateVMTest</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">doCreateVMTest</span><span class="p">(</span><span class="nx">sess</span> <span class="o">*</span><span class="nx">session</span><span class="p">.</span><span class="nx">Session</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a Virtual_Guest instance as a template
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vGuestTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//Set Creation values - use helpers from the sl package to set pointer values
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">Hostname</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;sample&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">Domain</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;example.com&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">MaxMemory</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">StartCpus</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">Datacenter</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Location</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;wdc01&#34;</span><span class="p">)}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">OperatingSystemReferenceCode</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;UBUNTU_LATEST&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">vGuestTemplate</span><span class="p">.</span><span class="nx">LocalDiskFlag</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">vGuest</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="s">&#34;id;domain&#34;</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">vGuestTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\nNew Virtual Guest created with ID %d\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vGuest</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Domain: %s\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vGuest</span><span class="p">.</span><span class="nx">Domain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="listing-virtual-guests">Listing Virtual Guests</h2>
 <p>This script makes a paginated API call to <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Account/getVirtualGuests/">SoftLayer_Account::getVirtualGuests()</a> and prints ids, hostnames and domains of ten account’s associated virtual guest objects.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-	<span class="nf">doListAccountVMsTest</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">doListAccountVMsTest</span><span class="p">(</span><span class="nx">sess</span> <span class="o">*</span><span class="nx">session</span><span class="p">.</span><span class="nx">Session</span><span class="p">)</span> <span class="p">{</span>
-	<span class="c1">// Get the Account service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// List VMs
-</span><span class="c1"></span>	<span class="nx">vms</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="s">&#34;id;hostname;domain&#34;</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="mi">10</span><span class="p">).</span><span class="nf">GetVirtualGuests</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Error retrieving Virtual Guests from Account: %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;VMs under Account:&#34;</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">vm</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">vms</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\t[%d]%s.%s\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vm</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="o">*</span><span class="nx">vm</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">,</span> <span class="o">*</span><span class="nx">vm</span><span class="p">.</span><span class="nx">Domain</span><span class="p">)</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="canceling-a-virtual-guest">Canceling a Virtual Guest</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">doListAccountVMsTest</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">doListAccountVMsTest</span><span class="p">(</span><span class="nx">sess</span> <span class="o">*</span><span class="nx">session</span><span class="p">.</span><span class="nx">Session</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get the Account service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// List VMs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vms</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="s">&#34;id;hostname;domain&#34;</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="mi">10</span><span class="p">).</span><span class="nf">GetVirtualGuests</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Error retrieving Virtual Guests from Account: %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;VMs under Account:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">vm</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">vms</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\t[%d]%s.%s\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vm</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="o">*</span><span class="nx">vm</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">,</span> <span class="o">*</span><span class="nx">vm</span><span class="p">.</span><span class="nx">Domain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="canceling-a-virtual-guest">Canceling a Virtual Guest</h2>
 <p>This script makes a paginated API call to <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/deleteObject/">SoftLayer_Virtual_Guest::deleteObject</a>.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;log&#34;</span>
-
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">var</span> <span class="nx">guestId</span> <span class="p">=</span> <span class="mi">24438563</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// Create a session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-
-	<span class="c1">// Get the virtual guest service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Set the object ID and delete the guest
-</span><span class="c1"></span>	<span class="nx">success</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">guestId</span><span class="p">).</span><span class="nf">DeleteObject</span><span class="p">()</span>
-
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">success</span> <span class="o">==</span> <span class="kc">false</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Error deleting virtual guest&#34;</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Virtual Guest deleted successfully&#34;</span><span class="p">)</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="upgrading-a-virtual-guest">Upgrading a Virtual Guest</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">guestId</span> <span class="p">=</span> <span class="mi">24438563</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get the virtual guest service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Set the object ID and delete the guest
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">success</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">guestId</span><span class="p">).</span><span class="nf">DeleteObject</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">success</span> <span class="o">==</span> <span class="kc">false</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Error deleting virtual guest&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Virtual Guest deleted successfully&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="upgrading-a-virtual-guest">Upgrading a Virtual Guest</h2>
 <p>This example demonstrates the use of helper functions that simplify the process of placing a virtual guest upgrade order</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;log&#34;</span>
-
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/helpers/product&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/helpers/virtual&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">const</span> <span class="nx">guestID</span> <span class="p">=</span> <span class="mi">123456</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-
-	<span class="c1">// Create a minimal Virtual_Guest object to pass to the upgrade helper
-</span><span class="c1"></span>	<span class="nx">guestToUpgrade</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{</span>
-		<span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">guestID</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Upgrade to 4 Core, 8 GB
-</span><span class="c1"></span>	<span class="nx">upgradeOptions</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">float64</span><span class="p">{</span>
-		<span class="nx">product</span><span class="p">.</span><span class="nx">CPUCategoryCode</span><span class="p">:</span>    <span class="nb">float64</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
-		<span class="nx">product</span><span class="p">.</span><span class="nx">MemoryCategoryCode</span><span class="p">:</span> <span class="nb">float64</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">virtual</span><span class="p">.</span><span class="nf">UpgradeVirtualGuest</span><span class="p">(</span><span class="nx">sess</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">guestToUpgrade</span><span class="p">,</span> <span class="nx">upgradeOptions</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Couldn&#39;t upgrade virtual guest:&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Virtual Guest upgrade submitted.  Order ID: %s\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">receipt</span><span class="p">.</span><span class="nx">OrderId</span><span class="p">)</span>
-<span class="p">}</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/helpers/product&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/helpers/virtual&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">const</span> <span class="nx">guestID</span> <span class="p">=</span> <span class="mi">123456</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a minimal Virtual_Guest object to pass to the upgrade helper
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">guestToUpgrade</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">guestID</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Upgrade to 4 Core, 8 GB
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">upgradeOptions</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">float64</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">product</span><span class="p">.</span><span class="nx">CPUCategoryCode</span><span class="p">:</span>    <span class="nb">float64</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">product</span><span class="p">.</span><span class="nx">MemoryCategoryCode</span><span class="p">:</span> <span class="nb">float64</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">virtual</span><span class="p">.</span><span class="nf">UpgradeVirtualGuest</span><span class="p">(</span><span class="nx">sess</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">guestToUpgrade</span><span class="p">,</span> <span class="nx">upgradeOptions</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Couldn&#39;t upgrade virtual guest:&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Virtual Guest upgrade submitted.  Order ID: %s\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">receipt</span><span class="p">.</span><span class="nx">OrderId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

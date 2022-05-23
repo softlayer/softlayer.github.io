@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -150,111 +146,110 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1"># Retrieve a list of switch port statistics for a server&#39;s network interfaces.</span>
-<span class="c1"># </span>
-<span class="c1"># This script makes a single call to the getPortStatistics() method in the</span>
-<span class="c1"># SoftLayer_Network_Component API service</span>
-<span class="c1"># for each of a server&#39;s network components to query port statistics for that</span>
-<span class="c1"># interface from SoftLayer&#39;s switches. Port statistics are modeled by the</span>
-<span class="c1"># SoftLayer__Container_Network_Port_Statistic data type</span>
-<span class="c1"># See below for more details.</span>
-<span class="c1">#</span>
-<span class="c1"># Important manual pages:</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_NetworkComponent/getPortStatistics</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Network_Port_Statistic</span>
-<span class="c1">#</span>
-<span class="c1"># License: http://sldn.softlayer.com/article/License</span>
-<span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
- 
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">JSON</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">strict</span><span class="p">;</span>
- 
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="k">my</span> <span class="nv">$api_username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$api_key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
- 
-<span class="c1"># Your server&#39;s id. Call the getHardware() method in the SoftLayer_Account API</span>
-<span class="c1"># service (http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware)</span>
-<span class="c1"># to get a list of your account&#39;s hardware records.</span>
-<span class="k">my</span> <span class="nv">$server_id</span> <span class="o">=</span> <span class="mi">87165</span><span class="p">;</span>
- 
-<span class="c1"># Declaring a new API service object for the SoftLayer_Hardware_Server API</span>
-<span class="c1"># service.</span>
-<span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nv">$server_id</span><span class="p">,</span> <span class="nv">$api_username</span><span class="p">,</span> <span class="nv">$api_key</span><span class="p">);</span>
- 
-<span class="c1"># Switchport statistics are measured off the server&#39;s network components. Use</span>
-<span class="c1"># an object mask to network component records along with our server record.</span>
-<span class="nv">$client</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">({</span>
-    <span class="s">&#39;networkComponents&#39;</span> <span class="o">=&gt;</span> <span class="p">{},</span>
-<span class="p">});</span>
- 
-<span class="c1"># Making the call to retrieve our hardware record. Once we have that we can query</span>
-<span class="c1"># the server&#39;s network components.</span>
-<span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">getObject</span><span class="p">();</span>
- 
-<span class="c1"># If there was an error returned from the SoftLayer API then die out with the</span>
-<span class="c1"># error message.</span>
-<span class="k">if</span> <span class="p">(</span><span class="nv">$server</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nb">die</span> <span class="s">&#34;Unable to retrieve server record. &#34;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-<span class="p">}</span>
- 
-<span class="c1"># Separating our network components for easier processing later.</span>
-<span class="nv">$server</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$network_components</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">networkComponents</span><span class="p">};</span>
- 
-<span class="c1"># Printing out a simple report header.</span>
-<span class="k">print</span> <span class="s">&#34;\nSwitchport statistics for &#34;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">fullyQualifiedDomainName</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;\n\n&#34;</span><span class="p">;</span>
- 
-<span class="c1"># Looping through our server&#39;s network components. For each NIC make a call to the</span>
-<span class="c1"># SoftLayer_Network_Component API service method getPortStatics() to get a list</span>
-<span class="c1"># of switchport statistics retrieved from the switch on the other side of your</span>
-<span class="c1"># NIC. Print a simple report per NIC.</span>
-<span class="k">for</span> <span class="k">my</span> <span class="nv">$i</span> <span class="p">(</span><span class="mi">0</span> <span class="o">..</span> <span class="nv">$#</span><span class="p">{</span><span class="nv">$network_components</span><span class="p">})</span> <span class="p">{</span>
-    <span class="k">my</span> <span class="nv">$component</span> <span class="o">=</span> <span class="nv">$network_components</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">];</span>
- 
-    <span class="c1"># Skiping the management network component.</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">name</span><span class="p">}</span> <span class="ow">eq</span> <span class="s">&#39;mgmt&#39;</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">next</span><span class="p">;</span>
-    <span class="p">}</span>
- 
-    <span class="c1"># It&#39;s all right to redeclare your API object.</span>
-    <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Network_Component&#39;</span><span class="p">,</span> <span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">},</span> <span class="nv">$api_username</span><span class="p">,</span> <span class="nv">$api_key</span><span class="p">);</span>
- 
-    <span class="c1"># Retrieve switchport statistics for the NIC.</span>
-    <span class="k">my</span> <span class="nv">$stats</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">getPortStatistics</span><span class="p">();</span>
- 
-    <span class="c1"># Make sure we didn&#39;t run into an error.</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nv">$stats</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nb">die</span> <span class="s">&#34;Unable to retrieve switchport statics for &#34;</span> <span class="o">.</span> <span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">name</span><span class="p">}</span> <span class="o">.</span> <span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">port</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;. &#34;</span> <span class="o">.</span> <span class="nv">$stats</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-    <span class="p">}</span>
- 
-    <span class="c1"># Make boolean up/down responses easier to read.</span>
-    <span class="nv">$stats</span> <span class="o">=</span> <span class="nv">$stats</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
-    <span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">administrativeStatus</span><span class="p">}</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">administrativeStatus</span><span class="p">}</span> <span class="ow">eq</span> <span class="s">&#39;1&#39;</span><span class="p">)</span> <span class="p">?</span> <span class="s">&#39;Up&#39;</span> <span class="p">:</span> <span class="s">&#39;Down&#39;</span><span class="p">;</span>
-    <span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">operationalStatus</span><span class="p">}</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">operationalStatus</span><span class="p">}</span> <span class="ow">eq</span> <span class="s">&#39;1&#39;</span><span class="p">)</span> <span class="p">?</span> <span class="s">&#39;Up&#39;</span> <span class="p">:</span> <span class="s">&#39;Down&#39;</span><span class="p">;</span>
- 
-    <span class="c1"># Print our port&#39;s statistics report.</span>
-    <span class="k">print</span> <span class="s">&lt;&lt;</span><span class="dl">EOT</span><span class="s">;
-</span><span class="s">Statistics for $component-&gt;{name}$component-&gt;{port} ($component-&gt;{primaryIpAddress})
-</span><span class="s">Administrative status:        $stats-&gt;{administrativeStatus}
-</span><span class="s">Operational status:           $stats-&gt;{operationalStatus}
-</span><span class="s">MTU:                          $stats-&gt;{maximumTransmissionUnit}
-</span><span class="s">Inbound octets (from server): $stats-&gt;{inOctets}
-</span><span class="s">Outbound octets (to server):  $stats-&gt;{outOctets}
-</span><span class="s">Inbound unicast packets:      $stats-&gt;{inUnicastPackets}
-</span><span class="s">Outbound unicast packets:     $stats-&gt;{outUnicastPackets}
-</span><span class="s">Inbound discarded packets:    $stats-&gt;{inDiscardPackets}
-</span><span class="s">Outbound discarded packets:   $stats-&gt;{outDiscardPackets}
-</span><span class="s">Inbound error packets:        $stats-&gt;{inErrorPackets}
-</span><span class="s">Outbound error packets:       $stats-&gt;{outErrorPackets}
-</span><span class="s">
-</span><span class="s"></span><span class="dl">EOT</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1"># Retrieve a list of switch port statistics for a server&#39;s network interfaces.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># </span>
+</span></span><span class="line"><span class="cl"><span class="c1"># This script makes a single call to the getPortStatistics() method in the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Network_Component API service</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># for each of a server&#39;s network components to query port statistics for that</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># interface from SoftLayer&#39;s switches. Port statistics are modeled by the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer__Container_Network_Port_Statistic data type</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># See below for more details.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_NetworkComponent/getPortStatistics</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Network_Port_Statistic</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License: http://sldn.softlayer.com/article/License</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">JSON</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">strict</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$api_username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$api_key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Your server&#39;s id. Call the getHardware() method in the SoftLayer_Account API</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># service (http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># to get a list of your account&#39;s hardware records.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$server_id</span> <span class="o">=</span> <span class="mi">87165</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Declaring a new API service object for the SoftLayer_Hardware_Server API</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># service.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nv">$server_id</span><span class="p">,</span> <span class="nv">$api_username</span><span class="p">,</span> <span class="nv">$api_key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Switchport statistics are measured off the server&#39;s network components. Use</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># an object mask to network component records along with our server record.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$client</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;networkComponents&#39;</span> <span class="o">=&gt;</span> <span class="p">{},</span>
+</span></span><span class="line"><span class="cl"><span class="p">});</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Making the call to retrieve our hardware record. Once we have that we can query</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the server&#39;s network components.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">getObject</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># If there was an error returned from the SoftLayer API then die out with the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># error message.</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$server</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">die</span> <span class="s">&#34;Unable to retrieve server record. &#34;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Separating our network components for easier processing later.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$server</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$network_components</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">networkComponents</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Printing out a simple report header.</span>
+</span></span><span class="line"><span class="cl"><span class="k">print</span> <span class="s">&#34;\nSwitchport statistics for &#34;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">fullyQualifiedDomainName</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;\n\n&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1"># Looping through our server&#39;s network components. For each NIC make a call to the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Network_Component API service method getPortStatics() to get a list</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># of switchport statistics retrieved from the switch on the other side of your</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># NIC. Print a simple report per NIC.</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="k">my</span> <span class="nv">$i</span> <span class="p">(</span><span class="mi">0</span> <span class="o">..</span> <span class="nv">$#</span><span class="p">{</span><span class="nv">$network_components</span><span class="p">})</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$component</span> <span class="o">=</span> <span class="nv">$network_components</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="c1"># Skiping the management network component.</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">name</span><span class="p">}</span> <span class="ow">eq</span> <span class="s">&#39;mgmt&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">next</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="c1"># It&#39;s all right to redeclare your API object.</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Network_Component&#39;</span><span class="p">,</span> <span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">},</span> <span class="nv">$api_username</span><span class="p">,</span> <span class="nv">$api_key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="c1"># Retrieve switchport statistics for the NIC.</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$stats</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">getPortStatistics</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="c1"># Make sure we didn&#39;t run into an error.</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nv">$stats</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">die</span> <span class="s">&#34;Unable to retrieve switchport statics for &#34;</span> <span class="o">.</span> <span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">name</span><span class="p">}</span> <span class="o">.</span> <span class="nv">$component</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">port</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;. &#34;</span> <span class="o">.</span> <span class="nv">$stats</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="c1"># Make boolean up/down responses easier to read.</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$stats</span> <span class="o">=</span> <span class="nv">$stats</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">administrativeStatus</span><span class="p">}</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">administrativeStatus</span><span class="p">}</span> <span class="ow">eq</span> <span class="s">&#39;1&#39;</span><span class="p">)</span> <span class="p">?</span> <span class="s">&#39;Up&#39;</span> <span class="p">:</span> <span class="s">&#39;Down&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">operationalStatus</span><span class="p">}</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$stats</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">operationalStatus</span><span class="p">}</span> <span class="ow">eq</span> <span class="s">&#39;1&#39;</span><span class="p">)</span> <span class="p">?</span> <span class="s">&#39;Up&#39;</span> <span class="p">:</span> <span class="s">&#39;Down&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="c1"># Print our port&#39;s statistics report.</span>
+</span></span><span class="line"><span class="cl">    <span class="k">print</span> <span class="s">&lt;&lt;</span><span class="dl">EOT</span><span class="s">;
+</span></span></span><span class="line"><span class="cl"><span class="s">Statistics for $component-&gt;{name}$component-&gt;{port} ($component-&gt;{primaryIpAddress})
+</span></span></span><span class="line"><span class="cl"><span class="s">Administrative status:        $stats-&gt;{administrativeStatus}
+</span></span></span><span class="line"><span class="cl"><span class="s">Operational status:           $stats-&gt;{operationalStatus}
+</span></span></span><span class="line"><span class="cl"><span class="s">MTU:                          $stats-&gt;{maximumTransmissionUnit}
+</span></span></span><span class="line"><span class="cl"><span class="s">Inbound octets (from server): $stats-&gt;{inOctets}
+</span></span></span><span class="line"><span class="cl"><span class="s">Outbound octets (to server):  $stats-&gt;{outOctets}
+</span></span></span><span class="line"><span class="cl"><span class="s">Inbound unicast packets:      $stats-&gt;{inUnicastPackets}
+</span></span></span><span class="line"><span class="cl"><span class="s">Outbound unicast packets:     $stats-&gt;{outUnicastPackets}
+</span></span></span><span class="line"><span class="cl"><span class="s">Inbound discarded packets:    $stats-&gt;{inDiscardPackets}
+</span></span></span><span class="line"><span class="cl"><span class="s">Outbound discarded packets:   $stats-&gt;{outDiscardPackets}
+</span></span></span><span class="line"><span class="cl"><span class="s">Inbound error packets:        $stats-&gt;{inErrorPackets}
+</span></span></span><span class="line"><span class="cl"><span class="s">Outbound error packets:       $stats-&gt;{outErrorPackets}
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s"></span><span class="dl">EOT</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

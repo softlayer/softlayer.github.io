@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -150,107 +146,106 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback"># Order a Virtual Guest - Compute flavor.
-#
-# This example shows how to order a Virtual Guest device which is part of new VSI Families.
-# On this case we will order Compute VSI with the following configuration:
-#          2 x 2.0 GHz Cores, 2 GB RAM, and primary disk of 25 GB (SAN).
-#
-# Important manual pages:
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-# http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItemPrices
-# http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getActivePresets
-# http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-# http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-#
-# License: http://sldn.softlayer.com/article/License
-# Author: SoftLayer Technologies, Inc.&lt;sldn@softlayer.com&gt;
-
-require &#39;rubygems&#39;
-require &#39;softlayer_api&#39;
-require &#39;json&#39;
-
-# Your SoftLayer API username and API Key.
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
-
-# Location where server will be provisioned.
-location = &#39;AMSTERDAM03&#39;
-
-# The id of the SoftLayer_Product_Package, use the 835 for VSI Families.
-package_id = 835
-
-# To specify the configuration you must to use the presetId parameter, so in order to get the
-# list of available preset ids use the method SoftLayer_Product_Package::getActivePresets.
-# Check the keyName values to know which are Balanced, Memory, etc., they should start with:
-#       B1   is for &#34;Balanced&#34;
-#       BL1  is for &#34;Balanced Local Storage&#34;
-#       BL2  is for &#34;Balanced Local Storage - SSD&#34;
-#       C1   is for &#34;Compute&#34;
-#       M1   is for &#34;Memory&#34;
-# These characters are followed by a short description of VSI configuration as following:
-#       C1_2X2X100    which is for Compute VSI with &#34;2 x 2.0 GHz Cores x 2 GB x 100 GB (SAN)&#34;
-#       B1_1X2X25     which is for Balanced VSI with &#34;8 x 2.0 GHz Cores x 8 GB x 25 GB (SAN)&#34;
-# Following is the preset id used to complete this example. 
-preset_id = 295   # C1_2X2X25  (2 x 2.0 GHz Cores, 2 GB RAM, and primary disk of 25 GB)
-
-# The number of servers you wish to order in this configuration.
-quantity = 1
-
-# Build a skeleton SoftLayer_Virtual_Guest object. If you set quantity greater than 1 then you
-# need to define one hostname/domain per server you wish to order.
-virtual_guest = [
-    {
-        &#39;hostname&#39; =&gt; &#39;compute-vsi&#39;, 
-        &#39;domain&#39; =&gt; &#39;softlayer.local&#39;
-    }
-]
-
-# Build a skeleton SoftLayer_Product_Item_Price objects. Note that you don&#39;t need to specify
-# the item price for cpus, ram, and primary disk, and take into account that “Balanced Local Storage”
-# and “Balanced Local Storage - SSD” requires a second disk, the system will select one if you
-# don’t specify it. 
-prices = [
-    { &#39;id&#39; =&gt; 45456 },  # CentOS 7.x - LAMP Install (64 bit)
-    { &#39;id&#39; =&gt; 2255 },   # 10 GB (SAN) - As second Disk
-    { &#39;id&#39; =&gt; 50367 },  # 250 GB Bandwidth
-    { &#39;id&#39; =&gt; 273 },    # 100 Mbps Public &amp; Private Network Uplinks
-    { &#39;id&#39; =&gt; 55 },     # Host Ping
-    { &#39;id&#39; =&gt; 58 },     # Automated Notification
-    { &#39;id&#39; =&gt; 420 },    # Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account
-    { &#39;id&#39; =&gt; 418 },    # Nessus Vulnerability Assessment &amp; Reporting    
-    { &#39;id&#39; =&gt; 21 },     # 1 IP Address
-    { &#39;id&#39; =&gt; 57 },     # Email and Ticket
-    { &#39;id&#39; =&gt; 905 },    # Reboot and Remote Console
-]
-
-# Build a skeleton SoftLayer_Container_Product_Order object containing the order
-# you wish to place.
-order_template = {
-    &#39;quantity&#39; =&gt; quantity,
-    &#39;location&#39; =&gt; location,
-    &#39;packageId&#39; =&gt; package_id,
-    &#39;presetId&#39; =&gt; preset_id,
-    &#39;prices&#39; =&gt; prices,
-    &#39;virtual_guest&#39; =&gt; virtual_guest
-}
-
-# Declare the API client to use the SoftLayer_Product_Order API service
-client = SoftLayer::Client.new(username: USERNAME, api_key: API_KEY)
-product_order_service = client.service_named(&#39;SoftLayer_Product_Order&#39;)
-
-begin
-  # verifyOrder() will check your order for errors. Replace this with placeOrder()
-  # when you&#39;re ready to order. 
-  receipt = product_order_service.verifyOrder(order_template)
-  puts JSON.pretty_generate(receipt)
-rescue StandardError =&gt; exception
-  puts &#34;There was an error in your order: #{exception}&#34;
-end
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># Order a Virtual Guest - Compute flavor.
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># This example shows how to order a Virtual Guest device which is part of new VSI Families.
+</span></span><span class="line"><span class="cl"># On this case we will order Compute VSI with the following configuration:
+</span></span><span class="line"><span class="cl">#          2 x 2.0 GHz Cores, 2 GB RAM, and primary disk of 25 GB (SAN).
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># Important manual pages:
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItemPrices
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getActivePresets
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># License: http://sldn.softlayer.com/article/License
+</span></span><span class="line"><span class="cl"># Author: SoftLayer Technologies, Inc.&lt;sldn@softlayer.com&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">require &#39;rubygems&#39;
+</span></span><span class="line"><span class="cl">require &#39;softlayer_api&#39;
+</span></span><span class="line"><span class="cl">require &#39;json&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Your SoftLayer API username and API Key.
+</span></span><span class="line"><span class="cl">USERNAME = &#39;set me&#39;
+</span></span><span class="line"><span class="cl">API_KEY = &#39;set me&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Location where server will be provisioned.
+</span></span><span class="line"><span class="cl">location = &#39;AMSTERDAM03&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># The id of the SoftLayer_Product_Package, use the 835 for VSI Families.
+</span></span><span class="line"><span class="cl">package_id = 835
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># To specify the configuration you must to use the presetId parameter, so in order to get the
+</span></span><span class="line"><span class="cl"># list of available preset ids use the method SoftLayer_Product_Package::getActivePresets.
+</span></span><span class="line"><span class="cl"># Check the keyName values to know which are Balanced, Memory, etc., they should start with:
+</span></span><span class="line"><span class="cl">#       B1   is for &#34;Balanced&#34;
+</span></span><span class="line"><span class="cl">#       BL1  is for &#34;Balanced Local Storage&#34;
+</span></span><span class="line"><span class="cl">#       BL2  is for &#34;Balanced Local Storage - SSD&#34;
+</span></span><span class="line"><span class="cl">#       C1   is for &#34;Compute&#34;
+</span></span><span class="line"><span class="cl">#       M1   is for &#34;Memory&#34;
+</span></span><span class="line"><span class="cl"># These characters are followed by a short description of VSI configuration as following:
+</span></span><span class="line"><span class="cl">#       C1_2X2X100    which is for Compute VSI with &#34;2 x 2.0 GHz Cores x 2 GB x 100 GB (SAN)&#34;
+</span></span><span class="line"><span class="cl">#       B1_1X2X25     which is for Balanced VSI with &#34;8 x 2.0 GHz Cores x 8 GB x 25 GB (SAN)&#34;
+</span></span><span class="line"><span class="cl"># Following is the preset id used to complete this example. 
+</span></span><span class="line"><span class="cl">preset_id = 295   # C1_2X2X25  (2 x 2.0 GHz Cores, 2 GB RAM, and primary disk of 25 GB)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># The number of servers you wish to order in this configuration.
+</span></span><span class="line"><span class="cl">quantity = 1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Build a skeleton SoftLayer_Virtual_Guest object. If you set quantity greater than 1 then you
+</span></span><span class="line"><span class="cl"># need to define one hostname/domain per server you wish to order.
+</span></span><span class="line"><span class="cl">virtual_guest = [
+</span></span><span class="line"><span class="cl">    {
+</span></span><span class="line"><span class="cl">        &#39;hostname&#39; =&gt; &#39;compute-vsi&#39;, 
+</span></span><span class="line"><span class="cl">        &#39;domain&#39; =&gt; &#39;softlayer.local&#39;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Build a skeleton SoftLayer_Product_Item_Price objects. Note that you don&#39;t need to specify
+</span></span><span class="line"><span class="cl"># the item price for cpus, ram, and primary disk, and take into account that “Balanced Local Storage”
+</span></span><span class="line"><span class="cl"># and “Balanced Local Storage - SSD” requires a second disk, the system will select one if you
+</span></span><span class="line"><span class="cl"># don’t specify it. 
+</span></span><span class="line"><span class="cl">prices = [
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 45456 },  # CentOS 7.x - LAMP Install (64 bit)
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 2255 },   # 10 GB (SAN) - As second Disk
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 50367 },  # 250 GB Bandwidth
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 273 },    # 100 Mbps Public &amp; Private Network Uplinks
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 55 },     # Host Ping
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 58 },     # Automated Notification
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 420 },    # Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 418 },    # Nessus Vulnerability Assessment &amp; Reporting    
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 21 },     # 1 IP Address
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 57 },     # Email and Ticket
+</span></span><span class="line"><span class="cl">    { &#39;id&#39; =&gt; 905 },    # Reboot and Remote Console
+</span></span><span class="line"><span class="cl">]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Build a skeleton SoftLayer_Container_Product_Order object containing the order
+</span></span><span class="line"><span class="cl"># you wish to place.
+</span></span><span class="line"><span class="cl">order_template = {
+</span></span><span class="line"><span class="cl">    &#39;quantity&#39; =&gt; quantity,
+</span></span><span class="line"><span class="cl">    &#39;location&#39; =&gt; location,
+</span></span><span class="line"><span class="cl">    &#39;packageId&#39; =&gt; package_id,
+</span></span><span class="line"><span class="cl">    &#39;presetId&#39; =&gt; preset_id,
+</span></span><span class="line"><span class="cl">    &#39;prices&#39; =&gt; prices,
+</span></span><span class="line"><span class="cl">    &#39;virtual_guest&#39; =&gt; virtual_guest
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Declare the API client to use the SoftLayer_Product_Order API service
+</span></span><span class="line"><span class="cl">client = SoftLayer::Client.new(username: USERNAME, api_key: API_KEY)
+</span></span><span class="line"><span class="cl">product_order_service = client.service_named(&#39;SoftLayer_Product_Order&#39;)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">begin
+</span></span><span class="line"><span class="cl">  # verifyOrder() will check your order for errors. Replace this with placeOrder()
+</span></span><span class="line"><span class="cl">  # when you&#39;re ready to order. 
+</span></span><span class="line"><span class="cl">  receipt = product_order_service.verifyOrder(order_template)
+</span></span><span class="line"><span class="cl">  puts JSON.pretty_generate(receipt)
+</span></span><span class="line"><span class="cl">rescue StandardError =&gt; exception
+</span></span><span class="line"><span class="cl">  puts &#34;There was an error in your order: #{exception}&#34;
+</span></span><span class="line"><span class="cl">end
+</span></span></code></pre></div>
             </div>
         </div>
 

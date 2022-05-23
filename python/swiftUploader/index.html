@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -183,255 +179,254 @@ if (!doNotTrack) {
 <p>Go to your image templates page in the portal and click the “Import Image” tab. Select the Swift account, cluster, container, and file that you uploaded. Give your new template a name and some notes. Make sure to fill out the Operating System information properly as this is used when setting up your new server, and finally click “Import.”</p>
 <p>Lastly, you will be emailed after the VHD has been processed by our system.</p>
 <p>-Adam Shaw</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># ================================================================================</span>
-<span class="c1">#     ObjectStorageUploader.py</span>
-<span class="c1">#     © Copyright IBM Corporation 2014.</span>
-<span class="c1">#     LICENSE: MIT (http://opensource.org/licenses/MIT)    </span>
-<span class="c1"># ================================================================================</span>
-
-<span class="kn">import</span> <span class="nn">argparse</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">import</span> <span class="nn">http.client</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">datetime</span>
-<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span>
-<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">quote</span>
-
-
-
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-f&#34;</span><span class="p">,</span> <span class="s2">&#34;--file&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;file to upload to SWIFT&#34;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-u&#34;</span><span class="p">,</span> <span class="s2">&#34;--username&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;SWIFT username&#34;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-p&#34;</span><span class="p">,</span> <span class="s2">&#34;--password&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;SWIFT password (SoftLayer API key)&#34;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-c&#34;</span><span class="p">,</span> <span class="s2">&#34;--cluster&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;SWIFT cluster to use (default: dal05.objectstorage.softlayer.net)&#34;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-t&#34;</span><span class="p">,</span> <span class="s2">&#34;--target&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;location on SWIFT cluster to store file (container/filename.vhd)&#34;</span><span class="p">)</span>
-    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">file</span><span class="p">:</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="n">select_file</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">file</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">username</span><span class="p">:</span>
-        <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span> <span class="o">=</span> <span class="n">get_swift_credentials</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">swift_user_name</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">username</span>
-        <span class="n">swift_password</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">password</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">cluster</span><span class="p">:</span>
-        <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span> <span class="o">=</span> <span class="n">authenticate_swift</span><span class="p">(</span>
-            <span class="n">swift_user_name</span><span class="p">,</span>
-            <span class="n">swift_password</span><span class="p">,</span>
-            <span class="s2">&#34;dal05.objectstorage.softlayer.net&#34;</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span> <span class="o">=</span> <span class="n">authenticate_swift</span><span class="p">(</span>
-            <span class="n">swift_user_name</span><span class="p">,</span>
-            <span class="n">swift_password</span><span class="p">,</span>
-            <span class="n">args</span><span class="o">.</span><span class="n">cluster</span>
-        <span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="p">:</span>
-        <span class="n">container</span> <span class="o">=</span> <span class="n">select_container</span><span class="p">(</span><span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">)</span>
-        <span class="n">swift_target_path</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="n">quote</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">swift_target_path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target</span>
-
-    <span class="n">upload_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">,</span> <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">select_file</span><span class="p">():</span>
-    <span class="n">current_path</span> <span class="o">=</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Files in </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">current_path</span><span class="p">))</span>
-    <span class="n">files</span> <span class="o">=</span> <span class="n">get_file_list</span><span class="p">(</span><span class="n">current_path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">prompt_for_choice</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="s2">&#34;Select file for upload:&#34;</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">get_file_list</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
-            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">files</span>
-
-
-<span class="k">def</span> <span class="nf">prompt_for_choice</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">prompt_label</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">) </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
-    <span class="n">selected_index</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="n">prompt_label</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">selected_index</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
-        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">selected_index</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">()</span>
-            <span class="k">return</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">selected_index</span><span class="p">)]</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Invalid Input: </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">selected_index</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">prompt_for_choice</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">prompt_label</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">get_swift_credentials</span><span class="p">():</span>
-    <span class="n">swift_user_name</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&#34;Swift Username:&#34;</span><span class="p">)</span>
-    <span class="n">swift_password</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&#34;Swift Password:&#34;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span>
-
-
-<span class="k">def</span> <span class="nf">authenticate_swift</span><span class="p">(</span><span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span><span class="p">,</span> <span class="n">selected_endpoint</span><span class="o">=</span><span class="s2">&#34;&#34;</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">selected_endpoint</span> <span class="o">==</span> <span class="s2">&#34;&#34;</span><span class="p">:</span>
-        <span class="n">swift_endpoints</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&#34;dal05.objectstorage.softlayer.net&#34;</span><span class="p">,</span>
-            <span class="s2">&#34;sng01.objectstorage.softlayer.net&#34;</span><span class="p">,</span>
-            <span class="s2">&#34;ams01.objectstorage.softlayer.net&#34;</span><span class="p">,</span>
-        <span class="p">]</span>
-        <span class="n">selected_endpoint</span> <span class="o">=</span> <span class="n">prompt_for_choice</span><span class="p">(</span>
-            <span class="n">swift_endpoints</span><span class="p">,</span>
-            <span class="s2">&#34;Select Object Storage Endpoint:&#34;</span>
-        <span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Authenticating...&#34;</span><span class="p">)</span>
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&#34;X-Storage-User&#34;</span><span class="p">:</span> <span class="n">swift_user_name</span><span class="p">,</span>
-        <span class="s2">&#34;X-Storage-Pass&#34;</span><span class="p">:</span> <span class="n">swift_password</span>
-    <span class="p">}</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">object_storage_request</span><span class="p">(</span>
-            <span class="n">selected_endpoint</span><span class="p">,</span>
-            <span class="s2">&#34;/auth/v1.0/&#34;</span><span class="p">,</span>
-            <span class="n">headers</span>
-        <span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span> <span class="o">=</span> <span class="n">get_swift_credentials</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">authenticate_swift</span><span class="p">(</span><span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Success!&#34;</span><span class="p">)</span>
-
-    <span class="n">storage_url</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s2">&#34;X-Storage-Url&#34;</span><span class="p">)</span>
-    <span class="n">auth_token</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span>
-
-
-<span class="k">def</span> <span class="nf">select_container</span><span class="p">(</span><span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">):</span>
-    <span class="n">url_tuple</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">storage_url</span><span class="p">)</span>
-
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">:</span> <span class="n">auth_token</span><span class="p">}</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">object_storage_request</span><span class="p">(</span>
-            <span class="n">url_tuple</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span>
-            <span class="n">url_tuple</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
-            <span class="n">headers</span>
-        <span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span> <span class="o">=</span> <span class="n">get_swift_credentials</span><span class="p">()</span>
-        <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span> <span class="o">=</span> <span class="n">authenticate_swift</span><span class="p">(</span><span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">select_container</span><span class="p">(</span><span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">)</span>
-
-    <span class="n">containers</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&#34;utf-8&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">prompt_for_choice</span><span class="p">(</span><span class="n">containers</span><span class="p">,</span> <span class="s2">&#34;Select Container:&#34;</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">object_storage_request</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&#34;GET&#34;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="s2">&#34;&#34;</span><span class="p">):</span>
-    <span class="n">connection</span> <span class="o">=</span> <span class="n">http</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">HTTPConnection</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
-    <span class="n">connection</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">getresponse</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="mi">200</span> <span class="o">&lt;=</span> <span class="n">response</span><span class="o">.</span><span class="n">getcode</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">300</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">response</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Error </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">reason</span><span class="p">))</span>
-    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">upload_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">,</span> <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">):</span>
-    <span class="n">url_tuple</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">storage_url</span><span class="p">)</span>
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">:</span> <span class="n">auth_token</span><span class="p">}</span>
-
-    <span class="n">file_size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-    <span class="n">block_size</span> <span class="o">=</span> <span class="mi">1048576</span>
-    <span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">block_size</span>
-    <span class="n">chunks</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">file_size</span> <span class="o">/</span> <span class="n">chunk_size</span><span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Reading in file&#34;</span><span class="p">)</span>
-    <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Uploading </span><span class="si">{}</span><span class="s2"> to </span><span class="se">\&#34;</span><span class="si">{}</span><span class="se">\&#34;</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">))</span>
-    <span class="n">retry</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">chunks</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
-            <span class="n">ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-            <span class="n">st</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Uploading part </span><span class="si">{}</span><span class="s2"> of </span><span class="si">{}</span><span class="s2"> at </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">chunks</span><span class="p">,</span> <span class="n">st</span><span class="p">))</span>
-            <span class="n">chunk_name</span> <span class="o">=</span> <span class="s2">&#34;chunk-</span><span class="si">{0:0&gt;5}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-            <span class="n">object_storage_request</span><span class="p">(</span>
-                <span class="n">url_tuple</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span>
-                <span class="s2">&#34;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url_tuple</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">,</span> <span class="n">chunk_name</span><span class="p">),</span>
-                <span class="n">headers</span><span class="p">,</span>
-                <span class="s2">&#34;PUT&#34;</span><span class="p">,</span>
-                <span class="n">data</span><span class="p">)</span>
-            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;failed to upload chunk with exception &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-            <span class="n">retry</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">if</span> <span class="n">retry</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
-                <span class="k">return</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Writing manifest file&#34;</span><span class="p">)</span>
-        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">:</span> <span class="n">auth_token</span><span class="p">,</span>
-            <span class="s2">&#34;X-Object-Manifest&#34;</span><span class="p">:</span> <span class="n">swift_target_path</span><span class="p">,</span>
-            <span class="s2">&#34;Content-Length&#34;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="p">}</span>
-        <span class="n">object_storage_request</span><span class="p">(</span>
-            <span class="n">url_tuple</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span>
-            <span class="s2">&#34;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url_tuple</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">),</span>
-            <span class="n">headers</span><span class="p">,</span>
-            <span class="s2">&#34;PUT&#34;</span>
-        <span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="k">return</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;File Uploaded!&#34;</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span><span class="p">()</span>
-
-</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="cp">#!/bin/bash
-</span><span class="cp"></span><span class="c1"># ================================================================================</span>
-<span class="c1">#     ObjectStorageUploader.sh</span>
-<span class="c1">#     © Copyright IBM Corporation 2014.</span>
-<span class="c1">#     LICENSE: MIT (http://opensource.org/licenses/MIT)    </span>
-<span class="c1"># ================================================================================</span>
-
-<span class="c1">#./objectstorageupload.sh dsl-4.4.10.iso &#39;myContainer/file.vhd&#39; &#39;SLOS1234-1:SL1234&#39; &#39;apikey&#39;</span>
-
-<span class="nv">fileToUpload</span><span class="o">=</span><span class="nv">$1</span>
-<span class="nv">swiftTargetPath</span><span class="o">=</span><span class="nv">$2</span>
-<span class="nv">swiftUsername</span><span class="o">=</span><span class="nv">$3</span>
-<span class="nv">swiftPassword</span><span class="o">=</span><span class="nv">$4</span>
-
-<span class="nv">swiftEndpoint</span><span class="o">=</span><span class="s1">&#39;https://dal05.objectstorage.softlayer.net/auth/v1.0/&#39;</span>
-
-<span class="nv">apiResponse</span><span class="o">=</span><span class="k">$(</span>curl -X GET -H <span class="s2">&#34;X-Storage-User: </span><span class="nv">$swiftUsername</span><span class="s2">&#34;</span> -H <span class="s2">&#34;X-Storage-Pass: </span><span class="nv">$swiftPassword</span><span class="s2">&#34;</span> -s -i <span class="nv">$swiftEndpoint</span><span class="k">)</span>
-<span class="nv">swiftAuthToken</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$apiResponse</span><span class="s2">&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;X-Auth-Token:&#34;</span> <span class="p">|</span> sed <span class="s1">&#39;s/X-Auth-Token: //g&#39;</span> <span class="p">|</span> tr -d <span class="s1">&#39;\r&#39;</span><span class="k">)</span>
-<span class="nv">swiftStorageUrl</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$apiResponse</span><span class="s2">&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;X-Storage-Url:&#34;</span> <span class="p">|</span> sed <span class="s1">&#39;s/X-Storage-Url: //g&#39;</span> <span class="p">|</span> tr -d <span class="s1">&#39;\r&#39;</span><span class="k">)</span>
-
-<span class="nv">fileSize</span><span class="o">=</span><span class="k">$(</span>wc -c <span class="nv">$fileToUpload</span> <span class="p">|</span> awk <span class="s1">&#39;{print $1}&#39;</span><span class="k">)</span>
-<span class="nv">blockSize</span><span class="o">=</span><span class="m">1048576</span>
-<span class="nb">let</span> <span class="nv">chunkSize</span><span class="o">=</span><span class="m">2048</span> <span class="c1">#2GB chunks</span>
-<span class="nb">let</span> <span class="nv">chunks</span><span class="o">=(</span><span class="nv">$fileSize</span>/<span class="nv">$blockSize</span>+<span class="nv">$chunkSize</span>-1<span class="o">)</span>/<span class="nv">$chunkSize</span><span class="p">;</span>
-
-<span class="k">for</span> <span class="o">((</span><span class="nv">i</span><span class="o">=</span>0<span class="p">;</span> i&lt;chunks<span class="p">;</span> i++<span class="o">))</span>
-<span class="k">do</span>
-   <span class="nb">printf</span> -v chunkName <span class="s2">&#34;chunk-%05d&#34;</span> <span class="nv">$i</span>
-   <span class="nb">let</span> <span class="nv">skipChunk</span><span class="o">=</span><span class="nv">$i</span>*chunkSize
-
-   dd <span class="k">if</span><span class="o">=</span><span class="nv">$fileToUpload</span> <span class="nv">bs</span><span class="o">=</span><span class="nv">$blockSize</span> <span class="nv">count</span><span class="o">=</span><span class="nv">$chunkSize</span> <span class="nv">skip</span><span class="o">=</span><span class="nv">$skipChunk</span> <span class="p">|</span> curl -X PUT -H <span class="s2">&#34;X-Auth-Token: </span><span class="nv">$swiftAuthToken</span><span class="s2">&#34;</span> --data-binary @- <span class="s2">&#34;</span><span class="nv">$swiftStorageUrl</span><span class="s2">/</span><span class="nv">$swiftTargetPath</span><span class="s2">/</span><span class="nv">$chunkName</span><span class="s2">&#34;</span>
-<span class="k">done</span>
-
-curl -X PUT -H <span class="s2">&#34;X-Auth-Token: </span><span class="nv">$swiftAuthToken</span><span class="s2">&#34;</span> -H <span class="s2">&#34;X-Object-Manifest: </span><span class="nv">$swiftTargetPath</span><span class="s2">&#34;</span> -H <span class="s2">&#34;Content-Length: 0&#34;</span> <span class="nv">$swiftStorageUrl</span>/<span class="nv">$swiftTargetPath</span>
-</code></pre></div><p>Originally from <a href="https://sldn.softlayer.com/blog/ashaw/object-storage-uploader">SLDN</a></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># ================================================================================</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#     ObjectStorageUploader.py</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#     © Copyright IBM Corporation 2014.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#     LICENSE: MIT (http://opensource.org/licenses/MIT)    </span>
+</span></span><span class="line"><span class="cl"><span class="c1"># ================================================================================</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">argparse</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">os</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">math</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">http.client</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">time</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">datetime</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">quote</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-f&#34;</span><span class="p">,</span> <span class="s2">&#34;--file&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;file to upload to SWIFT&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-u&#34;</span><span class="p">,</span> <span class="s2">&#34;--username&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;SWIFT username&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-p&#34;</span><span class="p">,</span> <span class="s2">&#34;--password&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;SWIFT password (SoftLayer API key)&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-c&#34;</span><span class="p">,</span> <span class="s2">&#34;--cluster&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;SWIFT cluster to use (default: dal05.objectstorage.softlayer.net)&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&#34;-t&#34;</span><span class="p">,</span> <span class="s2">&#34;--target&#34;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;location on SWIFT cluster to store file (container/filename.vhd)&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">file</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">filename</span> <span class="o">=</span> <span class="n">select_file</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">filename</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">file</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">username</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span> <span class="o">=</span> <span class="n">get_swift_credentials</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_user_name</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">username</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_password</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">password</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">cluster</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span> <span class="o">=</span> <span class="n">authenticate_swift</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">swift_user_name</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">swift_password</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;dal05.objectstorage.softlayer.net&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span> <span class="o">=</span> <span class="n">authenticate_swift</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">swift_user_name</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">swift_password</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">args</span><span class="o">.</span><span class="n">cluster</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">target</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">container</span> <span class="o">=</span> <span class="n">select_container</span><span class="p">(</span><span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_target_path</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="n">quote</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_target_path</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">target</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">upload_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">,</span> <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">select_file</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">current_path</span> <span class="o">=</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Files in </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">current_path</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">files</span> <span class="o">=</span> <span class="n">get_file_list</span><span class="p">(</span><span class="n">current_path</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">prompt_for_choice</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="s2">&#34;Select file for upload:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_file_list</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">files</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">prompt_for_choice</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">prompt_label</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">) </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">selected_index</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="n">prompt_label</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">selected_index</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">selected_index</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">selected_index</span><span class="p">)]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Invalid Input: </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">selected_index</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">prompt_for_choice</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">prompt_label</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">get_swift_credentials</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">swift_user_name</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&#34;Swift Username:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">swift_password</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&#34;Swift Password:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">authenticate_swift</span><span class="p">(</span><span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span><span class="p">,</span> <span class="n">selected_endpoint</span><span class="o">=</span><span class="s2">&#34;&#34;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">selected_endpoint</span> <span class="o">==</span> <span class="s2">&#34;&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_endpoints</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;dal05.objectstorage.softlayer.net&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;sng01.objectstorage.softlayer.net&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;ams01.objectstorage.softlayer.net&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">selected_endpoint</span> <span class="o">=</span> <span class="n">prompt_for_choice</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">swift_endpoints</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;Select Object Storage Endpoint:&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Authenticating...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;X-Storage-User&#34;</span><span class="p">:</span> <span class="n">swift_user_name</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;X-Storage-Pass&#34;</span><span class="p">:</span> <span class="n">swift_password</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">response</span> <span class="o">=</span> <span class="n">object_storage_request</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">selected_endpoint</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;/auth/v1.0/&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">headers</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span> <span class="o">=</span> <span class="n">get_swift_credentials</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">authenticate_swift</span><span class="p">(</span><span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Success!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">storage_url</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s2">&#34;X-Storage-Url&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">auth_token</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">select_container</span><span class="p">(</span><span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">url_tuple</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">storage_url</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">:</span> <span class="n">auth_token</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">response</span> <span class="o">=</span> <span class="n">object_storage_request</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">url_tuple</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">url_tuple</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">headers</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span> <span class="o">=</span> <span class="n">get_swift_credentials</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span> <span class="o">=</span> <span class="n">authenticate_swift</span><span class="p">(</span><span class="n">swift_user_name</span><span class="p">,</span> <span class="n">swift_password</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">select_container</span><span class="p">(</span><span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">containers</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&#34;utf-8&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">prompt_for_choice</span><span class="p">(</span><span class="n">containers</span><span class="p">,</span> <span class="s2">&#34;Select Container:&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">object_storage_request</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&#34;GET&#34;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="s2">&#34;&#34;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">connection</span> <span class="o">=</span> <span class="n">http</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">HTTPConnection</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">connection</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">getresponse</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="mi">200</span> <span class="o">&lt;=</span> <span class="n">response</span><span class="o">.</span><span class="n">getcode</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">300</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">response</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Error </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">reason</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">upload_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">,</span> <span class="n">storage_url</span><span class="p">,</span> <span class="n">auth_token</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">url_tuple</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">storage_url</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">:</span> <span class="n">auth_token</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">file_size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">block_size</span> <span class="o">=</span> <span class="mi">1048576</span>
+</span></span><span class="line"><span class="cl">    <span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">block_size</span>
+</span></span><span class="line"><span class="cl">    <span class="n">chunks</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">file_size</span> <span class="o">/</span> <span class="n">chunk_size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Reading in file&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Uploading </span><span class="si">{}</span><span class="s2"> to </span><span class="se">\&#34;</span><span class="si">{}</span><span class="se">\&#34;</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">retry</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">chunks</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">data</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="n">st</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Uploading part </span><span class="si">{}</span><span class="s2"> of </span><span class="si">{}</span><span class="s2"> at </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">chunks</span><span class="p">,</span> <span class="n">st</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">chunk_name</span> <span class="o">=</span> <span class="s2">&#34;chunk-</span><span class="si">{0:0&gt;5}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">object_storage_request</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                <span class="n">url_tuple</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url_tuple</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">,</span> <span class="n">chunk_name</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                <span class="n">headers</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;PUT&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="n">data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;failed to upload chunk with exception &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">retry</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">retry</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Writing manifest file&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;X-Auth-Token&#34;</span><span class="p">:</span> <span class="n">auth_token</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;X-Object-Manifest&#34;</span><span class="p">:</span> <span class="n">swift_target_path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;Content-Length&#34;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">object_storage_request</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">url_tuple</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url_tuple</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">swift_target_path</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">            <span class="n">headers</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;PUT&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;File Uploaded!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="p">()</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="c1"># ================================================================================</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#     ObjectStorageUploader.sh</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#     © Copyright IBM Corporation 2014.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#     LICENSE: MIT (http://opensource.org/licenses/MIT)    </span>
+</span></span><span class="line"><span class="cl"><span class="c1"># ================================================================================</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#./objectstorageupload.sh dsl-4.4.10.iso &#39;myContainer/file.vhd&#39; &#39;SLOS1234-1:SL1234&#39; &#39;apikey&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">fileToUpload</span><span class="o">=</span><span class="nv">$1</span>
+</span></span><span class="line"><span class="cl"><span class="nv">swiftTargetPath</span><span class="o">=</span><span class="nv">$2</span>
+</span></span><span class="line"><span class="cl"><span class="nv">swiftUsername</span><span class="o">=</span><span class="nv">$3</span>
+</span></span><span class="line"><span class="cl"><span class="nv">swiftPassword</span><span class="o">=</span><span class="nv">$4</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">swiftEndpoint</span><span class="o">=</span><span class="s1">&#39;https://dal05.objectstorage.softlayer.net/auth/v1.0/&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">apiResponse</span><span class="o">=</span><span class="k">$(</span>curl -X GET -H <span class="s2">&#34;X-Storage-User: </span><span class="nv">$swiftUsername</span><span class="s2">&#34;</span> -H <span class="s2">&#34;X-Storage-Pass: </span><span class="nv">$swiftPassword</span><span class="s2">&#34;</span> -s -i <span class="nv">$swiftEndpoint</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">swiftAuthToken</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$apiResponse</span><span class="s2">&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;X-Auth-Token:&#34;</span> <span class="p">|</span> sed <span class="s1">&#39;s/X-Auth-Token: //g&#39;</span> <span class="p">|</span> tr -d <span class="s1">&#39;\r&#39;</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">swiftStorageUrl</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$apiResponse</span><span class="s2">&#34;</span> <span class="p">|</span> grep <span class="s2">&#34;X-Storage-Url:&#34;</span> <span class="p">|</span> sed <span class="s1">&#39;s/X-Storage-Url: //g&#39;</span> <span class="p">|</span> tr -d <span class="s1">&#39;\r&#39;</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">fileSize</span><span class="o">=</span><span class="k">$(</span>wc -c <span class="nv">$fileToUpload</span> <span class="p">|</span> awk <span class="s1">&#39;{print $1}&#39;</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">blockSize</span><span class="o">=</span><span class="m">1048576</span>
+</span></span><span class="line"><span class="cl"><span class="nb">let</span> <span class="nv">chunkSize</span><span class="o">=</span><span class="m">2048</span> <span class="c1">#2GB chunks</span>
+</span></span><span class="line"><span class="cl"><span class="nb">let</span> <span class="nv">chunks</span><span class="o">=(</span><span class="nv">$fileSize</span>/<span class="nv">$blockSize</span>+<span class="nv">$chunkSize</span>-1<span class="o">)</span>/<span class="nv">$chunkSize</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="o">((</span><span class="nv">i</span><span class="o">=</span>0<span class="p">;</span> i&lt;chunks<span class="p">;</span> i++<span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="k">do</span>
+</span></span><span class="line"><span class="cl">   <span class="nb">printf</span> -v chunkName <span class="s2">&#34;chunk-%05d&#34;</span> <span class="nv">$i</span>
+</span></span><span class="line"><span class="cl">   <span class="nb">let</span> <span class="nv">skipChunk</span><span class="o">=</span><span class="nv">$i</span>*chunkSize
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">   dd <span class="k">if</span><span class="o">=</span><span class="nv">$fileToUpload</span> <span class="nv">bs</span><span class="o">=</span><span class="nv">$blockSize</span> <span class="nv">count</span><span class="o">=</span><span class="nv">$chunkSize</span> <span class="nv">skip</span><span class="o">=</span><span class="nv">$skipChunk</span> <span class="p">|</span> curl -X PUT -H <span class="s2">&#34;X-Auth-Token: </span><span class="nv">$swiftAuthToken</span><span class="s2">&#34;</span> --data-binary @- <span class="s2">&#34;</span><span class="nv">$swiftStorageUrl</span><span class="s2">/</span><span class="nv">$swiftTargetPath</span><span class="s2">/</span><span class="nv">$chunkName</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="k">done</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -X PUT -H <span class="s2">&#34;X-Auth-Token: </span><span class="nv">$swiftAuthToken</span><span class="s2">&#34;</span> -H <span class="s2">&#34;X-Object-Manifest: </span><span class="nv">$swiftTargetPath</span><span class="s2">&#34;</span> -H <span class="s2">&#34;Content-Length: 0&#34;</span> <span class="nv">$swiftStorageUrl</span>/<span class="nv">$swiftTargetPath</span>
+</span></span></code></pre></div><p>Originally from <a href="https://sldn.softlayer.com/blog/ashaw/object-storage-uploader">SLDN</a></p>
 
             </div>
         </div>

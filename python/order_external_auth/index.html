@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -146,70 +142,69 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">import</span> <span class="nn">json</span>
-
-<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-
-    <span class="c1"># Generate the order template used to place the order</span>
-    <span class="k">def</span> <span class="nf">_generateOrder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userId</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># Retrieve the package object in order to know its ID</span>
-        <span class="n">pkg_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">package</span><span class="p">}}</span>
-        <span class="n">package_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">pkg_filter</span><span class="p">)</span>
-        <span class="n">package_id</span> <span class="o">=</span> <span class="n">package_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-        <span class="c1"># Retrive the available price of external auth item</span>
-        <span class="n">itm_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;itemPrices&#34;</span><span class="p">:{</span><span class="s2">&#34;item&#34;</span><span class="p">:{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">keyName</span><span class="p">}}}}</span>
-        <span class="n">prices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getItemPrices</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">itm_filter</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
-
-        <span class="c1"># Build skeleton of order template</span>
-        <span class="n">orderTemplate</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;complexType&#39;</span><span class="p">:</span> <span class="s1">&#39;SoftLayer_Container_Product_Order_User_Customer_External_Binding&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;packageId&#39;</span><span class="p">:</span> <span class="n">package_id</span><span class="p">,</span>
-            <span class="s1">&#39;prices&#39;</span><span class="p">:[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]}],</span>
-            <span class="s1">&#39;userId&#39;</span><span class="p">:</span> <span class="n">userId</span><span class="p">,</span>
-            <span class="s1">&#39;externalId&#39;</span><span class="p">:</span> <span class="n">credentialId</span>
-        <span class="p">}</span>
-        
-        <span class="k">return</span> <span class="n">orderTemplate</span>
-
-    <span class="k">def</span> <span class="nf">orderExternalAuth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userId</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># package used to order an External Auth.</span>
-        <span class="n">package_name</span> <span class="o">=</span> <span class="s1">&#39;AUTHENTICATION_SERVICES&#39;</span>
-        
-        <span class="n">order_template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generateOrder</span><span class="p">(</span><span class="n">userId</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">package_name</span><span class="p">,</span> 
-                                             <span class="n">credential</span><span class="o">=</span><span class="n">credential</span><span class="p">)</span>
-
-        <span class="n">order_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># verifyOrder() will check your order for errors. Replace this with a call</span>
-            <span class="c1"># to placeOrder() when you&#39;re ready to order </span>
-            <span class="n">receipt</span> <span class="o">=</span> <span class="n">order_service</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">order_template</span><span class="p">)</span>
-
-            <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">receipt</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-        <span class="k">except</span> <span class="p">(</span><span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>            
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to order external auth: </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="c1"># The user id on which the external auth will be attached. </span>
-    <span class="c1"># Users are able to order an external auth by themselves, but if you want to order </span>
-    <span class="c1"># for other users  then use the credentials of the Master User</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="mi">66252</span>
-
-    <span class="c1"># Key name of external auth you want to order, select between:</span>
-    <span class="c1"># SYMANTEC_IDENTITY_PROTECTION or PHONEBASED_AUTHENTICATION</span>
-    <span class="n">keyName</span> <span class="o">=</span> <span class="s1">&#39;SYMANTEC_IDENTITY_PROTECTION&#39;</span>
-    
-    <span class="c1"># Items like SYMANTEC_IDENTITY_PROTECTION requires a credential id</span>
-    <span class="c1"># It isn&#39;t required for PHONEBASED_AUTHENTICATION</span>
-    <span class="n">credentialId</span> <span class="o">=</span> <span class="s1">&#39;ASD5675d6DDD7&#39;</span>
-
-    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">orderExternalAuth</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="n">credentialId</span><span class="p">)</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Generate the order template used to place the order</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">_generateOrder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userId</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Retrieve the package object in order to know its ID</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pkg_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">package</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">package_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">pkg_filter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">package_id</span> <span class="o">=</span> <span class="n">package_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># Retrive the available price of external auth item</span>
+</span></span><span class="line"><span class="cl">        <span class="n">itm_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;itemPrices&#34;</span><span class="p">:{</span><span class="s2">&#34;item&#34;</span><span class="p">:{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">keyName</span><span class="p">}}}}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">prices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getItemPrices</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">itm_filter</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># Build skeleton of order template</span>
+</span></span><span class="line"><span class="cl">        <span class="n">orderTemplate</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;complexType&#39;</span><span class="p">:</span> <span class="s1">&#39;SoftLayer_Container_Product_Order_User_Customer_External_Binding&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;packageId&#39;</span><span class="p">:</span> <span class="n">package_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;prices&#39;</span><span class="p">:[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]}],</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;userId&#39;</span><span class="p">:</span> <span class="n">userId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;externalId&#39;</span><span class="p">:</span> <span class="n">credentialId</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">orderTemplate</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">orderExternalAuth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userId</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># package used to order an External Auth.</span>
+</span></span><span class="line"><span class="cl">        <span class="n">package_name</span> <span class="o">=</span> <span class="s1">&#39;AUTHENTICATION_SERVICES&#39;</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="n">order_template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generateOrder</span><span class="p">(</span><span class="n">userId</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">package_name</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">                                             <span class="n">credential</span><span class="o">=</span><span class="n">credential</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">order_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># verifyOrder() will check your order for errors. Replace this with a call</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># to placeOrder() when you&#39;re ready to order </span>
+</span></span><span class="line"><span class="cl">            <span class="n">receipt</span> <span class="o">=</span> <span class="n">order_service</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">order_template</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">receipt</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="p">(</span><span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>            
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to order external auth: </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># The user id on which the external auth will be attached. </span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Users are able to order an external auth by themselves, but if you want to order </span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># for other users  then use the credentials of the Master User</span>
+</span></span><span class="line"><span class="cl">    <span class="n">user_id</span> <span class="o">=</span> <span class="mi">66252</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Key name of external auth you want to order, select between:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># SYMANTEC_IDENTITY_PROTECTION or PHONEBASED_AUTHENTICATION</span>
+</span></span><span class="line"><span class="cl">    <span class="n">keyName</span> <span class="o">=</span> <span class="s1">&#39;SYMANTEC_IDENTITY_PROTECTION&#39;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># Items like SYMANTEC_IDENTITY_PROTECTION requires a credential id</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># It isn&#39;t required for PHONEBASED_AUTHENTICATION</span>
+</span></span><span class="line"><span class="cl">    <span class="n">credentialId</span> <span class="o">=</span> <span class="s1">&#39;ASD5675d6DDD7&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">orderExternalAuth</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">keyName</span><span class="p">,</span> <span class="n">credential</span><span class="o">=</span><span class="n">credentialId</span><span class="p">)</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

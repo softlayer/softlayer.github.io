@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -153,429 +149,421 @@ if (!doNotTrack) {
                 <h3 id="upgrade-cpu-ram-for-vsi-dedicated">Upgrade CPU, RAM for VSI dedicated.</h3>
 <p>To get the items KeyNames available to upgrade your VSI, you can use the service
 SoftLayer_Virtual_Guest::getUpgradeItemPrices. Add to your request a mask as the below to retrieve the items KeyNames.</p>
-<div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">mask[id,item[id,keyName,description]
-</code></pre></div><p>I suggest you to search the items comparing with the control portal, use the description and search in the response,
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">mask[id,item[id,keyName,description]
+</span></span></code></pre></div><p>I suggest you to search the items comparing with the control portal, use the description and search in the response,
 then use the keyName of that item.</p>
 <p>Change the &ldquo;items&rdquo; variable with the cpu and ram keyNames you want to upgrade your vs.
 e.g. I am upgrading the cpu from 2 x 2.0 GHz to 8 x 2.0 GHz and the ram from 4 GB to 12 GB.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="c1"># Declare the API client</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-<span class="c1"># The id of the virtual guest you wish upgrade</span>
-<span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">11111</span>
-
-<span class="c1"># items KeyNames to be upgraded.</span>
-<span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GUEST_PRIVATE_CORES_8&#39;</span><span class="p">,</span> <span class="s1">&#39;RAM_12_GB&#39;</span><span class="p">]</span>
-
-<span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
-                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
-
-<span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">get_item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
-            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
-<span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
-<span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Build a skeleton SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade object
-</span><span class="s2">containing the upgrade you wish to place.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
-    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">}</span> <span class="k">for</span> <span class="n">price_id</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">],</span>
-    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
-    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
-<span class="p">}</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Upgrading the virtual guest</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="s2">        error message.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-</code></pre></div><h3 id="upgrade-a-flavorcpu-ram-for-vsi-families">Upgrade a flavor(cpu, ram) for VSI families.</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare the API client</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id of the virtual guest you wish upgrade</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">11111</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># items KeyNames to be upgraded.</span>
+</span></span><span class="line"><span class="cl"><span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GUEST_PRIVATE_CORES_8&#39;</span><span class="p">,</span> <span class="s1">&#39;RAM_12_GB&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">get_item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
+</span></span><span class="line"><span class="cl"><span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Build a skeleton SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade object
+</span></span></span><span class="line"><span class="cl"><span class="s2">containing the upgrade you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">}</span> <span class="k">for</span> <span class="n">price_id</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Upgrading the virtual guest</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
+</span></span></span><span class="line"><span class="cl"><span class="s2">        error message.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div><h3 id="upgrade-a-flavorcpu-ram-for-vsi-families">Upgrade a flavor(cpu, ram) for VSI families.</h3>
 <p>Change the &ldquo;preset_keyName&rdquo; variable with the flavor keyNames you want to upgrade your vs.</p>
 <p>e.g. I am upgrading the flavor BL2_4X8X100(cpu 4, ram 8 GB, first disk 100 GB) to
 BL2_4X16X100(cpu 4, ram 16 GB, first disk 100 GB).</p>
 <p>The flavor keyName you can get through SoftLayer_Product_Package::getActivePresets.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="c1"># Declare the API client</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-<span class="c1"># The id of the virtual guest you wish upgrade</span>
-<span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
-
-<span class="c1"># Package keyName.</span>
-<span class="n">package_keyName</span> <span class="o">=</span> <span class="s1">&#39;PUBLIC_CLOUD_SERVER&#39;</span>
-
-<span class="c1"># Preset keyName cpu 4, ram 16 GB, first disk 100 GB.</span>
-<span class="n">preset_keyName</span> <span class="o">=</span> <span class="s1">&#39;BL2_4X16X100&#39;</span>
-
-<span class="n">object_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;keyName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">package_keyName</span><span class="p">}}</span>
-
-<span class="n">filter_preset</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;activePresets&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;keyName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">preset_keyName</span><span class="p">}}}</span>
-
-<span class="n">response_package</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">object_filter</span><span class="p">)</span>
-<span class="n">package_id</span> <span class="o">=</span> <span class="n">response_package</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-<span class="n">response_preset</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getActivePresets</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">filter_preset</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
-<span class="n">presetId</span> <span class="o">=</span> <span class="n">response_preset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
-<span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;orderOrigin&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;control&#34;</span>
-    <span class="p">},</span>
-
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-31T16:42:52.370Z&#34;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
-<span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Build a skeleton SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade object
-</span><span class="s2">containing the upgrade you wish to place.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
-    <span class="s1">&#39;presetId&#39;</span><span class="p">:</span> <span class="n">presetId</span><span class="p">,</span>
-    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
-    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
-<span class="p">}</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Upgrading the virtual guest</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="s2">        error message.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-</code></pre></div><h3 id="adding-two-new-disks-this-script-works-for-both-options-vsi-dedicated-and-families">Adding two new disks (This script works for both options, VSI dedicated and families).</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare the API client</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id of the virtual guest you wish upgrade</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Package keyName.</span>
+</span></span><span class="line"><span class="cl"><span class="n">package_keyName</span> <span class="o">=</span> <span class="s1">&#39;PUBLIC_CLOUD_SERVER&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Preset keyName cpu 4, ram 16 GB, first disk 100 GB.</span>
+</span></span><span class="line"><span class="cl"><span class="n">preset_keyName</span> <span class="o">=</span> <span class="s1">&#39;BL2_4X16X100&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">object_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;keyName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">package_keyName</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">filter_preset</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;activePresets&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;keyName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">preset_keyName</span><span class="p">}}}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">response_package</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">object_filter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">package_id</span> <span class="o">=</span> <span class="n">response_package</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">response_preset</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getActivePresets</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">filter_preset</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">presetId</span> <span class="o">=</span> <span class="n">response_preset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
+</span></span><span class="line"><span class="cl"><span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;orderOrigin&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;control&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-31T16:42:52.370Z&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Build a skeleton SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade object
+</span></span></span><span class="line"><span class="cl"><span class="s2">containing the upgrade you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;presetId&#39;</span><span class="p">:</span> <span class="n">presetId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Upgrading the virtual guest</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
+</span></span></span><span class="line"><span class="cl"><span class="s2">        error message.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div><h3 id="adding-two-new-disks-this-script-works-for-both-options-vsi-dedicated-and-families">Adding two new disks (This script works for both options, VSI dedicated and families).</h3>
 <p>Replace the &ldquo;virtualGuestId&rdquo; variable with your vsId and set the &ldquo;items&rdquo; data with the keyName of the disk size you
 choose.</p>
 <p>You can set the &ldquo;guest_disk&rdquo; depend of the position of the disk you want e.g. guest_disk1, guest_disk2, guest_disk3,
 guest_disk4.</p>
 <p>The disk0 is added when you create your vs and you can only change this disk from SAN to LOCAL.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="c1"># Declare the API client</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-<span class="c1"># The id of the virtual guest you wish upgrade</span>
-<span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
-
-<span class="c1"># Items keyName. Change the &#34;guest_disk&#34; position as you want, to add to the vs, e.g. for guest_disk3, guest_disk4 too.</span>
-<span class="n">items</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;GUEST_DISK_10_GB_SAN&#39;</span><span class="p">:</span> <span class="s1">&#39;guest_disk1&#39;</span><span class="p">,</span> <span class="s1">&#39;GUEST_DISK_20_GB_SAN&#39;</span><span class="p">:</span> <span class="s1">&#39;guest_disk2&#39;</span><span class="p">}</span>
-
-<span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
-                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
-
-<span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-    <span class="k">for</span> <span class="n">get_item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
-            <span class="n">itemId</span> <span class="o">=</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-            <span class="n">itemObject</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">itemId</span><span class="p">,</span>
-                          <span class="s1">&#39;categories&#39;</span><span class="p">:</span> <span class="p">[</span>
-                              <span class="p">{</span>
-                                  <span class="s1">&#39;categoryCode&#39;</span><span class="p">:</span> <span class="n">items</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">),</span>
-                                  <span class="s1">&#39;complexType&#39;</span><span class="p">:</span> <span class="s1">&#39;SoftLayer_Product_Item_Category&#39;</span>
-                              <span class="p">}</span>
-                          <span class="p">],</span>
-                          <span class="p">}</span>
-            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">itemObject</span><span class="p">)</span>
-            <span class="k">break</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
-<span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
-<span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
-    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
-    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
-    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
-<span class="p">}</span>
-
-<span class="n">orderService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Upgrading the virtual guest</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">orderService</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="s2">        error message.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-</code></pre></div><h3 id="upgrade-the-size-of-a-specific-disk-this-script-works-for-both-options-vsi-dedicated-and-families">Upgrade the size of a specific disk (This script works for both options, VSI dedicated and families).</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare the API client</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id of the virtual guest you wish upgrade</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Items keyName. Change the &#34;guest_disk&#34; position as you want, to add to the vs, e.g. for guest_disk3, guest_disk4 too.</span>
+</span></span><span class="line"><span class="cl"><span class="n">items</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;GUEST_DISK_10_GB_SAN&#39;</span><span class="p">:</span> <span class="s1">&#39;guest_disk1&#39;</span><span class="p">,</span> <span class="s1">&#39;GUEST_DISK_20_GB_SAN&#39;</span><span class="p">:</span> <span class="s1">&#39;guest_disk2&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">get_item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">itemId</span> <span class="o">=</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">itemObject</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">itemId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                          <span class="s1">&#39;categories&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                              <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                                  <span class="s1">&#39;categoryCode&#39;</span><span class="p">:</span> <span class="n">items</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                  <span class="s1">&#39;complexType&#39;</span><span class="p">:</span> <span class="s1">&#39;SoftLayer_Product_Item_Category&#39;</span>
+</span></span><span class="line"><span class="cl">                              <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                          <span class="p">],</span>
+</span></span><span class="line"><span class="cl">                          <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">itemObject</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
+</span></span><span class="line"><span class="cl"><span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">orderService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Upgrading the virtual guest</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">orderService</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
+</span></span></span><span class="line"><span class="cl"><span class="s2">        error message.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div><h3 id="upgrade-the-size-of-a-specific-disk-this-script-works-for-both-options-vsi-dedicated-and-families">Upgrade the size of a specific disk (This script works for both options, VSI dedicated and families).</h3>
 <p>Change the &ldquo;item_keyName&rdquo; variable with the disk keyName you want to upgrade the specific disk on your vs.</p>
 <p>e.g. I am upgrading the first disk from 10 GB to 20 GB.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="c1"># Declare the API client</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-<span class="c1"># The id of the virtual guest you wish upgrade</span>
-<span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">11111</span>
-
-<span class="c1"># item KeyName to be upgraded.</span>
-<span class="n">item_keyName</span> <span class="o">=</span> <span class="s1">&#39;GUEST_DISK_20_GB_SAN&#39;</span>  <span class="c1"># &#34;description&#34;: &#34;20 GB (SAN)&#34;</span>
-
-<span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
-                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
-
-<span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">item_price_id</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">item_keyName</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
-        <span class="n">item_price_id</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
-<span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
-<span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
-    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">item_price_id</span><span class="p">,</span>
-                <span class="s1">&#39;categories&#39;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span>
-                        <span class="s1">&#39;categoryCode&#39;</span><span class="p">:</span> <span class="s1">&#39;guest_disk1&#39;</span><span class="p">,</span> <span class="c1"># Change the &#34;categoryCode&#34; data for the categoryCode you want.</span>
-                        <span class="s1">&#39;complexType&#39;</span><span class="p">:</span> <span class="s1">&#39;SoftLayer_Product_Item_Category&#39;</span>
-                    <span class="p">}</span>
-                <span class="p">]</span>
-                <span class="p">}</span>
-               <span class="p">],</span>
-    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
-    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
-<span class="p">}</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Upgrading the virtual guest</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="s2">        error message.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-</code></pre></div><h3 id="upgrade-the-bandwidth-this-script-works-for-both-options-vsi-dedicated-and-families-monthly">Upgrade the BANDWIDTH (This script works for both options, VSI dedicated and families Monthly).</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare the API client</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id of the virtual guest you wish upgrade</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">11111</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># item KeyName to be upgraded.</span>
+</span></span><span class="line"><span class="cl"><span class="n">item_keyName</span> <span class="o">=</span> <span class="s1">&#39;GUEST_DISK_20_GB_SAN&#39;</span>  <span class="c1"># &#34;description&#34;: &#34;20 GB (SAN)&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="n">item_price_id</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">item_keyName</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">item_price_id</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
+</span></span><span class="line"><span class="cl"><span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">item_price_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;categories&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;categoryCode&#39;</span><span class="p">:</span> <span class="s1">&#39;guest_disk1&#39;</span><span class="p">,</span> <span class="c1"># Change the &#34;categoryCode&#34; data for the categoryCode you want.</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;complexType&#39;</span><span class="p">:</span> <span class="s1">&#39;SoftLayer_Product_Item_Category&#39;</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">               <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Upgrading the virtual guest</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
+</span></span></span><span class="line"><span class="cl"><span class="s2">        error message.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div><h3 id="upgrade-the-bandwidth-this-script-works-for-both-options-vsi-dedicated-and-families-monthly">Upgrade the BANDWIDTH (This script works for both options, VSI dedicated and families Monthly).</h3>
 <p>This option is only available for a vs monthly.</p>
 <p>Change the &ldquo;items&rdquo; variable with the item keyName you want to upgrade your vs.</p>
 <p>e.g. I am upgrading the Bandwidth from 250 GB to 1000 GB.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="c1"># Declare the API client</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-<span class="c1"># The id of the virtual guest you wish upgrade</span>
-<span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
-
-<span class="c1"># Item KeyName to be upgraded.</span>
-<span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BANDWIDTH_1000_GB&#39;</span><span class="p">]</span> <span class="c1"># &#34;description&#34;: &#34;1000 GB Bandwidth Allotment&#34;</span>
-
-<span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
-                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
-
-<span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">item_price</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">item_price</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
-            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item_price</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
-<span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
-<span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
-    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">}</span> <span class="k">for</span> <span class="n">price_id</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">],</span>
-    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
-    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
-<span class="p">}</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Upgrading the virtual guest</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="s2">        error message.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-
-</code></pre></div><h3 id="upgrade-the--uplink-port-speeds-this-script-works-for-both-options-vsi-dedicated-and-families">Upgrade the  Uplink Port Speeds (This script works for both options VSI dedicated and families).</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare the API client</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id of the virtual guest you wish upgrade</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Item KeyName to be upgraded.</span>
+</span></span><span class="line"><span class="cl"><span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BANDWIDTH_1000_GB&#39;</span><span class="p">]</span> <span class="c1"># &#34;description&#34;: &#34;1000 GB Bandwidth Allotment&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">item_price</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">item_price</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item_price</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
+</span></span><span class="line"><span class="cl"><span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">}</span> <span class="k">for</span> <span class="n">price_id</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Upgrading the virtual guest</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
+</span></span></span><span class="line"><span class="cl"><span class="s2">        error message.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div><h3 id="upgrade-the--uplink-port-speeds-this-script-works-for-both-options-vsi-dedicated-and-families">Upgrade the  Uplink Port Speeds (This script works for both options VSI dedicated and families).</h3>
 <p>Change the &ldquo;items&rdquo; variable with the item keyName you want to upgrade your vs.</p>
 <p>e.g. I am upgrading the Uplink Port Speeds from 1 Gbps to 100 Mbps.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">json</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="c1"># Declare the API client</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-<span class="c1"># The id of the virtual guest you wish upgrade</span>
-<span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
-
-<span class="c1"># items KeyNames to be upgraded.</span>
-<span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;100_MBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&#39;</span><span class="p">]</span>  <span class="c1"># &#34;description&#34;: &#34;100 Mbps Public &amp; Private Network Uplinks&#34;</span>
-
-<span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
-                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
-
-<span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">get_item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
-            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
-<span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
-<span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
-    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">}</span> <span class="k">for</span> <span class="n">price_id</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">],</span>
-    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
-    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
-<span class="p">}</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Upgrading the virtual guest</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="s2">        error message.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare the API client</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id of the virtual guest you wish upgrade</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestId</span> <span class="o">=</span> <span class="mi">12345</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># items KeyNames to be upgraded.</span>
+</span></span><span class="line"><span class="cl"><span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;100_MBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&#39;</span><span class="p">]</span>  <span class="c1"># &#34;description&#34;: &#34;100 Mbps Public &amp; Private Network Uplinks&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">item_prices</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getUpgradeItemPrices</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="s1">&#39;mask[id,item[id,keyName]]&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                     <span class="nb">id</span><span class="o">=</span><span class="n">virtualGuestId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">get_item</span> <span class="ow">in</span> <span class="n">item_prices</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Container_Product_Order_Property objects</span>
+</span></span><span class="line"><span class="cl"><span class="n">properties</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;MAINTENANCE_WINDOW&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;2018-08-20T06:04:10Z&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;NOTE_GENERAL&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="s2">&#34;Upgrade instance configuration.&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a skeleton SoftLayer_Virtual_Guest object to model the id</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuests</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">virtualGuestId</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Virtual_Guest_Upgrade&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">}</span> <span class="k">for</span> <span class="n">price_id</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">properties</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;virtualGuests&#39;</span><span class="p">:</span> <span class="n">virtualGuests</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Upgrading the virtual guest</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        If there was an error returned from the SoftLayer API then bomb out with the
+</span></span></span><span class="line"><span class="cl"><span class="s2">        error message.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to upgrade the VSI </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -142,69 +138,68 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="err">#</span> <span class="nx">Get</span> <span class="nx">prices</span> <span class="k">for</span> <span class="nx">File</span> <span class="nx">Storage</span>
-<span class="err">#</span>
-<span class="err">#</span> <span class="nx">The</span> <span class="nx">script</span> <span class="nx">retrieves</span> <span class="nx">the</span> <span class="nx">items</span> <span class="nx">and</span> <span class="nx">prices</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">a</span> <span class="nx">File</span> <span class="nx">Storage</span>
-<span class="err">#</span> <span class="nx">and</span> <span class="nx">uses</span> <span class="nx">filters</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">the</span> <span class="nx">prices</span> <span class="k">for</span> <span class="nx">an</span> <span class="nx">arbitrary</span> <span class="nx">location</span> <span class="nx">group</span>
-<span class="err">#</span> <span class="nx">and</span> <span class="nx">an</span> <span class="nx">arbitrary</span> <span class="nx">item</span> <span class="nx">description</span><span class="p">.</span>
-<span class="err">#</span>
-<span class="err">#</span> <span class="nx">Important</span> <span class="nx">manual</span> <span class="nx">pages</span><span class="p">:</span>
-<span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItems
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/Object-Filters
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/Object-Masks
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/blog/cmporter/Location-based-Pricing-and-You
-</span><span class="c1"></span><span class="err">#</span>
-<span class="err">#</span> <span class="err">@</span><span class="nx">license</span> <span class="p">&lt;</span><span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/License&gt;
-</span><span class="c1"></span><span class="err">#</span> <span class="err">@</span><span class="nx">author</span> <span class="nx">SoftLayer</span> <span class="nx">Technologies</span><span class="p">,</span> <span class="nx">Inc</span><span class="p">.</span> <span class="p">&lt;</span><span class="nx">sldn</span><span class="err">@</span><span class="nx">softlayer</span><span class="p">.</span><span class="nx">com</span><span class="p">&gt;</span>
-<span class="nx">require</span> <span class="err">&#39;</span><span class="nx">softlayer_api</span><span class="err">&#39;</span>
-<span class="nx">require</span> <span class="err">&#39;</span><span class="nx">json</span><span class="err">&#39;</span>
-
-<span class="err">#</span> <span class="nx">Your</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">username</span> <span class="nx">and</span> <span class="nx">key</span><span class="p">.</span>
-<span class="nx">USERNAME</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
-<span class="nx">API_KEY</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
-
-<span class="err">#</span> <span class="nx">The</span> <span class="kn">package</span> <span class="k">for</span> <span class="nx">File</span> <span class="nx">Storage</span>
-<span class="kn">package</span> <span class="p">=</span> <span class="mi">222</span>
-
-<span class="err">#</span> <span class="nx">The</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">location</span> <span class="nx">groups</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">filter</span> <span class="nx">in</span> <span class="nx">order</span> <span class="nx">to</span> <span class="nx">show</span> <span class="nx">only</span>
-<span class="err">#</span> <span class="nx">the</span> <span class="nx">prices</span> <span class="nx">which</span> <span class="nx">belong</span> <span class="nx">to</span> <span class="nx">those</span> <span class="nx">location</span> <span class="nx">groups</span> <span class="k">for</span> <span class="nx">example</span> <span class="nx">we</span> <span class="nx">only</span>
-<span class="err">#</span> <span class="nx">list</span> <span class="nx">the</span> <span class="nx">prices</span> <span class="nx">which</span> <span class="nx">locationGroupId</span> <span class="nx">is</span> <span class="mi">503</span> <span class="nx">whose</span> <span class="nx">prices</span> <span class="nx">are</span> <span class="nx">valid</span>
-<span class="err">#</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">locations</span><span class="p">:</span>   <span class="s">&#34;Toronto 1&#34;</span><span class="p">,</span> <span class="s">&#34;Amsterdam 3&#34;</span><span class="p">,</span> <span class="s">&#34;Montreal 1&#34;</span>
-<span class="err">#</span> <span class="nx">and</span> <span class="s">&#34;Amsterdam 1&#34;</span>
-<span class="nx">location_groups_ids</span> <span class="p">=</span> <span class="p">[</span><span class="mi">503</span><span class="p">]</span>
-
-<span class="err">#</span> <span class="nx">The</span> <span class="nx">description</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">item</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">its</span> <span class="nx">prices</span>
-<span class="nx">item_description</span> <span class="p">=</span> <span class="err">&#39;</span><span class="mi">20</span> <span class="nx">GB</span> <span class="nx">Storage</span> <span class="nx">Space</span><span class="err">&#39;</span>
-
-<span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">::</span><span class="nx">Client</span><span class="p">.</span><span class="nb">new</span><span class="p">(</span><span class="nx">username</span><span class="p">:</span> <span class="nx">USERNAME</span><span class="p">,</span> <span class="nx">api_key</span><span class="p">:</span> <span class="nx">API_KEY</span><span class="p">,</span> <span class="nx">timeout</span><span class="p">:</span> <span class="mi">600</span><span class="p">)</span>
-<span class="nx">package_service</span> <span class="p">=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">service_named</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">SoftLayer_Product_Package</span><span class="err">&#39;</span><span class="p">)</span>
-
-<span class="err">#</span> <span class="nx">We</span> <span class="nx">are</span> <span class="nx">setting</span> <span class="nx">a</span> <span class="nx">filter</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">only</span> <span class="nx">the</span> <span class="nx">items</span> <span class="nx">which</span> <span class="nx">description</span>
-<span class="err">#</span> <span class="nx">contains</span> <span class="s">&#34;20 GB Storage Space&#34;</span>
-<span class="nx">object_filter</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">::</span><span class="nx">ObjectFilter</span><span class="p">.</span><span class="nx">new</span> <span class="nx">do</span> <span class="p">|</span><span class="nx">object_filter</span><span class="p">|</span>
-  <span class="nx">object_filter</span><span class="p">.</span><span class="nf">accept</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">items</span><span class="p">.</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">).</span><span class="nx">when_it</span> <span class="nf">contains</span><span class="p">(</span><span class="nx">item_description</span><span class="p">)</span>
-<span class="nx">end</span>
-
-<span class="err">#</span> <span class="nx">We</span> <span class="nx">are</span> <span class="nx">adding</span> <span class="nx">to</span> <span class="nx">our</span> <span class="nx">filter</span> <span class="nx">the</span> <span class="nx">locationGroups</span> <span class="nx">we</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">see</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">result</span>
-<span class="nx">object_filter</span><span class="p">.</span><span class="nf">set_criteria_for_key_path</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">items</span><span class="p">.</span><span class="nx">prices</span><span class="p">.</span><span class="nx">locationGroupId</span><span class="err">&#39;</span><span class="p">,</span>           <span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">in</span><span class="err">&#39;</span><span class="p">,</span>
-                                                                                  <span class="err">&#39;</span><span class="nx">options</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="p">[{</span>
-                                                                                    <span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">data</span><span class="err">&#39;</span><span class="p">,</span>
-                                                                                    <span class="err">&#39;</span><span class="nx">value</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="nx">location_groups_ids</span>
-                                                                                  <span class="p">}])</span>
-
-<span class="err">#</span> <span class="nx">We</span> <span class="nx">are</span> <span class="nx">creating</span> <span class="nx">an</span> <span class="nx">object</span> <span class="nx">mask</span> <span class="nx">in</span> <span class="nx">order</span> <span class="nx">to</span> <span class="nx">see</span> <span class="nx">more</span> <span class="nx">details</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">result</span>
-<span class="err">#</span> <span class="nx">in</span> <span class="nx">this</span> <span class="k">case</span> <span class="nx">we</span> <span class="nx">are</span> <span class="nx">going</span> <span class="nx">to</span> <span class="nx">see</span> <span class="nx">the</span> <span class="nx">details</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">locationGroup</span><span class="p">.</span>
-<span class="nx">object_mask</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">mask</span><span class="p">[</span><span class="nx">prices</span><span class="p">[</span><span class="nx">pricingLocationGroup</span><span class="p">[</span><span class="nx">locations</span><span class="p">[</span><span class="nx">id</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">longName</span><span class="p">]]]]</span><span class="err">&#39;</span>
-
-<span class="nx">begin</span>
-  <span class="nx">result</span> <span class="p">=</span> <span class="nx">package_service</span><span class="p">.</span><span class="nf">object_with_id</span><span class="p">(</span><span class="kn">package</span><span class="p">).</span><span class="nf">object_filter</span><span class="p">(</span><span class="nx">object_filter</span><span class="p">).</span><span class="nf">object_mask</span><span class="p">(</span><span class="nx">object_mask</span><span class="p">).</span><span class="nx">getItems</span>
-  <span class="nx">puts</span> <span class="nx">JSON</span><span class="p">.</span><span class="nf">pretty_generate</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-<span class="nx">rescue</span> <span class="nx">StandardException</span> <span class="p">=&gt;</span> <span class="nx">exception</span>
-  <span class="nx">puts</span> <span class="s">&#34;Unable to get the items.  #{exception}&#34;</span>
-<span class="nx">end</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Get</span> <span class="nx">prices</span> <span class="k">for</span> <span class="nx">File</span> <span class="nx">Storage</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">The</span> <span class="nx">script</span> <span class="nx">retrieves</span> <span class="nx">the</span> <span class="nx">items</span> <span class="nx">and</span> <span class="nx">prices</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">a</span> <span class="nx">File</span> <span class="nx">Storage</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">and</span> <span class="nx">uses</span> <span class="nx">filters</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">the</span> <span class="nx">prices</span> <span class="k">for</span> <span class="nx">an</span> <span class="nx">arbitrary</span> <span class="nx">location</span> <span class="nx">group</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">and</span> <span class="nx">an</span> <span class="nx">arbitrary</span> <span class="nx">item</span> <span class="nx">description</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Important</span> <span class="nx">manual</span> <span class="nx">pages</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItems
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/Object-Filters
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/Object-Masks
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/blog/cmporter/Location-based-Pricing-and-You
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="err">@</span><span class="nx">license</span> <span class="p">&lt;</span><span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/License&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="err">@</span><span class="nx">author</span> <span class="nx">SoftLayer</span> <span class="nx">Technologies</span><span class="p">,</span> <span class="nx">Inc</span><span class="p">.</span> <span class="p">&lt;</span><span class="nx">sldn</span><span class="err">@</span><span class="nx">softlayer</span><span class="p">.</span><span class="nx">com</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">require</span> <span class="err">&#39;</span><span class="nx">softlayer_api</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">require</span> <span class="err">&#39;</span><span class="nx">json</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Your</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">username</span> <span class="nx">and</span> <span class="nx">key</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">USERNAME</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">API_KEY</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">The</span> <span class="kn">package</span> <span class="k">for</span> <span class="nx">File</span> <span class="nx">Storage</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="p">=</span> <span class="mi">222</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">The</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">location</span> <span class="nx">groups</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">filter</span> <span class="nx">in</span> <span class="nx">order</span> <span class="nx">to</span> <span class="nx">show</span> <span class="nx">only</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">the</span> <span class="nx">prices</span> <span class="nx">which</span> <span class="nx">belong</span> <span class="nx">to</span> <span class="nx">those</span> <span class="nx">location</span> <span class="nx">groups</span> <span class="k">for</span> <span class="nx">example</span> <span class="nx">we</span> <span class="nx">only</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">list</span> <span class="nx">the</span> <span class="nx">prices</span> <span class="nx">which</span> <span class="nx">locationGroupId</span> <span class="nx">is</span> <span class="mi">503</span> <span class="nx">whose</span> <span class="nx">prices</span> <span class="nx">are</span> <span class="nx">valid</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">locations</span><span class="p">:</span>   <span class="s">&#34;Toronto 1&#34;</span><span class="p">,</span> <span class="s">&#34;Amsterdam 3&#34;</span><span class="p">,</span> <span class="s">&#34;Montreal 1&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">and</span> <span class="s">&#34;Amsterdam 1&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">location_groups_ids</span> <span class="p">=</span> <span class="p">[</span><span class="mi">503</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">The</span> <span class="nx">description</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">item</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">its</span> <span class="nx">prices</span>
+</span></span><span class="line"><span class="cl"><span class="nx">item_description</span> <span class="p">=</span> <span class="err">&#39;</span><span class="mi">20</span> <span class="nx">GB</span> <span class="nx">Storage</span> <span class="nx">Space</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">::</span><span class="nx">Client</span><span class="p">.</span><span class="nb">new</span><span class="p">(</span><span class="nx">username</span><span class="p">:</span> <span class="nx">USERNAME</span><span class="p">,</span> <span class="nx">api_key</span><span class="p">:</span> <span class="nx">API_KEY</span><span class="p">,</span> <span class="nx">timeout</span><span class="p">:</span> <span class="mi">600</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">package_service</span> <span class="p">=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">service_named</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">SoftLayer_Product_Package</span><span class="err">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">We</span> <span class="nx">are</span> <span class="nx">setting</span> <span class="nx">a</span> <span class="nx">filter</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">only</span> <span class="nx">the</span> <span class="nx">items</span> <span class="nx">which</span> <span class="nx">description</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">contains</span> <span class="s">&#34;20 GB Storage Space&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">object_filter</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">::</span><span class="nx">ObjectFilter</span><span class="p">.</span><span class="nx">new</span> <span class="nx">do</span> <span class="p">|</span><span class="nx">object_filter</span><span class="p">|</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">object_filter</span><span class="p">.</span><span class="nf">accept</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">items</span><span class="p">.</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">).</span><span class="nx">when_it</span> <span class="nf">contains</span><span class="p">(</span><span class="nx">item_description</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">end</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">We</span> <span class="nx">are</span> <span class="nx">adding</span> <span class="nx">to</span> <span class="nx">our</span> <span class="nx">filter</span> <span class="nx">the</span> <span class="nx">locationGroups</span> <span class="nx">we</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">see</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">result</span>
+</span></span><span class="line"><span class="cl"><span class="nx">object_filter</span><span class="p">.</span><span class="nf">set_criteria_for_key_path</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">items</span><span class="p">.</span><span class="nx">prices</span><span class="p">.</span><span class="nx">locationGroupId</span><span class="err">&#39;</span><span class="p">,</span>           <span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">in</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                                  <span class="err">&#39;</span><span class="nx">options</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="p">[{</span>
+</span></span><span class="line"><span class="cl">                                                                                    <span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">data</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                                    <span class="err">&#39;</span><span class="nx">value</span><span class="err">&#39;</span> <span class="p">=&gt;</span> <span class="nx">location_groups_ids</span>
+</span></span><span class="line"><span class="cl">                                                                                  <span class="p">}])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">We</span> <span class="nx">are</span> <span class="nx">creating</span> <span class="nx">an</span> <span class="nx">object</span> <span class="nx">mask</span> <span class="nx">in</span> <span class="nx">order</span> <span class="nx">to</span> <span class="nx">see</span> <span class="nx">more</span> <span class="nx">details</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">result</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">in</span> <span class="nx">this</span> <span class="k">case</span> <span class="nx">we</span> <span class="nx">are</span> <span class="nx">going</span> <span class="nx">to</span> <span class="nx">see</span> <span class="nx">the</span> <span class="nx">details</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">locationGroup</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">object_mask</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">mask</span><span class="p">[</span><span class="nx">prices</span><span class="p">[</span><span class="nx">pricingLocationGroup</span><span class="p">[</span><span class="nx">locations</span><span class="p">[</span><span class="nx">id</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">longName</span><span class="p">]]]]</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">begin</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">result</span> <span class="p">=</span> <span class="nx">package_service</span><span class="p">.</span><span class="nf">object_with_id</span><span class="p">(</span><span class="kn">package</span><span class="p">).</span><span class="nf">object_filter</span><span class="p">(</span><span class="nx">object_filter</span><span class="p">).</span><span class="nf">object_mask</span><span class="p">(</span><span class="nx">object_mask</span><span class="p">).</span><span class="nx">getItems</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">puts</span> <span class="nx">JSON</span><span class="p">.</span><span class="nf">pretty_generate</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">rescue</span> <span class="nx">StandardException</span> <span class="p">=&gt;</span> <span class="nx">exception</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">puts</span> <span class="s">&#34;Unable to get the items.  #{exception}&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">end</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

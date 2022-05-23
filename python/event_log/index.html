@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -145,105 +141,100 @@ if (!doNotTrack) {
                 
 				
                 <p>This example deals with a few ways of pulling data from <code>SoftLayer_Event_Log</code>. There can ben quite a few Logs here, so I recommend using a filter like in the <code>recentLogs</code> function to limit how far back you search for Events, otherwise you will be paging through Events for a long time.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">@author Christopher Gallo
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">datetime</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
-
-    <span class="k">def</span> <span class="nf">recentLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;REST API CALL
-</span><span class="s2">        &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="s2">            resultLimit=0,50&amp;
-</span><span class="s2">            objectFilter={&#34;eventCreateDate&#34;:{&#34;operation&#34;:&#34;greaterThanDate&#34;,&#34;options&#34;:[{&#34;name&#34;:&#34;date&#34;,&#34;value&#34;:[&#34;2018-04-18T00:00:00.0000-06:00&#34;]}]}}&#39;
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;eventCreateDate&#39;</span><span class="p">:</span> <span class="p">{</span> 
-                <span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;greaterThanDate&#39;</span><span class="p">,</span> 
-                <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">getDateString</span><span class="p">(</span><span class="mi">30</span><span class="p">)]}</span>
-                <span class="p">]</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">_filter</span><span class="p">):</span>
-            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">systemLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;REST API CALL
-</span><span class="s2">        &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="s2">            resultLimit=0,50&amp;
-</span><span class="s2">            objectFilter={&#34;userType&#34;:{&#34;operation&#34;:&#34;SYSTEM&#34;}}&#39;
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;userType&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;SYSTEM&#39;</span><span class="p">}}</span>
-        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">_filter</span><span class="p">):</span>
-            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">loginLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;REST API CALL
-</span><span class="s2">        https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="s2">            resultLimit=0,50&amp;
-</span><span class="s2">            objectFilter={&#34;eventName&#34;:{&#34;operation&#34;:&#34;^= Login&#34;}}&#39;
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;eventName&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;^= Login&#39;</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">_filter</span><span class="p">):</span>
-            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">allLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;REST API CALL
-</span><span class="s2">        &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?resultLimit=0,50&#39;
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
-            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-        
-
-    <span class="k">def</span> <span class="nf">getAllObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_filter</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Pages through all results from the Event_Log. This might take long time.&#34;&#34;&#34;</span>
-        <span class="n">notDone</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">while</span> <span class="n">notDone</span><span class="p">:</span>
-            <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Event_Log&#39;</span><span class="p">,</span> <span class="s1">&#39;getAllObjects&#39;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> from getAllObjects, offset = </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">),</span> <span class="n">offset</span><span class="p">))</span>
-
-            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
-                <span class="k">yield</span> <span class="n">event</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">limit</span><span class="p">:</span>
-                <span class="n">notDone</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">limit</span>
-            <span class="n">notDone</span> <span class="o">=</span> <span class="kc">False</span>
-
-    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
-
-
-<span class="k">def</span> <span class="nf">getDateString</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
-    <span class="n">date_object</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">date_object</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&#34;%Y-%m-</span><span class="si">%d</span><span class="s2">T00:00:00.0000-06:00&#34;</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">printLogs</span><span class="p">(</span><span class="n">log</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">log</span><span class="p">[</span><span class="s1">&#39;eventName&#39;</span><span class="p">],</span><span class="n">log</span><span class="p">[</span><span class="s1">&#39;eventCreateDate&#39;</span><span class="p">],</span> <span class="n">log</span><span class="p">[</span><span class="s1">&#39;userType&#39;</span><span class="p">]))</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">allLogs</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
-
-
-
-
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">@author Christopher Gallo
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">datetime</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">recentLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;REST API CALL
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="s2">            resultLimit=0,50&amp;
+</span></span></span><span class="line"><span class="cl"><span class="s2">            objectFilter={&#34;eventCreateDate&#34;:{&#34;operation&#34;:&#34;greaterThanDate&#34;,&#34;options&#34;:[{&#34;name&#34;:&#34;date&#34;,&#34;value&#34;:[&#34;2018-04-18T00:00:00.0000-06:00&#34;]}]}}&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;eventCreateDate&#39;</span><span class="p">:</span> <span class="p">{</span> 
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;greaterThanDate&#39;</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">getDateString</span><span class="p">(</span><span class="mi">30</span><span class="p">)]}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">_filter</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">systemLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;REST API CALL
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="s2">            resultLimit=0,50&amp;
+</span></span></span><span class="line"><span class="cl"><span class="s2">            objectFilter={&#34;userType&#34;:{&#34;operation&#34;:&#34;SYSTEM&#34;}}&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;userType&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;SYSTEM&#39;</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">_filter</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">loginLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;REST API CALL
+</span></span></span><span class="line"><span class="cl"><span class="s2">        https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="s2">            resultLimit=0,50&amp;
+</span></span></span><span class="line"><span class="cl"><span class="s2">            objectFilter={&#34;eventName&#34;:{&#34;operation&#34;:&#34;^= Login&#34;}}&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;eventName&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;^= Login&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">_filter</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">allLogs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;REST API CALL
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?resultLimit=0,50&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">printLogs</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getAllObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_filter</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Pages through all results from the Event_Log. This might take long time.&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">notDone</span> <span class="o">=</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="n">notDone</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Event_Log&#39;</span><span class="p">,</span> <span class="s1">&#39;getAllObjects&#39;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> from getAllObjects, offset = </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">),</span> <span class="n">offset</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">yield</span> <span class="n">event</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">limit</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">notDone</span> <span class="o">=</span> <span class="kc">False</span>
+</span></span><span class="line"><span class="cl">            <span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">limit</span>
+</span></span><span class="line"><span class="cl">            <span class="n">notDone</span> <span class="o">=</span> <span class="kc">False</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">getDateString</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">date_object</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">date_object</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&#34;%Y-%m-</span><span class="si">%d</span><span class="s2">T00:00:00.0000-06:00&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">printLogs</span><span class="p">(</span><span class="n">log</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">log</span><span class="p">[</span><span class="s1">&#39;eventName&#39;</span><span class="p">],</span><span class="n">log</span><span class="p">[</span><span class="s1">&#39;eventCreateDate&#39;</span><span class="p">],</span> <span class="n">log</span><span class="p">[</span><span class="s1">&#39;userType&#39;</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">allLogs</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

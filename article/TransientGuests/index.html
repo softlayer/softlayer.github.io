@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -149,398 +145,397 @@ if (!doNotTrack) {
 <p>This article will show how to use the SoftLayer-Python library to create a Transient Guest with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject/">SoftLayer_Virtual_Guest::createObject()</a>, set the webhook URI with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/setTransientWebhook/">SoftLayer_Virtual_Guest::setTransientWebhook()</a>, and how to test it with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/sendTestReclaimScheduledAlert/">SoftLayer_Virtual_Guest::sendTestReclaimScheduledAlert()</a>. Not covered is how to do something useful with the data received, that is left as an exercise for the reader.</p>
 <h2 id="example-setup">Example Setup</h2>
 <p>To start off, I like to use the following example format. We start with a class, and add methods to it for various actions we need to take. The python file will have a <code>if __name__ == &quot;__main__&quot;:</code> block so that it can be executed as a shell script for easy testing. At the end of the article will be the full file. Each section will break down what is going on with each function of the class.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-<span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">import</span> <span class="nn">string</span>
-
-<span class="k">class</span> <span class="nc">transient</span><span class="p">():</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Init the SoftLayer Client.
-</span><span class="s2">        
-</span><span class="s2">        the debugger part lets you easily reproduce the exact API calls made.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
-
-    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">randomString</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stringLength</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Generate a random string of fixed length.
-</span><span class="s2">        
-</span><span class="s2">        I use this to make random hostnames.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="n">letters</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_lowercase</span>
-        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">letters</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">stringLength</span><span class="p">))</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">transient</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
-</code></pre></div><h1 id="order-options">Order Options</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">random</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">string</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">transient</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Init the SoftLayer Client.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        
+</span></span></span><span class="line"><span class="cl"><span class="s2">        the debugger part lets you easily reproduce the exact API calls made.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">randomString</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stringLength</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Generate a random string of fixed length.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        
+</span></span></span><span class="line"><span class="cl"><span class="s2">        I use this to make random hostnames.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">letters</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_lowercase</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">letters</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">stringLength</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">transient</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
+</span></span></code></pre></div><h1 id="order-options">Order Options</h1>
 <p>This example will showcase how to create a Virtual Guest with the createObject method. For more information on the details about ordering the following might also be helpful <a href="https://sldn.softlayer.com/tags/ordering/">Ordering examples</a>.</p>
 <p>The following methods will print out some of the basic options for creating a new transient guest.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">    <span class="k">def</span> <span class="nf">printFlavors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flavors</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Flavors need to have the attribute transientGuestFlag == True&#34;&#34;&#34;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== FLAVORS ======&#34;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Flavor, Hourly Cost&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">flavors</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="n">flavor</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;flavor&#39;</span><span class="p">]</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span> <span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;totalMinimumHourlyFee&#39;</span><span class="p">]))</span>
-
-    <span class="k">def</span> <span class="nf">printOS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operatingSystems</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Only list operating systems billed hourly&#34;&#34;&#34;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== OPERATING SYSTEMS ======&#34;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;KeyName, Description, Cost&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">operatingSystems</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">],</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
-                <span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">printDisk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">disks</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Disks with device == 2 are the ones that can be ordered as additional disks
-</span><span class="s2">
-</span><span class="s2">        disk 0 is primary
-</span><span class="s2">        disk 1 is SWAP
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== Disks ======&#34;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Size, Cost&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">disks</span><span class="p">:</span>
-            <span class="n">device</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;device&#39;</span><span class="p">]</span> 
-            <span class="k">if</span> <span class="n">device</span> <span class="o">==</span> <span class="s2">&#34;2&#34;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dedicatedHostInstanceFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> 
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
-
-</code></pre></div><h3 id="output">Output</h3>
-<div class="highlight"><pre class="chroma"><code class="language-text" data-lang="text">Calling: SoftLayer_Virtual_Guest::getCreateObjectOptions(id=None, mask=&#39;&#39;, filter=&#39;None&#39;, args=(), limit=None, offset=None))
-====== OPERATING SYSTEMS ======
-KeyName, Description, Cost
-CENTOS_LATEST, CentOS - Latest, 0
-CENTOS_LATEST_64, CentOS - Latest (64 bit), 0
-CENTOS_7_64, CentOS 7.x - Minimal Install (64 bit), 0
-====== FLAVORS ======
-Flavor, Hourly Cost
-B1_1X2X25, 0.0133
-B1_1X2X100, 0.0293
-B1_1X4X25, 0.0208
-====== Disks ======
-Size, Cost
-10 GB (SAN), .007
-20 GB (SAN), .009
-25 GB (SAN), .01
-</code></pre></div><h3 id="rest-api-call">REST API Call</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span>  <span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/getCreateObjectOptions.json&#39;</span>
-</code></pre></div><h1 id="creation">Creation</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">printFlavors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flavors</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Flavors need to have the attribute transientGuestFlag == True&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== FLAVORS ======&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Flavor, Hourly Cost&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">flavors</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="n">flavor</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;flavor&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span> <span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;totalMinimumHourlyFee&#39;</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">printOS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operatingSystems</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Only list operating systems billed hourly&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== OPERATING SYSTEMS ======&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;KeyName, Description, Cost&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">operatingSystems</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">printDisk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">disks</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Disks with device == 2 are the ones that can be ordered as additional disks
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        disk 0 is primary
+</span></span></span><span class="line"><span class="cl"><span class="s2">        disk 1 is SWAP
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== Disks ======&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Size, Cost&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">disks</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">device</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;device&#39;</span><span class="p">]</span> 
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">device</span> <span class="o">==</span> <span class="s2">&#34;2&#34;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dedicatedHostInstanceFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> 
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
+</span></span></code></pre></div><h3 id="output">Output</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Calling: SoftLayer_Virtual_Guest::getCreateObjectOptions(id=None, mask=&#39;&#39;, filter=&#39;None&#39;, args=(), limit=None, offset=None))
+</span></span><span class="line"><span class="cl">====== OPERATING SYSTEMS ======
+</span></span><span class="line"><span class="cl">KeyName, Description, Cost
+</span></span><span class="line"><span class="cl">CENTOS_LATEST, CentOS - Latest, 0
+</span></span><span class="line"><span class="cl">CENTOS_LATEST_64, CentOS - Latest (64 bit), 0
+</span></span><span class="line"><span class="cl">CENTOS_7_64, CentOS 7.x - Minimal Install (64 bit), 0
+</span></span><span class="line"><span class="cl">====== FLAVORS ======
+</span></span><span class="line"><span class="cl">Flavor, Hourly Cost
+</span></span><span class="line"><span class="cl">B1_1X2X25, 0.0133
+</span></span><span class="line"><span class="cl">B1_1X2X100, 0.0293
+</span></span><span class="line"><span class="cl">B1_1X4X25, 0.0208
+</span></span><span class="line"><span class="cl">====== Disks ======
+</span></span><span class="line"><span class="cl">Size, Cost
+</span></span><span class="line"><span class="cl">10 GB (SAN), .007
+</span></span><span class="line"><span class="cl">20 GB (SAN), .009
+</span></span><span class="line"><span class="cl">25 GB (SAN), .01
+</span></span></code></pre></div><h3 id="rest-api-call">REST API Call</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span>  <span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/getCreateObjectOptions.json&#39;</span>
+</span></span></code></pre></div><h1 id="creation">Creation</h1>
 <p>Given how many options there are for creating guests, it is challenging to make an easy to read example, but hopefully this helps. I highly recommend using the build in <a href="https://softlayer-python.readthedocs.io/en/latest/api/managers/vs/#SoftLayer.managers.vs.VSManager.order_guest">VSManager.order_guest()</a> method as that is a little more flexible. This example does basically the same thing though, just hard-coded a bit to be more readable.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">    <span class="k">def</span> <span class="nf">createTransient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Creates a transient guest
-</span><span class="s2">
-</span><span class="s2">        This example directly uses SooftLayer_Virtual_Guest::createObject, but using VSManager.order_guest()
-</span><span class="s2">        might be easier for most users.
-</span><span class="s2">        https://softlayer-api-python-client.readthedocs.io/en/latest/api/managers/vs/#SoftLayer.managers.vs.VSManager.order_guest
-</span><span class="s2">        &#34;&#34;&#34;</span>
-
-        <span class="n">domain</span> <span class="o">=</span> <span class="s1">&#39;ibm.com&#39;</span> <span class="c1"># pick a domain</span>
-        <span class="n">datacenter</span> <span class="o">=</span> <span class="s1">&#39;dal13&#39;</span> <span class="c1"># pick a dc</span>
-        <span class="n">os_keyname</span> <span class="o">=</span> <span class="s1">&#39;UBUNTU_LATEST_64&#39;</span> <span class="c1"># from options in printOS</span>
-        <span class="n">pub_network_vlan_id</span> <span class="o">=</span> <span class="mi">12345</span>
-        <span class="n">pub_subnet_id</span> <span class="o">=</span> <span class="mi">54321</span>
-        <span class="n">pri_network_vlan_id</span> <span class="o">=</span> <span class="mi">112233</span>
-        <span class="n">pri_subnet_id</span> <span class="o">=</span> <span class="mi">332211</span>
-        <span class="n">sg_allow_all_tcp_id</span> <span class="o">=</span> <span class="mi">999999</span>
-        <span class="n">sg_allow_all_udp_id</span> <span class="o">=</span> <span class="mi">888888</span>
-        <span class="n">post_install_uri</span> <span class="o">=</span> <span class="s1">&#39;https://pastebin.com/raw/62wrEKuW&#39;</span> <span class="c1"># needs to be https to be executed</span>
-        <span class="n">flavor_keyname</span> <span class="o">=</span> <span class="s1">&#39;C1_1X1X100&#39;</span> <span class="c1"># from printFlavors</span>
-        <span class="n">ssh_keys</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="mi">7777777</span><span class="p">}]</span> <span class="c1"># ID of sshkey</span>
-
-        <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest/</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span>
-            <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
-            <span class="s1">&#39;datacenter&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span><span class="n">datacenter</span><span class="p">},</span> 
-            <span class="s1">&#39;hourlyBillingFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># Has to be True for transient</span>
-            <span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">:</span> <span class="n">os_keyname</span><span class="p">,</span>
-            <span class="s1">&#39;networkComponents&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;maxSpeed&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">}],</span> <span class="c1"># 10, 100, 1000</span>
-            <span class="s1">&#39;blockDevices&#39;</span><span class="p">:</span> <span class="p">[</span>
-                <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;diskImage&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;capacity&#39;</span><span class="p">:</span> <span class="mi">30</span><span class="p">}}</span> <span class="c1"># optional additional disks.</span>
-            <span class="p">],</span>
-            <span class="s1">&#39;sshKeys&#39;</span><span class="p">:</span> <span class="n">ssh_keys</span><span class="p">,</span>  <span class="c1"># optional</span>
-            <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_SupplementalCreateObjectOptions/</span>
-            <span class="s1">&#39;supplementalCreateObjectOptions&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;flavorKeyName&#39;</span><span class="p">:</span> <span class="n">flavor_keyname</span><span class="p">,</span>
-                <span class="s1">&#39;postInstallScriptUri&#39;</span><span class="p">:</span>  <span class="n">post_install_uri</span>  <span class="c1"># optional</span>
-            <span class="p">},</span>
-            <span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span> <span class="p">:</span> <span class="p">{</span> <span class="c1"># optional</span>
-                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_subnet_id</span><span class="p">}}</span>
-            <span class="p">},</span>
-            <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span> <span class="c1"># optional</span>
-                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_subnet_id</span><span class="p">}},</span>
-                <span class="s1">&#39;securityGroupBindings&#39;</span><span class="p">:</span> <span class="p">[</span> <span class="c1"># optional</span>
-                    <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_tcp_id</span><span class="p">}},</span> <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_udp_id</span><span class="p">}}</span>
-                <span class="p">]</span>
-            <span class="p">},</span>
-            <span class="s1">&#39;userData&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span><span class="s2">&#34;Just some random data, you can put anything here you want!&#34;</span><span class="p">}]</span> <span class="c1"># optional</span>
-        <span class="p">}</span>
-
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">template</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-        <span class="c1"># Webhook HAS to be set AFTER the guest is created.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setWebHook</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span>
-</code></pre></div><h3 id="rest-api-call-1">REST API Call</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># Virtual_Guest::createObject</span>
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST -d <span class="se">\ </span>
-<span class="s1">&#39;{&#34;parameters&#34;: [{&#34;hostname&#34;: &#34;TRXcgezuyxunytl&#34;, &#34;domain&#34;: &#34;ibm.com&#34;, &#34;datacenter&#34;: {&#34;name&#34;: &#34;dal13&#34;}, &#34;hourlyBillingFlag&#34;: true, &#34;operatingSystemReferenceCode&#34;: &#34;UBUNTU_LATEST_64&#34;, &#34;networkComponents&#34;: [{&#34;maxSpeed&#34;: 1000}], &#34;blockDevices&#34;: [{&#34;device&#34;: 2, &#34;diskImage&#34;: {&#34;capacity&#34;: 30}}], &#34;sshKeys&#34;: [{&#34;id&#34;: 87634}], &#34;supplementalCreateObjectOptions&#34;: {&#34;flavorKeyName&#34;: &#34;C1_1X1X100&#34;, &#34;postInstallScriptUri&#34;: &#34;https://pastebin.com/raw/62wrEKuW&#34;}, &#34;transientGuestFlag&#34;: true, &#34;primaryBackendNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2068355, &#34;primarySubnet&#34;: {&#34;id&#34;: 1509335}}}, &#34;primaryNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2068353, &#34;primarySubnet&#34;: {&#34;id&#34;: 1499537}}, &#34;securityGroupBindings&#34;: [{&#34;securityGroup&#34;: {&#34;id&#34;: 128323}}, {&#34;securityGroup&#34;: {&#34;id&#34;: 128321}}]}, &#34;userData&#34;: [{&#34;value&#34;: &#34;Just some random data, you can put anything here you want!&#34;}]}]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/createObject.json&#39;</span>
-
-<span class="c1"># Virtual_Guest::setTransientWebhook</span>
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST -d <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [&#34;http://169.62.147.163/tesdfdsfst&#34;, &#34;MySecret123&#34;]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/setTransientWebhook.json&#39;</span>
-</code></pre></div><h1 id="web-hooks">Web Hooks</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">createTransient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Creates a transient guest
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        This example directly uses SooftLayer_Virtual_Guest::createObject, but using VSManager.order_guest()
+</span></span></span><span class="line"><span class="cl"><span class="s2">        might be easier for most users.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        https://softlayer-api-python-client.readthedocs.io/en/latest/api/managers/vs/#SoftLayer.managers.vs.VSManager.order_guest
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">domain</span> <span class="o">=</span> <span class="s1">&#39;ibm.com&#39;</span> <span class="c1"># pick a domain</span>
+</span></span><span class="line"><span class="cl">        <span class="n">datacenter</span> <span class="o">=</span> <span class="s1">&#39;dal13&#39;</span> <span class="c1"># pick a dc</span>
+</span></span><span class="line"><span class="cl">        <span class="n">os_keyname</span> <span class="o">=</span> <span class="s1">&#39;UBUNTU_LATEST_64&#39;</span> <span class="c1"># from options in printOS</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pub_network_vlan_id</span> <span class="o">=</span> <span class="mi">12345</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pub_subnet_id</span> <span class="o">=</span> <span class="mi">54321</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pri_network_vlan_id</span> <span class="o">=</span> <span class="mi">112233</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pri_subnet_id</span> <span class="o">=</span> <span class="mi">332211</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sg_allow_all_tcp_id</span> <span class="o">=</span> <span class="mi">999999</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sg_allow_all_udp_id</span> <span class="o">=</span> <span class="mi">888888</span>
+</span></span><span class="line"><span class="cl">        <span class="n">post_install_uri</span> <span class="o">=</span> <span class="s1">&#39;https://pastebin.com/raw/62wrEKuW&#39;</span> <span class="c1"># needs to be https to be executed</span>
+</span></span><span class="line"><span class="cl">        <span class="n">flavor_keyname</span> <span class="o">=</span> <span class="s1">&#39;C1_1X1X100&#39;</span> <span class="c1"># from printFlavors</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ssh_keys</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="mi">7777777</span><span class="p">}]</span> <span class="c1"># ID of sshkey</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest/</span>
+</span></span><span class="line"><span class="cl">        <span class="n">template</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;datacenter&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span><span class="n">datacenter</span><span class="p">},</span> 
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;hourlyBillingFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># Has to be True for transient</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">:</span> <span class="n">os_keyname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;networkComponents&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;maxSpeed&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">}],</span> <span class="c1"># 10, 100, 1000</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;blockDevices&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;diskImage&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;capacity&#39;</span><span class="p">:</span> <span class="mi">30</span><span class="p">}}</span> <span class="c1"># optional additional disks.</span>
+</span></span><span class="line"><span class="cl">            <span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;sshKeys&#39;</span><span class="p">:</span> <span class="n">ssh_keys</span><span class="p">,</span>  <span class="c1"># optional</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_SupplementalCreateObjectOptions/</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;supplementalCreateObjectOptions&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;flavorKeyName&#39;</span><span class="p">:</span> <span class="n">flavor_keyname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;postInstallScriptUri&#39;</span><span class="p">:</span>  <span class="n">post_install_uri</span>  <span class="c1"># optional</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span> <span class="p">:</span> <span class="p">{</span> <span class="c1"># optional</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_subnet_id</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span> <span class="c1"># optional</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_subnet_id</span><span class="p">}},</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;securityGroupBindings&#39;</span><span class="p">:</span> <span class="p">[</span> <span class="c1"># optional</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_tcp_id</span><span class="p">}},</span> <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_udp_id</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;userData&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span><span class="s2">&#34;Just some random data, you can put anything here you want!&#34;</span><span class="p">}]</span> <span class="c1"># optional</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">template</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Webhook HAS to be set AFTER the guest is created.</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">setWebHook</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">result</span>
+</span></span></code></pre></div><h3 id="rest-api-call-1">REST API Call</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Virtual_Guest::createObject</span>
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST -d <span class="se">\ </span>
+</span></span><span class="line"><span class="cl"><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;hostname&#34;: &#34;TRXcgezuyxunytl&#34;, &#34;domain&#34;: &#34;ibm.com&#34;, &#34;datacenter&#34;: {&#34;name&#34;: &#34;dal13&#34;}, &#34;hourlyBillingFlag&#34;: true, &#34;operatingSystemReferenceCode&#34;: &#34;UBUNTU_LATEST_64&#34;, &#34;networkComponents&#34;: [{&#34;maxSpeed&#34;: 1000}], &#34;blockDevices&#34;: [{&#34;device&#34;: 2, &#34;diskImage&#34;: {&#34;capacity&#34;: 30}}], &#34;sshKeys&#34;: [{&#34;id&#34;: 87634}], &#34;supplementalCreateObjectOptions&#34;: {&#34;flavorKeyName&#34;: &#34;C1_1X1X100&#34;, &#34;postInstallScriptUri&#34;: &#34;https://pastebin.com/raw/62wrEKuW&#34;}, &#34;transientGuestFlag&#34;: true, &#34;primaryBackendNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2068355, &#34;primarySubnet&#34;: {&#34;id&#34;: 1509335}}}, &#34;primaryNetworkComponent&#34;: {&#34;networkVlan&#34;: {&#34;id&#34;: 2068353, &#34;primarySubnet&#34;: {&#34;id&#34;: 1499537}}, &#34;securityGroupBindings&#34;: [{&#34;securityGroup&#34;: {&#34;id&#34;: 128323}}, {&#34;securityGroup&#34;: {&#34;id&#34;: 128321}}]}, &#34;userData&#34;: [{&#34;value&#34;: &#34;Just some random data, you can put anything here you want!&#34;}]}]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/createObject.json&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Virtual_Guest::setTransientWebhook</span>
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [&#34;http://169.62.147.163/tesdfdsfst&#34;, &#34;MySecret123&#34;]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/setTransientWebhook.json&#39;</span>
+</span></span></code></pre></div><h1 id="web-hooks">Web Hooks</h1>
 <p>The webhook has two parts. The URI, and the Secret. The URI is simply the location to send the cancellation notification. The Secret is used to create a Authorization Header hash so you can verify it was IBM Cloud who sent you the notification.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">    <span class="k">def</span> <span class="nf">setWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Sets the webhook&#34;&#34;&#34;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;setTransientWebhook&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">getWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getTransientWebhookURI&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">delWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteTransientWebhook&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">testWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Will send a test reclaim message to the TransientWebhookURI
-</span><span class="s2">
-</span><span class="s2">        SoftLayer_Virtual_Guest::sendTestReclaimScheduledAlert return None
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;sendTestReclaimScheduledAlert&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> doesn&#39;t have a webhook set!&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">guest_id</span><span class="p">))</span>
-</code></pre></div><h3 id="the-cancellation-notification">The Cancellation Notification</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">setWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Sets the webhook&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;setTransientWebhook&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getTransientWebhookURI&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">delWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteTransientWebhook&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">testWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Will send a test reclaim message to the TransientWebhookURI
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        SoftLayer_Virtual_Guest::sendTestReclaimScheduledAlert return None
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;sendTestReclaimScheduledAlert&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> doesn&#39;t have a webhook set!&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">guest_id</span><span class="p">))</span>
+</span></span></code></pre></div><h3 id="the-cancellation-notification">The Cancellation Notification</h3>
 <p>When you make an API call to <code>sendTestReclaimScheduledAlert</code>, OR the transient Virtual Guest is reclaimed, a HTTP request will get sent to the TransientWebhookURI. That request will look something like this:</p>
 <p>Here I&rsquo;m using <a href="https://en.wikipedia.org/wiki/Netcat">nc</a> to catch the requests.</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># nc -lk 0.0.0.0 80</span>
-POST /tesdfdsfst HTTP/1.1
-Host: 169.62.147.163
-Content-Type: application/json
-User-Agent: IBM Cloud Webhook Service
-Authorization: <span class="nv">AAAAAAA11111111111111111111111yNzMwNjA4YjAwMjU0MjUzM2MwMGE1MjljOTAxNDlkM2M1NjgyODdkYg</span><span class="o">==</span>
-X-IBM-Nonce: 111111116f3d430799139a0a28450000
-Content-Length: <span class="m">200</span>
-
-<span class="o">{</span><span class="s2">&#34;id&#34;</span>:<span class="s2">&#34;95430736&#34;</span>,<span class="s2">&#34;serviceName&#34;</span>:<span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span>,<span class="s2">&#34;event&#34;</span>:<span class="s2">&#34;reclaim-scheduled-test&#34;</span>,<span class="s2">&#34;timestamp&#34;</span>:1579124035,<span class="s2">&#34;link&#34;</span>:<span class="s2">&#34;https:\/\/api.softlayer.com\/rest\/v3\/SoftLayer_Virtual_Guest\/95430736.json&#34;</span><span class="o">}</span>
-HEAD /robots.txt HTTP/1.0
-</code></pre></div><p>Compared to a REAL reclaim event.</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># nc -lk 0.0.0.0 80</span>
-POST /tesdfdsfst HTTP/1.1
-Host: 169.62.147.163
-Content-Type: application/json
-User-Agent: IBM Cloud Webhook Service
-Authorization: <span class="nv">AAAAAAA11111111111111111111111yNzMwNjA4YjAwMjU0MjUzM2MwMGE1MjljOTAxNDlkM2M1NjgyODdkYg</span><span class="o">==</span>
-X-IBM-Nonce: 111111116f3d430799139a0a28450000
-Content-Length: <span class="m">222</span>
-
-<span class="o">{</span><span class="s2">&#34;id&#34;</span>:<span class="s2">&#34;95433052&#34;</span>,<span class="s2">&#34;serviceName&#34;</span>:<span class="s2">&#34;SoftLayer_Virtual_Guest_Citrix_XenServer_Version41&#34;</span>,<span class="s2">&#34;event&#34;</span>:<span class="s2">&#34;reclaim-scheduled&#34;</span>,<span class="s2">&#34;timestamp&#34;</span>:1579127296,<span class="s2">&#34;link&#34;</span>:<span class="s2">&#34;https:\/\/api.softlayer.com\/rest\/v3\/SoftLayer_Virtual_Guest\/95433052.json&#34;</span><span class="o">}</span>
-</code></pre></div><h3 id="rest-api-calls">REST API Calls</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># Virtual_Guest::setTransientWebhook</span>
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [&#34;http://169.62.147.163/tesdfdsfst&#34;, &#34;MySecret123&#34;]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/setTransientWebhook.json&#39;</span>
-
-<span class="c1"># Virtual_Guest::getTransientWebhookURI</span>
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/getTransientWebhookURI.json&#39;</span>
-
-<span class="c1"># Virtual_Guest::sendTestReclaimScheduledAlert</span>
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span>  <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/sendTestReclaimScheduledAlert.json&#39;</span>
-
-<span class="c1"># Virtual_Guest::deleteTransientWebhook</span>
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/deleteTransientWebhook.json&#39;</span>
-</code></pre></div><h1 id="full-example">Full Example</h1>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">@package examples 
-</span><span class="s2">@author Christopher Gallo
-</span><span class="s2">
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-<span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">import</span> <span class="nn">string</span>
-
-<span class="k">class</span> <span class="nc">transient</span><span class="p">():</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
-
-
-    <span class="k">def</span> <span class="nf">transientOptions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        Formats results from services/SoftLayer_Virtual_Guest::getCreateObjectOptions()
-</span><span class="s2">        &#34;&#34;&#34;</span>
-
-        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getCreateObjectOptions&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">printOS</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;operatingSystems&#39;</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">printFlavors</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;flavors&#39;</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">printDisk</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">))</span>
-
-
-    <span class="k">def</span> <span class="nf">printFlavors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flavors</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== FLAVORS ======&#34;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Flavor, Hourly Cost&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">flavors</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="n">flavor</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;flavor&#39;</span><span class="p">]</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span> <span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;totalMinimumHourlyFee&#39;</span><span class="p">]))</span>
-
-    <span class="k">def</span> <span class="nf">printOS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operatingSystems</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== OPERATING SYSTEMS ======&#34;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;KeyName, Description, Cost&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">operatingSystems</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">],</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
-                <span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">printDisk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">disks</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== Disks ======&#34;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Size, Cost&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">disks</span><span class="p">:</span>
-            <span class="n">device</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;device&#39;</span><span class="p">]</span> 
-            <span class="k">if</span> <span class="n">device</span> <span class="o">==</span> <span class="s2">&#34;2&#34;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dedicatedHostInstanceFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> 
-                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
-                <span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">createTransient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Creates a transient guest
-</span><span class="s2">
-</span><span class="s2">        This example directly uses SooftLayer_Virtual_Guest::createObject, but using VSManager.order_guest()
-</span><span class="s2">        might be easier for most users.
-</span><span class="s2">        https://softlayer-api-python-client.readthedocs.io/en/latest/api/managers/vs/#SoftLayer.managers.vs.VSManager.order_guest
-</span><span class="s2">        &#34;&#34;&#34;</span>
-
-        <span class="n">domain</span> <span class="o">=</span> <span class="s1">&#39;ibm.com&#39;</span> <span class="c1"># pick a domain</span>
-        <span class="n">datacenter</span> <span class="o">=</span> <span class="s1">&#39;dal13&#39;</span> <span class="c1"># pick a dc</span>
-        <span class="n">os_keyname</span> <span class="o">=</span> <span class="s1">&#39;UBUNTU_LATEST_64&#39;</span> <span class="c1"># from options in printOS</span>
-        <span class="n">pub_network_vlan_id</span> <span class="o">=</span> <span class="mi">12345</span>
-        <span class="n">pub_subnet_id</span> <span class="o">=</span> <span class="mi">54321</span>
-        <span class="n">pri_network_vlan_id</span> <span class="o">=</span> <span class="mi">112233</span>
-        <span class="n">pri_subnet_id</span> <span class="o">=</span> <span class="mi">332211</span>
-        <span class="n">sg_allow_all_tcp_id</span> <span class="o">=</span> <span class="mi">999999</span>
-        <span class="n">sg_allow_all_udp_id</span> <span class="o">=</span> <span class="mi">888888</span>
-        <span class="n">post_install_uri</span> <span class="o">=</span> <span class="s1">&#39;https://pastebin.com/raw/62wrEKuW&#39;</span> <span class="c1"># needs to be https to be executed</span>
-        <span class="n">flavor_keyname</span> <span class="o">=</span> <span class="s1">&#39;C1_1X1X100&#39;</span> <span class="c1"># from printFlavors</span>
-        <span class="n">ssh_keys</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="mi">87634</span><span class="p">}]</span> <span class="c1"># ID of sshkey</span>
-
-        <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest/</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span>
-            <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
-            <span class="s1">&#39;datacenter&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span><span class="n">datacenter</span><span class="p">},</span> 
-            <span class="s1">&#39;hourlyBillingFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># Has to be True for transient</span>
-            <span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">:</span> <span class="n">os_keyname</span><span class="p">,</span>
-            <span class="s1">&#39;networkComponents&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;maxSpeed&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">}],</span> <span class="c1"># 10, 100, 1000</span>
-            <span class="s1">&#39;blockDevices&#39;</span><span class="p">:</span> <span class="p">[</span>
-                <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;diskImage&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;capacity&#39;</span><span class="p">:</span> <span class="mi">30</span><span class="p">}}</span> <span class="c1"># optional additional disks.</span>
-            <span class="p">],</span>
-            <span class="s1">&#39;sshKeys&#39;</span><span class="p">:</span> <span class="n">ssh_keys</span><span class="p">,</span> 
-            <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_SupplementalCreateObjectOptions/</span>
-            <span class="s1">&#39;supplementalCreateObjectOptions&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;flavorKeyName&#39;</span><span class="p">:</span> <span class="n">flavor_keyname</span><span class="p">,</span>
-                <span class="s1">&#39;postInstallScriptUri&#39;</span><span class="p">:</span>  <span class="n">post_install_uri</span> 
-            <span class="p">},</span>
-            <span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span> <span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_subnet_id</span><span class="p">}}</span>
-            <span class="p">},</span>
-            <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_subnet_id</span><span class="p">}},</span>
-                <span class="s1">&#39;securityGroupBindings&#39;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_tcp_id</span><span class="p">}},</span> <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_udp_id</span><span class="p">}}</span>
-                <span class="p">]</span>
-            <span class="p">},</span>
-            <span class="s1">&#39;userData&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span><span class="s2">&#34;Just some random data, you can put anything here you want!&#34;</span><span class="p">}]</span>
-        <span class="p">}</span>
-
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">template</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-        <span class="c1"># Webhook HAS to be set AFTER the guest is created.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setWebHook</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span>
-        
-
-
-    <span class="k">def</span> <span class="nf">setWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Sets the webhook&#34;&#34;&#34;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;setTransientWebhook&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">getWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getTransientWebhookURI&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">delWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteTransientWebhook&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-
-    <span class="k">def</span> <span class="nf">testWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Will send a test reclaim message to the TransientWebhookURI
-</span><span class="s2">
-</span><span class="s2">        SoftLayer_Virtual_Guest::sendTestReclaimScheduledAlert return None
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;sendTestReclaimScheduledAlert&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> doesn&#39;t have a webhook set!&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">guest_id</span><span class="p">))</span>
-
-
-    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">randomString</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stringLength</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Generate a random string of fixed length &#34;&#34;&#34;</span>
-        <span class="n">letters</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_lowercase</span>
-        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">letters</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">stringLength</span><span class="p">))</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">webhook_uri</span> <span class="o">=</span> <span class="s1">&#39;http://169.62.147.163/tesdfdsfst&#39;</span>
-    <span class="n">secret</span> <span class="o">=</span> <span class="s1">&#39;MySecret123&#39;</span>
-    <span class="n">hostname</span> <span class="o">=</span> <span class="s2">&#34;TRX</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">randomString</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
-    
-    <span class="n">main</span> <span class="o">=</span> <span class="n">transient</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">transientOptions</span><span class="p">()</span>
-    
-    <span class="n">guest</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">createTransient</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
-    <span class="n">guest_id</span> <span class="o">=</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-    <span class="n">main</span><span class="o">.</span><span class="n">setWebHook</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">getWebHook</span><span class="p">(</span><span class="n">guest_id</span><span class="p">)</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">testWebHook</span><span class="p">(</span><span class="n">guest_id</span><span class="p">)</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># nc -lk 0.0.0.0 80</span>
+</span></span><span class="line"><span class="cl">POST /tesdfdsfst HTTP/1.1
+</span></span><span class="line"><span class="cl">Host: 169.62.147.163
+</span></span><span class="line"><span class="cl">Content-Type: application/json
+</span></span><span class="line"><span class="cl">User-Agent: IBM Cloud Webhook Service
+</span></span><span class="line"><span class="cl">Authorization: <span class="nv">AAAAAAA11111111111111111111111yNzMwNjA4YjAwMjU0MjUzM2MwMGE1MjljOTAxNDlkM2M1NjgyODdkYg</span><span class="o">==</span>
+</span></span><span class="line"><span class="cl">X-IBM-Nonce: 111111116f3d430799139a0a28450000
+</span></span><span class="line"><span class="cl">Content-Length: <span class="m">200</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">{</span><span class="s2">&#34;id&#34;</span>:<span class="s2">&#34;95430736&#34;</span>,<span class="s2">&#34;serviceName&#34;</span>:<span class="s2">&#34;SoftLayer_Virtual_Guest&#34;</span>,<span class="s2">&#34;event&#34;</span>:<span class="s2">&#34;reclaim-scheduled-test&#34;</span>,<span class="s2">&#34;timestamp&#34;</span>:1579124035,<span class="s2">&#34;link&#34;</span>:<span class="s2">&#34;https:\/\/api.softlayer.com\/rest\/v3\/SoftLayer_Virtual_Guest\/95430736.json&#34;</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">HEAD /robots.txt HTTP/1.0
+</span></span></code></pre></div><p>Compared to a REAL reclaim event.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># nc -lk 0.0.0.0 80</span>
+</span></span><span class="line"><span class="cl">POST /tesdfdsfst HTTP/1.1
+</span></span><span class="line"><span class="cl">Host: 169.62.147.163
+</span></span><span class="line"><span class="cl">Content-Type: application/json
+</span></span><span class="line"><span class="cl">User-Agent: IBM Cloud Webhook Service
+</span></span><span class="line"><span class="cl">Authorization: <span class="nv">AAAAAAA11111111111111111111111yNzMwNjA4YjAwMjU0MjUzM2MwMGE1MjljOTAxNDlkM2M1NjgyODdkYg</span><span class="o">==</span>
+</span></span><span class="line"><span class="cl">X-IBM-Nonce: 111111116f3d430799139a0a28450000
+</span></span><span class="line"><span class="cl">Content-Length: <span class="m">222</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">{</span><span class="s2">&#34;id&#34;</span>:<span class="s2">&#34;95433052&#34;</span>,<span class="s2">&#34;serviceName&#34;</span>:<span class="s2">&#34;SoftLayer_Virtual_Guest_Citrix_XenServer_Version41&#34;</span>,<span class="s2">&#34;event&#34;</span>:<span class="s2">&#34;reclaim-scheduled&#34;</span>,<span class="s2">&#34;timestamp&#34;</span>:1579127296,<span class="s2">&#34;link&#34;</span>:<span class="s2">&#34;https:\/\/api.softlayer.com\/rest\/v3\/SoftLayer_Virtual_Guest\/95433052.json&#34;</span><span class="o">}</span>
+</span></span></code></pre></div><h3 id="rest-api-calls">REST API Calls</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Virtual_Guest::setTransientWebhook</span>
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [&#34;http://169.62.147.163/tesdfdsfst&#34;, &#34;MySecret123&#34;]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/setTransientWebhook.json&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Virtual_Guest::getTransientWebhookURI</span>
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/getTransientWebhookURI.json&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Virtual_Guest::sendTestReclaimScheduledAlert</span>
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span>  <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/sendTestReclaimScheduledAlert.json&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Virtual_Guest::deleteTransientWebhook</span>
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/95433052/deleteTransientWebhook.json&#39;</span>
+</span></span></code></pre></div><h1 id="full-example">Full Example</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">@package examples 
+</span></span></span><span class="line"><span class="cl"><span class="s2">@author Christopher Gallo
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">random</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">string</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">transient</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">transientOptions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Formats results from services/SoftLayer_Virtual_Guest::getCreateObjectOptions()
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getCreateObjectOptions&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">printOS</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;operatingSystems&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">printFlavors</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;flavors&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">printDisk</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">printFlavors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flavors</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== FLAVORS ======&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Flavor, Hourly Cost&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">flavors</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="n">flavor</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;flavor&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span> <span class="n">flavor</span><span class="p">[</span><span class="s1">&#39;totalMinimumHourlyFee&#39;</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">printOS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operatingSystems</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== OPERATING SYSTEMS ======&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;KeyName, Description, Cost&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">operatingSystems</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">printDisk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">disks</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;====== Disks ======&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Size, Cost&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">disks</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">device</span> <span class="o">=</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;device&#39;</span><span class="p">]</span> 
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">device</span> <span class="o">==</span> <span class="s2">&#34;2&#34;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dedicatedHostInstanceFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> 
+</span></span><span class="line"><span class="cl">                    <span class="n">option</span><span class="p">[</span><span class="s1">&#39;itemPrice&#39;</span><span class="p">][</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">createTransient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Creates a transient guest
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        This example directly uses SooftLayer_Virtual_Guest::createObject, but using VSManager.order_guest()
+</span></span></span><span class="line"><span class="cl"><span class="s2">        might be easier for most users.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        https://softlayer-api-python-client.readthedocs.io/en/latest/api/managers/vs/#SoftLayer.managers.vs.VSManager.order_guest
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">domain</span> <span class="o">=</span> <span class="s1">&#39;ibm.com&#39;</span> <span class="c1"># pick a domain</span>
+</span></span><span class="line"><span class="cl">        <span class="n">datacenter</span> <span class="o">=</span> <span class="s1">&#39;dal13&#39;</span> <span class="c1"># pick a dc</span>
+</span></span><span class="line"><span class="cl">        <span class="n">os_keyname</span> <span class="o">=</span> <span class="s1">&#39;UBUNTU_LATEST_64&#39;</span> <span class="c1"># from options in printOS</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pub_network_vlan_id</span> <span class="o">=</span> <span class="mi">12345</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pub_subnet_id</span> <span class="o">=</span> <span class="mi">54321</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pri_network_vlan_id</span> <span class="o">=</span> <span class="mi">112233</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pri_subnet_id</span> <span class="o">=</span> <span class="mi">332211</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sg_allow_all_tcp_id</span> <span class="o">=</span> <span class="mi">999999</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sg_allow_all_udp_id</span> <span class="o">=</span> <span class="mi">888888</span>
+</span></span><span class="line"><span class="cl">        <span class="n">post_install_uri</span> <span class="o">=</span> <span class="s1">&#39;https://pastebin.com/raw/62wrEKuW&#39;</span> <span class="c1"># needs to be https to be executed</span>
+</span></span><span class="line"><span class="cl">        <span class="n">flavor_keyname</span> <span class="o">=</span> <span class="s1">&#39;C1_1X1X100&#39;</span> <span class="c1"># from printFlavors</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ssh_keys</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span><span class="mi">87634</span><span class="p">}]</span> <span class="c1"># ID of sshkey</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest/</span>
+</span></span><span class="line"><span class="cl">        <span class="n">template</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;datacenter&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span><span class="n">datacenter</span><span class="p">},</span> 
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;hourlyBillingFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># Has to be True for transient</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;operatingSystemReferenceCode&#39;</span><span class="p">:</span> <span class="n">os_keyname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;networkComponents&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;maxSpeed&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">}],</span> <span class="c1"># 10, 100, 1000</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;blockDevices&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;diskImage&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;capacity&#39;</span><span class="p">:</span> <span class="mi">30</span><span class="p">}}</span> <span class="c1"># optional additional disks.</span>
+</span></span><span class="line"><span class="cl">            <span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;sshKeys&#39;</span><span class="p">:</span> <span class="n">ssh_keys</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">            <span class="c1"># https://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_SupplementalCreateObjectOptions/</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;supplementalCreateObjectOptions&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;flavorKeyName&#39;</span><span class="p">:</span> <span class="n">flavor_keyname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;postInstallScriptUri&#39;</span><span class="p">:</span>  <span class="n">post_install_uri</span> 
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;transientGuestFlag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span> <span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pri_subnet_id</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_network_vlan_id</span><span class="p">,</span> <span class="s1">&#39;primarySubnet&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">pub_subnet_id</span><span class="p">}},</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;securityGroupBindings&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_tcp_id</span><span class="p">}},</span> <span class="p">{</span><span class="s1">&#39;securityGroup&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">sg_allow_all_udp_id</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;userData&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span><span class="s2">&#34;Just some random data, you can put anything here you want!&#34;</span><span class="p">}]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">template</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Webhook HAS to be set AFTER the guest is created.</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">setWebHook</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">result</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">setWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Sets the webhook&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;setTransientWebhook&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">secret</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getTransientWebhookURI&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">delWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteTransientWebhook&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">testWebHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Will send a test reclaim message to the TransientWebhookURI
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        SoftLayer_Virtual_Guest::sendTestReclaimScheduledAlert return None
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;sendTestReclaimScheduledAlert&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> doesn&#39;t have a webhook set!&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">guest_id</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">randomString</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stringLength</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Generate a random string of fixed length &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">letters</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_lowercase</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">letters</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">stringLength</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">webhook_uri</span> <span class="o">=</span> <span class="s1">&#39;http://169.62.147.163/tesdfdsfst&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">secret</span> <span class="o">=</span> <span class="s1">&#39;MySecret123&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">hostname</span> <span class="o">=</span> <span class="s2">&#34;TRX</span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">randomString</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">transient</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">transientOptions</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">guest</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">createTransient</span><span class="p">(</span><span class="n">hostname</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">guest_id</span> <span class="o">=</span> <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">setWebHook</span><span class="p">(</span><span class="n">guest_id</span><span class="p">,</span> <span class="n">webhook_uri</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">getWebHook</span><span class="p">(</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">testWebHook</span><span class="p">(</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

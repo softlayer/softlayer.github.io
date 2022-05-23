@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -142,81 +138,80 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1"># Reload servers from a list of IPs</span>
-<span class="c1">#</span>
-<span class="c1"># This script looks for a server with a determinate IP address and reloads</span>
-<span class="c1"># the Operative System with another one.</span>
-<span class="c1">#</span>
-<span class="c1"># It makes a single call to the reloadOperatingSystem() method in the</span>
-<span class="c1"># SoftLayer_Hardware_Server API service</span>
-<span class="c1">#</span>
-<span class="c1"># Important manual pages:</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/findByIpAddress</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/reloadOperatingSystem</span>
-<span class="c1">#</span>
-<span class="c1"># License: http://sldn.softlayer.com/article/License</span>
-<span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># The ip addresses you wish to reload</span>
-<span class="k">my</span> <span class="nv">@ips_to_reload</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;1.1.1.1&#39;</span><span class="p">,</span> <span class="s">&#39;2.2.2.2&#39;</span><span class="p">);</span>
-
-<span class="c1"># The new OS you wish to load</span>
-<span class="k">my</span> <span class="nv">$new_os_to_load</span> <span class="o">=</span> <span class="s">&#39;CentOS 5.x - Minimal Install (64 bit)&#39;</span><span class="p">;</span>
-
-<span class="c1"># Declaring a new API service objects for:</span>
-<span class="k">my</span> <span class="nv">$hardware_server_service</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="c1"># Adding an object mask to retrieve our prices related to the servers</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
-<span class="c1"># for a list of the relational properties you can retrieve along with hardware.</span>
-<span class="k">my</span> <span class="nv">$object_mask</span> <span class="o">=</span> <span class="s">&#34;mask[billingItem[package[items[prices]]]]&#34;</span><span class="p">;</span>
-
-<span class="c1"># Setting the object mask to our hardwareServerService</span>
-<span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">(</span><span class="nv">$object_mask</span><span class="p">);</span>
-
-<span class="c1"># The list of servers to reload</span>
-<span class="k">my</span> <span class="nv">%servers_to_reload</span><span class="p">;</span>
-
-<span class="c1"># We are looking for the server with the specified IP addresses</span>
-<span class="c1"># and the price for the new OS to load</span>
-<span class="k">for</span> <span class="k">my</span> <span class="nv">$ip_to_reload</span> <span class="p">(</span><span class="nv">@ips_to_reload</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">findByIpAddress</span><span class="p">(</span><span class="nv">$ip_to_reload</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nv">$server</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nb">die</span> <span class="s">&#39;Unable to get the server. &#39;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;id&#39;</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nn">result</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">};</span>
-    <span class="nv">$items</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nn">result</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;billingItem&#39;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#34;package&#34;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#34;items&#34;</span><span class="p">};</span>
-    <span class="k">for</span> <span class="k">my</span> <span class="nv">$i</span> <span class="p">(</span><span class="mi">0</span> <span class="o">..</span> <span class="nv">$#</span><span class="p">{</span><span class="nv">$items</span><span class="p">})</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nv">$items</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">]</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;description&#39;</span><span class="p">}</span> <span class="ow">eq</span> <span class="nv">$new_os_to_load</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;priceId&#39;</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$items</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">]</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;prices&#39;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">};</span>
-            <span class="k">last</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="c1"># We are calling the reloadOperatingSystem for the desired servers</span>
-<span class="k">for</span> <span class="k">my</span> <span class="nv">$ip_to_reload</span> <span class="p">(</span><span class="nv">@ips_to_reload</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">my</span> <span class="nv">$config</span> <span class="o">=</span> <span class="p">{</span>
-       <span class="s">&#39;itemPrices&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span>
-           <span class="p">{</span>
-               <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;priceId&#39;</span><span class="p">}</span>
-           <span class="p">}</span>
-       <span class="p">]</span>
-    <span class="p">};</span>
-    <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;id&#39;</span><span class="p">});</span>
-    <span class="k">my</span> <span class="nv">$reload</span> <span class="o">=</span> <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">reloadOperatingSystem</span><span class="p">(</span><span class="s">&#39;FORCE&#39;</span><span class="p">,</span> <span class="nv">$config</span><span class="p">);</span>
-    <span class="k">print</span> <span class="p">(</span><span class="nv">$reload</span><span class="p">);</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1"># Reload servers from a list of IPs</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># This script looks for a server with a determinate IP address and reloads</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the Operative System with another one.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># It makes a single call to the reloadOperatingSystem() method in the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Hardware_Server API service</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/findByIpAddress</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/reloadOperatingSystem</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License: http://sldn.softlayer.com/article/License</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The ip addresses you wish to reload</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">@ips_to_reload</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;1.1.1.1&#39;</span><span class="p">,</span> <span class="s">&#39;2.2.2.2&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The new OS you wish to load</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$new_os_to_load</span> <span class="o">=</span> <span class="s">&#39;CentOS 5.x - Minimal Install (64 bit)&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declaring a new API service objects for:</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$hardware_server_service</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Adding an object mask to retrieve our prices related to the servers</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># for a list of the relational properties you can retrieve along with hardware.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$object_mask</span> <span class="o">=</span> <span class="s">&#34;mask[billingItem[package[items[prices]]]]&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Setting the object mask to our hardwareServerService</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">(</span><span class="nv">$object_mask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The list of servers to reload</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">%servers_to_reload</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># We are looking for the server with the specified IP addresses</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># and the price for the new OS to load</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="k">my</span> <span class="nv">$ip_to_reload</span> <span class="p">(</span><span class="nv">@ips_to_reload</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">findByIpAddress</span><span class="p">(</span><span class="nv">$ip_to_reload</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nv">$server</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">die</span> <span class="s">&#39;Unable to get the server. &#39;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;id&#39;</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nn">result</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$items</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nn">result</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;billingItem&#39;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#34;package&#34;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#34;items&#34;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="k">my</span> <span class="nv">$i</span> <span class="p">(</span><span class="mi">0</span> <span class="o">..</span> <span class="nv">$#</span><span class="p">{</span><span class="nv">$items</span><span class="p">})</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="nv">$items</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">]</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;description&#39;</span><span class="p">}</span> <span class="ow">eq</span> <span class="nv">$new_os_to_load</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;priceId&#39;</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$items</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">]</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;prices&#39;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">            <span class="k">last</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># We are calling the reloadOperatingSystem for the desired servers</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="k">my</span> <span class="nv">$ip_to_reload</span> <span class="p">(</span><span class="nv">@ips_to_reload</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$config</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">       <span class="s">&#39;itemPrices&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">           <span class="p">{</span>
+</span></span><span class="line"><span class="cl">               <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;priceId&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">           <span class="p">}</span>
+</span></span><span class="line"><span class="cl">       <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$servers_to_reload</span><span class="p">{</span><span class="nv">$ip_to_reload</span><span class="p">}{</span><span class="s">&#39;id&#39;</span><span class="p">});</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$reload</span> <span class="o">=</span> <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">reloadOperatingSystem</span><span class="p">(</span><span class="s">&#39;FORCE&#39;</span><span class="p">,</span> <span class="nv">$config</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">print</span> <span class="p">(</span><span class="nv">$reload</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

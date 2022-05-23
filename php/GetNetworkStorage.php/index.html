@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -146,90 +142,89 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
-<span class="sd">/**
-</span><span class="sd"> * Get Network Storages
-</span><span class="sd"> * 
-</span><span class="sd"> * This script retrieves an account&#39;s associated storage volumes. Also this script generates an CSV file with 
-</span><span class="sd"> * the information retrieved. The file is stored in &#34;C:\Reports&#34; (Windows OS) path by default, you can modify 
-</span><span class="sd"> * the &#34;path&#34; variable if you wish to change it.
-</span><span class="sd"> *
-</span><span class="sd"> * Important manual pages:
-</span><span class="sd"> * @see http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNetworkStorage
-</span><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Storage
-</span><span class="sd"> * @see http://sldn.softlayer.com/article/Object-Masks
-</span><span class="sd"> * @see http://sldn.softlayer.com/article/Object-Filters
-</span><span class="sd"> *
-</span><span class="sd"> * @license &lt;http://sldn.softlayer.com/wiki/index.php/license&gt;
-</span><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="sd"> */</span>
-
-<span class="k">require_once</span> <span class="nx">dirname</span><span class="p">(</span><span class="no">__FILE__</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&#34;/SoftLayer/SoapClient.class.php&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Your SoftLayer API username
-</span><span class="sd"> * @var string
-</span><span class="sd"> */</span>
-<span class="nv">$username</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Your SoftLayer API key
-</span><span class="sd"> * Generate one at: https://control.softlayer.com/account/users
-</span><span class="sd"> * @var string
-</span><span class="sd"> */</span>
-<span class="nv">$apiKey</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Declare the &#34;path&#34; to create CSV file
-</span><span class="sd"> * @var string
-</span><span class="sd"> */</span>
-<span class="nv">$path</span> <span class="o">=</span> <span class="s2">&#34;C:</span><span class="se">\R</span><span class="s2">eports&#34;</span><span class="p">;</span>
-
-<span class="c1">// Create a SoftLayer API client object to the &#34;SoftLayer_Account&#34; service
-</span><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s2">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
-
-<span class="c1">// Define object mask to retrieve additional information from network storages 
-</span><span class="c1"></span><span class="nv">$mask</span> <span class="o">=</span> <span class="s2">&#34;mask[username ,billingItem[id, category, location[longName]], storageType, serviceResourceBackendIpAddress, capacityGb, notes]&#34;</span><span class="p">;</span>
-<span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$mask</span><span class="p">);</span>
-
-<span class="c1">// Declare an objectFilter to retrieve only the storages with billingItem distinct from null
-</span><span class="c1"></span><span class="nv">$filter</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">networkStorage</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">networkStorage</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">networkStorage</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">operation</span> <span class="o">=</span> <span class="s2">&#34;NOT NULL&#34;</span><span class="p">;</span>
-<span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">setObjectFilter</span><span class="p">(</span><span class="nv">$filter</span><span class="p">);</span>
-
-<span class="c1">// Define array for Network Storages to create CSV file
-</span><span class="c1"></span><span class="nv">$storages</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
-
-<span class="k">try</span> <span class="p">{</span>
-    <span class="c1">// Get all network storages
-</span><span class="c1"></span>    <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">getNetworkStorage</span><span class="p">();</span>
-    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$result</span> <span class="k">as</span> <span class="nv">$register</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">print_r</span><span class="p">(</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">username</span> <span class="o">.</span> <span class="s2">&#34;     &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">category</span> <span class="o">-&gt;</span> <span class="na">name</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">storageType</span> <span class="o">-&gt;</span> <span class="na">description</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">serviceResourceBackendIpAddress</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">capacityGb</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">location</span> <span class="o">-&gt;</span> <span class="na">longName</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">);</span>
-        <span class="nx">array_push</span><span class="p">(</span><span class="nv">$storages</span><span class="p">,</span> <span class="k">array</span><span class="p">(</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">username</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">category</span> <span class="o">-&gt;</span> <span class="na">name</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">storageType</span> <span class="o">-&gt;</span> <span class="na">description</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">serviceResourceBackendIpAddress</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">capacityGb</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">location</span> <span class="o">-&gt;</span> <span class="na">longName</span><span class="p">));</span>
-    <span class="p">}</span>
-
-    <span class="c1">// Declare titles for CSV file
-</span><span class="c1"></span>    <span class="nv">$titles</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">&#34;Volume Name&#34;</span><span class="p">,</span> <span class="s2">&#34;Type&#34;</span><span class="p">,</span> <span class="s2">&#34;Block/File Storage&#34;</span><span class="p">,</span> <span class="s2">&#34;Hostname&#34;</span><span class="p">,</span> <span class="s2">&#34;Capacity&#34;</span><span class="p">,</span> <span class="s2">&#34;Location&#34;</span><span class="p">);</span>
-    <span class="c1">// Create CSV file
-</span><span class="c1"></span>    <span class="nv">$dateTime</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DateTime</span><span class="p">();</span>
-    <span class="nv">$date</span> <span class="o">=</span> <span class="nv">$dateTime</span> <span class="o">-&gt;</span> <span class="na">format</span><span class="p">(</span><span class="s2">&#34;Y-m-d&#34;</span><span class="p">);</span>
-    <span class="nv">$filePath</span> <span class="o">=</span> <span class="nx">fopen</span><span class="p">(</span><span class="nv">$path</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\N</span><span class="s2">etworkStorage&#34;</span> <span class="o">.</span> <span class="nv">$date</span> <span class="o">.</span> <span class="s2">&#34;.csv&#34;</span><span class="p">,</span> <span class="s2">&#34;w&#34;</span><span class="p">);</span>
-    <span class="c1">// Write titles in CSV file
-</span><span class="c1"></span>    <span class="nx">fputcsv</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">,</span> <span class="nv">$titles</span><span class="p">);</span>
-    <span class="c1">// Write all registers in CSV file
-</span><span class="c1"></span>    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$storages</span> <span class="k">as</span> <span class="nv">$fields</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">fputcsv</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">,</span> <span class="nv">$fields</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="c1">// Close CSV file
-</span><span class="c1"></span>    <span class="nx">fclose</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">);</span>
-
-<span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">echo</span> <span class="s2">&#34;Unable to get network storages: &#34;</span> <span class="o">.</span> <span class="nv">$e</span> <span class="o">-&gt;</span> <span class="na">getMessage</span><span class="p">();</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span>
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Get Network Storages
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * 
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * This script retrieves an account&#39;s associated storage volumes. Also this script generates an CSV file with 
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * the information retrieved. The file is stored in &#34;C:\Reports&#34; (Windows OS) path by default, you can modify 
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * the &#34;path&#34; variable if you wish to change it.
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNetworkStorage
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Storage
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/article/Object-Masks
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/article/Object-Filters
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @license &lt;http://sldn.softlayer.com/wiki/index.php/license&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">require_once</span> <span class="nx">dirname</span><span class="p">(</span><span class="no">__FILE__</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&#34;/SoftLayer/SoapClient.class.php&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Your SoftLayer API username
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var string
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$username</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Your SoftLayer API key
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Generate one at: https://control.softlayer.com/account/users
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var string
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$apiKey</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Declare the &#34;path&#34; to create CSV file
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var string
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$path</span> <span class="o">=</span> <span class="s2">&#34;C:</span><span class="se">\R</span><span class="s2">eports&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Create a SoftLayer API client object to the &#34;SoftLayer_Account&#34; service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s2">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Define object mask to retrieve additional information from network storages 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$mask</span> <span class="o">=</span> <span class="s2">&#34;mask[username ,billingItem[id, category, location[longName]], storageType, serviceResourceBackendIpAddress, capacityGb, notes]&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$mask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Declare an objectFilter to retrieve only the storages with billingItem distinct from null
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$filter</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">networkStorage</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">networkStorage</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$filter</span> <span class="o">-&gt;</span> <span class="na">networkStorage</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">operation</span> <span class="o">=</span> <span class="s2">&#34;NOT NULL&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">setObjectFilter</span><span class="p">(</span><span class="nv">$filter</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Define array for Network Storages to create CSV file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$storages</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Get all network storages
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">getNetworkStorage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$result</span> <span class="k">as</span> <span class="nv">$register</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">print_r</span><span class="p">(</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">username</span> <span class="o">.</span> <span class="s2">&#34;     &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">category</span> <span class="o">-&gt;</span> <span class="na">name</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">storageType</span> <span class="o">-&gt;</span> <span class="na">description</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">serviceResourceBackendIpAddress</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">capacityGb</span> <span class="o">.</span> <span class="s2">&#34;      &#34;</span> <span class="o">.</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">location</span> <span class="o">-&gt;</span> <span class="na">longName</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">array_push</span><span class="p">(</span><span class="nv">$storages</span><span class="p">,</span> <span class="k">array</span><span class="p">(</span><span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">username</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">category</span> <span class="o">-&gt;</span> <span class="na">name</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">storageType</span> <span class="o">-&gt;</span> <span class="na">description</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">serviceResourceBackendIpAddress</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">capacityGb</span><span class="p">,</span> <span class="nv">$register</span> <span class="o">-&gt;</span> <span class="na">billingItem</span> <span class="o">-&gt;</span> <span class="na">location</span> <span class="o">-&gt;</span> <span class="na">longName</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Declare titles for CSV file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nv">$titles</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">&#34;Volume Name&#34;</span><span class="p">,</span> <span class="s2">&#34;Type&#34;</span><span class="p">,</span> <span class="s2">&#34;Block/File Storage&#34;</span><span class="p">,</span> <span class="s2">&#34;Hostname&#34;</span><span class="p">,</span> <span class="s2">&#34;Capacity&#34;</span><span class="p">,</span> <span class="s2">&#34;Location&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Create CSV file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nv">$dateTime</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DateTime</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$date</span> <span class="o">=</span> <span class="nv">$dateTime</span> <span class="o">-&gt;</span> <span class="na">format</span><span class="p">(</span><span class="s2">&#34;Y-m-d&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$filePath</span> <span class="o">=</span> <span class="nx">fopen</span><span class="p">(</span><span class="nv">$path</span> <span class="o">.</span> <span class="s2">&#34;</span><span class="se">\N</span><span class="s2">etworkStorage&#34;</span> <span class="o">.</span> <span class="nv">$date</span> <span class="o">.</span> <span class="s2">&#34;.csv&#34;</span><span class="p">,</span> <span class="s2">&#34;w&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Write titles in CSV file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">fputcsv</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">,</span> <span class="nv">$titles</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Write all registers in CSV file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$storages</span> <span class="k">as</span> <span class="nv">$fields</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fputcsv</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">,</span> <span class="nv">$fields</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Close CSV file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">fclose</span><span class="p">(</span><span class="nv">$filePath</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">echo</span> <span class="s2">&#34;Unable to get network storages: &#34;</span> <span class="o">.</span> <span class="nv">$e</span> <span class="o">-&gt;</span> <span class="na">getMessage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

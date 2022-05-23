@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -144,83 +140,82 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Create a Virtual Guest server using the simplified way.
-</span><span class="cm">
-</span><span class="cm">This example shows how customers can get a new virtual guest server by using the method
-</span><span class="cm">SoftLayer_Virtual_Guest::createObject which is a simplified way to create a server.
-</span><span class="cm">Take account that servers created via createObject() will incur charges on your account. For testing
-</span><span class="cm">input parameters we&#39;ll use the SoftLayer_Virtual_Guest::generateOrderTemplate method.
-</span><span class="cm">See below for more information.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getCreateObjectOptions
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/generateOrderTemplate
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span>  <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>    <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// To get the configuration options call the method getCreateObjectOptions() of
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Virtual_Guest service. e.g.:
-</span><span class="c1"></span>	<span class="c1">//	createOptions = virtualGuestService.GetCreateObjectOptions()
-</span><span class="c1"></span>	<span class="c1">// Following is an example to create a template with the configuration options
-</span><span class="c1"></span>	<span class="c1">// that we want.
-</span><span class="c1"></span>	<span class="nx">templateObject</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{</span>
-		<span class="nx">Hostname</span><span class="p">:</span>   <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;softlayer&#34;</span><span class="p">),</span>				<span class="c1">// Name of server
-</span><span class="c1"></span>		<span class="nx">Domain</span><span class="p">:</span>     <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;example.com&#34;</span><span class="p">),</span>				<span class="c1">// Domain of server
-</span><span class="c1"></span>		<span class="nx">StartCpus</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>						<span class="c1">// The number of logical CPU cores to allocate
-</span><span class="c1"></span>		<span class="nx">MaxMemory</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>						<span class="c1">// The amount of memory to allocate in gigabytes.
-</span><span class="c1"></span>		<span class="nx">Datacenter</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Location</span><span class="p">{</span>				<span class="c1">// Specifies on which data center will be provisioned the server.
-</span><span class="c1"></span>			<span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;ams01&#34;</span><span class="p">),</span>				<span class="c1">// Amsterdam
-</span><span class="c1"></span>		<span class="p">},</span>
-		<span class="nx">OperatingSystemReferenceCode</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;UBUNTU_16_64&#34;</span><span class="p">),</span>	<span class="c1">// OS: Ubuntu Linux 16.04 LTS Xenial Xerus Minimal Install (64 bit)
-</span><span class="c1"></span>		<span class="nx">HourlyBillingFlag</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span>				<span class="c1">// Specifies the billing type for the server (Monthly).
-</span><span class="c1"></span>		<span class="nx">LocalDiskFlag</span><span class="p">:</span> 	   <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span>				<span class="c1">// Set true for LOCAL disk, otherwise SAN disks will be provisioned.
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Hardware service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Use generateOrderTemplate() method to check for errors. Replace this with createObject()
-</span><span class="c1"></span>	<span class="c1">// when you are ready to create the bare metal server.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">GenerateOrderTemplate</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">templateObject</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to create the Virtual Guest Server:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;   &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Create a Virtual Guest server using the simplified way.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">This example shows how customers can get a new virtual guest server by using the method
+</span></span></span><span class="line"><span class="cl"><span class="cm">SoftLayer_Virtual_Guest::createObject which is a simplified way to create a server.
+</span></span></span><span class="line"><span class="cl"><span class="cm">Take account that servers created via createObject() will incur charges on your account. For testing
+</span></span></span><span class="line"><span class="cl"><span class="cm">input parameters we&#39;ll use the SoftLayer_Virtual_Guest::generateOrderTemplate method.
+</span></span></span><span class="line"><span class="cl"><span class="cm">See below for more information.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getCreateObjectOptions
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/generateOrderTemplate
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span>  <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>    <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// To get the configuration options call the method getCreateObjectOptions() of
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Virtual_Guest service. e.g.:
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">//	createOptions = virtualGuestService.GetCreateObjectOptions()
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Following is an example to create a template with the configuration options
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// that we want.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">templateObject</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Hostname</span><span class="p">:</span>   <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;softlayer&#34;</span><span class="p">),</span>				<span class="c1">// Name of server
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">Domain</span><span class="p">:</span>     <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;example.com&#34;</span><span class="p">),</span>				<span class="c1">// Domain of server
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">StartCpus</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>						<span class="c1">// The number of logical CPU cores to allocate
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">MaxMemory</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>						<span class="c1">// The amount of memory to allocate in gigabytes.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">Datacenter</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Location</span><span class="p">{</span>				<span class="c1">// Specifies on which data center will be provisioned the server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;ams01&#34;</span><span class="p">),</span>				<span class="c1">// Amsterdam
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">OperatingSystemReferenceCode</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;UBUNTU_16_64&#34;</span><span class="p">),</span>	<span class="c1">// OS: Ubuntu Linux 16.04 LTS Xenial Xerus Minimal Install (64 bit)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">HourlyBillingFlag</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span>				<span class="c1">// Specifies the billing type for the server (Monthly).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">LocalDiskFlag</span><span class="p">:</span> 	   <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="kc">false</span><span class="p">),</span>				<span class="c1">// Set true for LOCAL disk, otherwise SAN disks will be provisioned.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Hardware service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use generateOrderTemplate() method to check for errors. Replace this with createObject()
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// when you are ready to create the bare metal server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">GenerateOrderTemplate</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">templateObject</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to create the Virtual Guest Server:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;   &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

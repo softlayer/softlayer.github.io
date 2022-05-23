@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -144,88 +140,87 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1">#</span>
-<span class="c1"># Edit a bare metal server&#39;s basic information</span>
-<span class="c1">#</span>
-<span class="c1"># Changing the notes property for a single bare metal server record to the sentence &#34;This</span>
-<span class="c1"># is my fastest server!&#34; using the editObject() method in the</span>
-<span class="c1"># SoftLayer_Hardware_Server API service. See below for more details.</span>
-<span class="c1">#</span>
-<span class="c1"># Important manual pages:</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/editObject</span>
-<span class="c1">#</span>
-<span class="c1"># License: http://sldn.softlayer.com/article/License</span>
-<span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
-<span class="c1">#</span>
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># The name of the server we wish to edit.</span>
-<span class="k">my</span> <span class="nv">$server_name</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># Declaring a new API service object for the SoftLayer_Account API service.</span>
-<span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="c1"># Calling the getHardware() method from the SoftLayer_Account API service to get</span>
-<span class="c1"># a list of hardware on your account, including id numbers.</span>
-<span class="k">my</span> <span class="nv">$hardware_list</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">getHardware</span><span class="p">();</span>
-
-<span class="c1"># If there was an error returned from the SoftLayer API then bomb out with the</span>
-<span class="c1"># error message.</span>
-<span class="k">if</span> <span class="p">(</span><span class="nv">$hardware_list</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nb">die</span> <span class="s">&#39;Unable to list the servers. &#39;</span> <span class="o">.</span> <span class="nv">$hardware_list</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="c1"># Define the new local properties to set.</span>
-<span class="c1">#</span>
-<span class="c1"># A SoftLayer_Hardware_Server record has a few local properties that you can</span>
-<span class="c1"># change via the API. Every service&#39;s editObject() method takes a single</span>
-<span class="c1"># parameter, a skeleton object that only defines the properties we wish to</span>
-<span class="c1"># change. While we&#39;re only editing a server&#39;s notes in this example you can</span>
-<span class="c1"># also use editObject() to edit the server&#39;s hostname and domain record.</span>
-<span class="k">my</span> <span class="nv">$edit_template</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">&#39;notes&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;This is my fastest server!&#39;</span>
-<span class="p">};</span>
-
-<span class="k">my</span> <span class="nv">$hardware_id</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">;</span>
-
-<span class="c1"># Looking for the server name to get its id</span>
-<span class="nv">$hardware_records</span> <span class="o">=</span> <span class="nv">$hardware_list</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
-<span class="k">for</span> <span class="k">my</span> <span class="nv">$i</span> <span class="p">(</span><span class="mi">0</span> <span class="o">..</span> <span class="nv">$#</span><span class="p">{</span><span class="nv">$hardware_records</span><span class="p">})</span> <span class="p">{</span>
-    <span class="k">my</span> <span class="nv">$hardware</span> <span class="o">=</span> <span class="nv">$hardware_records</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">];</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nv">$hardware</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">hostname</span><span class="p">}</span> <span class="ow">eq</span> <span class="nv">$server_name</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nv">$hardware_id</span> <span class="o">=</span> <span class="nv">$hardware</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="c1"># If the server name was not found we throw an error message.</span>
-<span class="k">if</span> <span class="p">(</span><span class="nv">$hardware_id</span> <span class="ow">eq</span> <span class="s">&#39;&#39;</span><span class="p">){</span>
-    <span class="nb">die</span> <span class="s">&#39;Unable to find the server with the name &#39;</span><span class="o">.</span> <span class="nv">$server_name</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="c1"># Declaring a new API service object for the SoftLayer_Hardware_Server API service.</span>
-<span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="c1"># Setting the init parameter with the server Id</span>
-<span class="nv">$client</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$hardware_id</span><span class="p">);</span>
-
-<span class="c1"># Editing our server record.</span>
-<span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">editObject</span><span class="p">(</span><span class="nv">$edit_template</span><span class="p">);</span>
-
-<span class="c1"># If there was an error returned from the SoftLayer API then bomb out with the</span>
-<span class="c1"># error message.</span>
-<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nb">die</span> <span class="s">&#39;Unable to edit the servers. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="k">print</span> <span class="p">(</span><span class="s">&#39;Server edited&#39;</span><span class="p">);</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Edit a bare metal server&#39;s basic information</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Changing the notes property for a single bare metal server record to the sentence &#34;This</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># is my fastest server!&#34; using the editObject() method in the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Hardware_Server API service. See below for more details.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/editObject</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License: http://sldn.softlayer.com/article/License</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The name of the server we wish to edit.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$server_name</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declaring a new API service object for the SoftLayer_Account API service.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Calling the getHardware() method from the SoftLayer_Account API service to get</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># a list of hardware on your account, including id numbers.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$hardware_list</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">getHardware</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If there was an error returned from the SoftLayer API then bomb out with the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># error message.</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$hardware_list</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">die</span> <span class="s">&#39;Unable to list the servers. &#39;</span> <span class="o">.</span> <span class="nv">$hardware_list</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Define the new local properties to set.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># A SoftLayer_Hardware_Server record has a few local properties that you can</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># change via the API. Every service&#39;s editObject() method takes a single</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># parameter, a skeleton object that only defines the properties we wish to</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># change. While we&#39;re only editing a server&#39;s notes in this example you can</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># also use editObject() to edit the server&#39;s hostname and domain record.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$edit_template</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;notes&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;This is my fastest server!&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$hardware_id</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Looking for the server name to get its id</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$hardware_records</span> <span class="o">=</span> <span class="nv">$hardware_list</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="k">my</span> <span class="nv">$i</span> <span class="p">(</span><span class="mi">0</span> <span class="o">..</span> <span class="nv">$#</span><span class="p">{</span><span class="nv">$hardware_records</span><span class="p">})</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$hardware</span> <span class="o">=</span> <span class="nv">$hardware_records</span><span class="o">-&gt;</span><span class="p">[</span><span class="nv">$i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nv">$hardware</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">hostname</span><span class="p">}</span> <span class="ow">eq</span> <span class="nv">$server_name</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$hardware_id</span> <span class="o">=</span> <span class="nv">$hardware</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If the server name was not found we throw an error message.</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$hardware_id</span> <span class="ow">eq</span> <span class="s">&#39;&#39;</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">die</span> <span class="s">&#39;Unable to find the server with the name &#39;</span><span class="o">.</span> <span class="nv">$server_name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declaring a new API service object for the SoftLayer_Hardware_Server API service.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Setting the init parameter with the server Id</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$client</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$hardware_id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Editing our server record.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">editObject</span><span class="p">(</span><span class="nv">$edit_template</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># If there was an error returned from the SoftLayer API then bomb out with the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># error message.</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">die</span> <span class="s">&#39;Unable to edit the servers. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">print</span> <span class="p">(</span><span class="s">&#39;Server edited&#39;</span><span class="p">);</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

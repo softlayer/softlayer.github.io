@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -145,85 +141,85 @@ if (!doNotTrack) {
                 
 				
                 <p>This powershell script will get the filename for the PDF and Excel invoices and save them locally. Requires <a href="http://social.technet.microsoft.com/wiki/contents/articles/21016.how-to-install-windows-powershell-4-0.aspx">PowerShell Version 4</a> for the Invoke-WebRequest and ConvertFrom-Json functions.</p>
-<div class="highlight"><pre class="chroma"><code class="language-ps1" data-lang="ps1"><span class="c"># Start SL script</span>
-<span class="nv">$MyScriptName</span> <span class="p">=</span> <span class="s2">&#34;_Call_SL_Rest&#34;</span>
-<span class="nv">$HomeDir</span> <span class="p">=</span> <span class="nb">pwd
-</span><span class="nb"></span><span class="nv">$date4file</span> <span class="p">=</span> <span class="nb">get-date</span> <span class="n">-uformat</span> <span class="s2">&#34;%Y-%m-%d_%H%M%S&#34;</span>
-<span class="nv">$log</span> <span class="p">=</span> <span class="s2">&#34;$HomeDir\&#34;</span><span class="p">+</span><span class="nv">$date4file</span><span class="p">+</span><span class="nv">$MyScriptName</span><span class="p">+</span><span class="s2">&#34;.log&#34;</span>
-<span class="nv">$BaseURL</span> <span class="p">=</span> <span class="s2">&#34;https://api.softlayer.com/rest/v3&#34;</span>
-<span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Start&#34;</span>
-
-<span class="nv">$SLUser</span> <span class="p">=</span> <span class="s2">&#34;SLUSERNAME&#34;</span>
-<span class="nv">$SLapikey</span> <span class="p">=</span>  <span class="s2">&#34;APIKEY&#34;</span>
-
-<span class="nv">$LoginPair</span> <span class="p">=</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$SLUser</span><span class="p">)</span><span class="s2">:</span><span class="p">$(</span><span class="nv">$SLapikey</span><span class="p">)</span><span class="s2">&#34;</span>
-<span class="nv">$encodedCreds</span> <span class="p">=</span> <span class="no">[System.Convert]</span><span class="p">::</span><span class="n">ToBase64String</span><span class="p">(</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="n">ASCII</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="nv">$LoginPair</span><span class="p">))</span>
-<span class="nv">$basicAuthValue</span> <span class="p">=</span> <span class="s2">&#34;Basic $encodedCreds&#34;</span>
-<span class="nv">$Headers</span> <span class="p">=</span> <span class="p">@{</span>
-    <span class="n">Authorization</span> <span class="p">=</span> <span class="nv">$basicAuthValue</span>
-<span class="p">}</span>
-
-<span class="nv">$GSTURL</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Account/getObject&#34;</span>
-<span class="c">#$GSTURL=&#34;$($BaseURL)/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]&#34;</span>
-<span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Authenticate as User </span><span class="p">$(</span><span class="nv">$SLUser</span><span class="p">)</span><span class="s2"> at URL </span><span class="p">$(</span><span class="nv">$GSTURL</span><span class="p">)</span><span class="s2">&#34;</span>
-<span class="nv">$GSTRequest</span> <span class="p">=</span> <span class="nb">Invoke-WebRequest</span> <span class="nv">$GSTURL</span>  <span class="n">-Headers</span> <span class="nv">$Headers</span> <span class="n">-SessionVariable</span> <span class="n">slsession</span>
-<span class="c">#Write-host $GSTRequest.content</span>
-<span class="nv">$GSTanswerConv</span> <span class="p">=</span> <span class="nb">ConvertFrom-Json</span> <span class="p">$(</span><span class="nv">$GSTRequest</span><span class="p">.</span><span class="n">content</span><span class="p">)</span>
-<span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Account Info: </span><span class="p">$(</span><span class="nv">$GSTanswerConv</span> <span class="p">|</span> <span class="nb">select </span><span class="n">companyName</span> <span class="p">,</span> <span class="n">country</span> <span class="p">,</span> <span class="n">id</span><span class="p">)</span><span class="s2">&#34;</span>
-
-<span class="c">#########################</span>
-<span class="k">function</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URL</span><span class="p">)</span> <span class="p">{</span>   
- <span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Call URL </span><span class="p">$(</span><span class="nv">$URL</span><span class="p">)</span><span class="s2">&#34;</span>
-<span class="nv">$Request</span> <span class="p">=</span> <span class="nb">Invoke-WebRequest</span> <span class="nv">$URL</span>  <span class="n">-WebSession</span> <span class="nv">$slsession</span> 
-<span class="nv">$answerConv</span> <span class="p">=</span> <span class="nb">ConvertFrom-Json</span> <span class="p">$(</span><span class="nv">$Request</span><span class="p">.</span><span class="n">content</span><span class="p">)</span>
- <span class="k">return</span> <span class="nv">$answerConv</span>
- <span class="p">}</span>
-<span class="c">#########################</span>
-<span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Account/getLatestRecurringInvoice&#34;</span>
-<span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
-
-<span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Invoice Info: </span><span class="p">$(</span><span class="nv">$Callanswer</span> <span class="p">|</span> <span class="nb">select </span><span class="n">companyName</span> <span class="p">,</span> <span class="n">id</span><span class="p">,</span><span class="n">typeCode</span><span class="p">,</span> <span class="n">modifyDate</span> <span class="p">,</span> <span class="n">createDate</span><span class="p">)</span><span class="s2">&#34;</span>
-
-<span class="nv">$LastIvoiceID</span> <span class="p">=</span> <span class="nv">$Callanswer</span><span class="p">.</span><span class="n">id</span>
-
-<span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getPdfDetailedFilename&#34;</span>
-<span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
-<span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Invoice FileName: </span><span class="p">$(</span><span class="nv">$Callanswer</span><span class="p">)</span><span class="s2">&#34;</span>
-
-<span class="nv">$PdfDetailedFilename</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
-<span class="nv">$FileDest</span> <span class="p">=</span> <span class="s2">&#34;$HomeDir\$PdfDetailedFilename&#34;</span>
-
-<span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getPdfDetailed&#34;</span>
-<span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
-<span class="nv">$FileData</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
-
-<span class="nv">$bytes</span><span class="p">=</span><span class="no">[System.Convert]</span><span class="p">::</span><span class="n">FromBase64String</span><span class="p">(</span><span class="nv">$FileData</span><span class="p">)</span>
-<span class="nv">$decoded</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetString</span><span class="p">(</span><span class="nv">$bytes</span><span class="p">)</span>
-<span class="no">[Byte[]]</span><span class="nv">$bytes_FileData</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="nv">$decoded</span><span class="p">)</span>
-<span class="nb">set-content</span> <span class="n">-encoding</span> <span class="n">byte</span> <span class="n">-Path</span> <span class="nv">$FileDest</span> <span class="n">-value</span> <span class="nv">$bytes_FileData</span>
-<span class="nv">$PdfFile</span> <span class="p">=</span> <span class="nv">$FileDest</span>
-
-<span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getXlsFilename&#34;</span>
-<span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
-<span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Invoice FileName: </span><span class="p">$(</span><span class="nv">$Callanswer</span><span class="p">)</span><span class="s2">&#34;</span>
-
-<span class="nv">$XlsFilename</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
-<span class="nv">$FileDest</span> <span class="p">=</span> <span class="s2">&#34;$HomeDir\$XlsFilename&#34;</span>
-
-
-<span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getExcel&#34;</span>
-<span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
-<span class="nv">$FileData</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
-
-<span class="nv">$bytes</span><span class="p">=</span><span class="no">[System.Convert]</span><span class="p">::</span><span class="n">FromBase64String</span><span class="p">(</span><span class="nv">$FileData</span><span class="p">)</span>
-<span class="nv">$decoded</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetString</span><span class="p">(</span><span class="nv">$bytes</span><span class="p">)</span>
-<span class="no">[Byte[]]</span><span class="nv">$bytes_FileData</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="nv">$decoded</span><span class="p">)</span>
-<span class="nb">set-content</span> <span class="n">-encoding</span> <span class="n">byte</span> <span class="n">-Path</span> <span class="nv">$FileDest</span> <span class="n">-value</span> <span class="nv">$bytes_FileData</span>
-<span class="nv">$XlsFile</span> <span class="p">=</span> <span class="nv">$FileDest</span>
-
-<span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : End&#34;</span>
-<span class="c">#End</span>
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-ps1" data-lang="ps1"><span class="line"><span class="cl"><span class="c"># Start SL script</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$MyScriptName</span> <span class="p">=</span> <span class="s2">&#34;_Call_SL_Rest&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$HomeDir</span> <span class="p">=</span> <span class="nb">pwd
+</span></span></span><span class="line"><span class="cl"><span class="nb"></span><span class="nv">$date4file</span> <span class="p">=</span> <span class="nb">get-date</span> <span class="n">-uformat</span> <span class="s2">&#34;%Y-%m-%d_%H%M%S&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$log</span> <span class="p">=</span> <span class="s2">&#34;$HomeDir\&#34;</span><span class="p">+</span><span class="nv">$date4file</span><span class="p">+</span><span class="nv">$MyScriptName</span><span class="p">+</span><span class="s2">&#34;.log&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$BaseURL</span> <span class="p">=</span> <span class="s2">&#34;https://api.softlayer.com/rest/v3&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Start&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$SLUser</span> <span class="p">=</span> <span class="s2">&#34;SLUSERNAME&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$SLapikey</span> <span class="p">=</span>  <span class="s2">&#34;APIKEY&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$LoginPair</span> <span class="p">=</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$SLUser</span><span class="p">)</span><span class="s2">:</span><span class="p">$(</span><span class="nv">$SLapikey</span><span class="p">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$encodedCreds</span> <span class="p">=</span> <span class="no">[System.Convert]</span><span class="p">::</span><span class="n">ToBase64String</span><span class="p">(</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="n">ASCII</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="nv">$LoginPair</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$basicAuthValue</span> <span class="p">=</span> <span class="s2">&#34;Basic $encodedCreds&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$Headers</span> <span class="p">=</span> <span class="p">@{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Authorization</span> <span class="p">=</span> <span class="nv">$basicAuthValue</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$GSTURL</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Account/getObject&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c">#$GSTURL=&#34;$($BaseURL)/SoftLayer_Account/getObject?objectMask=mask[companyName,hardware[hostname]]&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Authenticate as User </span><span class="p">$(</span><span class="nv">$SLUser</span><span class="p">)</span><span class="s2"> at URL </span><span class="p">$(</span><span class="nv">$GSTURL</span><span class="p">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$GSTRequest</span> <span class="p">=</span> <span class="nb">Invoke-WebRequest</span> <span class="nv">$GSTURL</span>  <span class="n">-Headers</span> <span class="nv">$Headers</span> <span class="n">-SessionVariable</span> <span class="n">slsession</span>
+</span></span><span class="line"><span class="cl"><span class="c">#Write-host $GSTRequest.content</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$GSTanswerConv</span> <span class="p">=</span> <span class="nb">ConvertFrom-Json</span> <span class="p">$(</span><span class="nv">$GSTRequest</span><span class="p">.</span><span class="n">content</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Account Info: </span><span class="p">$(</span><span class="nv">$GSTanswerConv</span> <span class="p">|</span> <span class="nb">select </span><span class="n">companyName</span> <span class="p">,</span> <span class="n">country</span> <span class="p">,</span> <span class="n">id</span><span class="p">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c">#########################</span>
+</span></span><span class="line"><span class="cl"><span class="k">function</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URL</span><span class="p">)</span> <span class="p">{</span>   
+</span></span><span class="line"><span class="cl"> <span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Call URL </span><span class="p">$(</span><span class="nv">$URL</span><span class="p">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$Request</span> <span class="p">=</span> <span class="nb">Invoke-WebRequest</span> <span class="nv">$URL</span>  <span class="n">-WebSession</span> <span class="nv">$slsession</span> 
+</span></span><span class="line"><span class="cl"><span class="nv">$answerConv</span> <span class="p">=</span> <span class="nb">ConvertFrom-Json</span> <span class="p">$(</span><span class="nv">$Request</span><span class="p">.</span><span class="n">content</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> <span class="k">return</span> <span class="nv">$answerConv</span>
+</span></span><span class="line"><span class="cl"> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c">#########################</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Account/getLatestRecurringInvoice&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Invoice Info: </span><span class="p">$(</span><span class="nv">$Callanswer</span> <span class="p">|</span> <span class="nb">select </span><span class="n">companyName</span> <span class="p">,</span> <span class="n">id</span><span class="p">,</span><span class="n">typeCode</span><span class="p">,</span> <span class="n">modifyDate</span> <span class="p">,</span> <span class="n">createDate</span><span class="p">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$LastIvoiceID</span> <span class="p">=</span> <span class="nv">$Callanswer</span><span class="p">.</span><span class="n">id</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getPdfDetailedFilename&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Invoice FileName: </span><span class="p">$(</span><span class="nv">$Callanswer</span><span class="p">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$PdfDetailedFilename</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$FileDest</span> <span class="p">=</span> <span class="s2">&#34;$HomeDir\$PdfDetailedFilename&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getPdfDetailed&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$FileData</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$bytes</span><span class="p">=</span><span class="no">[System.Convert]</span><span class="p">::</span><span class="n">FromBase64String</span><span class="p">(</span><span class="nv">$FileData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$decoded</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetString</span><span class="p">(</span><span class="nv">$bytes</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="no">[Byte[]]</span><span class="nv">$bytes_FileData</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="nv">$decoded</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">set-content</span> <span class="n">-encoding</span> <span class="n">byte</span> <span class="n">-Path</span> <span class="nv">$FileDest</span> <span class="n">-value</span> <span class="nv">$bytes_FileData</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$PdfFile</span> <span class="p">=</span> <span class="nv">$FileDest</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getXlsFilename&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : Invoice FileName: </span><span class="p">$(</span><span class="nv">$Callanswer</span><span class="p">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$XlsFilename</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$FileDest</span> <span class="p">=</span> <span class="s2">&#34;$HomeDir\$XlsFilename&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$URLcall</span><span class="p">=</span><span class="s2">&#34;</span><span class="p">$(</span><span class="nv">$BaseURL</span><span class="p">)</span><span class="s2">/SoftLayer_Billing_Invoice/</span><span class="p">$(</span><span class="nv">$LastIvoiceID</span><span class="p">)</span><span class="s2">/getExcel&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$Callanswer</span> <span class="p">=</span> <span class="n">CallURL</span><span class="p">(</span><span class="nv">$URLcall</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$FileData</span> <span class="p">=</span> <span class="nv">$Callanswer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$bytes</span><span class="p">=</span><span class="no">[System.Convert]</span><span class="p">::</span><span class="n">FromBase64String</span><span class="p">(</span><span class="nv">$FileData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$decoded</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetString</span><span class="p">(</span><span class="nv">$bytes</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="no">[Byte[]]</span><span class="nv">$bytes_FileData</span><span class="p">=</span><span class="no">[System.Text.Encoding]</span><span class="p">::</span><span class="k">Default</span><span class="p">.</span><span class="n">GetBytes</span><span class="p">(</span><span class="nv">$decoded</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">set-content</span> <span class="n">-encoding</span> <span class="n">byte</span> <span class="n">-Path</span> <span class="nv">$FileDest</span> <span class="n">-value</span> <span class="nv">$bytes_FileData</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$XlsFile</span> <span class="p">=</span> <span class="nv">$FileDest</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">Add-Content</span> <span class="nv">$log</span> <span class="s2">&#34;</span><span class="p">$(</span><span class="nb">Get-Date</span> <span class="n">-format</span> <span class="n">s</span><span class="p">)</span><span class="s2"> : End&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="c">#End</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

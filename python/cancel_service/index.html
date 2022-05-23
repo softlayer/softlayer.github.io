@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -151,275 +147,269 @@ if (!doNotTrack) {
                 <p>This article will go over a variety of examples on how to cancel items on your account. Everything you order will have a corresponding SoftLayer_Billing_Item which is what specifically needs to be canceled. Some items, like Virtual_Guests have special cancel methods, but these are basically wrappers for canceling the billing item.</p>
 <h1 id="cancel-virtual-guest-service">Cancel Virtual Guest Service</h1>
 <p>In the following example we are retrieving the Billing Item of a Virtual Guest with the ID of 12345678 and passing that ID to <a href="http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService">cancelService</a>.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-<span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[id]&#34;</span>
-<span class="n">billingId</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getBillingItem</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="mi">12345678</span><span class="p">)</span>
-<span class="n">cancelItem</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelService</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">billingId</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-</code></pre></div><p>If the billingId[&lsquo;id&rsquo;] does not exist, this means the Virtual_Guest has already been canceled.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[id]&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">billingId</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getBillingItem</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="mi">12345678</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">cancelItem</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelService</span><span class="p">(</span><span class="nb">id</span> <span class="o">=</span> <span class="n">billingId</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span></span></code></pre></div><p>If the billingId[&lsquo;id&rsquo;] does not exist, this means the Virtual_Guest has already been canceled.</p>
 <h1 id="cancel-server-by-private-ip">Cancel server by private IP</h1>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Cancel servers from a list of IPs
-</span><span class="s2">
-</span><span class="s2">This script looks for a server with a specific IP address and deletes it.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-<span class="c1"># The list of IPs from the servers you wish cancel</span>
-<span class="n">ipsToCancel</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;10.48.66.132&#39;</span><span class="p">,</span> <span class="s1">&#39;2.2.2.2&#39;</span><span class="p">]</span>
-
-<span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Declare these to keep line lengths minimal
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="n">accountClient</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span>
-<span class="n">billingItemClient</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span>
-
-<span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Add an object mask to retrieve our billing items related to the servers
-</span><span class="s2">http://softlayer.github.io/reference/datatypes/SoftLayer_Hardware_Server
-</span><span class="s2">for a list of the relational properties you can retrieve along with hardware.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="n">objectMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem]&#39;</span>
-
-<span class="c1"># Make the call to retrieve our hardware records along with their billing item.</span>
-
-<span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Hardware_Server/findByIpAddress/ would also work. getHardware is useful for finding hardware based on other fields though.</span>
-<span class="n">servers</span> <span class="o">=</span> <span class="n">accountClient</span><span class="o">.</span><span class="n">getHardware</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
-
-<span class="c1"># We are looking for the server which has the desired IP to delete it.</span>
-<span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="p">:</span>
-    <span class="k">if</span> <span class="s1">&#39;primaryBackendIpAddress&#39;</span> <span class="ow">in</span> <span class="n">server</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">server</span><span class="p">[</span><span class="s1">&#39;primaryBackendIpAddress&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">ipsToCancel</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s1">&#39;billingItem&#39;</span> <span class="ow">in</span> <span class="n">server</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="n">billingId</span> <span class="o">=</span> <span class="n">server</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">result</span> <span class="o">=</span> <span class="n">billingItemClient</span><span class="o">.</span><span class="n">cancelItem</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">billingId</span><span class="p">)</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-                <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">                    If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="s2">                    error message.
-</span><span class="s2">                    &#34;&#34;&#34;</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to cancel the server:  </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Done&#34;</span><span class="p">)</span>
-</code></pre></div><h1 id="cancel-load-balancer">Cancel Load Balancer</h1>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Cancel load balancer.
-</span><span class="s2">&#34;&#34;&#34;</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">import</span> <span class="nn">json</span>
-
-<span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getLoadBalancers/ for finding loadBalancerIds</span>
-<span class="n">loadBalancerId</span> <span class="o">=</span> <span class="mi">109225</span>
-<span class="c1"># False here will have the LB canceled at the billing anniversary date.</span>
-<span class="n">immediateCancellationFlag</span> <span class="o">=</span> <span class="kc">True</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-<span class="n">loadBalancerService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_VirtualIpAddress&#39;</span><span class="p">]</span>
-<span class="n">cancellationService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item_Cancellation_Request&#39;</span><span class="p">]</span>
-
-<span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[accountId, dedicatedFlag, dedicatedBillingItem[id], billingItem[id]]&#34;</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">loadBalancer</span> <span class="o">=</span> <span class="n">loadBalancerService</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">loadBalancerId</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
-    <span class="n">billingItemId</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;dedicatedFlag&#39;</span><span class="p">]:</span>
-        <span class="n">billingItemId</span> <span class="o">=</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;dedicatedBillingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">billingItemId</span> <span class="o">=</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-    <span class="n">cancelTemplate</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;accountId&#39;</span><span class="p">:</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;accountId&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span>
-                <span class="s1">&#39;billingItemId&#39;</span><span class="p">:</span> <span class="n">billingItemId</span><span class="p">,</span>
-                <span class="s1">&#39;immediateCancellationFlag&#39;</span><span class="p">:</span> <span class="n">immediateCancellationFlag</span>
-            <span class="p">}</span>
-        <span class="p">]</span>
-    <span class="p">}</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">cancellationService</span><span class="o">.</span><span class="n">createObject</span><span class="p">(</span><span class="n">cancelTemplate</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to cancel the load balancer. faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-</code></pre></div><h1 id="cancel-global-ip">Cancel Global IP</h1>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Cancel Global IP address. Cancel the global IP address resource using its billing Item.
-</span><span class="s2">
-</span><span class="s2">Important manual pages:
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet/getGlobalIpRecord
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="c1"># For nice debug output:</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-
-<span class="c1"># Use https://softlayer.github.io/reference/services/SoftLayer_Account/getGlobalIpRecords/ to find this Id.</span>
-<span class="n">globalIpId</span> <span class="o">=</span> <span class="mi">880617</span>
-<span class="n">mask</span> <span class="o">=</span> <span class="s1">&#39;mask[id,billingItem[id]]&#39;</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-
-
-<span class="n">subnetResult</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Subnet&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getGlobalIpRecord</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">globalIpId</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
-<span class="n">billingItemId</span> <span class="o">=</span> <span class="n">subnetResult</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelItem</span><span class="p">(</span>
-        <span class="kc">False</span><span class="p">,</span>
-        <span class="kc">False</span><span class="p">,</span>
-        <span class="s2">&#34;No longer needed&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;Api test&#34;</span><span class="p">,</span>
-        <span class="nb">id</span><span class="o">=</span><span class="n">billingItemId</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">pp</span><span class="p">(</span><span class="s1">&#39;Unable to get billing item information faultCode=</span><span class="si">%s</span><span class="s1">, faultString=</span><span class="si">%s</span><span class="s1">&#39;</span>
-        <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-</code></pre></div><h1 id="cancel-cdn-storage">Cancel CDN Storage</h1>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Cancel CDN.
-</span><span class="s2">&#34;&#34;&#34;</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">import</span> <span class="nn">json</span>
-
-<span class="c1"># The name of the CDN to cancel.</span>
-<span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getCdnAccounts/ Lists all CDN account names available</span>
-<span class="n">cdnAccountName</span> <span class="o">=</span> <span class="s2">&#34;14793&#34;</span>
-<span class="n">immediateCancellation</span> <span class="o">=</span> <span class="kc">True</span>
-
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-<span class="n">billingService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item_Cancellation_Request&#39;</span><span class="p">]</span>
-<span class="n">accountService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span>
-
-<span class="c1"># Set an object mask to get the billing item associated to the CDNN.</span>
-<span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[billingItem]&#34;</span>
-
-<span class="c1"># Set an object filter to get only the configured CDN to delete in the result.</span>
-<span class="n">objectFilter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;cdnAccounts&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;cdnAccountName&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">cdnAccountName</span><span class="p">}}}</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Geting the CDN to delete</span>
-    <span class="n">cdns</span> <span class="o">=</span> <span class="n">accountService</span><span class="o">.</span><span class="n">getCdnAccounts</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">objectFilter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cdns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span> <span class="p">(</span><span class="s2">&#34;The configured CDN: &#34;</span> <span class="o">+</span> <span class="n">cdnAccountName</span> <span class="o">+</span> <span class="s2">&#34; does not exist in the account&#34;</span><span class="p">)</span>
-        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-    <span class="c1"># Create the SoftLayer_Billing_Item_Cancellation_Request skeleton to create the cancellation request</span>
-    <span class="n">template</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&#34;accountId&#34;</span><span class="p">:</span> <span class="n">cdns</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;accountId&#39;</span><span class="p">],</span>
-        <span class="s2">&#34;items&#34;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span>
-                <span class="s2">&#34;billingItemId&#34;</span><span class="p">:</span> <span class="n">cdns</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                <span class="s2">&#34;immediateCancellationFlag&#34;</span><span class="p">:</span> <span class="n">immediateCancellation</span>
-            <span class="p">}</span>
-        <span class="p">]</span>
-    <span class="p">}</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">billingService</span><span class="o">.</span><span class="n">createObject</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to create the cancel request&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-</code></pre></div><h1 id="cancel-storage-volume">Cancel Storage Volume</h1>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Cancel Consistent Performance Storage iSCSI.
-</span><span class="s2">This script cancels the service of a Consistent Performance Storage iSCSI, passing a storage billing ID to
-</span><span class="s2">SoftLayer_Billing_Item::cancelService method.
-</span><span class="s2">
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">import</span> <span class="nn">pprint</span>
-
-<span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Set storage Id to Cancel, you can get a list of network storage available in the account
-</span><span class="s2">using the SoftLayer_Account::getNetworkStorage method.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="n">storageId</span> <span class="o">=</span> <span class="mi">4471311</span>
-<span class="c1"># Use the mask to get billing item from a network storage</span>
-<span class="n">billingMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem]&#39;</span>
-<span class="c1"># Create a client instance</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-<span class="n">storage</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">billingMask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">storageId</span><span class="p">)</span>
-
-<span class="n">billingId</span> <span class="o">=</span> <span class="n">storage</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelService</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">billingId</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Service cancelled&#34;</span><span class="p">)</span>
-    <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Error cannot cancel the service  faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-</code></pre></div><h1 id="cancel-subnet">Cancel Subnet</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Cancel servers from a list of IPs
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">This script looks for a server with a specific IP address and deletes it.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The list of IPs from the servers you wish cancel</span>
+</span></span><span class="line"><span class="cl"><span class="n">ipsToCancel</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;10.48.66.132&#39;</span><span class="p">,</span> <span class="s1">&#39;2.2.2.2&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Declare these to keep line lengths minimal
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">accountClient</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">billingItemClient</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Add an object mask to retrieve our billing items related to the servers
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://softlayer.github.io/reference/datatypes/SoftLayer_Hardware_Server
+</span></span></span><span class="line"><span class="cl"><span class="s2">for a list of the relational properties you can retrieve along with hardware.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">objectMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem]&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Make the call to retrieve our hardware records along with their billing item.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Hardware_Server/findByIpAddress/ would also work. getHardware is useful for finding hardware based on other fields though.</span>
+</span></span><span class="line"><span class="cl"><span class="n">servers</span> <span class="o">=</span> <span class="n">accountClient</span><span class="o">.</span><span class="n">getHardware</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># We are looking for the server which has the desired IP to delete it.</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="s1">&#39;primaryBackendIpAddress&#39;</span> <span class="ow">in</span> <span class="n">server</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">server</span><span class="p">[</span><span class="s1">&#39;primaryBackendIpAddress&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">ipsToCancel</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="s1">&#39;billingItem&#39;</span> <span class="ow">in</span> <span class="n">server</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">                <span class="n">billingId</span> <span class="o">=</span> <span class="n">server</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">result</span> <span class="o">=</span> <span class="n">billingItemClient</span><span class="o">.</span><span class="n">cancelItem</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">billingId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">                    If there was an error returned from the SoftLayer API then bomb out with the
+</span></span></span><span class="line"><span class="cl"><span class="s2">                    error message.
+</span></span></span><span class="line"><span class="cl"><span class="s2">                    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to cancel the server:  </span><span class="se">\n</span><span class="s2">faultCode= </span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">faultString= </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Done&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><h1 id="cancel-load-balancer">Cancel Load Balancer</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Cancel load balancer.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getLoadBalancers/ for finding loadBalancerIds</span>
+</span></span><span class="line"><span class="cl"><span class="n">loadBalancerId</span> <span class="o">=</span> <span class="mi">109225</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># False here will have the LB canceled at the billing anniversary date.</span>
+</span></span><span class="line"><span class="cl"><span class="n">immediateCancellationFlag</span> <span class="o">=</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">loadBalancerService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Application_Delivery_Controller_LoadBalancer_VirtualIpAddress&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">cancellationService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item_Cancellation_Request&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[accountId, dedicatedFlag, dedicatedBillingItem[id], billingItem[id]]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">loadBalancer</span> <span class="o">=</span> <span class="n">loadBalancerService</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">loadBalancerId</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">billingItemId</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;dedicatedFlag&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">billingItemId</span> <span class="o">=</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;dedicatedBillingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">billingItemId</span> <span class="o">=</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cancelTemplate</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;accountId&#39;</span><span class="p">:</span> <span class="n">loadBalancer</span><span class="p">[</span><span class="s1">&#39;accountId&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;billingItemId&#39;</span><span class="p">:</span> <span class="n">billingItemId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;immediateCancellationFlag&#39;</span><span class="p">:</span> <span class="n">immediateCancellationFlag</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">cancellationService</span><span class="o">.</span><span class="n">createObject</span><span class="p">(</span><span class="n">cancelTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to cancel the load balancer. faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span></code></pre></div><h1 id="cancel-global-ip">Cancel Global IP</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Cancel Global IP address. Cancel the global IP address resource using its billing Item.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet/getGlobalIpRecord
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># For nice debug output:</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Use https://softlayer.github.io/reference/services/SoftLayer_Account/getGlobalIpRecords/ to find this Id.</span>
+</span></span><span class="line"><span class="cl"><span class="n">globalIpId</span> <span class="o">=</span> <span class="mi">880617</span>
+</span></span><span class="line"><span class="cl"><span class="n">mask</span> <span class="o">=</span> <span class="s1">&#39;mask[id,billingItem[id]]&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">subnetResult</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Subnet&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getGlobalIpRecord</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">globalIpId</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">billingItemId</span> <span class="o">=</span> <span class="n">subnetResult</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelItem</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="kc">False</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="kc">False</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;No longer needed&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;Api test&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">id</span><span class="o">=</span><span class="n">billingItemId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pp</span><span class="p">(</span><span class="s1">&#39;Unable to get billing item information faultCode=</span><span class="si">%s</span><span class="s1">, faultString=</span><span class="si">%s</span><span class="s1">&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div><h1 id="cancel-cdn-storage">Cancel CDN Storage</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Cancel CDN.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The name of the CDN to cancel.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getCdnAccounts/ Lists all CDN account names available</span>
+</span></span><span class="line"><span class="cl"><span class="n">cdnAccountName</span> <span class="o">=</span> <span class="s2">&#34;14793&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">immediateCancellation</span> <span class="o">=</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">billingService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item_Cancellation_Request&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">accountService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Set an object mask to get the billing item associated to the CDNN.</span>
+</span></span><span class="line"><span class="cl"><span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;mask[billingItem]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Set an object filter to get only the configured CDN to delete in the result.</span>
+</span></span><span class="line"><span class="cl"><span class="n">objectFilter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;cdnAccounts&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;cdnAccountName&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">cdnAccountName</span><span class="p">}}}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Geting the CDN to delete</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cdns</span> <span class="o">=</span> <span class="n">accountService</span><span class="o">.</span><span class="n">getCdnAccounts</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">objectFilter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cdns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span> <span class="p">(</span><span class="s2">&#34;The configured CDN: &#34;</span> <span class="o">+</span> <span class="n">cdnAccountName</span> <span class="o">+</span> <span class="s2">&#34; does not exist in the account&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Create the SoftLayer_Billing_Item_Cancellation_Request skeleton to create the cancellation request</span>
+</span></span><span class="line"><span class="cl">    <span class="n">template</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;accountId&#34;</span><span class="p">:</span> <span class="n">cdns</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;accountId&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;items&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;billingItemId&#34;</span><span class="p">:</span> <span class="n">cdns</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;immediateCancellationFlag&#34;</span><span class="p">:</span> <span class="n">immediateCancellation</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">billingService</span><span class="o">.</span><span class="n">createObject</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to create the cancel request&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span></code></pre></div><h1 id="cancel-storage-volume">Cancel Storage Volume</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Cancel Consistent Performance Storage iSCSI.
+</span></span></span><span class="line"><span class="cl"><span class="s2">This script cancels the service of a Consistent Performance Storage iSCSI, passing a storage billing ID to
+</span></span></span><span class="line"><span class="cl"><span class="s2">SoftLayer_Billing_Item::cancelService method.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">pprint</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Set storage Id to Cancel, you can get a list of network storage available in the account
+</span></span></span><span class="line"><span class="cl"><span class="s2">using the SoftLayer_Account::getNetworkStorage method.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">storageId</span> <span class="o">=</span> <span class="mi">4471311</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Use the mask to get billing item from a network storage</span>
+</span></span><span class="line"><span class="cl"><span class="n">billingMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem]&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Create a client instance</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">storage</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">billingMask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">storageId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">billingId</span> <span class="o">=</span> <span class="n">storage</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelService</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">billingId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Service cancelled&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Error cannot cancel the service  faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span></code></pre></div><h1 id="cancel-subnet">Cancel Subnet</h1>
 <p>Subnets should not have any hardware attached before they are canceled. Once a subnet is canceled, you can not get that specific subnet back.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Cancel a Subnet. Cancel network subnet using its billing Item.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-
-<span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getSubnets/ To find subnet Ids</span>
-<span class="n">subnetId</span> <span class="o">=</span> <span class="mi">85467</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-
-
-<span class="n">subnetResult</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Subnet&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getBillingItem</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">subnetId</span><span class="p">)</span>
-<span class="n">billingItemId</span> <span class="o">=</span> <span class="n">subnetResult</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelItem</span><span class="p">(</span>
-        <span class="kc">False</span><span class="p">,</span>
-        <span class="kc">False</span><span class="p">,</span>
-        <span class="s2">&#34;No longer needed&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;Api test&#34;</span><span class="p">,</span>
-        <span class="nb">id</span><span class="o">=</span><span class="n">billingItemId</span><span class="p">)</span>
-    <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">pp</span><span class="p">(</span><span class="s1">&#39;Unable to get billing item information faultCode=</span><span class="si">%s</span><span class="s1">, faultString=</span><span class="si">%s</span><span class="s1">&#39;</span>
-        <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-</code></pre></div><h1 id="cancel-vlan">Cancel VLAN</h1>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Cancel a Subnet. Cancel network subnet using its billing Item.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getSubnets/ To find subnet Ids</span>
+</span></span><span class="line"><span class="cl"><span class="n">subnetId</span> <span class="o">=</span> <span class="mi">85467</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">subnetResult</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Subnet&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getBillingItem</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">subnetId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">billingItemId</span> <span class="o">=</span> <span class="n">subnetResult</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cancelItem</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="kc">False</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="kc">False</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;No longer needed&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;Api test&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">id</span><span class="o">=</span><span class="n">billingItemId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pp</span><span class="p">(</span><span class="s1">&#39;Unable to get billing item information faultCode=</span><span class="si">%s</span><span class="s1">, faultString=</span><span class="si">%s</span><span class="s1">&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div><h1 id="cancel-vlan">Cancel VLAN</h1>
 <p>Vlans do need to be empty to be canceled.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Example to cancel a VLAN
-</span><span class="s2">
-</span><span class="s2">The script will get the Billing_Item id of the VLAN service then it will cancel the VLAN service
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer.API</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-
-<span class="c1"># The VLAN id you wish to cancel</span>
-<span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getNetworkVlans/ to get vlan ids</span>
-<span class="n">vlanId</span> <span class="o">=</span> <span class="mi">563298</span>
-
-<span class="c1"># Declare the API client</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-<span class="n">networkVlanService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Vlan&#39;</span><span class="p">]</span>
-<span class="n">billingItemService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span>
-
-<span class="c1"># Declaring an object mask to get the billing item information</span>
-<span class="n">objectMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem]&#39;</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># Getting the Billing Item to cancel the VLAN service.</span>
-    <span class="n">vlan</span> <span class="o">=</span> <span class="n">networkVlanService</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vlanId</span><span class="p">)</span>
-    <span class="n">pp</span><span class="p">(</span><span class="n">vlan</span><span class="p">)</span>
-    <span class="c1"># Canceling the VLAN service.</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">billingItemService</span><span class="o">.</span><span class="n">cancelService</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-    <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to cancel the VLAN. faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Example to cancel a VLAN
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">The script will get the Billing_Item id of the VLAN service then it will cancel the VLAN service
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer.API</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The VLAN id you wish to cancel</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># https://softlayer.github.io/reference/services/SoftLayer_Account/getNetworkVlans/ to get vlan ids</span>
+</span></span><span class="line"><span class="cl"><span class="n">vlanId</span> <span class="o">=</span> <span class="mi">563298</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare the API client</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">networkVlanService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Vlan&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">billingItemService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declaring an object mask to get the billing item information</span>
+</span></span><span class="line"><span class="cl"><span class="n">objectMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem]&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Getting the Billing Item to cancel the VLAN service.</span>
+</span></span><span class="line"><span class="cl">    <span class="n">vlan</span> <span class="o">=</span> <span class="n">networkVlanService</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vlanId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pp</span><span class="p">(</span><span class="n">vlan</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Canceling the VLAN service.</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">billingItemService</span><span class="o">.</span><span class="n">cancelService</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to cancel the VLAN. faultCode=</span><span class="si">%s</span><span class="s2">, faultString=</span><span class="si">%s</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

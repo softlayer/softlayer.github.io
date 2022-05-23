@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -148,160 +144,160 @@ if (!doNotTrack) {
 				
                 <h1 id="setup">Setup</h1>
 <p>Each of these snippets below will share basically the same initialization code, so to save some space we will include the initialization code here, and assume you can setup the SoftLayer client before running each example.</p>
-<div class="highlight"><pre class="chroma"><code class="language-java" data-lang="java"><span class="kn">package</span> <span class="nn">networkcdnMarketplaceconfigurationmapping</span><span class="o">;</span>
-
-<span class="kn">import</span> <span class="nn">com.google.gson.Gson</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.google.gson.GsonBuilder</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.google.gson.JsonObject</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.ApiClient</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.RestApiClient</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.service.network.cdnmarketplace.configuration.Mapping</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.service.network.cdnmarketplace.configuration.mapping.Path</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.service.network.cdnmarketplace.configuration.cache.Purge</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.service.container.network.cdnmarketplace.configuration.*</span><span class="o">;</span>
-
-<span class="kn">import</span> <span class="nn">java.util.AbstractMap</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">java.util.regex.Matcher</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">java.util.regex.Pattern</span><span class="o">;</span>
-
-<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CdnServices</span> <span class="o">{</span>
-    <span class="n">Path</span><span class="o">.</span><span class="na">Service</span> <span class="n">servicePath</span><span class="o">;</span>
-    <span class="n">Mapping</span><span class="o">.</span><span class="na">Service</span> <span class="n">service</span><span class="o">;</span>
-    <span class="n">Purge</span><span class="o">.</span><span class="na">Service</span> <span class="n">serviceCachePurge</span><span class="o">;</span>
-
-    <span class="kd">public</span> <span class="nf">CdnServices</span><span class="o">()</span> <span class="o">{</span>
-        <span class="n">String</span> <span class="n">user</span> <span class="o">=</span> <span class="s">&#34;set - me&#34;</span><span class="o">;</span>
-        <span class="n">String</span> <span class="n">apiKey</span> <span class="o">=</span> <span class="s">&#34;set - me&#34;</span><span class="o">;</span>
-        <span class="n">ApiClient</span> <span class="n">client</span> <span class="o">=</span> <span class="o">(</span><span class="k">new</span> <span class="n">RestApiClient</span><span class="o">()).</span><span class="na">withCredentials</span><span class="o">(</span><span class="n">user</span><span class="o">,</span> <span class="n">apiKey</span><span class="o">);</span>
-        <span class="n">service</span> <span class="o">=</span> <span class="n">Mapping</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
-        <span class="n">servicePath</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
-        <span class="n">serviceCachePurge</span> <span class="o">=</span>  <span class="n">Purge</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
-    <span class="o">}</span>
-
-    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
-        <span class="c1">// Json example
-</span><span class="c1"></span>        <span class="n">String</span> <span class="n">param</span> <span class="o">=</span><span class="s">&#34;{&#39;certificateType&#39;:&#39;SHARED_SAN_CERT&#39;,&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;&#39;httpPort&#39;:80,&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;&#39;originType&#39;:&#39;HOST_SERVER&#39;,&#39;&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;vendor Name&#39;:&#39;akamai&#39;,&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;&#39;origin&#39;:&#39;10.32.12.125&#39;,&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;&#39;header&#39;:&#39;www.techsuppottest.com&#39;,&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;&#39;path&#39;:&#39;/&#39;,&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;&#39;domain&#39;:&#39;www.techsupporttest3.com&#39;,&#34;</span> <span class="o">+</span>
-                <span class="s">&#34;&#39;protocol&#39;:&#39;HTTP&#39;}&#34;</span><span class="o">;</span>
-        <span class="k">try</span> <span class="o">{</span>
-            <span class="n">CdnServices</span> <span class="n">cdnService</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CdnServices</span><span class="o">();</span>
-            <span class="n">Gson</span> <span class="n">gson</span> <span class="o">=</span> <span class="o">(</span><span class="k">new</span> <span class="n">GsonBuilder</span><span class="o">()).</span><span class="na">setPrettyPrinting</span><span class="o">().</span><span class="na">create</span><span class="o">();</span>
-            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">gson</span><span class="o">.</span><span class="na">toJson</span><span class="o">(</span><span class="n">cdnService</span><span class="o">.</span><span class="na">createDomainMapping</span><span class="o">(</span><span class="n">param</span><span class="o">)));</span>
-        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">var8</span><span class="o">)</span> <span class="o">{</span>
-            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Error: &#34;</span> <span class="o">+</span> <span class="n">var8</span><span class="o">);</span>
-        <span class="o">}</span>
-    <span class="o">}</span>
-
-    <span class="cm">/**
-</span><span class="cm">     * createDomainMapping method
-</span><span class="cm">     * @param parameters - Json template in String form
-</span><span class="cm">     * @return List&lt;Mapping&gt;
-</span><span class="cm">     */</span>
-    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">Mapping</span><span class="o">&gt;</span> <span class="nf">createDomainMapping</span><span class="o">(</span><span class="n">String</span> <span class="n">parameters</span><span class="o">)</span> <span class="o">{</span>
-
-        <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&#34;[{&#39;}]&#34;</span><span class="o">,</span><span class="s">&#34;&#34;</span><span class="o">);</span>
-        <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">paramObject</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;();</span>
-        <span class="k">for</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">parameters</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;,&#34;</span><span class="o">))</span> <span class="o">{</span>
-            <span class="kd">final</span> <span class="n">String</span><span class="o">[]</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;:&#34;</span><span class="o">);</span>
-            <span class="k">assert</span><span class="o">(</span><span class="n">parts</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="n">2</span><span class="o">)</span> <span class="o">:</span> <span class="s">&#34;Invalid entry: &#34;</span> <span class="o">+</span> <span class="n">entry</span><span class="o">;</span>
-            <span class="n">paramObject</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">parts</span><span class="o">[</span><span class="n">0</span><span class="o">],</span> <span class="n">parts</span><span class="o">[</span><span class="n">1</span><span class="o">]);</span>
-        <span class="o">}</span>
-        <span class="n">Input</span> <span class="n">input</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Input</span><span class="o">();</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setCertificateType</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;certificateType&#34;</span><span class="o">));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setHttpPort</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;httpPort&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setOriginType</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;originType&#34;</span><span class="o">));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setVendorName</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;vendor Name&#34;</span><span class="o">));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setOrigin</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;origin&#34;</span><span class="o">));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;header&#34;</span><span class="o">));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;path&#34;</span><span class="o">));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setDomain</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;domain&#34;</span><span class="o">));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setProtocol</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;protocol&#34;</span><span class="o">));</span>
-
-        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">createDomainMapping</span><span class="o">(</span><span class="n">input</span><span class="o">);</span>
-    <span class="o">}</span>
-
-    <span class="cm">/**
-</span><span class="cm">     *  createOriginPath method
-</span><span class="cm">     * @param parameters - Json template in String form
-</span><span class="cm">     * @return List&lt;Path&gt;
-</span><span class="cm">     */</span>
-    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">mapping</span><span class="o">.</span><span class="na">Path</span><span class="o">&gt;</span> <span class="nf">createOriginPath</span><span class="o">(</span><span class="n">String</span> <span class="n">parameters</span><span class="o">)</span> <span class="o">{</span>
-
-        <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&#34;[{&#39;}]&#34;</span><span class="o">,</span><span class="s">&#34;&#34;</span><span class="o">);</span>
-        <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">paramObject</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;();</span>
-        <span class="k">for</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">parameters</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;,&#34;</span><span class="o">))</span> <span class="o">{</span>
-            <span class="kd">final</span> <span class="n">String</span><span class="o">[]</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;:&#34;</span><span class="o">);</span>
-            <span class="k">assert</span><span class="o">(</span><span class="n">parts</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="n">2</span><span class="o">)</span> <span class="o">:</span> <span class="s">&#34;Invalid entry: &#34;</span> <span class="o">+</span> <span class="n">entry</span><span class="o">;</span>
-            <span class="n">paramObject</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">parts</span><span class="o">[</span><span class="n">0</span><span class="o">],</span> <span class="n">parts</span><span class="o">[</span><span class="n">1</span><span class="o">]);</span>
-        <span class="o">}</span>
-        <span class="n">Input</span> <span class="n">input</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Input</span><span class="o">();</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setCertificateType</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;certificateType&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setHttpPort</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;httpPort&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setOriginType</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;originType&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setVendorName</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;vendor Name&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setOrigin</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;origin&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;header&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;path&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;domain&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setProtocol</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;protocol&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setPerformanceConfiguration</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;performanceConfiguration&#34;</span><span class="o">)));</span>
-        <span class="n">input</span><span class="o">.</span><span class="na">setUniqueId</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;uniqueId&#34;</span><span class="o">)));</span>
-        <span class="k">return</span> <span class="n">servicePath</span><span class="o">.</span><span class="na">createOriginPath</span><span class="o">(</span><span class="n">input</span><span class="o">);</span>
-    <span class="o">}</span>
-
-    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">Mapping</span><span class="o">&gt;</span> <span class="nf">listDomainMapping</span><span class="o">()</span> <span class="o">{</span>
-        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">listDomainMappings</span><span class="o">();</span>
-    <span class="o">}</span>
-
-    <span class="cm">/**
-</span><span class="cm">     * listDomainMappingByUniqueId method
-</span><span class="cm">     * @param unique - Unique id DomainMapping
-</span><span class="cm">     * @return  List&lt;Mapping&gt;
-</span><span class="cm">     */</span>
-    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">Mapping</span><span class="o">&gt;</span> <span class="nf">listDomainMappingByUniqueId</span><span class="o">(</span><span class="n">String</span> <span class="n">unique</span><span class="o">){</span>
-        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">listDomainMappingByUniqueId</span><span class="o">(</span><span class="n">unique</span><span class="o">);</span>
-    <span class="o">}</span>
-
-    <span class="cm">/**
-</span><span class="cm">     *  listOriginPath method
-</span><span class="cm">     * @param path - Domain Path 
-</span><span class="cm">     * @return List&lt;Path&gt;
-</span><span class="cm">     */</span>
-    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">mapping</span><span class="o">.</span><span class="na">Path</span><span class="o">&gt;</span> <span class="nf">listOriginPath</span><span class="o">(</span><span class="n">String</span> <span class="n">path</span><span class="o">){</span>
-        <span class="k">return</span> <span class="n">servicePath</span><span class="o">.</span><span class="na">listOriginPath</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
-    <span class="o">}</span>
-
-    <span class="cm">/**
-</span><span class="cm">     * createPurge
-</span><span class="cm">     * @param uniqueId - Unique id DomainMapping
-</span><span class="cm">     * @param path - Domain Path
-</span><span class="cm">     * @return List&lt;Purge&gt;
-</span><span class="cm">     */</span>
-    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">cache</span><span class="o">.</span><span class="na">Purge</span><span class="o">&gt;</span> <span class="nf">createPurge</span><span class="o">(</span><span class="n">String</span> <span class="n">uniqueId</span><span class="o">,</span> <span class="n">String</span> <span class="n">path</span><span class="o">){</span>
-        <span class="k">return</span> <span class="n">serviceCachePurge</span><span class="o">.</span><span class="na">createPurge</span><span class="o">(</span><span class="n">uniqueId</span><span class="o">,</span><span class="n">path</span><span class="o">);</span>
-    <span class="o">}</span>
-
-    <span class="cm">/**
-</span><span class="cm">     * deleteOriginPath method
-</span><span class="cm">     * @param uniqueId - Unique id DomainMapping
-</span><span class="cm">     * @param path - Domain Path
-</span><span class="cm">     * @return String
-</span><span class="cm">     */</span>
-    <span class="kd">public</span> <span class="n">String</span> <span class="nf">deleteOriginPath</span><span class="o">(</span><span class="n">String</span> <span class="n">uniqueId</span><span class="o">,</span> <span class="n">String</span> <span class="n">path</span><span class="o">){</span>
-        <span class="k">return</span> <span class="n">servicePath</span><span class="o">.</span><span class="na">deleteOriginPath</span><span class="o">(</span><span class="n">uniqueId</span><span class="o">,</span><span class="n">path</span><span class="o">);</span>
-    <span class="o">}</span>
-
-<span class="o">}</span>
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nn">networkcdnMarketplaceconfigurationmapping</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.google.gson.Gson</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.google.gson.GsonBuilder</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.google.gson.JsonObject</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.ApiClient</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.RestApiClient</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.network.cdnmarketplace.configuration.Mapping</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.network.cdnmarketplace.configuration.mapping.Path</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.network.cdnmarketplace.configuration.cache.Purge</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.container.network.cdnmarketplace.configuration.*</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.AbstractMap</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.regex.Matcher</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.regex.Pattern</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CdnServices</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Path</span><span class="o">.</span><span class="na">Service</span> <span class="n">servicePath</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Mapping</span><span class="o">.</span><span class="na">Service</span> <span class="n">service</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Purge</span><span class="o">.</span><span class="na">Service</span> <span class="n">serviceCachePurge</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="nf">CdnServices</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">user</span> <span class="o">=</span> <span class="s">&#34;set - me&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">apiKey</span> <span class="o">=</span> <span class="s">&#34;set - me&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ApiClient</span> <span class="n">client</span> <span class="o">=</span> <span class="o">(</span><span class="k">new</span> <span class="n">RestApiClient</span><span class="o">()).</span><span class="na">withCredentials</span><span class="o">(</span><span class="n">user</span><span class="o">,</span> <span class="n">apiKey</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">service</span> <span class="o">=</span> <span class="n">Mapping</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">servicePath</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">serviceCachePurge</span> <span class="o">=</span>  <span class="n">Purge</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// Json example
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">String</span> <span class="n">param</span> <span class="o">=</span><span class="s">&#34;{&#39;certificateType&#39;:&#39;SHARED_SAN_CERT&#39;,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;&#39;httpPort&#39;:80,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;&#39;originType&#39;:&#39;HOST_SERVER&#39;,&#39;&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;vendor Name&#39;:&#39;akamai&#39;,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;&#39;origin&#39;:&#39;10.32.12.125&#39;,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;&#39;header&#39;:&#39;www.techsuppottest.com&#39;,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;&#39;path&#39;:&#39;/&#39;,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;&#39;domain&#39;:&#39;www.techsupporttest3.com&#39;,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;&#39;protocol&#39;:&#39;HTTP&#39;}&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">CdnServices</span> <span class="n">cdnService</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CdnServices</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">Gson</span> <span class="n">gson</span> <span class="o">=</span> <span class="o">(</span><span class="k">new</span> <span class="n">GsonBuilder</span><span class="o">()).</span><span class="na">setPrettyPrinting</span><span class="o">().</span><span class="na">create</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">gson</span><span class="o">.</span><span class="na">toJson</span><span class="o">(</span><span class="n">cdnService</span><span class="o">.</span><span class="na">createDomainMapping</span><span class="o">(</span><span class="n">param</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">var8</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Error: &#34;</span> <span class="o">+</span> <span class="n">var8</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * createDomainMapping method
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param parameters - Json template in String form
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @return List&lt;Mapping&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">Mapping</span><span class="o">&gt;</span> <span class="nf">createDomainMapping</span><span class="o">(</span><span class="n">String</span> <span class="n">parameters</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&#34;[{&#39;}]&#34;</span><span class="o">,</span><span class="s">&#34;&#34;</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">paramObject</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">parameters</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;,&#34;</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="kd">final</span> <span class="n">String</span><span class="o">[]</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;:&#34;</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">assert</span><span class="o">(</span><span class="n">parts</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="n">2</span><span class="o">)</span> <span class="o">:</span> <span class="s">&#34;Invalid entry: &#34;</span> <span class="o">+</span> <span class="n">entry</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">paramObject</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">parts</span><span class="o">[</span><span class="n">0</span><span class="o">],</span> <span class="n">parts</span><span class="o">[</span><span class="n">1</span><span class="o">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Input</span> <span class="n">input</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Input</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setCertificateType</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;certificateType&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setHttpPort</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;httpPort&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setOriginType</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;originType&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setVendorName</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;vendor Name&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setOrigin</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;origin&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;header&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;path&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setDomain</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;domain&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setProtocol</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;protocol&#34;</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">createDomainMapping</span><span class="o">(</span><span class="n">input</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     *  createOriginPath method
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param parameters - Json template in String form
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @return List&lt;Path&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">mapping</span><span class="o">.</span><span class="na">Path</span><span class="o">&gt;</span> <span class="nf">createOriginPath</span><span class="o">(</span><span class="n">String</span> <span class="n">parameters</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&#34;[{&#39;}]&#34;</span><span class="o">,</span><span class="s">&#34;&#34;</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">paramObject</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">parameters</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;,&#34;</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="kd">final</span> <span class="n">String</span><span class="o">[]</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;:&#34;</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">assert</span><span class="o">(</span><span class="n">parts</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="n">2</span><span class="o">)</span> <span class="o">:</span> <span class="s">&#34;Invalid entry: &#34;</span> <span class="o">+</span> <span class="n">entry</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">paramObject</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">parts</span><span class="o">[</span><span class="n">0</span><span class="o">],</span> <span class="n">parts</span><span class="o">[</span><span class="n">1</span><span class="o">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Input</span> <span class="n">input</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Input</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setCertificateType</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;certificateType&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setHttpPort</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;httpPort&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setOriginType</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;originType&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setVendorName</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;vendor Name&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setOrigin</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;origin&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;header&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;path&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;domain&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setProtocol</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;protocol&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setPerformanceConfiguration</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;performanceConfiguration&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">input</span><span class="o">.</span><span class="na">setUniqueId</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="n">paramObject</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&#34;uniqueId&#34;</span><span class="o">)));</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">servicePath</span><span class="o">.</span><span class="na">createOriginPath</span><span class="o">(</span><span class="n">input</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">Mapping</span><span class="o">&gt;</span> <span class="nf">listDomainMapping</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">listDomainMappings</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * listDomainMappingByUniqueId method
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param unique - Unique id DomainMapping
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @return  List&lt;Mapping&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">Mapping</span><span class="o">&gt;</span> <span class="nf">listDomainMappingByUniqueId</span><span class="o">(</span><span class="n">String</span> <span class="n">unique</span><span class="o">){</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="na">listDomainMappingByUniqueId</span><span class="o">(</span><span class="n">unique</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     *  listOriginPath method
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param path - Domain Path 
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @return List&lt;Path&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">mapping</span><span class="o">.</span><span class="na">Path</span><span class="o">&gt;</span> <span class="nf">listOriginPath</span><span class="o">(</span><span class="n">String</span> <span class="n">path</span><span class="o">){</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">servicePath</span><span class="o">.</span><span class="na">listOriginPath</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * createPurge
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param uniqueId - Unique id DomainMapping
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param path - Domain Path
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @return List&lt;Purge&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">network</span><span class="o">.</span><span class="na">cdnmarketplace</span><span class="o">.</span><span class="na">configuration</span><span class="o">.</span><span class="na">cache</span><span class="o">.</span><span class="na">Purge</span><span class="o">&gt;</span> <span class="nf">createPurge</span><span class="o">(</span><span class="n">String</span> <span class="n">uniqueId</span><span class="o">,</span> <span class="n">String</span> <span class="n">path</span><span class="o">){</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">serviceCachePurge</span><span class="o">.</span><span class="na">createPurge</span><span class="o">(</span><span class="n">uniqueId</span><span class="o">,</span><span class="n">path</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * deleteOriginPath method
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param uniqueId - Unique id DomainMapping
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param path - Domain Path
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @return String
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">String</span> <span class="nf">deleteOriginPath</span><span class="o">(</span><span class="n">String</span> <span class="n">uniqueId</span><span class="o">,</span> <span class="n">String</span> <span class="n">path</span><span class="o">){</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">servicePath</span><span class="o">.</span><span class="na">deleteOriginPath</span><span class="o">(</span><span class="n">uniqueId</span><span class="o">,</span><span class="n">path</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -145,256 +141,255 @@ if (!doNotTrack) {
                 <p>This article will cover how to use the API to manage DNS zones and records. For a higher level documentation on how that all works, check out <a href="https://cloud.ibm.com/docs/infrastructure/dns">DNS Management</a></p>
 <h3 id="setup">Setup</h3>
 <p>All the functions defined in this article will be part of this <code>DnsManager</code> class. Which only sets up the SoftLayer Client, and configures the debugger, which allows you to see the exact API calls being made.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-
-<span class="k">class</span> <span class="nc">DnsManager</span><span class="p">:</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
-
-    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
-</code></pre></div><h2 id="creating-a-zone">Creating a zone</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">DnsManager</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">debug</span><span class="p">()</span>
+</span></span></code></pre></div><h2 id="creating-a-zone">Creating a zone</h2>
 <p>A Zone here can either be a top level domain (domain.com) or a sub-domain (company.domain.com). The NS records for the zone will need to point so ns1.softlayer.com and ns2.softlayer.com.</p>
 <p>To create a zone, we use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/createObject/">SoftLayer_Dns_Domain::createObject()</a> and pass in a structure of type <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain/">SoftLayer_Dns_Domain</a>. You can pass in a list of resourceRecords during domain creating for them to be added as well. You can not however change the SOA record at creation, but can do so by editing the SOA record after it has been created.</p>
 <h3 id="python">Python</h3>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
-    <span class="k">def</span> <span class="nf">createZone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Creates a DNS zone&#34;&#34;&#34;</span>
-
-        <span class="n">zoneTemplate</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;mydomain.com&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;resourceRecords&#39;</span><span class="p">:</span> <span class="p">[</span>
-                <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;127.0.0.1&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;@&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;a&#39;</span> <span class="p">},</span>
-                <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;1.2.3.4&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;zed&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;a&#39;</span> <span class="p">},</span>
-                <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;zed&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;@&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;MX&#39;</span> <span class="p">}</span>
-            <span class="p">]</span>
-        <span class="p">}</span>
-
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">zoneTemplate</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-</code></pre></div><h3 id="rest">REST</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST -d <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;name&#34;: &#34;mydomain.com&#34;, &#34;resourceRecords&#34;: [{&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;@&#34;, &#34;data&#34;: &#34;127.0.0.1&#34;}, {&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;zed&#34;, &#34;data&#34;: &#34;1.2.3.4&#34;}, {&#34;type&#34;: &#34;MX&#34;, &#34;host&#34;: &#34;@&#34;, &#34;data&#34;: &#34;zed&#34;}]}]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/createObject.json&#39;</span>
-</code></pre></div><h2 id="creating-records">Creating Records</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">createZone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Creates a DNS zone&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">zoneTemplate</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;mydomain.com&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;resourceRecords&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;127.0.0.1&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;@&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;a&#39;</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;1.2.3.4&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;zed&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;a&#39;</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;zed&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;@&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;MX&#39;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">zoneTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span></code></pre></div><h3 id="rest">REST</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;name&#34;: &#34;mydomain.com&#34;, &#34;resourceRecords&#34;: [{&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;@&#34;, &#34;data&#34;: &#34;127.0.0.1&#34;}, {&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;zed&#34;, &#34;data&#34;: &#34;1.2.3.4&#34;}, {&#34;type&#34;: &#34;MX&#34;, &#34;host&#34;: &#34;@&#34;, &#34;data&#34;: &#34;zed&#34;}]}]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/createObject.json&#39;</span>
+</span></span></code></pre></div><h2 id="creating-records">Creating Records</h2>
 <p>A record will be any entry under the zone you just created, so you will need to know the ID of the zone, and use that for the <code>domainId</code> in the record template.</p>
 <p>Much like creating a zone, creating a record is done with a createObject call, but this time in the <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/createObject/">SoftLayer_Dns_Domain_ResourceRecord::createObject</a> method. Use the <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain_ResourceRecord/">SoftLayer_Dns_Domain_ResourceRecord</a> datatype to define exactly how you want the record itself to look. The example below only uses a few of the fields.</p>
 <h3 id="python-1">Python</h3>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
-    <span class="k">def</span> <span class="nf">addRecord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Adds record to zone_id&#34;&#34;&#34;</span>
-        <span class="n">recordTemplate</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;domainId&#39;</span><span class="p">:</span> <span class="n">zone_id</span><span class="p">,</span>  <span class="c1"># id of the zone this record will belong to.</span>
-            <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span>
-            <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">],</span>
-            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
-        <span class="p">}</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">recordTemplate</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
-    <span class="n">my_zone_id</span> <span class="o">=</span> <span class="mi">2986181</span>
-    <span class="n">record</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;4.4.4.4&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;testa&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;a&#39;</span><span class="p">}</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">addRecord</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">,</span> <span class="n">record</span><span class="p">)</span>
-</code></pre></div><h3 id="rest-1">REST</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;testa&#34;, &#34;domainId&#34;: 2986181, &#34;data&#34;: &#34;4.4.4.4&#34;}]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/createObject.json&#39;</span>
-</code></pre></div><p>The SoftLayer_Dns_Domain service has methods like <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/createARecord/">SoftLayer_Dns_Domain::createARecord</a> which can make creating records easier, but this approach is a little more flexible. They are both capable of creating the same records though, so feel free to use either approach.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">addRecord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Adds record to zone_id&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">recordTemplate</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;domainId&#39;</span><span class="p">:</span> <span class="n">zone_id</span><span class="p">,</span>  <span class="c1"># id of the zone this record will belong to.</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;</span><span class="p">,</span> <span class="s1">&#39;createObject&#39;</span><span class="p">,</span> <span class="n">recordTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">my_zone_id</span> <span class="o">=</span> <span class="mi">2986181</span>
+</span></span><span class="line"><span class="cl">    <span class="n">record</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;4.4.4.4&#39;</span><span class="p">,</span> <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;testa&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;a&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">addRecord</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">,</span> <span class="n">record</span><span class="p">)</span>
+</span></span></code></pre></div><h3 id="rest-1">REST</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;type&#34;: &#34;a&#34;, &#34;host&#34;: &#34;testa&#34;, &#34;domainId&#34;: 2986181, &#34;data&#34;: &#34;4.4.4.4&#34;}]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/createObject.json&#39;</span>
+</span></span></code></pre></div><p>The SoftLayer_Dns_Domain service has methods like <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/createARecord/">SoftLayer_Dns_Domain::createARecord</a> which can make creating records easier, but this approach is a little more flexible. They are both capable of creating the same records though, so feel free to use either approach.</p>
 <h2 id="viewing">Viewing</h2>
 <p>There are two main ways of getting information about the domain and its records. If you know the Id of the zone, simply use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getObject/">SoftLayer_Dns_Domain::getObject()</a>, otherwise use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getByDomainName/">SoftLayer_Dns_Domain::getByDomainName</a> as shown here.</p>
 <h3 id="python-2">Python</h3>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
-    <span class="k">def</span> <span class="nf">getZone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zone_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">domain_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">zone_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&#34;domain_name or zone_id is required&#34;</span><span class="p">)</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[resourceRecords]&#34;</span>
-        <span class="k">if</span> <span class="n">zone_id</span><span class="p">:</span>
-            <span class="n">domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;getObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">zone_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;getByDomainName&#39;</span><span class="p">,</span> <span class="n">domain_name</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">getZone</span><span class="p">(</span><span class="n">domain_name</span><span class="o">=</span><span class="s1">&#39;mydomain.com&#39;</span><span class="p">)</span>
-</code></pre></div><h3 id="rest-2">REST</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getObject.json?objectMask=mask%5BresourceRecords%5D&#39;</span>
-
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [&#34;mydomain.com&#34;]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/getByDomainName.json?objectMask=mask%5BresourceRecords%5D&#39;</span>
-</code></pre></div><p>You can also get the BIND format zone file with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getZoneFileContents">getZoneFileContents</a> if you need it.</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getZoneFileContents.json&#39;</span>
-
-<span class="nv">$ORIGIN</span> mydomain.com.
-<span class="nv">$TTL</span> <span class="m">86400</span>
-@ IN SOA ns1.softlayer.com. root.mydomain.com. <span class="o">(</span>
-                       <span class="m">2020010601</span>        <span class="p">;</span> Serial
-                       <span class="m">7200</span>              <span class="p">;</span> Refresh
-                       <span class="m">600</span>               <span class="p">;</span> Retry
-                       <span class="m">1728000</span>           <span class="p">;</span> Expire
-                       3600<span class="o">)</span>             <span class="p">;</span> Minimum
-
-@                      <span class="m">86400</span>    IN NS    ns1.softlayer.com.
-@                      <span class="m">86400</span>    IN NS    ns2.softlayer.com.
-@                      <span class="m">86400</span>    IN A     127.0.0.1
-testa                  <span class="m">86400</span>    IN A     5.5.5.5
-</code></pre></div><h2 id="editing-records">Editing records.</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getZone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zone_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">domain_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">zone_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&#34;domain_name or zone_id is required&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[resourceRecords]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">zone_id</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;getObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">zone_id</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">domain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;getByDomainName&#39;</span><span class="p">,</span> <span class="n">domain_name</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">getZone</span><span class="p">(</span><span class="n">domain_name</span><span class="o">=</span><span class="s1">&#39;mydomain.com&#39;</span><span class="p">)</span>
+</span></span></code></pre></div><h3 id="rest-2">REST</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getObject.json?objectMask=mask%5BresourceRecords%5D&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [&#34;mydomain.com&#34;]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/getByDomainName.json?objectMask=mask%5BresourceRecords%5D&#39;</span>
+</span></span></code></pre></div><p>You can also get the BIND format zone file with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain/getZoneFileContents">getZoneFileContents</a> if you need it.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getZoneFileContents.json&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$ORIGIN</span> mydomain.com.
+</span></span><span class="line"><span class="cl"><span class="nv">$TTL</span> <span class="m">86400</span>
+</span></span><span class="line"><span class="cl">@ IN SOA ns1.softlayer.com. root.mydomain.com. <span class="o">(</span>
+</span></span><span class="line"><span class="cl">                       <span class="m">2020010601</span>        <span class="p">;</span> Serial
+</span></span><span class="line"><span class="cl">                       <span class="m">7200</span>              <span class="p">;</span> Refresh
+</span></span><span class="line"><span class="cl">                       <span class="m">600</span>               <span class="p">;</span> Retry
+</span></span><span class="line"><span class="cl">                       <span class="m">1728000</span>           <span class="p">;</span> Expire
+</span></span><span class="line"><span class="cl">                       3600<span class="o">)</span>             <span class="p">;</span> Minimum
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">@                      <span class="m">86400</span>    IN NS    ns1.softlayer.com.
+</span></span><span class="line"><span class="cl">@                      <span class="m">86400</span>    IN NS    ns2.softlayer.com.
+</span></span><span class="line"><span class="cl">@                      <span class="m">86400</span>    IN A     127.0.0.1
+</span></span><span class="line"><span class="cl">testa                  <span class="m">86400</span>    IN A     5.5.5.5
+</span></span></code></pre></div><h2 id="editing-records">Editing records.</h2>
 <p>Editing an existing record uses <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject/">SoftLayer_Dns_Domain_ResourceRecord::editObject()</a>. You will need to know the Id of the Record (not the zone) for this.</p>
 <h3 id="python-3">Python</h3>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
-    <span class="k">def</span> <span class="nf">editRecord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">new_data</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Edits a record with new_data
-</span><span class="s2">
-</span><span class="s2">        Will return True on success, and exception otherwise.
-</span><span class="s2">        new_data should be a structure that has fields that match the local properties of
-</span><span class="s2">        https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain_ResourceRecord/
-</span><span class="s2">        Only properties sent in will be updated.
-</span><span class="s2">        new_data = {&#39;data&#39;:&#39;1.2.3.4&#39;, &#39;ttl&#39;:600}
-</span><span class="s2">        &#34;&#34;&#34;</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;</span><span class="p">,</span> <span class="s1">&#39;editObject&#39;</span><span class="p">,</span> <span class="n">new_data</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
-    <span class="n">my_record_id</span> <span class="o">=</span> <span class="mi">118152560</span>
-    <span class="n">my_new_record</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;5.5.5.5&#39;</span><span class="p">}</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">editRecord</span><span class="p">(</span><span class="n">my_record_id</span><span class="p">,</span> <span class="n">my_new_record</span><span class="p">)</span>
-</code></pre></div><h3 id="rest-3">REST</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X -d  <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;data&#34;: &#34;5.5.5.5&#34;}]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/editObject.json&#39;</span>
-</code></pre></div><h2 id="editing-soa">Editing SOA</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">editRecord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record_id</span><span class="p">,</span> <span class="n">new_data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Edits a record with new_data
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Will return True on success, and exception otherwise.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        new_data should be a structure that has fields that match the local properties of
+</span></span></span><span class="line"><span class="cl"><span class="s2">        https://sldn.softlayer.com/reference/datatypes/SoftLayer_Dns_Domain_ResourceRecord/
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Only properties sent in will be updated.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        new_data = {&#39;data&#39;:&#39;1.2.3.4&#39;, &#39;ttl&#39;:600}
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;</span><span class="p">,</span> <span class="s1">&#39;editObject&#39;</span><span class="p">,</span> <span class="n">new_data</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">my_record_id</span> <span class="o">=</span> <span class="mi">118152560</span>
+</span></span><span class="line"><span class="cl">    <span class="n">my_new_record</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="s1">&#39;5.5.5.5&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">editRecord</span><span class="p">(</span><span class="n">my_record_id</span><span class="p">,</span> <span class="n">my_new_record</span><span class="p">)</span>
+</span></span></code></pre></div><h3 id="rest-3">REST</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X -d  <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;data&#34;: &#34;5.5.5.5&#34;}]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/editObject.json&#39;</span>
+</span></span></code></pre></div><h2 id="editing-soa">Editing SOA</h2>
 <p>The SOA for every zone will get set to something like this:</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getSoaResourceRecord.json&#39;</span>
-<span class="o">{</span>
-    <span class="s2">&#34;domainId&#34;</span>: 2986181,
-    <span class="s2">&#34;responsiblePerson&#34;</span>: <span class="s2">&#34;root.mydomain.com.&#34;</span>,
-    <span class="s2">&#34;data&#34;</span>: <span class="s2">&#34;ns1.softlayer.com.&#34;</span>,
-    <span class="s2">&#34;refresh&#34;</span>: 7200,
-    <span class="s2">&#34;mxPriority&#34;</span>: null,
-    <span class="s2">&#34;host&#34;</span>: <span class="s2">&#34;@&#34;</span>,
-    <span class="s2">&#34;minimum&#34;</span>: 3600,
-    <span class="s2">&#34;retry&#34;</span>: 600,
-    <span class="s2">&#34;expire&#34;</span>: 1728000,
-    <span class="s2">&#34;ttl&#34;</span>: 86400,
-    <span class="s2">&#34;type&#34;</span>: <span class="s2">&#34;soa&#34;</span>,
-    <span class="s2">&#34;id&#34;</span>: <span class="m">118151300</span>
-<span class="o">}</span>
-</code></pre></div><p>Which is usually fine, but if you need to change it, you can do the following. You will need to use the editRecords method mentioned above.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/getSoaResourceRecord.json&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;domainId&#34;</span>: 2986181,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;responsiblePerson&#34;</span>: <span class="s2">&#34;root.mydomain.com.&#34;</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;data&#34;</span>: <span class="s2">&#34;ns1.softlayer.com.&#34;</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;refresh&#34;</span>: 7200,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;mxPriority&#34;</span>: null,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;host&#34;</span>: <span class="s2">&#34;@&#34;</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;minimum&#34;</span>: 3600,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;retry&#34;</span>: 600,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;expire&#34;</span>: 1728000,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;ttl&#34;</span>: 86400,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;type&#34;</span>: <span class="s2">&#34;soa&#34;</span>,
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;id&#34;</span>: <span class="m">118151300</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p>Which is usually fine, but if you need to change it, you can do the following. You will need to use the editRecords method mentioned above.</p>
 <h3 id="python-4">Python</h3>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
-    <span class="k">def</span> <span class="nf">getSoa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;getSoaResourceRecord&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">zone_id</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
-    <span class="n">my_zone_id</span> <span class="o">=</span> <span class="mi">2986181</span>
-
-    <span class="n">soa</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getSoa</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">)</span>
-    <span class="n">new_soa</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;data&#39;</span> <span class="p">:</span> <span class="s1">&#39;ns1.mydomain.com.&#39;</span><span class="p">,</span>  <span class="c1"># ending &#39;.&#39; is important.</span>
-        <span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;soa&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;responsiblePerson&#39;</span> <span class="p">:</span> <span class="s1">&#39;root.mydomain.com.&#39;</span>  <span class="c1"># ending &#39;.&#39; is important.</span>
-    <span class="p">}</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">editRecord</span><span class="p">(</span><span class="n">soa</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">new_soa</span><span class="p">)</span>
-    <span class="n">pp</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">getSoa</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">))</span>
-</code></pre></div><h2 id="delete-records-and-zones">Delete Records and Zones</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getSoa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;getSoaResourceRecord&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">zone_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">my_zone_id</span> <span class="o">=</span> <span class="mi">2986181</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">soa</span> <span class="o">=</span> <span class="n">main</span><span class="o">.</span><span class="n">getSoa</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">new_soa</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;data&#39;</span> <span class="p">:</span> <span class="s1">&#39;ns1.mydomain.com.&#39;</span><span class="p">,</span>  <span class="c1"># ending &#39;.&#39; is important.</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;soa&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;responsiblePerson&#39;</span> <span class="p">:</span> <span class="s1">&#39;root.mydomain.com.&#39;</span>  <span class="c1"># ending &#39;.&#39; is important.</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">editRecord</span><span class="p">(</span><span class="n">soa</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">new_soa</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pp</span><span class="p">(</span><span class="n">main</span><span class="o">.</span><span class="n">getSoa</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">))</span>
+</span></span></code></pre></div><h2 id="delete-records-and-zones">Delete Records and Zones</h2>
 <p>Deleting a zone or record can be done with deleteObject.</p>
 <h3 id="python-5">Python</h3>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
-    <span class="k">def</span> <span class="nf">deleteZone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">zone_id</span><span class="p">)</span>        
-    <span class="k">def</span> <span class="nf">deleteRecord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record_id</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
-    <span class="n">my_zone_id</span> <span class="o">=</span> <span class="mi">2986181</span>
-    <span class="n">my_record_id</span> <span class="o">=</span> <span class="mi">118152560</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">deleteRecord</span><span class="p">(</span><span class="n">my_record_id</span><span class="p">)</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">deleteZone</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">)</span>
-</code></pre></div><h3 id="rest-4">REST</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">deleteZone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">zone_id</span><span class="p">)</span>        
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">deleteRecord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Dns_Domain_ResourceRecord&#39;</span><span class="p">,</span> <span class="s1">&#39;deleteObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">DnsManager</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">my_zone_id</span> <span class="o">=</span> <span class="mi">2986181</span>
+</span></span><span class="line"><span class="cl">    <span class="n">my_record_id</span> <span class="o">=</span> <span class="mi">118152560</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">deleteRecord</span><span class="p">(</span><span class="n">my_record_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">deleteZone</span><span class="p">(</span><span class="n">my_zone_id</span><span class="p">)</span>
+</span></span></code></pre></div><h3 id="rest-4">REST</h3>
 <p>You can either user a GET request and specify the deleteObject method, like below.</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X GET <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/deleteObject.json&#39;</span>
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X GET <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/deleteObject.json&#39;</span>
-</code></pre></div><p>Or use a DELETE request, and omit the method, like below.</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X DELETE <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560&#39;</span>
-
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X DELETE <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181&#39;</span>
-</code></pre></div><p>Both will return True on success, and an exception otherwise.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X GET <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560/deleteObject.json&#39;</span>
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X GET <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181/deleteObject.json&#39;</span>
+</span></span></code></pre></div><p>Or use a DELETE request, and omit the method, like below.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X DELETE <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/118152560&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X DELETE <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain/2986181&#39;</span>
+</span></span></code></pre></div><p>Both will return True on success, and an exception otherwise.</p>
 <h2 id="reverse-records">Reverse Records</h2>
 <p>Reverse PTR records are a special type of DNS zone, as they can&rsquo;t be retrieved from a SoftLayer_Dns_Domain record exactly. Reverse PTR records link a Server or Virtual Guest with an IP. Generally setting this is very important for hosts that send out email (so spam filters can do some checking on the validity of your host).</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">dig -x 169.48.5.100
-<span class="p">;</span> &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; -x 169.48.5.100
-
-<span class="p">;;</span> QUESTION SECTION:
-<span class="p">;</span>100.5.48.169.in-addr.arpa. IN  PTR
-
-<span class="p">;;</span> ANSWER SECTION:
-100.5.48.169.in-addr.arpa. <span class="m">86371</span> IN PTR 64.05.30a9.ip4.static.sl-reverse.com.
-
-</code></pre></div><p>Each server and virtual guest will have a reverse PTR record associated with its primary IP address. You can get those with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getReverseDomainRecords/">SoftLayer_Hardware_Server::getReverseDomainRecords()</a> and <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getReverseDomainRecords">SoftLayer_Virtual_Guest::getReverseDomainRecords()</a></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">dig -x 169.48.5.100
+</span></span><span class="line"><span class="cl"><span class="p">;</span> &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; -x 169.48.5.100
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">;;</span> QUESTION SECTION:
+</span></span><span class="line"><span class="cl"><span class="p">;</span>100.5.48.169.in-addr.arpa. IN  PTR
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">;;</span> ANSWER SECTION:
+</span></span><span class="line"><span class="cl">100.5.48.169.in-addr.arpa. <span class="m">86371</span> IN PTR 64.05.30a9.ip4.static.sl-reverse.com.
+</span></span></code></pre></div><p>Each server and virtual guest will have a reverse PTR record associated with its primary IP address. You can get those with <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getReverseDomainRecords/">SoftLayer_Hardware_Server::getReverseDomainRecords()</a> and <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getReverseDomainRecords">SoftLayer_Virtual_Guest::getReverseDomainRecords()</a></p>
 <h3 id="python-6">Python</h3>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="n">records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getReverseDomainRecords&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
-<span class="n">records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;getReverseDomainRecords&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
-</code></pre></div><p>Once you have the Id of the record, you can use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject/">SoftLayer_Dns_Domain_ResourceRecord::editObject</a> to make changes to it.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">,</span> <span class="s1">&#39;getReverseDomainRecords&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;getReverseDomainRecords&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">)</span>
+</span></span></code></pre></div><p>Once you have the Id of the record, you can use <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Dns_Domain_ResourceRecord/editObject/">SoftLayer_Dns_Domain_ResourceRecord::editObject</a> to make changes to it.</p>
 <h3 id="rest-5">REST</h3>
 <p>In this example 1111111 is the id of the virtual guest, and 222222 is the resulting id from getReverseDomainRecords.</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/1111111/getReverseDomainRecords.json&#39;</span> <span class="p">|</span> python -m json.tool
-
-<span class="o">[</span>
-    <span class="o">{</span>
-        <span class="s2">&#34;id&#34;</span>: 88847,
-        <span class="s2">&#34;name&#34;</span>: <span class="s2">&#34;184.193.173.in-addr.arpa&#34;</span>,
-        <span class="s2">&#34;networkAddress&#34;</span>: <span class="s2">&#34;173.193.184.0&#34;</span>,
-        <span class="s2">&#34;resourceRecords&#34;</span>: <span class="o">[</span>
-            <span class="o">{</span>
-                <span class="s2">&#34;data&#34;</span>: <span class="s2">&#34;pg-test-01.mydomain.com.&#34;</span>,
-                <span class="s2">&#34;domainId&#34;</span>: 88847,
-                <span class="s2">&#34;expire&#34;</span>: null,
-                <span class="s2">&#34;host&#34;</span>: <span class="s2">&#34;164&#34;</span>,
-                <span class="s2">&#34;id&#34;</span>: 222222,
-                <span class="s2">&#34;isGatewayAddress&#34;</span>: false,
-                <span class="s2">&#34;minimum&#34;</span>: null,
-                <span class="s2">&#34;mxPriority&#34;</span>: null,
-                <span class="s2">&#34;refresh&#34;</span>: null,
-                <span class="s2">&#34;retry&#34;</span>: null,
-                <span class="s2">&#34;ttl&#34;</span>: 7200,
-                <span class="s2">&#34;type&#34;</span>: <span class="s2">&#34;ptr&#34;</span>
-            <span class="o">}</span>
-        <span class="o">]</span>,
-        <span class="s2">&#34;serial&#34;</span>: 2020010600,
-        <span class="s2">&#34;updateDate&#34;</span>: <span class="s2">&#34;2020-01-06T17:03:27-06:00&#34;</span>
-    <span class="o">}</span>
-<span class="o">]</span>
-
-
-
-curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;data&#34;: &#34;pg-test-01.mydomain.com&#34;}]}&#39;</span> <span class="se">\
-</span><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/222222/editObject.json&#39;</span>
-</code></pre></div><p>The SLCLI has <code>dns-sync</code> commands for both <a href="https://softlayer-python.readthedocs.io/en/latest/cli/vs/#vs-dns-sync">virtual</a> and <a href="https://softlayer-python.readthedocs.io/en/latest/cli/hardware/#hw-dns-sync">hardware</a> servers.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/1111111/getReverseDomainRecords.json&#39;</span> <span class="p">|</span> python -m json.tool
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">[</span>
+</span></span><span class="line"><span class="cl">    <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;id&#34;</span>: 88847,
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;name&#34;</span>: <span class="s2">&#34;184.193.173.in-addr.arpa&#34;</span>,
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;networkAddress&#34;</span>: <span class="s2">&#34;173.193.184.0&#34;</span>,
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;resourceRecords&#34;</span>: <span class="o">[</span>
+</span></span><span class="line"><span class="cl">            <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;data&#34;</span>: <span class="s2">&#34;pg-test-01.mydomain.com.&#34;</span>,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;domainId&#34;</span>: 88847,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;expire&#34;</span>: null,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;host&#34;</span>: <span class="s2">&#34;164&#34;</span>,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;id&#34;</span>: 222222,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;isGatewayAddress&#34;</span>: false,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;minimum&#34;</span>: null,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;mxPriority&#34;</span>: null,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;refresh&#34;</span>: null,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;retry&#34;</span>: null,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;ttl&#34;</span>: 7200,
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;type&#34;</span>: <span class="s2">&#34;ptr&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">]</span>,
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;serial&#34;</span>: 2020010600,
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;updateDate&#34;</span>: <span class="s2">&#34;2020-01-06T17:03:27-06:00&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -u <span class="nv">$SL_USER</span>:<span class="nv">$SL_APIKEY</span> -X POST  -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;{&#34;parameters&#34;: [{&#34;data&#34;: &#34;pg-test-01.mydomain.com&#34;}]}&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span><span class="s1">&#39;https://api.softlayer.com/rest/v3.1/SoftLayer_Dns_Domain_ResourceRecord/222222/editObject.json&#39;</span>
+</span></span></code></pre></div><p>The SLCLI has <code>dns-sync</code> commands for both <a href="https://softlayer-python.readthedocs.io/en/latest/cli/vs/#vs-dns-sync">virtual</a> and <a href="https://softlayer-python.readthedocs.io/en/latest/cli/hardware/#hw-dns-sync">hardware</a> servers.</p>
 
             </div>
         </div>

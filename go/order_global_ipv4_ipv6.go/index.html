@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -150,89 +146,88 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Order a new Global IPv4/IPv6
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-  	<span class="s">&#34;encoding/json&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>  	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-  	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the complexType, packageId and quantity
-</span><span class="c1"></span>  	<span class="nx">complexType</span> <span class="o">:=</span> <span class="s">&#34;SoftLayer_Container_Product_Order_Network_Subnet&#34;</span>
-  	<span class="nx">quantity</span>    <span class="o">:=</span> <span class="mi">1</span>
-  	<span class="nx">packageId</span>   <span class="o">:=</span> <span class="mi">0</span>
-
-	<span class="c1">// Create a session.
-</span><span class="c1"></span>  	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Package and SoftLayer_Product_Order services
-</span><span class="c1"></span>  	<span class="nx">productPackageService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-  	<span class="nx">productOrderService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Following filter helps to get item prices for GLOBAL_IPV6 IP Address
-</span><span class="c1"></span>	<span class="c1">// Change GLOBAL_IPV6 by GLOBAL_IPV4 if you want to order an Ip Address v4
-</span><span class="c1"></span>  	<span class="nx">filter</span> <span class="o">:=</span> <span class="s">`{&#34;itemPrices&#34;:{&#34;item&#34;:{&#34;keyName&#34;:{&#34;operation&#34;:&#34;GLOBAL_IPV6&#34;}}}}`</span>
-
-	<span class="c1">// Get SoftLayer_Product_Item_Price objects for Ip Address
-</span><span class="c1"></span>	<span class="nx">itemPrices</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">productPackageService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">packageId</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetItemPrices</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to Item Prices:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// As we only need one item price for Ip Address, we will build an array of
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Product_Item_Price objects by adding its id.
-</span><span class="c1"></span>  	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
-    		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">itemPrices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span><span class="p">)</span> <span class="p">},</span>
-  	<span class="p">}</span>
-
-	<span class="c1">// Build the Container_Product_Order object containing the order you wish to place
-</span><span class="c1"></span>	<span class="nx">templateObject</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-    		<span class="nx">ComplexType</span>   <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">complexType</span><span class="p">),</span>
-    		<span class="nx">Quantity</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-    		<span class="nx">PackageId</span>     <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-    		<span class="nx">Prices</span>        <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>	<span class="c1">// you are ready to order.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">productOrderService</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">templateObject</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Order a new Global IPv4/IPv6
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the complexType, packageId and quantity
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">complexType</span> <span class="o">:=</span> <span class="s">&#34;SoftLayer_Container_Product_Order_Network_Subnet&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">quantity</span>    <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">packageId</span>   <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Package and SoftLayer_Product_Order services
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">productPackageService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">productOrderService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following filter helps to get item prices for GLOBAL_IPV6 IP Address
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Change GLOBAL_IPV6 by GLOBAL_IPV4 if you want to order an Ip Address v4
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">filter</span> <span class="o">:=</span> <span class="s">`{&#34;itemPrices&#34;:{&#34;item&#34;:{&#34;keyName&#34;:{&#34;operation&#34;:&#34;GLOBAL_IPV6&#34;}}}}`</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Item_Price objects for Ip Address
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">itemPrices</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">productPackageService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">packageId</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetItemPrices</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to Item Prices:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// As we only need one item price for Ip Address, we will build an array of
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Product_Item_Price objects by adding its id.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">itemPrices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span><span class="p">)</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build the Container_Product_Order object containing the order you wish to place
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">templateObject</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    		<span class="nx">ComplexType</span>   <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">complexType</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    		<span class="nx">Quantity</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    		<span class="nx">PackageId</span>     <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    		<span class="nx">Prices</span>        <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">productOrderService</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">templateObject</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

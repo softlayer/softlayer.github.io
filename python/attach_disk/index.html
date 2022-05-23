@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -150,65 +146,64 @@ if (!doNotTrack) {
 				
                 <p>Attaching a currently detached portable block device to a given guest. The disk image will need to be migrated to the host the guest is on, so make sure to check if that host has enough disk space (with checkHostDiskAvailability) before attaching. This is only required for guests with local storage guests. SAN based guests don&rsquo;t need that step.</p>
 <p>Running this on a disk that is already attached will move the disk to the new guest.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-
-<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
-        <span class="n">my_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getMyImage</span><span class="p">(</span><span class="n">image_id</span><span class="p">)</span>
-        <span class="n">size</span> <span class="o">=</span> <span class="n">my_image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&#34;capacity&#34;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-        <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        SAN based guests will throw the following exception:
-</span><span class="s2">        SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Public): This guest is SAN-based, and does not require host migration for disk attachment.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="n">available</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">checkHostDiskAvailability</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="c1"># This should be True. False means the host doesn&#39;t have enough disk space to attach</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
-
-        <span class="n">attach</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attachDiskImage</span><span class="p">(</span><span class="n">image_id</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Attaching storage&#34;</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">attach</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">getImages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[type,blockDevices[guest]]&#34;</span>
-        <span class="n">images</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getPortableStorageVolumes</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
-            <span class="n">desc</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s2">&#34;---&#34;</span><span class="p">)</span>
-            <span class="n">capacity</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;capacity&#39;</span><span class="p">,</span> <span class="s2">&#34;0&#34;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">) - </span><span class="si">%s</span><span class="s2"> &#34;</span> <span class="o">%</span> 
-                <span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">image</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span> <span class="n">capacity</span> <span class="p">,</span><span class="n">desc</span><span class="p">)</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">disk</span> <span class="ow">in</span> <span class="n">image</span><span class="p">[</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">]:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">hostname</span> <span class="o">=</span> <span class="n">disk</span><span class="p">[</span><span class="s1">&#39;guest&#39;</span><span class="p">][</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">]</span>
-                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-                    <span class="n">hostname</span> <span class="o">=</span> <span class="s2">&#34;None&#34;</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">hostname</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">getMyImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">imageId</span><span class="p">):</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[blockDevices[guest],sourceDiskImage,type]&#34;</span>
-        <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Disk_Image&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="n">imageId</span><span class="p">)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">image</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">image_id</span> <span class="o">=</span> <span class="mi">12345</span>
-    <span class="n">guest_id</span> <span class="o">=</span> <span class="mi">67890</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">getImages</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">image_id</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">)</span>
-    <span class="c1"># The new guest will only show up on the image once the migration transaction is completed</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">getMyImage</span><span class="p">(</span><span class="n">image_id</span><span class="p">)</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_id</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">my_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getMyImage</span><span class="p">(</span><span class="n">image_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">size</span> <span class="o">=</span> <span class="n">my_image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&#34;capacity&#34;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        SAN based guests will throw the following exception:
+</span></span></span><span class="line"><span class="cl"><span class="s2">        SoftLayer.exceptions.SoftLayerAPIError: SoftLayerAPIError(SoftLayer_Exception_Public): This guest is SAN-based, and does not require host migration for disk attachment.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">available</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">checkHostDiskAvailability</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># This should be True. False means the host doesn&#39;t have enough disk space to attach</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">attach</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attachDiskImage</span><span class="p">(</span><span class="n">image_id</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Attaching storage&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">attach</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getImages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[type,blockDevices[guest]]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">images</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getPortableStorageVolumes</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">desc</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s2">&#34;---&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">capacity</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;capacity&#39;</span><span class="p">,</span> <span class="s2">&#34;0&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">) - </span><span class="si">%s</span><span class="s2"> &#34;</span> <span class="o">%</span> 
+</span></span><span class="line"><span class="cl">                <span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">image</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span> <span class="n">capacity</span> <span class="p">,</span><span class="n">desc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">disk</span> <span class="ow">in</span> <span class="n">image</span><span class="p">[</span><span class="s1">&#39;blockDevices&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">hostname</span> <span class="o">=</span> <span class="n">disk</span><span class="p">[</span><span class="s1">&#39;guest&#39;</span><span class="p">][</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">hostname</span> <span class="o">=</span> <span class="s2">&#34;None&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">hostname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getMyImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">imageId</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[blockDevices[guest],sourceDiskImage,type]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Virtual_Disk_Image&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="n">imageId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">image</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">image_id</span> <span class="o">=</span> <span class="mi">12345</span>
+</span></span><span class="line"><span class="cl">    <span class="n">guest_id</span> <span class="o">=</span> <span class="mi">67890</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">getImages</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">image_id</span><span class="p">,</span> <span class="n">guest_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># The new guest will only show up on the image once the migration transaction is completed</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">getMyImage</span><span class="p">(</span><span class="n">image_id</span><span class="p">)</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

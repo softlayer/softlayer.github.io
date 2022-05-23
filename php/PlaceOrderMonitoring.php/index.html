@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -154,118 +150,117 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
-<span class="sd">/**
-</span><span class="sd"> * Example to order a portal monitoring
-</span><span class="sd"> * 
-</span><span class="sd"> * Important manual pages:
-</span><span class="sd"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Monitoring_Package
-</span><span class="sd"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
-</span><span class="sd"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span class="sd"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-</span><span class="sd"> * 
-</span><span class="sd"> * License &lt;http://sldn.softlayer.com/article/License&gt;
-</span><span class="sd"> * Author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="sd"> *
-</span><span class="sd">*/</span>
-<span class="k">require_once</span> <span class="p">(</span><span class="s1">&#39;Softlayer/SoapClient.class.php&#39;</span><span class="p">);</span>
-
-<span class="c1"># Your SoftLayer API username and key.
-</span><span class="c1"></span><span class="nv">$username</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
-<span class="nv">$key</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># Every item in SoftLayer&#39;s product catalog is assigned an id. Use these ids
-</span><span class="c1"># to tell the SoftLayer API which options you want in your new server. Use
-</span><span class="c1"># the getActivePackages() method in the SoftLayer_Account API service to get
-</span><span class="c1"># a list of available item and price options per available package.
-</span><span class="c1"></span><span class="nv">$prices</span> <span class="o">=</span> <span class="k">array</span>
-<span class="p">(</span>
-    <span class="c1"># This is the price for Monitoring Package - Basic ((Hardware and OS))
-</span><span class="c1"></span>    <span class="mi">2302</span><span class="p">,</span>
-<span class="p">);</span>
-
-<span class="c1"># Converting our item list into an array of skeleton
-</span><span class="c1"># SoftLayer_Product_Item_Price objects. These objects contain much more than
-</span><span class="c1"># ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id to know what
-</span><span class="c1"># you want to order.
-</span><span class="c1"></span><span class="nv">$orderPrices</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
- 
-<span class="k">foreach</span> <span class="p">(</span><span class="nv">$prices</span> <span class="k">as</span> <span class="nv">$priceId</span><span class="p">){</span>
-    <span class="nv">$price</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-    <span class="nv">$price</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$priceId</span><span class="p">;</span>
-    <span class="nv">$orderPrices</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$price</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="nv">$location</span> <span class="o">=</span> <span class="s2">&#34;SANJOSE&#34;</span><span class="p">;</span>
-<span class="nv">$packageId</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1"># The packageId for order monitoring packages is 0
-</span><span class="c1"></span><span class="nv">$quantity</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>   <span class="c1"># The quantity for order a service (in this case monitoring package) must be 0
-</span><span class="c1"></span><span class="nv">$sendQuoteEmailFlag</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-<span class="nv">$useHourlyPricing</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-
-
-<span class="c1"># Building a skeleton SoftLayer_Virtual_Guest object to model the Id
-</span><span class="c1"># of the virtual guest where you want add the monitoring package
-</span><span class="c1"></span><span class="nv">$virtualGuests</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$virtualGuests</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="mi">4906034</span><span class="p">;</span>
-<span class="nv">$orderVirtualGuest</span> <span class="o">=</span> <span class="k">array</span>
-<span class="p">(</span>
-    <span class="nv">$virtualGuests</span>
-<span class="p">);</span>
-
-<span class="nv">$configurationTemplateGroups</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$configurationTemplateGroups</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span> <span class="c1"># The templateId for the monitoring group (in this case Basic Monitoring package for Unix/Linux operating system.)  
-</span><span class="c1"></span><span class="nv">$orderConfigurationTemplateGroups</span> <span class="o">=</span> <span class="k">array</span>
-<span class="p">(</span>
-    <span class="nv">$configurationTemplateGroups</span>
-<span class="p">);</span>
-
-
-
-<span class="c1"># Build a SoftLayer_Container_Product_Order_Monitoring_Package object containing
-</span><span class="c1"># the order you wish to place.
-</span><span class="c1"></span><span class="nv">$orderContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">location</span>           <span class="o">=</span> <span class="nv">$location</span><span class="p">;</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">packageId</span>          <span class="o">=</span> <span class="nv">$packageId</span><span class="p">;</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">prices</span>             <span class="o">=</span> <span class="nv">$orderPrices</span><span class="p">;</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">quantity</span>           <span class="o">=</span> <span class="nv">$quantity</span><span class="p">;</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">sendQuoteEmailFlag</span> <span class="o">=</span> <span class="nv">$sendQuoteEmailFlag</span><span class="p">;</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">useHourlyPricing</span>   <span class="o">=</span> <span class="nv">$useHourlyPricing</span><span class="p">;</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">virtualGuests</span>      <span class="o">=</span> <span class="nv">$orderVirtualGuest</span><span class="p">;</span>
-<span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">configurationTemplateGroups</span>      <span class="o">=</span> <span class="nv">$orderConfigurationTemplateGroups</span><span class="p">;</span>
-
-<span class="c1"># Create a SoftLayer API client object
-</span><span class="c1"></span><span class="nv">$softLayer_product_order</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="c1"># Place the order for the new server.
-</span><span class="c1"></span><span class="k">try</span> <span class="p">{</span>
-    <span class="c1"># Re-declare the order template as a SOAP variable, so the SoftLayer
-</span><span class="c1"></span>    <span class="c1"># ordering system knows what type of order you&#39;re placing.
-</span><span class="c1"></span>    <span class="nv">$orderTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SoapVar</span>
-    <span class="p">(</span>
-        <span class="nv">$orderContainer</span><span class="p">,</span>
-        <span class="nx">SOAP_ENC_OBJECT</span><span class="p">,</span>
-        <span class="s1">&#39;SoftLayer_Container_Product_Order_Monitoring_Package&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;http://api.service.softlayer.com/soap/v3/&#39;</span>
-    <span class="p">);</span>
- 
-    <span class="sd">/**
-</span><span class="sd">     * verifyOrder() will check your order for errors. Replace this with a call
-</span><span class="sd">     * to placeOrder() when you&#39;re ready to order. Both calls return a receipt
-</span><span class="sd">     * object that you can use for your records.
-</span><span class="sd">     *
-</span><span class="sd">     * Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
-</span><span class="sd">     * provisioning process. When it&#39;s done you&#39;ll have a new
-</span><span class="sd">     * SoftLayer_Hardware_Server object and server ready to use. 
-</span><span class="sd">     */</span>
-    <span class="nv">$receipt</span> <span class="o">=</span> <span class="nv">$softLayer_product_order</span><span class="o">-&gt;</span><span class="na">verifyOrder</span><span class="p">(</span><span class="nv">$orderTemplate</span><span class="p">);</span>
-    <span class="nx">print_r</span><span class="p">(</span><span class="nv">$receipt</span><span class="p">);</span>
-<span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">echo</span> <span class="s1">&#39;Unable to place monitoring order: &#39;</span> <span class="o">.</span> <span class="nv">$e</span><span class="o">-&gt;</span><span class="na">getMessage</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="cp">?&gt;</span><span class="err">
-</span><span class="err">
-</span></code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span>
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Example to order a portal monitoring
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * 
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Monitoring_Package
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * 
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * License &lt;http://sldn.softlayer.com/article/License&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd">*/</span>
+</span></span><span class="line"><span class="cl"><span class="k">require_once</span> <span class="p">(</span><span class="s1">&#39;Softlayer/SoapClient.class.php&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$username</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$key</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Every item in SoftLayer&#39;s product catalog is assigned an id. Use these ids
+</span></span></span><span class="line"><span class="cl"><span class="c1"># to tell the SoftLayer API which options you want in your new server. Use
+</span></span></span><span class="line"><span class="cl"><span class="c1"># the getActivePackages() method in the SoftLayer_Account API service to get
+</span></span></span><span class="line"><span class="cl"><span class="c1"># a list of available item and price options per available package.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$prices</span> <span class="o">=</span> <span class="k">array</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># This is the price for Monitoring Package - Basic ((Hardware and OS))
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="mi">2302</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Converting our item list into an array of skeleton
+</span></span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Product_Item_Price objects. These objects contain much more than
+</span></span></span><span class="line"><span class="cl"><span class="c1"># ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id to know what
+</span></span></span><span class="line"><span class="cl"><span class="c1"># you want to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$orderPrices</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="k">foreach</span> <span class="p">(</span><span class="nv">$prices</span> <span class="k">as</span> <span class="nv">$priceId</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$price</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$price</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$priceId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$orderPrices</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$price</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$location</span> <span class="o">=</span> <span class="s2">&#34;SANJOSE&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$packageId</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1"># The packageId for order monitoring packages is 0
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$quantity</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>   <span class="c1"># The quantity for order a service (in this case monitoring package) must be 0
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$sendQuoteEmailFlag</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$useHourlyPricing</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Virtual_Guest object to model the Id
+</span></span></span><span class="line"><span class="cl"><span class="c1"># of the virtual guest where you want add the monitoring package
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$virtualGuests</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$virtualGuests</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="mi">4906034</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderVirtualGuest</span> <span class="o">=</span> <span class="k">array</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$virtualGuests</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$configurationTemplateGroups</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$configurationTemplateGroups</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span> <span class="c1"># The templateId for the monitoring group (in this case Basic Monitoring package for Unix/Linux operating system.)  
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$orderConfigurationTemplateGroups</span> <span class="o">=</span> <span class="k">array</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$configurationTemplateGroups</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a SoftLayer_Container_Product_Order_Monitoring_Package object containing
+</span></span></span><span class="line"><span class="cl"><span class="c1"># the order you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$orderContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">location</span>           <span class="o">=</span> <span class="nv">$location</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">packageId</span>          <span class="o">=</span> <span class="nv">$packageId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">prices</span>             <span class="o">=</span> <span class="nv">$orderPrices</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">quantity</span>           <span class="o">=</span> <span class="nv">$quantity</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">sendQuoteEmailFlag</span> <span class="o">=</span> <span class="nv">$sendQuoteEmailFlag</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">useHourlyPricing</span>   <span class="o">=</span> <span class="nv">$useHourlyPricing</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">virtualGuests</span>      <span class="o">=</span> <span class="nv">$orderVirtualGuest</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span><span class="o">-&gt;</span><span class="na">configurationTemplateGroups</span>      <span class="o">=</span> <span class="nv">$orderConfigurationTemplateGroups</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Create a SoftLayer API client object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$softLayer_product_order</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Place the order for the new server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Re-declare the order template as a SOAP variable, so the SoftLayer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1"># ordering system knows what type of order you&#39;re placing.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nv">$orderTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SoapVar</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$orderContainer</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">SOAP_ENC_OBJECT</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;SoftLayer_Container_Product_Order_Monitoring_Package&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;http://api.service.softlayer.com/soap/v3/&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">);</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * verifyOrder() will check your order for errors. Replace this with a call
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * to placeOrder() when you&#39;re ready to order. Both calls return a receipt
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * object that you can use for your records.
+</span></span></span><span class="line"><span class="cl"><span class="sd">     *
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * provisioning process. When it&#39;s done you&#39;ll have a new
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * SoftLayer_Hardware_Server object and server ready to use. 
+</span></span></span><span class="line"><span class="cl"><span class="sd">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$receipt</span> <span class="o">=</span> <span class="nv">$softLayer_product_order</span><span class="o">-&gt;</span><span class="na">verifyOrder</span><span class="p">(</span><span class="nv">$orderTemplate</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">print_r</span><span class="p">(</span><span class="nv">$receipt</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">echo</span> <span class="s1">&#39;Unable to place monitoring order: &#39;</span> <span class="o">.</span> <span class="nv">$e</span><span class="o">-&gt;</span><span class="na">getMessage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">?&gt;</span><span class="err">
+</span></span></span></code></pre></div>
             </div>
         </div>
 

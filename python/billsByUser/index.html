@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -160,127 +156,127 @@ if (!doNotTrack) {
 				
                 <p>This is a rough script, it doesn&rsquo;t include some of the tax fees and some of the other one off fee fields that you will find in <a href="http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item</a></p>
 <p>Example Output for billsByUser()</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">chris-cde - 840.0
-    123.cdetesting.com : Dual Intel Xeon E5-2620 v3 <span class="o">(</span><span class="m">12</span> Cores, 2.40 GHz<span class="o">)</span> <span class="nv">$345</span>.0
-    234.cdetesting.com : Dual Intel Xeon E5-2620 v3 <span class="o">(</span><span class="m">12</span> Cores, 2.40 GHz<span class="o">)</span> <span class="nv">$495</span>.0
-    chris.testing.com : <span class="m">2</span> x 2.0 GHz Cores <span class="nv">$0</span>.0
-    <span class="m">4</span> Portable Private IP Addresses - <span class="nv">$0</span>.0
-    <span class="m">8</span> Portable Private IP Addresses - <span class="nv">$0</span>.0
-</code></pre></div><p>Example Output of upcoming_hourly()</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">ItemID  Info    Host    Domain  Hours   Hourly Cost Cost
-<span class="m">143131173</span>   Dual Intel Xeon E5-2620 v3 <span class="o">(</span><span class="m">12</span> Cores, 2.40 GHz<span class="o">)</span> jd-cos-testing-sjc03    secore.com  <span class="m">489</span> .309    151.101
-<span class="o">==</span>&gt; <span class="m">143131179</span>   <span class="m">64</span> GB RAM   291.933
-<span class="o">==</span>&gt; <span class="m">143131183</span>   1.00 TB SATA    17.604
-<span class="o">==</span>&gt; <span class="m">143131185</span>   1.00 TB SATA    17.604
-<span class="o">==</span>&gt; <span class="m">143131189</span>   <span class="m">10</span> Gbps Dual Public <span class="p">&amp;</span> Private Network Uplinks <span class="o">(</span>Unbonded<span class="o">)</span>    147.189
-TOTAL: 625.431
-</code></pre></div><p>Source</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">@author Christopher Gallo
-</span><span class="s2">Goes through the next invoice. Collections billing items by the user that orderd them.
-</span><span class="s2">Prints out each user and how much they caused in billing, along with what they ordered.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-
-<span class="k">class</span> <span class="nc">bills</span><span class="p">():</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mgr</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">VSManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">billsByUser</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        Not all billing items have a user record, these are collected under the master account
-</span><span class="s2">        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
-</span><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&gt; taps orderItem for
-</span><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&gt; taps order for 
-</span><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&gt; taps userRecord for
-</span><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[orderItem[order[id,userRecord[displayName,username]]]]&#34;</span>
-        <span class="n">billingItems</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNextInvoiceTopLevelBillingItems</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
-
-        <span class="n">users</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;masterUser&#39;</span><span class="p">:</span> <span class="p">[]}</span>
-        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">billingItems</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s1">&#39;orderItem&#39;</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
-                <span class="n">username</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;orderItem&#39;</span><span class="p">][</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;userRecord&#39;</span><span class="p">][</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
-                <span class="k">del</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;orderItem&#39;</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">username</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
-                    <span class="n">users</span><span class="p">[</span><span class="n">username</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="n">users</span><span class="p">[</span><span class="n">username</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">users</span><span class="p">[</span><span class="s1">&#39;masterUser&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-
-
-        <span class="c1"># prints everything out, and finds the sum of items.</span>
-        <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
-            <span class="n">servers</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">everything_else</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">total_cost</span> <span class="o">=</span> <span class="mi">0</span>
-
-            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">users</span><span class="p">[</span><span class="n">user</span><span class="p">]:</span>
-
-                <span class="c1"># this doens&#39;t include Tax fees, or setup fees because I&#39;m lazy</span>
-                <span class="n">cost</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;oneTimeFee&#39;</span><span class="p">])</span>
-                <span class="k">if</span> <span class="s1">&#39;hostName&#39;</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
-                    <span class="n">fqdn</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%s</span><span class="s2"> $</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;hostName&#39;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;domainName&#39;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> <span class="n">cost</span><span class="p">)</span>
-                    <span class="n">servers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fqdn</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">item</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - $</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> <span class="n">cost</span><span class="p">)</span>
-                    <span class="n">everything_else</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-                <span class="n">total_cost</span> <span class="o">=</span> <span class="n">total_cost</span> <span class="o">+</span> <span class="n">cost</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">user</span> <span class="p">,</span> <span class="n">total_cost</span><span class="p">))</span>
-            <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">server</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">thing</span> <span class="ow">in</span> <span class="n">everything_else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">thing</span><span class="p">)</span>
-
-
-    <span class="k">def</span> <span class="nf">upcoming_hourly</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">    Filters upcoming billing items for only hourly WITH a hostname that contains the string &#39;test&#39;
-</span><span class="s2">    Each hourly server will also have some children that need to be added for the total cost, those are included with the nonZeroNextInvoiceChildren property
-</span><span class="s2">    NOTE: 
-</span><span class="s2">    ObjectMask starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_item
-</span><span class="s2">    ObjectFilter starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account
-</span><span class="s2">    hourlyFlag needs to be 1 or 0.
-</span><span class="s2">
-</span><span class="s2">    &#34;&#34;&#34;</span>
-        <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[hourlyFlag,nonZeroNextInvoiceChildren]&#34;</span>
-        <span class="n">objectFilter</span> <span class="o">=</span>  <span class="p">{</span>
-            <span class="s1">&#39;nextInvoiceTopLevelBillingItems&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;hourlyFlag&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
-                <span class="s1">&#39;hostName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;*= test&#39;</span><span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="n">billingItems</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNextInvoiceTopLevelBillingItems</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">objectFilter</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;ItemID</span><span class="se">\t</span><span class="s2">Info</span><span class="se">\t</span><span class="s2">Host</span><span class="se">\t</span><span class="s2">Domain</span><span class="se">\t</span><span class="s2">Hours</span><span class="se">\t</span><span class="s2">Hourly Cost</span><span class="se">\t</span><span class="s2">Cost&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">billingItems</span><span class="p">:</span>
-            <span class="n">itemId</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-            <span class="n">hostName</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;hostName&#39;</span><span class="p">]</span>
-            <span class="n">domainName</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;domainName&#39;</span><span class="p">]</span>
-            <span class="n">description</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span>
-            <span class="n">hours</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;hoursUsed&#39;</span><span class="p">]</span>
-            <span class="n">hourly_cost</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
-            <span class="n">cost</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hours</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">hourly_cost</span><span class="p">)</span>
-            <span class="n">total_cost</span> <span class="o">=</span> <span class="n">cost</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">itemId</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">hostName</span><span class="p">,</span><span class="n">domainName</span><span class="p">,</span> <span class="n">hours</span><span class="p">,</span> <span class="n">hourly_cost</span><span class="p">,</span> <span class="n">cost</span> <span class="p">))</span>
-            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;nonZeroNextInvoiceChildren&#39;</span><span class="p">]:</span>
-                <span class="n">childId</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-                <span class="n">childDesc</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span>
-                <span class="n">childCost</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;hoursUsed&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">])</span>
-                <span class="n">total_cost</span> <span class="o">=</span> <span class="n">total_cost</span> <span class="o">+</span> <span class="n">childCost</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;==&gt; </span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">childId</span><span class="p">,</span><span class="n">childDesc</span><span class="p">,</span><span class="n">childCost</span><span class="p">))</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;TOTAL: </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">total_cost</span><span class="p">))</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">bills</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">billsByUser</span><span class="p">()</span>
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">chris-cde - 840.0
+</span></span><span class="line"><span class="cl">    123.cdetesting.com : Dual Intel Xeon E5-2620 v3 <span class="o">(</span><span class="m">12</span> Cores, 2.40 GHz<span class="o">)</span> <span class="nv">$345</span>.0
+</span></span><span class="line"><span class="cl">    234.cdetesting.com : Dual Intel Xeon E5-2620 v3 <span class="o">(</span><span class="m">12</span> Cores, 2.40 GHz<span class="o">)</span> <span class="nv">$495</span>.0
+</span></span><span class="line"><span class="cl">    chris.testing.com : <span class="m">2</span> x 2.0 GHz Cores <span class="nv">$0</span>.0
+</span></span><span class="line"><span class="cl">    <span class="m">4</span> Portable Private IP Addresses - <span class="nv">$0</span>.0
+</span></span><span class="line"><span class="cl">    <span class="m">8</span> Portable Private IP Addresses - <span class="nv">$0</span>.0
+</span></span></code></pre></div><p>Example Output of upcoming_hourly()</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ItemID  Info    Host    Domain  Hours   Hourly Cost Cost
+</span></span><span class="line"><span class="cl"><span class="m">143131173</span>   Dual Intel Xeon E5-2620 v3 <span class="o">(</span><span class="m">12</span> Cores, 2.40 GHz<span class="o">)</span> jd-cos-testing-sjc03    secore.com  <span class="m">489</span> .309    151.101
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; <span class="m">143131179</span>   <span class="m">64</span> GB RAM   291.933
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; <span class="m">143131183</span>   1.00 TB SATA    17.604
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; <span class="m">143131185</span>   1.00 TB SATA    17.604
+</span></span><span class="line"><span class="cl"><span class="o">==</span>&gt; <span class="m">143131189</span>   <span class="m">10</span> Gbps Dual Public <span class="p">&amp;</span> Private Network Uplinks <span class="o">(</span>Unbonded<span class="o">)</span>    147.189
+</span></span><span class="line"><span class="cl">TOTAL: 625.431
+</span></span></code></pre></div><p>Source</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">@author Christopher Gallo
+</span></span></span><span class="line"><span class="cl"><span class="s2">Goes through the next invoice. Collections billing items by the user that orderd them.
+</span></span></span><span class="line"><span class="cl"><span class="s2">Prints out each user and how much they caused in billing, along with what they ordered.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">bills</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">mgr</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">VSManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">billsByUser</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Not all billing items have a user record, these are collected under the master account
+</span></span></span><span class="line"><span class="cl"><span class="s2">        http://sldn.softlayer.com/reference/services/SoftLayer_Account/getNextInvoiceTopLevelBillingItems returns
+</span></span></span><span class="line"><span class="cl"><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item -&gt; taps orderItem for
+</span></span></span><span class="line"><span class="cl"><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order_Item -&gt; taps order for 
+</span></span></span><span class="line"><span class="cl"><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Order -&gt; taps userRecord for
+</span></span></span><span class="line"><span class="cl"><span class="s2">        http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[orderItem[order[id,userRecord[displayName,username]]]]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">billingItems</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNextInvoiceTopLevelBillingItems</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">users</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;masterUser&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">billingItems</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="s1">&#39;orderItem&#39;</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">username</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;orderItem&#39;</span><span class="p">][</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;userRecord&#39;</span><span class="p">][</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="k">del</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;orderItem&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">username</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">users</span><span class="p">[</span><span class="n">username</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">                <span class="n">users</span><span class="p">[</span><span class="n">username</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">users</span><span class="p">[</span><span class="s1">&#39;masterUser&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># prints everything out, and finds the sum of items.</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">servers</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">everything_else</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">total_cost</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">users</span><span class="p">[</span><span class="n">user</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="c1"># this doens&#39;t include Tax fees, or setup fees because I&#39;m lazy</span>
+</span></span><span class="line"><span class="cl">                <span class="n">cost</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;oneTimeFee&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="s1">&#39;hostName&#39;</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">fqdn</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%s</span><span class="s2"> $</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;hostName&#39;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;domainName&#39;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> <span class="n">cost</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">servers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fqdn</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">item</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - $</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> <span class="n">cost</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">everything_else</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="n">total_cost</span> <span class="o">=</span> <span class="n">total_cost</span> <span class="o">+</span> <span class="n">cost</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">user</span> <span class="p">,</span> <span class="n">total_cost</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">server</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">thing</span> <span class="ow">in</span> <span class="n">everything_else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">thing</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">upcoming_hourly</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Filters upcoming billing items for only hourly WITH a hostname that contains the string &#39;test&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Each hourly server will also have some children that need to be added for the total cost, those are included with the nonZeroNextInvoiceChildren property
+</span></span></span><span class="line"><span class="cl"><span class="s2">    NOTE: 
+</span></span></span><span class="line"><span class="cl"><span class="s2">    ObjectMask starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_item
+</span></span></span><span class="line"><span class="cl"><span class="s2">    ObjectFilter starts at http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account
+</span></span></span><span class="line"><span class="cl"><span class="s2">    hourlyFlag needs to be 1 or 0.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[hourlyFlag,nonZeroNextInvoiceChildren]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">objectFilter</span> <span class="o">=</span>  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;nextInvoiceTopLevelBillingItems&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;hourlyFlag&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;hostName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;*= test&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">billingItems</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNextInvoiceTopLevelBillingItems</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">objectFilter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;ItemID</span><span class="se">\t</span><span class="s2">Info</span><span class="se">\t</span><span class="s2">Host</span><span class="se">\t</span><span class="s2">Domain</span><span class="se">\t</span><span class="s2">Hours</span><span class="se">\t</span><span class="s2">Hourly Cost</span><span class="se">\t</span><span class="s2">Cost&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">billingItems</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">itemId</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hostName</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;hostName&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">domainName</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;domainName&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">description</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hours</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;hoursUsed&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hourly_cost</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">cost</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hours</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">hourly_cost</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">total_cost</span> <span class="o">=</span> <span class="n">cost</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">itemId</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">hostName</span><span class="p">,</span><span class="n">domainName</span><span class="p">,</span> <span class="n">hours</span><span class="p">,</span> <span class="n">hourly_cost</span><span class="p">,</span> <span class="n">cost</span> <span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;nonZeroNextInvoiceChildren&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">childId</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="n">childDesc</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="n">childCost</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;hoursUsed&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;hourlyRecurringFee&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">total_cost</span> <span class="o">=</span> <span class="n">total_cost</span> <span class="o">+</span> <span class="n">childCost</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;==&gt; </span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="se">\t</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">childId</span><span class="p">,</span><span class="n">childDesc</span><span class="p">,</span><span class="n">childCost</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;TOTAL: </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">total_cost</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">bills</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">billsByUser</span><span class="p">()</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

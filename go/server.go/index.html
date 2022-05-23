@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -161,579 +157,578 @@ if (!doNotTrack) {
                 
 				
                 <p>A few examples on interacting with Bare Metal Server, <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/">SoftLayer_Hardware_Server</a>.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;fmt&#34;</span>
-
-	<span class="s">&#34;github.com/IBM-Cloud/ibm-cloud-cli-sdk/bluemix/terminal&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="c1">// Session created using values set in the environment, or from the local configuration file (i.e. ~/.softlayer).
-</span><span class="c1"></span><span class="kd">var</span> <span class="nx">sess</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-
-<span class="kd">type</span> <span class="nx">Dictionary</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// Shows all servers in the account.
-</span><span class="c1"></span>	<span class="nf">listServers</span><span class="p">()</span>
-
-	<span class="c1">// Shows all available packages to order/create a Bare Metal server.
-</span><span class="c1"></span>	<span class="nf">listServerPackages</span><span class="p">()</span>
-
-	<span class="c1">// Shows just fast provision packages to order/create a Bare Metal server.
-</span><span class="c1"></span>	<span class="nf">listServerPackagesFastProvision</span><span class="p">()</span>
-
-	<span class="c1">// Shows available locations for the package and the items within the package.
-</span><span class="c1"></span>	<span class="nx">packageKeyname</span> <span class="o">:=</span> <span class="s">&#34;DUAL_E52600_V4_12_DRIVES&#34;</span>
-	<span class="nf">listPackageDetails</span><span class="p">(</span><span class="nx">packageKeyname</span><span class="p">)</span>
-
-	<span class="c1">// Function to create a hardware server, it contains an example that could use as a template,
-</span><span class="c1"></span>	<span class="c1">// so changing the values within the example we can order a different server,
-</span><span class="c1"></span>	<span class="c1">// the functions provided above,
-</span><span class="c1"></span>	<span class="c1">// helps to get all available values to build an order for Bare Metal Server.
-</span><span class="c1"></span>	<span class="nf">serverCreate</span><span class="p">()</span>
-
-	<span class="c1">//Shows some details for a Bare Metal Server.
-</span><span class="c1"></span>	<span class="nx">hostname</span> <span class="o">:=</span> <span class="s">&#34;server-hostname&#34;</span>
-	<span class="nf">serverDetails</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
-
-	<span class="c1">// Edit some parameters for a server, just uncomment hostname and domain if you want to update them.
-</span><span class="c1"></span>	<span class="nx">paramsToEdit</span> <span class="o">:=</span> <span class="nx">Dictionary</span><span class="p">{</span>
-		<span class="s">&#34;Notes&#34;</span><span class="p">:</span> <span class="s">&#34;My golang note&#34;</span><span class="p">,</span>
-		<span class="c1">//&#34;Hostaname&#34;: &#34;NewHostname&#34;,
-</span><span class="c1"></span>		<span class="c1">//&#34;Domain&#34;: &#34;NewDomain&#34;,
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="nx">hostname</span> <span class="p">=</span> <span class="s">&#34;server-hostname&#34;</span>
-	<span class="nf">editServer</span><span class="p">(</span><span class="nx">hostname</span><span class="p">,</span> <span class="nx">paramsToEdit</span><span class="p">)</span>
-
-	<span class="c1">// Cancel a bare metal server.
-</span><span class="c1"></span>	<span class="c1">// To make sure the server specified to cancel is the one you want
-</span><span class="c1"></span>	<span class="c1">// verify that the identifier passed to cancelServer is correct.
-</span><span class="c1"></span>	<span class="nx">hostname</span> <span class="p">=</span> <span class="s">&#34;server-hostname-to-cancel&#34;</span>
-	<span class="nx">serverId</span> <span class="o">:=</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
-	<span class="nf">cancelServer</span><span class="p">(</span><span class="nx">serverId</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Creates a hardware server, it contains an example to build an order for a Bare Metal Server.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">serverCreate</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="nx">quantity</span> <span class="o">:=</span> <span class="mi">1</span>
-	<span class="nx">location</span> <span class="o">:=</span> <span class="s">&#34;TORONTO&#34;</span>
-
-	<span class="c1">// listServerPackages() shows all available package IDs as well as their key names.
-</span><span class="c1"></span>	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">553</span>
-	<span class="nx">hostname</span> <span class="o">:=</span> <span class="s">&#34;test&#34;</span>
-	<span class="nx">domain</span> <span class="o">:=</span> <span class="s">&#34;example.com&#34;</span>
-
-	<span class="nx">server</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware</span><span class="p">{</span>
-		<span class="p">{</span>
-			<span class="nx">Hostname</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">hostname</span><span class="p">),</span>
-			<span class="nx">Domain</span><span class="p">:</span>   <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">domain</span><span class="p">),</span>
-		<span class="p">},</span>
-	<span class="p">}</span>
-
-	<span class="nx">required_items</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
-		<span class="s">&#34;AUTOMATED_NOTIFICATION&#34;</span><span class="p">,</span>
-		<span class="s">&#34;MONITORING_HOST_PING&#34;</span><span class="p">,</span>
-		<span class="s">&#34;NOTIFICATION_EMAIL_AND_TICKET&#34;</span><span class="p">,</span>
-		<span class="s">&#34;REBOOT_KVM_OVER_IP&#34;</span><span class="p">,</span>
-		<span class="s">&#34;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#34;</span><span class="p">,</span>
-		<span class="s">&#34;REDUNDANT_POWER_SUPPLY&#34;</span><span class="p">,</span>
-	<span class="p">}</span>
-	<span class="c1">//We need bandwidth, at least 1 ip, and the port speed.
-</span><span class="c1"></span>	<span class="nx">network_items</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
-		<span class="s">&#34;BANDWIDTH_500_GB&#34;</span><span class="p">,</span>
-		<span class="s">&#34;1_IP_ADDRESS&#34;</span><span class="p">,</span>
-		<span class="s">&#34;1_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED&#34;</span><span class="p">,</span>
-	<span class="p">}</span>
-	<span class="c1">//A disk controller, a duplicate entry for each disk you want, in order, ram, OS and processor chip.
-</span><span class="c1"></span>	<span class="nx">physical_items</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
-		<span class="s">&#34;DISK_CONTROLLER_RAID&#34;</span><span class="p">,</span>
-		<span class="s">&#34;HARD_DRIVE_2_00_TB_SATA_2&#34;</span><span class="p">,</span>
-		<span class="s">&#34;HARD_DRIVE_2_00_TB_SATA_2&#34;</span><span class="p">,</span>
-		<span class="s">&#34;HARD_DRIVE_2_00_TB_SATA_2&#34;</span><span class="p">,</span>
-		<span class="s">&#34;HARD_DRIVE_12_00_TB_SATA&#34;</span><span class="p">,</span>
-		<span class="s">&#34;RAM_64_GB_DDR4_2133_ECC_NON_REG&#34;</span><span class="p">,</span>
-		<span class="s">&#34;OS_CENTOS_7_X_64_BIT&#34;</span><span class="p">,</span>
-		<span class="s">&#34;INTEL_INTEL_XEON_E52620_V4_2_10&#34;</span><span class="p">,</span>
-		<span class="s">&#34;HARD_DRIVE_NVME_375_GB_PCIE&#34;</span><span class="p">,</span>
-	<span class="p">}</span>
-
-	<span class="nx">orderItems</span> <span class="o">:=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">network_items</span><span class="p">,</span> <span class="nx">required_items</span><span class="o">...</span><span class="p">)</span>
-	<span class="nx">orderItems</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">orderItems</span><span class="p">,</span> <span class="nx">physical_items</span><span class="o">...</span><span class="p">)</span>
-	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects.
-</span><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="nf">getItemPriceList</span><span class="p">(</span><span class="nx">packageId</span><span class="p">,</span> <span class="nx">orderItems</span><span class="p">)</span>
-
-	<span class="c1">// Build a container_Product_Order object.
-</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span><span class="p">{</span>
-		<span class="nx">Quantity</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-		<span class="nx">Location</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
-		<span class="nx">PackageId</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-		<span class="nx">Prices</span><span class="p">:</span>    <span class="nx">prices</span><span class="p">,</span>
-		<span class="nx">Hardware</span><span class="p">:</span>  <span class="nx">server</span><span class="p">,</span>
-	<span class="p">}</span>
-	<span class="c1">// Get SoftLayer_Product_Order service.
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="cm">/* Use verifyOrder() method to check for errors.
-</span><span class="cm">	   Replace this with placeOrder() when you are ready to order.
-</span><span class="cm">	*/</span>
-	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Converts a list of item keyNames to a list of standard item prices,
-</span><span class="cm">given package associated with the prices and a list of items KeyNames.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getItemPriceList</span><span class="p">(</span><span class="nx">packageId</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">itemKeyNames</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">)</span> <span class="p">{</span>
-
-	<span class="nx">items</span> <span class="o">:=</span> <span class="nf">getPackageItems</span><span class="p">(</span><span class="nx">packageId</span><span class="p">)</span>
-	<span class="kd">var</span> <span class="nx">prices</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span>
-
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">itemKeyName</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">itemKeyNames</span> <span class="p">{</span>
-		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
-			<span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="nx">item</span><span class="p">.</span><span class="nx">KeyName</span><span class="p">)</span> <span class="o">==</span> <span class="nx">itemKeyName</span> <span class="p">{</span>
-				<span class="nx">itemPrice</span> <span class="o">:=</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
-				<span class="nx">prices</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">prices</span><span class="p">,</span> <span class="nx">itemPrice</span><span class="p">)</span>
-				<span class="k">break</span>
-
-			<span class="p">}</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="nx">prices</span>
-<span class="p">}</span>
-
-<span class="c1">//Gets the items for the given package identifier.
-</span><span class="c1"></span><span class="kd">func</span> <span class="nf">getPackageItems</span><span class="p">(</span><span class="nx">packageId</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">{</span>
-	<span class="kd">var</span> <span class="nx">mask</span> <span class="p">=</span> <span class="s">&#34;id, itemCategory, keyName,&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;prices[id, hourlyRecurringFee, recurringFee, categories]&#34;</span>
-	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">packageId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetItems</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Items:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="nx">receipt</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the items and locations available in the given package
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">listPackageDetails</span><span class="p">(</span><span class="nx">keyname</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
-
-	<span class="c1">// Get SoftLayer_Product_Package service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span>
-		<span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;keyName&#34;</span><span class="p">).</span>
-			<span class="nf">Eq</span><span class="p">(</span><span class="nx">keyname</span><span class="p">),</span>
-	<span class="p">)</span>
-	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id, keyName, description, regions,&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;items[id, keyName, description,&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;prices[hourlyRecurringFee, recurringFee,&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;capacityRestrictionMaximum, capacityRestrictionMinimum, capacityRestrictionType]]&#34;</span>
-	<span class="c1">// Call the method SoftLayer_Product_Package:getAllObjects
-</span><span class="c1"></span>	<span class="nx">packages</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetAllObjects</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nx">productPackage</span> <span class="o">:=</span> <span class="nx">packages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-	<span class="nf">printLocations</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">)</span>
-	<span class="nf">printItemsDetails</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">Items</span><span class="p">)</span>
-
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the locations for a Product_Package.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printLocations</span><span class="p">(</span><span class="nx">packageInstance</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Package</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
-		<span class="s">&#34;Locations&#34;</span><span class="p">,</span>
-	<span class="p">}</span>
-	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
-	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">region</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">packageInstance</span><span class="p">.</span><span class="nx">Regions</span> <span class="p">{</span>
-		<span class="nx">keyname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">region</span><span class="p">.</span><span class="nx">Keyname</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">keyname</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;List of Locations&#34;</span><span class="p">)</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints a list of product items.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printItemsDetails</span><span class="p">(</span><span class="nx">items</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
-		<span class="s">&#34;Keyname&#34;</span><span class="p">,</span>
-		<span class="s">&#34;restriction _ minimum _ maximum&#34;</span><span class="p">,</span>
-		<span class="s">&#34;standard_monthly_price&#34;</span><span class="p">,</span>
-		<span class="s">&#34;standard_hourly_price&#34;</span><span class="p">,</span>
-	<span class="p">}</span>
-	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
-	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
-		<span class="nx">itemPrice</span> <span class="o">:=</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
-		<span class="nx">keyname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">KeyName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">capacityRestrictionType</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">CapacityRestrictionType</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">capacityRestrictionMinimum</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">CapacityRestrictionMinimum</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">capacityRestrictionMaximum</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">CapacityRestrictionMaximum</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">restriction</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%s _ %s _ %s&#34;</span><span class="p">,</span>
-			<span class="nx">capacityRestrictionType</span><span class="p">,</span>
-			<span class="nx">capacityRestrictionMinimum</span><span class="p">,</span>
-			<span class="nx">capacityRestrictionMaximum</span><span class="p">)</span>
-		<span class="nx">hourly</span> <span class="o">:=</span> <span class="kc">true</span>
-		<span class="nx">hourlyPrice</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nf">getFee</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">hourly</span><span class="p">)).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">hourly</span> <span class="p">=</span> <span class="kc">false</span>
-		<span class="nx">monthlyPrice</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nf">getFee</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">hourly</span><span class="p">)).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">keyname</span><span class="p">,</span> <span class="nx">restriction</span><span class="p">,</span> <span class="nx">monthlyPrice</span><span class="p">,</span> <span class="nx">hourlyPrice</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;List of product items&#34;</span><span class="p">)</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Gets the HourlyRecurringFee or monthly RecurringFee from a Product_Item_Price.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getFee</span><span class="p">(</span><span class="nx">item</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">,</span> <span class="nx">hourlyPriceFlag</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
-
-	<span class="nx">itemPrice</span> <span class="o">:=</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
-
-	<span class="k">if</span> <span class="nx">itemPrice</span><span class="p">.</span><span class="nx">HourlyRecurringFee</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">hourlyPriceFlag</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%.2f&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">HourlyRecurringFee</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="k">if</span> <span class="nx">itemPrice</span><span class="p">.</span><span class="nx">RecurringFee</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">hourlyPriceFlag</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%.2f&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">RecurringFee</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="s">&#34;_&#34;</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Gets the standard Price from an item.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">)</span> <span class="p">{</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">itemPrice</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">item</span><span class="p">.</span><span class="nx">Prices</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">itemPrice</span><span class="p">.</span><span class="nx">LocationGroupId</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="k">return</span> <span class="nx">itemPrice</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{}</span>
-
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the servers in the account.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">listServers</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// Get SoftLayer_Account service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Object-Mask in order to get specific data of server.
-</span><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;hostname;primaryIpAddress;primaryBackendIpAddress;datacenter;&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;datacenterName;serviceProvider;hardwareFunctionDescription&#34;</span>
-
-	<span class="c1">// Call the getHardware() method.
-</span><span class="c1"></span>	<span class="nx">hardware</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetHardware</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Bare Metal Servers:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nf">printServers</span><span class="p">(</span><span class="nx">hardware</span><span class="p">)</span>
-
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints a list of servers
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printServers</span><span class="p">(</span><span class="nx">servers</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">,</span> <span class="s">&#34;hostname&#34;</span><span class="p">,</span> <span class="s">&#34;primary_ip&#34;</span><span class="p">,</span> <span class="s">&#34;backend_ip&#34;</span><span class="p">,</span> <span class="s">&#34;datacenter&#34;</span><span class="p">}</span>
-	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
-	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">server</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">servers</span> <span class="p">{</span>
-		<span class="nx">serverId</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="nx">server</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
-		<span class="nx">hostname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">primaryIp</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">backendIp</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryBackendIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">datacenter</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">DatacenterName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">serverId</span><span class="p">,</span> <span class="nx">hostname</span><span class="p">,</span> <span class="nx">primaryIp</span><span class="p">,</span> <span class="nx">backendIp</span><span class="p">,</span> <span class="nx">datacenter</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;List of Servers&#34;</span><span class="p">)</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the available Bare Metal Servers packages.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">listServerPackages</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// Get SoftLayer_Product_Package_Server service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// To get all packages of servers available for ordering, we will use the following filter.
-</span><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span>
-		<span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;packageType&#34;</span><span class="p">).</span>
-			<span class="nf">In</span><span class="p">(</span><span class="s">&#34;BARE_METAL_CORE&#34;</span><span class="p">,</span> <span class="s">&#34;BARE_METAL_CPU&#34;</span><span class="p">,</span> <span class="s">&#34;BARE_METAL_CPU_FAST_PROVISION&#34;</span><span class="p">),</span>
-	<span class="p">)</span>
-	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;package&#34;</span>
-	<span class="c1">// Call the method SoftLayer_Product_Package_Server::getAllObjects
-</span><span class="c1"></span>	<span class="nx">productPackageServes</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetAllObjects</span><span class="p">()</span>
-	<span class="c1">//productPackageServes, err := service.GetAllObjects()
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nf">printPackageDetails</span><span class="p">(</span><span class="nx">productPackageServes</span><span class="p">)</span>
-
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the available Bare Metal Servers packages BARE_METAL_CPU_FAST_PROVISION type.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">listServerPackagesFastProvision</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// Get SoftLayer_Product_Package_Server service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// In order to get all &#39;BARE_METAL_CPU_FAST_PROVISION&#39; servers to order we will use the following filter
-</span><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span>
-		<span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;packageType&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="s">&#34;BARE_METAL_CPU_FAST_PROVISION&#34;</span><span class="p">),</span>
-	<span class="p">)</span>
-
-	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;package&#34;</span>
-	<span class="c1">// Call the method SoftLayer_Product_Package_Server::getAllObjects
-</span><span class="c1"></span>	<span class="nx">productPackageServes</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetAllObjects</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nf">printPackageDetails</span><span class="p">(</span><span class="nx">productPackageServes</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the package details.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printPackageDetails</span><span class="p">(</span><span class="nx">productPackages</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Package_Server</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">,</span> <span class="s">&#34;keyname&#34;</span><span class="p">,</span> <span class="s">&#34;description&#34;</span><span class="p">}</span>
-	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
-	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">productPackage</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">productPackages</span> <span class="p">{</span>
-		<span class="nx">id</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">PackageId</span><span class="p">)</span>
-		<span class="nx">keyname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">Package</span><span class="p">.</span><span class="nx">KeyName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-		<span class="nx">name</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">ProductName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
-
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">keyname</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;Package details&#34;</span><span class="p">)</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Edit note, hostname, and domain of a hardware server
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">editServer</span><span class="p">(</span><span class="nx">serverName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">params</span> <span class="nx">Dictionary</span><span class="p">)</span> <span class="p">{</span>
-
-	<span class="c1">// Define the new local properties to set. While we&#39;re only editing a server&#39;s notes
-</span><span class="c1"></span>	<span class="c1">// in this example you can also use editObject() to edit the server&#39;s hostname and domain.
-</span><span class="c1"></span>	<span class="nx">objectTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware_Server</span><span class="p">{}</span>
-
-	<span class="k">if</span> <span class="nx">notes</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">params</span><span class="p">[</span><span class="s">&#34;Notes&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-		<span class="nx">objectTemplate</span><span class="p">.</span><span class="nx">Notes</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">notes</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="k">if</span> <span class="nx">hostname</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">params</span><span class="p">[</span><span class="s">&#34;Hostname&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-		<span class="nx">objectTemplate</span><span class="p">.</span><span class="nx">Notes</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="k">if</span> <span class="nx">domain</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">params</span><span class="p">[</span><span class="s">&#34;Domain&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-		<span class="nx">objectTemplate</span><span class="p">.</span><span class="nx">Notes</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">domain</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="nx">hardwareService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetHardwareServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">serverId</span> <span class="o">:=</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">serverName</span><span class="p">)</span>
-
-	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">hardwareService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">serverId</span><span class="p">).</span><span class="nf">EditObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">objectTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to edit the server &#39;&#34;</span><span class="o">+</span><span class="nx">serverName</span><span class="o">+</span><span class="s">&#34;&#39;\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="k">if</span> <span class="nx">result</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Server &#39;%s&#39; was successfuly edited\n&#34;</span><span class="p">,</span> <span class="nx">serverName</span><span class="p">)</span>
-		<span class="nf">serverDetails</span><span class="p">(</span><span class="nx">serverId</span><span class="p">)</span>
-	<span class="p">}</span>
-
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints server details by server identifier
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">serverDetails</span><span class="p">(</span><span class="nx">identifier</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
-	<span class="nx">serverId</span> <span class="o">:=</span> <span class="mi">0</span>
-	<span class="k">switch</span> <span class="nx">identifier</span> <span class="o">:=</span> <span class="nx">identifier</span><span class="p">.(</span><span class="kd">type</span><span class="p">)</span> <span class="p">{</span>
-	<span class="k">case</span> <span class="kt">int</span><span class="p">:</span>
-		<span class="nx">serverId</span> <span class="p">=</span> <span class="nx">identifier</span>
-	<span class="k">case</span> <span class="kt">string</span><span class="p">:</span>
-		<span class="nx">hostname</span> <span class="o">:=</span> <span class="nx">identifier</span>
-		<span class="nx">serverId</span> <span class="p">=</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id, hostname, domain, globalIdentifier, fullyQualifiedDomainName, hardwareStatus,&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;processorPhysicalCoreAmount, memoryCapacity, primaryBackendIpAddress, primaryIpAddress,&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;networkManagementIpAddress, datacenter,&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;operatingSystem[softwareLicense[softwareDescription[manufacturer, name, version, referenceCode]]],&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;billingItem[id, nextInvoiceTotalRecurringAmount, children[nextInvoiceTotalRecurringAmount],&#34;</span> <span class="o">+</span>
-		<span class="s">&#34;orderItem.order.userRecord[username]], tagReferences[id, tag[name, id]], notes&#34;</span>
-
-	<span class="nx">server</span> <span class="o">:=</span> <span class="nf">getServerIntance</span><span class="p">(</span><span class="nx">serverId</span><span class="p">,</span> <span class="nx">mask</span><span class="p">)</span>
-	<span class="nf">printServerDetail</span><span class="p">(</span><span class="nx">server</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Gets the identifier of a server from the hostname.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">hostname</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">accountService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="c1">// Following filter and mask helps to get the ID of bare metal server
-</span><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;hardware.hostname&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">hostname</span><span class="p">))</span>
-	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;hostname&#34;</span>
-
-	<span class="c1">// Call the getHardware() method to get list of servers that matches with the filter
-</span><span class="c1"></span>	<span class="nx">hardware</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">accountService</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetHardware</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to find server &#39;&#34;</span><span class="o">+</span><span class="nx">hostname</span><span class="o">+</span><span class="s">&#34;&#39;\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// If server name was not found we throw a message
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">hardware</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to find server &#39;%s&#39;\n&#34;</span><span class="p">,</span> <span class="nx">hostname</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="o">*</span><span class="nx">hardware</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints server details
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printServerDetail</span><span class="p">(</span><span class="nx">server</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware_Server</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;Name&#34;</span><span class="p">,</span> <span class="s">&#34;Value&#34;</span><span class="p">}</span>
-	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
-	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;ID&#34;</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">Id</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;GUID&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">GlobalIdentifier</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Hostname&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Domain&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Domain</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;FQDN&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">FullyQualifiedDomainName</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">HardwareStatus</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Status&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">HardwareStatus</span><span class="p">.</span><span class="nx">Status</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="p">}</span>
-	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">Datacenter</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Datacenter&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Datacenter</span><span class="p">.</span><span class="nx">Name</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="p">}</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;CPU cores&#34;</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">ProcessorPhysicalCoreAmount</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Memory&#34;</span><span class="p">,</span> <span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">MemoryCapacity</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#34;GB&#34;</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Public IP&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Private IP&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryBackendIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;IPMI IP&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">NetworkManagementIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span>
-		<span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span>
-		<span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span><span class="p">.</span><span class="nx">SoftwareDescription</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;OS&#34;</span><span class="p">,</span>
-			<span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span><span class="p">.</span><span class="nx">SoftwareDescription</span><span class="p">.</span><span class="nx">Name</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;OS version&#34;</span><span class="p">,</span>
-			<span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span><span class="p">.</span><span class="nx">SoftwareDescription</span><span class="p">.</span><span class="nx">Version</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="p">}</span>
-	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">Notes</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">Notes</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
-		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Note&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Notes</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
-	<span class="p">}</span>
-	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;Server details&#34;</span><span class="p">)</span>
-	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the data as format JSON.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">data</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
-	<span class="nx">jsonData</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;    &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nb">println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonData</span><span class="p">))</span>
-<span class="p">}</span>
-
-<span class="cm">/*
-</span><span class="cm">Cancel a bare metal server.
-</span><span class="cm">The server will be canceled immediately if it is billed Hourly,
-</span><span class="cm">for the Monthly server, the cancellation will be made after the next bill date.
-</span><span class="cm">*/</span>
-
-<span class="kd">func</span> <span class="nf">cancelServer</span><span class="p">(</span><span class="nx">serverId</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
-
-	<span class="c1">// In order to cancel billing item of server we need to set following values
-</span><span class="c1"></span>	<span class="nx">cancelAssociatedBillingItems</span> <span class="o">:=</span> <span class="kc">false</span>
-	<span class="nx">reason</span> <span class="o">:=</span> <span class="s">&#34;No longer needed&#34;</span>
-	<span class="nx">customerNote</span> <span class="o">:=</span> <span class="s">&#34;BMS - canceled&#34;</span>
-
-	<span class="c1">// Get SoftLayer_Billing_Item service
-</span><span class="c1"></span>	<span class="nx">billingService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingItemService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;hostname;billingItem;hourlyBillingFlag&#34;</span>
-	<span class="nx">server</span> <span class="o">:=</span> <span class="nf">getServerIntance</span><span class="p">(</span><span class="nx">serverId</span><span class="p">,</span> <span class="nx">mask</span><span class="p">)</span>
-
-	<span class="c1">// If server is billed hourly it will be canceled immediately, for monthly server
-</span><span class="c1"></span>	<span class="c1">// the cancellation will be made after next bill date.
-</span><span class="c1"></span>	<span class="nx">cancelImmediately</span> <span class="o">:=</span> <span class="nx">server</span><span class="p">.</span><span class="nx">HourlyBillingFlag</span>
-
-	<span class="c1">// Call the cancelItem() method in order to cancel the bare metal server
-</span><span class="c1"></span>	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">billingService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">BillingItem</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">CancelItem</span><span class="p">(</span><span class="nx">cancelImmediately</span><span class="p">,</span>
-		<span class="o">&amp;</span><span class="nx">cancelAssociatedBillingItems</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">reason</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">customerNote</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to cancel the server &#39;%d&#39; \n - %s\n&#34;</span><span class="p">,</span> <span class="nx">serverId</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Print final result
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">result</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Server &#39;%d&#39; was successfuly cancelled\n&#34;</span><span class="p">,</span> <span class="nx">serverId</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Server &#39;%d&#39; could not be cancelled\n&#34;</span><span class="p">,</span> <span class="nx">serverId</span><span class="p">)</span>
-	<span class="p">}</span>
-
-<span class="p">}</span>
-
-<span class="c1">//Gets the server instance by identifier using a specific object mask.
-</span><span class="c1"></span><span class="kd">func</span> <span class="nf">getServerIntance</span><span class="p">(</span><span class="nx">serverId</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">mask</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware_Server</span><span class="p">)</span> <span class="p">{</span>
-
-	<span class="nx">hardwareService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetHardwareServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">server</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">hardwareService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">serverId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get server \n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="nx">server</span>
-
-<span class="p">}</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/IBM-Cloud/ibm-cloud-cli-sdk/bluemix/terminal&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Session created using values set in the environment, or from the local configuration file (i.e. ~/.softlayer).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="nx">sess</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Dictionary</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Shows all servers in the account.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">listServers</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Shows all available packages to order/create a Bare Metal server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">listServerPackages</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Shows just fast provision packages to order/create a Bare Metal server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">listServerPackagesFastProvision</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Shows available locations for the package and the items within the package.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">packageKeyname</span> <span class="o">:=</span> <span class="s">&#34;DUAL_E52600_V4_12_DRIVES&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">listPackageDetails</span><span class="p">(</span><span class="nx">packageKeyname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Function to create a hardware server, it contains an example that could use as a template,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// so changing the values within the example we can order a different server,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// the functions provided above,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// helps to get all available values to build an order for Bare Metal Server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">serverCreate</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//Shows some details for a Bare Metal Server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hostname</span> <span class="o">:=</span> <span class="s">&#34;server-hostname&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">serverDetails</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Edit some parameters for a server, just uncomment hostname and domain if you want to update them.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">paramsToEdit</span> <span class="o">:=</span> <span class="nx">Dictionary</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;Notes&#34;</span><span class="p">:</span> <span class="s">&#34;My golang note&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">//&#34;Hostaname&#34;: &#34;NewHostname&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">//&#34;Domain&#34;: &#34;NewDomain&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">hostname</span> <span class="p">=</span> <span class="s">&#34;server-hostname&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">editServer</span><span class="p">(</span><span class="nx">hostname</span><span class="p">,</span> <span class="nx">paramsToEdit</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Cancel a bare metal server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// To make sure the server specified to cancel is the one you want
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// verify that the identifier passed to cancelServer is correct.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hostname</span> <span class="p">=</span> <span class="s">&#34;server-hostname-to-cancel&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">serverId</span> <span class="o">:=</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">cancelServer</span><span class="p">(</span><span class="nx">serverId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Creates a hardware server, it contains an example to build an order for a Bare Metal Server.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">serverCreate</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">quantity</span> <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">location</span> <span class="o">:=</span> <span class="s">&#34;TORONTO&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// listServerPackages() shows all available package IDs as well as their key names.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">553</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">hostname</span> <span class="o">:=</span> <span class="s">&#34;test&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">domain</span> <span class="o">:=</span> <span class="s">&#34;example.com&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">server</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Hostname</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">hostname</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Domain</span><span class="p">:</span>   <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">domain</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">required_items</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;AUTOMATED_NOTIFICATION&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;MONITORING_HOST_PING&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;NOTIFICATION_EMAIL_AND_TICKET&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;REBOOT_KVM_OVER_IP&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;REDUNDANT_POWER_SUPPLY&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//We need bandwidth, at least 1 ip, and the port speed.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">network_items</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;BANDWIDTH_500_GB&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;1_IP_ADDRESS&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;1_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//A disk controller, a duplicate entry for each disk you want, in order, ram, OS and processor chip.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">physical_items</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;DISK_CONTROLLER_RAID&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;HARD_DRIVE_2_00_TB_SATA_2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;HARD_DRIVE_2_00_TB_SATA_2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;HARD_DRIVE_2_00_TB_SATA_2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;HARD_DRIVE_12_00_TB_SATA&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;RAM_64_GB_DDR4_2133_ECC_NON_REG&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;OS_CENTOS_7_X_64_BIT&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;INTEL_INTEL_XEON_E52620_V4_2_10&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;HARD_DRIVE_NVME_375_GB_PCIE&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">orderItems</span> <span class="o">:=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">network_items</span><span class="p">,</span> <span class="nx">required_items</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">orderItems</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">orderItems</span><span class="p">,</span> <span class="nx">physical_items</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="nf">getItemPriceList</span><span class="p">(</span><span class="nx">packageId</span><span class="p">,</span> <span class="nx">orderItems</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a container_Product_Order object.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Quantity</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Location</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">PackageId</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Prices</span><span class="p">:</span>    <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Hardware</span><span class="p">:</span>  <span class="nx">server</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Use verifyOrder() method to check for errors.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	   Replace this with placeOrder() when you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	*/</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Converts a list of item keyNames to a list of standard item prices,
+</span></span></span><span class="line"><span class="cl"><span class="cm">given package associated with the prices and a list of items KeyNames.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getItemPriceList</span><span class="p">(</span><span class="nx">packageId</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">itemKeyNames</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">items</span> <span class="o">:=</span> <span class="nf">getPackageItems</span><span class="p">(</span><span class="nx">packageId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">prices</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">itemKeyName</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">itemKeyNames</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="nx">item</span><span class="p">.</span><span class="nx">KeyName</span><span class="p">)</span> <span class="o">==</span> <span class="nx">itemKeyName</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">itemPrice</span> <span class="o">:=</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">prices</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">prices</span><span class="p">,</span> <span class="nx">itemPrice</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="k">break</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">prices</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//Gets the items for the given package identifier.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">getPackageItems</span><span class="p">(</span><span class="nx">packageId</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">mask</span> <span class="p">=</span> <span class="s">&#34;id, itemCategory, keyName,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;prices[id, hourlyRecurringFee, recurringFee, categories]&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">packageId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetItems</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Items:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">receipt</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the items and locations available in the given package
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">listPackageDetails</span><span class="p">(</span><span class="nx">keyname</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Package service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;keyName&#34;</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">			<span class="nf">Eq</span><span class="p">(</span><span class="nx">keyname</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id, keyName, description, regions,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;items[id, keyName, description,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;prices[hourlyRecurringFee, recurringFee,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;capacityRestrictionMaximum, capacityRestrictionMinimum, capacityRestrictionType]]&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call the method SoftLayer_Product_Package:getAllObjects
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">packages</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetAllObjects</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">productPackage</span> <span class="o">:=</span> <span class="nx">packages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printLocations</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printItemsDetails</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">Items</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the locations for a Product_Package.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printLocations</span><span class="p">(</span><span class="nx">packageInstance</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Package</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;Locations&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">region</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">packageInstance</span><span class="p">.</span><span class="nx">Regions</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">keyname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">region</span><span class="p">.</span><span class="nx">Keyname</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">keyname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;List of Locations&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints a list of product items.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printItemsDetails</span><span class="p">(</span><span class="nx">items</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;Keyname&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;restriction _ minimum _ maximum&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;standard_monthly_price&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;standard_hourly_price&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">itemPrice</span> <span class="o">:=</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">keyname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">KeyName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">capacityRestrictionType</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">CapacityRestrictionType</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">capacityRestrictionMinimum</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">CapacityRestrictionMinimum</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">capacityRestrictionMaximum</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">CapacityRestrictionMaximum</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">restriction</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%s _ %s _ %s&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">capacityRestrictionType</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">capacityRestrictionMinimum</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">capacityRestrictionMaximum</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">hourly</span> <span class="o">:=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">hourlyPrice</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nf">getFee</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">hourly</span><span class="p">)).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">hourly</span> <span class="p">=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">monthlyPrice</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nf">getFee</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">hourly</span><span class="p">)).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">keyname</span><span class="p">,</span> <span class="nx">restriction</span><span class="p">,</span> <span class="nx">monthlyPrice</span><span class="p">,</span> <span class="nx">hourlyPrice</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;List of product items&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Gets the HourlyRecurringFee or monthly RecurringFee from a Product_Item_Price.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getFee</span><span class="p">(</span><span class="nx">item</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">,</span> <span class="nx">hourlyPriceFlag</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">itemPrice</span> <span class="o">:=</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">itemPrice</span><span class="p">.</span><span class="nx">HourlyRecurringFee</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">hourlyPriceFlag</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%.2f&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">HourlyRecurringFee</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">itemPrice</span><span class="p">.</span><span class="nx">RecurringFee</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">hourlyPriceFlag</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%.2f&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">itemPrice</span><span class="p">.</span><span class="nx">RecurringFee</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="s">&#34;_&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Gets the standard Price from an item.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getStandardPrice</span><span class="p">(</span><span class="nx">item</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">itemPrice</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">item</span><span class="p">.</span><span class="nx">Prices</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">itemPrice</span><span class="p">.</span><span class="nx">LocationGroupId</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="nx">itemPrice</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the servers in the account.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">listServers</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Account service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Object-Mask in order to get specific data of server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;hostname;primaryIpAddress;primaryBackendIpAddress;datacenter;&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;datacenterName;serviceProvider;hardwareFunctionDescription&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call the getHardware() method.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hardware</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetHardware</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Bare Metal Servers:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printServers</span><span class="p">(</span><span class="nx">hardware</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints a list of servers
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printServers</span><span class="p">(</span><span class="nx">servers</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">,</span> <span class="s">&#34;hostname&#34;</span><span class="p">,</span> <span class="s">&#34;primary_ip&#34;</span><span class="p">,</span> <span class="s">&#34;backend_ip&#34;</span><span class="p">,</span> <span class="s">&#34;datacenter&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">server</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">servers</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">serverId</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="nx">server</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">hostname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">primaryIp</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">backendIp</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryBackendIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">datacenter</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">DatacenterName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">serverId</span><span class="p">,</span> <span class="nx">hostname</span><span class="p">,</span> <span class="nx">primaryIp</span><span class="p">,</span> <span class="nx">backendIp</span><span class="p">,</span> <span class="nx">datacenter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;List of Servers&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the available Bare Metal Servers packages.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">listServerPackages</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Package_Server service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// To get all packages of servers available for ordering, we will use the following filter.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;packageType&#34;</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">			<span class="nf">In</span><span class="p">(</span><span class="s">&#34;BARE_METAL_CORE&#34;</span><span class="p">,</span> <span class="s">&#34;BARE_METAL_CPU&#34;</span><span class="p">,</span> <span class="s">&#34;BARE_METAL_CPU_FAST_PROVISION&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;package&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call the method SoftLayer_Product_Package_Server::getAllObjects
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">productPackageServes</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetAllObjects</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//productPackageServes, err := service.GetAllObjects()
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printPackageDetails</span><span class="p">(</span><span class="nx">productPackageServes</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the available Bare Metal Servers packages BARE_METAL_CPU_FAST_PROVISION type.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">listServerPackagesFastProvision</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Package_Server service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductPackageServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// In order to get all &#39;BARE_METAL_CPU_FAST_PROVISION&#39; servers to order we will use the following filter
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;packageType&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="s">&#34;BARE_METAL_CPU_FAST_PROVISION&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;package&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call the method SoftLayer_Product_Package_Server::getAllObjects
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">productPackageServes</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetAllObjects</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printPackageDetails</span><span class="p">(</span><span class="nx">productPackageServes</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the package details.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printPackageDetails</span><span class="p">(</span><span class="nx">productPackages</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Package_Server</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">,</span> <span class="s">&#34;keyname&#34;</span><span class="p">,</span> <span class="s">&#34;description&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">productPackage</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">productPackages</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">id</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">PackageId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">keyname</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">Package</span><span class="p">.</span><span class="nx">KeyName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">name</span> <span class="o">:=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">productPackage</span><span class="p">.</span><span class="nx">ProductName</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">keyname</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;Package details&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Edit note, hostname, and domain of a hardware server
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">editServer</span><span class="p">(</span><span class="nx">serverName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">params</span> <span class="nx">Dictionary</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Define the new local properties to set. While we&#39;re only editing a server&#39;s notes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// in this example you can also use editObject() to edit the server&#39;s hostname and domain.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">objectTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware_Server</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">notes</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">params</span><span class="p">[</span><span class="s">&#34;Notes&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">objectTemplate</span><span class="p">.</span><span class="nx">Notes</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">notes</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">hostname</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">params</span><span class="p">[</span><span class="s">&#34;Hostname&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">objectTemplate</span><span class="p">.</span><span class="nx">Notes</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">domain</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">params</span><span class="p">[</span><span class="s">&#34;Domain&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">objectTemplate</span><span class="p">.</span><span class="nx">Notes</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">domain</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">hardwareService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetHardwareServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">serverId</span> <span class="o">:=</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">serverName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">hardwareService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">serverId</span><span class="p">).</span><span class="nf">EditObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">objectTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to edit the server &#39;&#34;</span><span class="o">+</span><span class="nx">serverName</span><span class="o">+</span><span class="s">&#34;&#39;\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">result</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Server &#39;%s&#39; was successfuly edited\n&#34;</span><span class="p">,</span> <span class="nx">serverName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">serverDetails</span><span class="p">(</span><span class="nx">serverId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints server details by server identifier
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">serverDetails</span><span class="p">(</span><span class="nx">identifier</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">serverId</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="k">switch</span> <span class="nx">identifier</span> <span class="o">:=</span> <span class="nx">identifier</span><span class="p">.(</span><span class="kd">type</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="kt">int</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">serverId</span> <span class="p">=</span> <span class="nx">identifier</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="kt">string</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">hostname</span> <span class="o">:=</span> <span class="nx">identifier</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">serverId</span> <span class="p">=</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">hostname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id, hostname, domain, globalIdentifier, fullyQualifiedDomainName, hardwareStatus,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;processorPhysicalCoreAmount, memoryCapacity, primaryBackendIpAddress, primaryIpAddress,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;networkManagementIpAddress, datacenter,&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;operatingSystem[softwareLicense[softwareDescription[manufacturer, name, version, referenceCode]]],&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;billingItem[id, nextInvoiceTotalRecurringAmount, children[nextInvoiceTotalRecurringAmount],&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;orderItem.order.userRecord[username]], tagReferences[id, tag[name, id]], notes&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">server</span> <span class="o">:=</span> <span class="nf">getServerIntance</span><span class="p">(</span><span class="nx">serverId</span><span class="p">,</span> <span class="nx">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printServerDetail</span><span class="p">(</span><span class="nx">server</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Gets the identifier of a server from the hostname.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getServerId</span><span class="p">(</span><span class="nx">hostname</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">accountService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following filter and mask helps to get the ID of bare metal server
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;hardware.hostname&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">hostname</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;hostname&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call the getHardware() method to get list of servers that matches with the filter
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hardware</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">accountService</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetHardware</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to find server &#39;&#34;</span><span class="o">+</span><span class="nx">hostname</span><span class="o">+</span><span class="s">&#34;&#39;\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// If server name was not found we throw a message
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">hardware</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to find server &#39;%s&#39;\n&#34;</span><span class="p">,</span> <span class="nx">hostname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="o">*</span><span class="nx">hardware</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints server details
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printServerDetail</span><span class="p">(</span><span class="nx">server</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware_Server</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rows</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;Name&#34;</span><span class="p">,</span> <span class="s">&#34;Value&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">terminal</span><span class="p">.</span><span class="nf">NewStdUI</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nf">Table</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;ID&#34;</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">Id</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;GUID&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">GlobalIdentifier</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Hostname&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Domain&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Domain</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;FQDN&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">FullyQualifiedDomainName</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">HardwareStatus</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Status&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">HardwareStatus</span><span class="p">.</span><span class="nx">Status</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">Datacenter</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Datacenter&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Datacenter</span><span class="p">.</span><span class="nx">Name</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;CPU cores&#34;</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">ProcessorPhysicalCoreAmount</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Memory&#34;</span><span class="p">,</span> <span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">MemoryCapacity</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#34;GB&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Public IP&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Private IP&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">PrimaryBackendIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;IPMI IP&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">NetworkManagementIpAddress</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span><span class="p">.</span><span class="nx">SoftwareDescription</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;OS&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span><span class="p">.</span><span class="nx">SoftwareDescription</span><span class="p">.</span><span class="nx">Name</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;OS version&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">OperatingSystem</span><span class="p">.</span><span class="nx">SoftwareLicense</span><span class="p">.</span><span class="nx">SoftwareDescription</span><span class="p">.</span><span class="nx">Version</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">Notes</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">Notes</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">table</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;Note&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">server</span><span class="p">.</span><span class="nx">Notes</span><span class="p">).(</span><span class="kt">string</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cmd</span><span class="p">.</span><span class="nf">Say</span><span class="p">(</span><span class="s">&#34;Server details&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">table</span><span class="p">.</span><span class="nf">Print</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the data as format JSON.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">data</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">jsonData</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;    &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nb">println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonData</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Cancel a bare metal server.
+</span></span></span><span class="line"><span class="cl"><span class="cm">The server will be canceled immediately if it is billed Hourly,
+</span></span></span><span class="line"><span class="cl"><span class="cm">for the Monthly server, the cancellation will be made after the next bill date.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">cancelServer</span><span class="p">(</span><span class="nx">serverId</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// In order to cancel billing item of server we need to set following values
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">cancelAssociatedBillingItems</span> <span class="o">:=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">reason</span> <span class="o">:=</span> <span class="s">&#34;No longer needed&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">customerNote</span> <span class="o">:=</span> <span class="s">&#34;BMS - canceled&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Billing_Item service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">billingService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingItemService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;hostname;billingItem;hourlyBillingFlag&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">server</span> <span class="o">:=</span> <span class="nf">getServerIntance</span><span class="p">(</span><span class="nx">serverId</span><span class="p">,</span> <span class="nx">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// If server is billed hourly it will be canceled immediately, for monthly server
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// the cancellation will be made after next bill date.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">cancelImmediately</span> <span class="o">:=</span> <span class="nx">server</span><span class="p">.</span><span class="nx">HourlyBillingFlag</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call the cancelItem() method in order to cancel the bare metal server
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">billingService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">BillingItem</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">CancelItem</span><span class="p">(</span><span class="nx">cancelImmediately</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="o">&amp;</span><span class="nx">cancelAssociatedBillingItems</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">reason</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">customerNote</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to cancel the server &#39;%d&#39; \n - %s\n&#34;</span><span class="p">,</span> <span class="nx">serverId</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Print final result
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">result</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Server &#39;%d&#39; was successfuly cancelled\n&#34;</span><span class="p">,</span> <span class="nx">serverId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Server &#39;%d&#39; could not be cancelled\n&#34;</span><span class="p">,</span> <span class="nx">serverId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//Gets the server instance by identifier using a specific object mask.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">getServerIntance</span><span class="p">(</span><span class="nx">serverId</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">mask</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Hardware_Server</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">hardwareService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetHardwareServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">server</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">hardwareService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">serverId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get server \n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">server</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

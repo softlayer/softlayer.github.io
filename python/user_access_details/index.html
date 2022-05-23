@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -152,94 +148,93 @@ if (!doNotTrack) {
 				
                 <p>This script gets each user, and which dedicatedHosts, hardware, and virtual guests they have permissions to view.</p>
 <p>The hasFullAccessFlags are used to determine if a user has access to ALL hosts of that type or not. We are using that flag here to condense the output, but each user will still have the full list of hardware under their account if they have access to all.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">List of users that have access to a certain set of devices.
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-<span class="c1"># For nice debug output:</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-<span class="kn">from</span> <span class="nn">prettytable</span> <span class="kn">import</span> <span class="n">PrettyTable</span>
-
-
-<span class="kn">from</span> <span class="nn">click</span> <span class="kn">import</span> <span class="n">formatting</span>
-<span class="kn">from</span> <span class="nn">SoftLayer.CLI</span> <span class="kn">import</span> <span class="n">formatting</span>
-
-
-<span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id, username, 
-</span><span class="s2">    dedicatedHosts[id,name,datacenter],
-</span><span class="s2">    virtualGuests[id,hostname,domain,datacenter],
-</span><span class="s2">    hardware[id,hostname,domain,datacenter],
-</span><span class="s2">    hasFullDedicatedHostAccessFlag,
-</span><span class="s2">    hasFullHardwareAccessFlag,
-</span><span class="s2">    hasFullVirtualGuestAccessFlag]&#34;&#34;&#34;</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-
-<span class="c1"># Gets all users on the account, 10 at a time. Accounts with a lot of devices may need to turn limit down to 1</span>
-<span class="n">all_users</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span>
-    <span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getUsers&#39;</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">objectMask</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">35</span><span class="p">)</span>
-
-<span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">([</span><span class="s1">&#39;ID&#39;</span><span class="p">,</span> <span class="s1">&#39;NAME&#39;</span><span class="p">,</span> <span class="s1">&#39;DATACENTER&#39;</span><span class="p">])</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&#34;-------------------- List of users that have access to a certain set of devices ---------------&#34;</span><span class="p">)</span>
-
-<span class="c1"># Iterate through each user, getting what devices they each have access to and printing that.</span>
-<span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">all_users</span><span class="p">:</span>
-    <span class="n">userId</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-    <span class="n">username</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">THE USER: </span><span class="si">%s</span><span class="s2">  WITH ID: </span><span class="si">%s</span><span class="s2"> HAS ACCESS TO THE FOLLOWING DEVICES</span><span class="se">\n</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">userId</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hasFullDedicatedHostAccessFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;Full Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
-
-    <span class="k">elif</span> <span class="s1">&#39;dedicatedHosts&#39;</span> <span class="ow">in</span> <span class="n">user</span><span class="p">:</span>
-        <span class="n">dedicatedHosts</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;dedicatedHosts&#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">dedicatedHost</span> <span class="ow">in</span> <span class="n">dedicatedHosts</span><span class="p">:</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span>
-                <span class="n">dedicatedHost</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
-                <span class="n">dedicatedHost</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> 
-                <span class="n">dedicatedHost</span><span class="p">[</span><span class="s1">&#39;datacenter&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
-            <span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;No Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
-    <span class="n">table</span><span class="o">.</span><span class="n">clear_rows</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&#34;DEDICATED HOST&#34;</span><span class="p">))</span>
-
-    <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hasFullVirtualGuestAccessFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;Full Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="s1">&#39;virtualGuests&#39;</span> <span class="ow">in</span> <span class="n">user</span><span class="p">:</span>
-        <span class="n">virtualGuests</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">virtualGuests</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span>
-                <span class="n">host</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
-                <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">],</span> <span class="n">host</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]),</span>
-                <span class="n">host</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;datacenter&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
-            <span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;No Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&#34;VIRTUAL GUEST&#34;</span><span class="p">))</span>
-    <span class="n">table</span><span class="o">.</span><span class="n">clear_rows</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hasFullVirtualGuestAccessFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;Full Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="s1">&#39;hardware&#39;</span> <span class="ow">in</span> <span class="n">user</span><span class="p">:</span>
-        <span class="n">hardware</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;hardware&#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hardware</span><span class="p">:</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span>
-                <span class="n">host</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
-                <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">],</span> <span class="n">host</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">])</span> <span class="p">,</span> 
-                <span class="n">host</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;datacenter&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
-            <span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;No Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&#34;HARDWARE&#34;</span><span class="p">))</span>
-    <span class="n">table</span><span class="o">.</span><span class="n">clear_rows</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Done&#34;</span><span class="p">)</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">List of users that have access to a certain set of devices.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># For nice debug output:</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">prettytable</span> <span class="kn">import</span> <span class="n">PrettyTable</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">click</span> <span class="kn">import</span> <span class="n">formatting</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">SoftLayer.CLI</span> <span class="kn">import</span> <span class="n">formatting</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id, username, 
+</span></span></span><span class="line"><span class="cl"><span class="s2">    dedicatedHosts[id,name,datacenter],
+</span></span></span><span class="line"><span class="cl"><span class="s2">    virtualGuests[id,hostname,domain,datacenter],
+</span></span></span><span class="line"><span class="cl"><span class="s2">    hardware[id,hostname,domain,datacenter],
+</span></span></span><span class="line"><span class="cl"><span class="s2">    hasFullDedicatedHostAccessFlag,
+</span></span></span><span class="line"><span class="cl"><span class="s2">    hasFullHardwareAccessFlag,
+</span></span></span><span class="line"><span class="cl"><span class="s2">    hasFullVirtualGuestAccessFlag]&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Gets all users on the account, 10 at a time. Accounts with a lot of devices may need to turn limit down to 1</span>
+</span></span><span class="line"><span class="cl"><span class="n">all_users</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getUsers&#39;</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">objectMask</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">35</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">([</span><span class="s1">&#39;ID&#39;</span><span class="p">,</span> <span class="s1">&#39;NAME&#39;</span><span class="p">,</span> <span class="s1">&#39;DATACENTER&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;-------------------- List of users that have access to a certain set of devices ---------------&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Iterate through each user, getting what devices they each have access to and printing that.</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">all_users</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">userId</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">username</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">THE USER: </span><span class="si">%s</span><span class="s2">  WITH ID: </span><span class="si">%s</span><span class="s2"> HAS ACCESS TO THE FOLLOWING DEVICES</span><span class="se">\n</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">userId</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hasFullDedicatedHostAccessFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;Full Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="s1">&#39;dedicatedHosts&#39;</span> <span class="ow">in</span> <span class="n">user</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dedicatedHosts</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;dedicatedHosts&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">dedicatedHost</span> <span class="ow">in</span> <span class="n">dedicatedHosts</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span>
+</span></span><span class="line"><span class="cl">                <span class="n">dedicatedHost</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
+</span></span><span class="line"><span class="cl">                <span class="n">dedicatedHost</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> 
+</span></span><span class="line"><span class="cl">                <span class="n">dedicatedHost</span><span class="p">[</span><span class="s1">&#39;datacenter&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;No Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table</span><span class="o">.</span><span class="n">clear_rows</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&#34;DEDICATED HOST&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hasFullVirtualGuestAccessFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;Full Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="s1">&#39;virtualGuests&#39;</span> <span class="ow">in</span> <span class="n">user</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">virtualGuests</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;virtualGuests&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">virtualGuests</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span>
+</span></span><span class="line"><span class="cl">                <span class="n">host</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">],</span> <span class="n">host</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]),</span>
+</span></span><span class="line"><span class="cl">                <span class="n">host</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;datacenter&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;No Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&#34;VIRTUAL GUEST&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table</span><span class="o">.</span><span class="n">clear_rows</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hasFullVirtualGuestAccessFlag&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;Full Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="s1">&#39;hardware&#39;</span> <span class="ow">in</span> <span class="n">user</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">hardware</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;hardware&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">hardware</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span>
+</span></span><span class="line"><span class="cl">                <span class="n">host</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">],</span> <span class="n">host</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">])</span> <span class="p">,</span> 
+</span></span><span class="line"><span class="cl">                <span class="n">host</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;datacenter&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s2">&#34;*&#34;</span><span class="p">,</span><span class="s2">&#34;No Access&#34;</span><span class="p">,</span> <span class="s2">&#34;*&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&#34;HARDWARE&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">table</span><span class="o">.</span><span class="n">clear_rows</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Done&#34;</span><span class="p">)</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

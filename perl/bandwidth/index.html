@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -145,122 +141,120 @@ if (!doNotTrack) {
                 
 				
                 <h2 id="bandwidth-graph">Bandwidth Graph</h2>
-<div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1"># Retrieve a bandwidth graph for a single server.</span>
-<span class="c1">#</span>
-<span class="c1"># Retrieving a bandwidth graph for a single server for an arbitrary start and</span>
-<span class="c1"># end date, specifying graph size and other graphing options. We can do this</span>
-<span class="c1"># with two calls to the SoftLayer API.</span>
-<span class="c1">#</span>
-<span class="c1"># Counter data such as bandwidth counters and CCI resource use are stored in</span>
-<span class="c1"># a server&#39;s metric tracking object. Our first call retrieves that server&#39;s</span>
-<span class="c1"># tracking object record. The second call is to the tracking object service</span>
-<span class="c1"># which will generate a PNG image of our bandwidth graph.</span>
-<span class="c1">#</span>
-<span class="c1"># Important manual pages.</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Metric_Tracking_Object/getBandwidthGraph</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Bandwidth_GraphOutputs</span>
-<span class="c1"># License &lt;http://sldn.softlayer.com/article/License&gt;</span>
-<span class="c1"># Author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># The id number of the server whose graph you wish to retrieve. Call the</span>
-<span class="c1"># getHardware() method in the SoftLayer_Account API service to retrieve a list</span>
-<span class="c1"># of the servers on your account.</span>
-<span class="k">my</span> <span class="nv">$server_id</span>  <span class="o">=</span> <span class="mi">153851</span><span class="p">;</span>
-<span class="c1"># The date at which you wish to start graphing bandwidth.</span>
-<span class="k">my</span> <span class="nv">$start_date</span> <span class="o">=</span> <span class="s">&#39;2010-10-1&#39;</span><span class="p">;</span>
-<span class="c1"># The date at which you wish to end graphing bandwidth.</span>
-<span class="k">my</span> <span class="nv">$end_date</span> <span class="o">=</span> <span class="s">&#39;2014-8-11&#39;</span><span class="p">;</span>
-<span class="c1"># Whether to get a graph for &#39;public&#39; or &#39;private&#39; bandwidth usage.</span>
-<span class="k">my</span> <span class="nv">$graph_type</span> <span class="o">=</span> <span class="s">&#39;public&#39;</span><span class="p">;</span>
-<span class="c1"># The height of the text in the bandwidth graph in pixels.</span>
-<span class="k">my</span> <span class="nv">$font_size</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
-<span class="c1"># The width of the graph to retrieve in pixels.</span>
-<span class="k">my</span> <span class="nv">$graph_width</span> <span class="o">=</span> <span class="mi">827</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$graph_height</span> <span class="o">=</span> <span class="mi">273</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$hide_time_zone</span> <span class="o">=</span> <span class="n">True</span><span class="p">;</span>
-
-<span class="c1"># Creating a SoftLayer API client object</span>
-<span class="k">my</span> <span class="nv">$metric_tracking_object</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-<span class="k">my</span> <span class="nv">$hardware_server</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$server_id</span><span class="p">);</span>
-<span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">getMetricTrackingObject</span><span class="p">();</span>
-<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-  <span class="nb">die</span> <span class="s">&#39;Unable to retrieve hte metric tracking object: &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="k">my</span> <span class="nv">$tracking_object</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
-
-<span class="c1"># getBandwidthGraph() returns a SoftLayer_Container_Bandwidth_GraphOutputs</span>
-<span class="c1"># object. The contents of the bandwidth image is in $image-&gt;graphImage.</span>
-<span class="c1"># From here you can write it to the file system, display it to a web</span>
-<span class="c1"># browser, or run other functions on it.</span>
-<span class="nv">$metric_tracking_object</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$tracking_object</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">});</span>
-<span class="nv">$result</span> <span class="o">=</span> <span class="nv">$metric_tracking_object</span><span class="o">-&gt;</span><span class="n">getBandwidthGraph</span><span class="p">(</span><span class="nv">$start_date</span><span class="p">,</span> <span class="nv">$end_date</span><span class="p">,</span> <span class="nv">$graph_type</span><span class="p">,</span> <span class="nv">$font_size</span><span class="p">,</span> <span class="nv">$graph_width</span><span class="p">,</span> <span class="nv">$graph_height</span><span class="p">,</span> <span class="nv">$hide_time_zone</span><span class="p">);</span>
-<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-  <span class="nb">die</span> <span class="s">&#39;Unable to retrieve bandwidth image. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="k">my</span> <span class="nv">$image</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
-<span class="k">print</span> <span class="p">(</span><span class="s">&#34;Image retrieved!&#34;</span><span class="p">);</span>
-
-</code></pre></div><h2 id="bandwidth-usage">Bandwidth Usage</h2>
-<div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1"># Retrieve a bandwidth usage for a list of  servers.</span>
-<span class="c1">#</span>
-<span class="c1"># The scripts returns the bandwidth usage from an arbitrary</span>
-<span class="c1"># list of servers, the script makes a simple call to the</span>
-<span class="c1"># Softlayer_Hardware_Server::getObject method using a object mask</span>
-<span class="c1"># in order to get the bandwidth information.</span>
-<span class="c1">#</span>
-<span class="c1"># Important manual pages:</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatype/SoftLayer_Hardware_Server/</span>
-<span class="c1">#</span>
-<span class="c1"># License: http://sldn.softlayer.com/article/License</span>
-<span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;/path/to/client/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># The list of server that wish to see the bandwidth usage</span>
-<span class="k">my</span> <span class="nv">@server_ids</span> <span class="o">=</span> <span class="p">(</span> <span class="mi">153851</span><span class="p">,</span> <span class="mi">166391</span> <span class="p">);</span>
-
-<span class="c1"># Creating a SoftLayer API client object</span>
-<span class="k">my</span> <span class="nv">$hardware_server</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="c1"># Adding an object mask to retrieve our hardware&#39; related items such as its</span>
-<span class="c1"># host name and currentBillableBandwidthUsage. Object masks</span>
-<span class="c1"># can retrieve any information related to your object. See</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
-<span class="c1"># for a list of the relational properties you can retrieve along with hardware.</span>
-<span class="k">my</span> <span class="nv">$object_mask</span> <span class="o">=</span> <span class="s">&#39;mask[hostname,currentBillableBandwidthUsage]&#39;</span><span class="p">;</span>
-<span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">(</span><span class="nv">$object_mask</span><span class="p">);</span>
-
-<span class="k">my</span> <span class="nv">$total</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-<span class="k">for</span> <span class="k">my</span> <span class="nv">$server_id</span> <span class="p">(</span><span class="nv">@server_ids</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$server_id</span><span class="p">);</span>
-    <span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">getObject</span><span class="p">();</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nb">die</span> <span class="s">&#39;Unable to get bandwidth data. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">my</span> <span class="nv">$bandwidth_data</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
-    <span class="k">print</span> <span class="p">(</span><span class="nv">$bandwidth_data</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;hostname&#39;</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;: &#34;</span> <span class="o">.</span> <span class="nv">$bandwidth_data</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;currentBillableBandwidthUsage&#39;</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;GB&#34;</span> <span class="p">,</span> <span class="s">&#34;\n&#34;</span><span class="p">);</span>
-    <span class="nv">$total</span> <span class="o">=</span> <span class="nv">$total</span> <span class="o">+</span> <span class="nv">$bandwidth_data</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;currentBillableBandwidthUsage&#39;</span><span class="p">};</span>
-<span class="p">}</span>
-
-<span class="k">print</span> <span class="p">(</span><span class="s">&#34;Total :&#34;</span> <span class="o">.</span> <span class="nv">$total</span> <span class="p">,</span> <span class="s">&#34;\n&#34;</span><span class="p">);</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1"># Retrieve a bandwidth graph for a single server.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Retrieving a bandwidth graph for a single server for an arbitrary start and</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># end date, specifying graph size and other graphing options. We can do this</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># with two calls to the SoftLayer API.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Counter data such as bandwidth counters and CCI resource use are stored in</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># a server&#39;s metric tracking object. Our first call retrieves that server&#39;s</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># tracking object record. The second call is to the tracking object service</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># which will generate a PNG image of our bandwidth graph.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Metric_Tracking_Object/getBandwidthGraph</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Bandwidth_GraphOutputs</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License &lt;http://sldn.softlayer.com/article/License&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id number of the server whose graph you wish to retrieve. Call the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># getHardware() method in the SoftLayer_Account API service to retrieve a list</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># of the servers on your account.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$server_id</span>  <span class="o">=</span> <span class="mi">153851</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The date at which you wish to start graphing bandwidth.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$start_date</span> <span class="o">=</span> <span class="s">&#39;2010-10-1&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The date at which you wish to end graphing bandwidth.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$end_date</span> <span class="o">=</span> <span class="s">&#39;2014-8-11&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Whether to get a graph for &#39;public&#39; or &#39;private&#39; bandwidth usage.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$graph_type</span> <span class="o">=</span> <span class="s">&#39;public&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The height of the text in the bandwidth graph in pixels.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$font_size</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The width of the graph to retrieve in pixels.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$graph_width</span> <span class="o">=</span> <span class="mi">827</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$graph_height</span> <span class="o">=</span> <span class="mi">273</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$hide_time_zone</span> <span class="o">=</span> <span class="n">True</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Creating a SoftLayer API client object</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$metric_tracking_object</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Metric_Tracking_Object&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$hardware_server</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$server_id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">getMetricTrackingObject</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">die</span> <span class="s">&#39;Unable to retrieve hte metric tracking object: &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$tracking_object</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># getBandwidthGraph() returns a SoftLayer_Container_Bandwidth_GraphOutputs</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># object. The contents of the bandwidth image is in $image-&gt;graphImage.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># From here you can write it to the file system, display it to a web</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># browser, or run other functions on it.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$metric_tracking_object</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$tracking_object</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">});</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$result</span> <span class="o">=</span> <span class="nv">$metric_tracking_object</span><span class="o">-&gt;</span><span class="n">getBandwidthGraph</span><span class="p">(</span><span class="nv">$start_date</span><span class="p">,</span> <span class="nv">$end_date</span><span class="p">,</span> <span class="nv">$graph_type</span><span class="p">,</span> <span class="nv">$font_size</span><span class="p">,</span> <span class="nv">$graph_width</span><span class="p">,</span> <span class="nv">$graph_height</span><span class="p">,</span> <span class="nv">$hide_time_zone</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">die</span> <span class="s">&#39;Unable to retrieve bandwidth image. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$image</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">print</span> <span class="p">(</span><span class="s">&#34;Image retrieved!&#34;</span><span class="p">);</span>
+</span></span></code></pre></div><h2 id="bandwidth-usage">Bandwidth Usage</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1"># Retrieve a bandwidth usage for a list of  servers.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The scripts returns the bandwidth usage from an arbitrary</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># list of servers, the script makes a simple call to the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Softlayer_Hardware_Server::getObject method using a object mask</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># in order to get the bandwidth information.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatype/SoftLayer_Hardware_Server/</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License: http://sldn.softlayer.com/article/License</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;/path/to/client/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The list of server that wish to see the bandwidth usage</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">@server_ids</span> <span class="o">=</span> <span class="p">(</span> <span class="mi">153851</span><span class="p">,</span> <span class="mi">166391</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Creating a SoftLayer API client object</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$hardware_server</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Adding an object mask to retrieve our hardware&#39; related items such as its</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># host name and currentBillableBandwidthUsage. Object masks</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># can retrieve any information related to your object. See</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># for a list of the relational properties you can retrieve along with hardware.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$object_mask</span> <span class="o">=</span> <span class="s">&#39;mask[hostname,currentBillableBandwidthUsage]&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">(</span><span class="nv">$object_mask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$total</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="k">my</span> <span class="nv">$server_id</span> <span class="p">(</span><span class="nv">@server_ids</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$server_id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$hardware_server</span><span class="o">-&gt;</span><span class="n">getObject</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">die</span> <span class="s">&#39;Unable to get bandwidth data. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$bandwidth_data</span> <span class="o">=</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">print</span> <span class="p">(</span><span class="nv">$bandwidth_data</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;hostname&#39;</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;: &#34;</span> <span class="o">.</span> <span class="nv">$bandwidth_data</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;currentBillableBandwidthUsage&#39;</span><span class="p">}</span> <span class="o">.</span> <span class="s">&#34;GB&#34;</span> <span class="p">,</span> <span class="s">&#34;\n&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$total</span> <span class="o">=</span> <span class="nv">$total</span> <span class="o">+</span> <span class="nv">$bandwidth_data</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;currentBillableBandwidthUsage&#39;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">print</span> <span class="p">(</span><span class="s">&#34;Total :&#34;</span> <span class="o">.</span> <span class="nv">$total</span> <span class="p">,</span> <span class="s">&#34;\n&#34;</span><span class="p">);</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

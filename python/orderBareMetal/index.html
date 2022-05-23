@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -173,328 +169,328 @@ if (!doNotTrack) {
 <li>listRaidArrayTypes() shows what id numbers are for each RAID type.</li>
 <li>Custom partitions can ONLY be specified for CentOS or RHEL servers, and ONLY on the secondary drives [^1]. Trying to do the same for the primary controller will result in the default partitinoTemplate being applied. Custom partitions also require the arraySize be declared.</li>
 </ol>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">@author Christopher Gallo
-</span><span class="s2">Places an order for a Bare Metal Server
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-<span class="kn">from</span> <span class="nn">prettytable</span> <span class="kn">import</span> <span class="n">PrettyTable</span>
-
-
-<span class="k">class</span> <span class="nc">Ordering</span><span class="p">:</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">,</span> <span class="n">location_id</span><span class="p">,</span> <span class="n">pub_vlan_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">priv_vlan_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        Places an order for a Bare Metal Instance
-</span><span class="s2">        &#34;&#34;&#34;</span>
-
-        <span class="s2">&#34;&#34;&#34;These items are required for all servers and have a 0$ cost, some can be upgraded&#34;&#34;&#34;</span>
-        <span class="n">required_items</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;AUTOMATED_NOTIFICATION&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;MONITORING_HOST_PING&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;NOTIFICATION_EMAIL_AND_TICKET&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;REBOOT_KVM_OVER_IP&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;REDUNDANT_POWER_SUPPLY&#39;</span><span class="p">,</span>
-        <span class="p">]</span>
-        <span class="s2">&#34;&#34;&#34;We need bandwidth, at least 1 ip, and the port speed &#34;&#34;&#34;</span>
-        <span class="n">network_items</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;BANDWIDTH_500_GB&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;1_IP_ADDRESS&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;1_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED&#39;</span><span class="p">,</span>
-        <span class="p">]</span>
-        <span class="s2">&#34;&#34;&#34;A disk controller, a duplicate entry for each disk you want, in order, ram, OS and processor chip &#34;&#34;&#34;</span>
-        <span class="n">physical_items</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;DISK_CONTROLLER_RAID&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;RAM_64_GB_DDR4_2133_ECC_NON_REG&#39;</span><span class="p">,</span>
-            <span class="c1"># &#39;OS_CENTOS_7_X_64_BIT&#39;,</span>
-            <span class="s1">&#39;OS_WINDOWS_2012_FULL_STD_64_BIT&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;INTEL_INTEL_XEON_E52620_V4_2_10&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HARD_DRIVE_NVME_375_GB_PCIE&#39;</span><span class="p">,</span>  <span class="c1"># PCIe component slot0</span>
-            <span class="s1">&#39;HARD_DRIVE_NVME_375_GB_PCIE&#39;</span>  <span class="c1"># PCIe component slot1</span>
-        <span class="p">]</span>
-
-        <span class="n">all_items</span> <span class="o">=</span> <span class="n">required_items</span> <span class="o">+</span> <span class="n">network_items</span> <span class="o">+</span> <span class="n">physical_items</span>
-        <span class="n">prices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gatherPriceIds</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">all_items</span><span class="p">)</span>
-        <span class="n">productOrder</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;orderContainers&#39;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span><span class="s1">&#39;hardware&#39;</span><span class="p">:</span>
-                <span class="p">[</span>
-                    <span class="p">{</span>
-                        <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;cgallo.com&#39;</span><span class="p">,</span>
-                        <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;vmware-testing01&#39;</span><span class="p">,</span>
-                        <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">priv_vlan_id</span><span class="p">)}},</span>
-                        <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">pub_vlan_id</span><span class="p">)}}</span>
-                    <span class="p">}</span>
-                <span class="p">],</span>
-                <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">location_id</span><span class="p">,</span>
-                <span class="s1">&#39;packageId&#39;</span><span class="p">:</span> <span class="n">package_id</span><span class="p">,</span>
-                <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
-                <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="s1">&#39;storageGroups&#39;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span>
-                        <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-                        <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
-                        <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-                        <span class="s1">&#39;partitionTemplateId&#39;</span><span class="p">:</span> <span class="mi">1</span>
-                    <span class="p">},</span>
-                    <span class="p">{</span>
-                        <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
-                        <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
-                        <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span>
-                        <span class="c1"># Defining partitions on secondary storage groups is only allowed for CentOS</span>
-                        <span class="c1"># and Red Hat operating systems.</span>
-                        <span class="c1"># &#39;partitions&#39;: [</span>
-                        <span class="c1">#     {&#39;name&#39;: &#39;/&#39;, &#39;size&#39;: 200, &#39;isGrow&#39;: 0},</span>
-                        <span class="c1">#     {&#39;name&#39;: &#39;/boot&#39;, &#39;size&#39;: 100},</span>
-                        <span class="c1">#     {&#39;name&#39;: &#39;/usr&#39;, &#39;size&#39;: 200},</span>
-                        <span class="c1">#     {&#39;name&#39;: &#39;/mine&#39;, &#39;size&#39;: 200},</span>
-                        <span class="c1">#     {&#39;name&#39;: &#39;/media&#39;, &#39;size&#39;: 1, &#39;isGrow&#39;: 1},</span>
-                        <span class="c1"># ]</span>
-
-                    <span class="p">},</span>
-                    <span class="p">{</span>
-                        <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
-                        <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
-                        <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
-                    <span class="p">}</span>
-                <span class="p">],</span>
-            <span class="p">}</span>
-        <span class="p">]</span>
-        <span class="p">}</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">productOrder</span><span class="p">)</span>
-        <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">productOrder</span><span class="p">)</span>
-        <span class="c1"># order = self.client[&#39;Product_Order&#39;].placeOrder(productOrder)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">listServerPackages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[type]&#34;</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;keyName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;BARE_METAL_CPU&#39;</span><span class="p">},</span>
-            <span class="p">},</span>
-        <span class="p">}</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Server Packages&#34;</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">,</span> <span class="s2">&#34;name&#34;</span><span class="p">,</span> <span class="s2">&#34;keyName&#34;</span><span class="p">,</span> <span class="s2">&#34;type&#34;</span><span class="p">]</span>
-
-        <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">product</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                           <span class="n">product</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
-                           <span class="n">product</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span>
-                           <span class="n">product</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]]</span>
-                          <span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">listPartitionTemplates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[partitionTemplates[data]]&#34;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Hardware_Component_Partition_OperatingSystem&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;OS Type, Notes&#34;</span><span class="p">)</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Partition Templates&#34;</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;OS Type - Notes&#34;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">os_type</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">table_os</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-            <span class="n">table_os</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os_type</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> <span class="n">os_type</span><span class="p">[</span><span class="s1">&#39;notes&#39;</span><span class="p">])</span>
-            <span class="n">table_os</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Template id&#34;</span><span class="p">,</span> <span class="s2">&#34;Description&#34;</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">os_type</span><span class="p">[</span><span class="s1">&#39;partitionTemplates&#39;</span><span class="p">]:</span>
-                <span class="n">template_data</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="n">table_partition</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-                <span class="n">table_partition</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]]</span>
-                <span class="n">table_partition</span><span class="o">.</span><span class="n">align</span><span class="p">[</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&#34;l&#34;</span>
-                <span class="k">for</span> <span class="n">partition</span> <span class="ow">in</span> <span class="n">template</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
-                    <span class="n">template_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&#34;</span>
-                                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">partition</span><span class="p">[</span><span class="s1">&#39;partitionName&#39;</span><span class="p">],</span>
-                                                 <span class="n">partition</span><span class="p">[</span><span class="s1">&#39;partitionSize&#39;</span><span class="p">],</span>
-                                                 <span class="s1">&#39;Grow&#39;</span> <span class="k">if</span> <span class="n">partition</span><span class="p">[</span><span class="s1">&#39;isGrow&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
-                <span class="n">table_partition</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">template_data</span><span class="p">)])</span>
-                <span class="n">table_os</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">table_partition</span><span class="p">])</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">table_os</span><span class="p">])</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">listRaidArrayTypes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Configuration_Storage_Group_Array_Type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">()</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Raid Array Types&#34;</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">,</span> <span class="s2">&#34;keyName&#34;</span><span class="p">,</span> <span class="s2">&#34;description&#34;</span><span class="p">,</span> <span class="s2">&#34;Min&#34;</span><span class="p">,</span> <span class="s1">&#39;Max&#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">raid</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">raid</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span>
-                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
-                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;minimumDrives&#39;</span><span class="p">],</span>
-                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;maximumDrives&#39;</span><span class="p">]]</span>
-                          <span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">listAvailableVlans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc_id</span><span class="p">):</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[network,type,primaryRouter[datacenter]]&#34;</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;networkVlans&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;primaryRouter&#39;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s1">&#39;datacenter&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">dc_id</span><span class="p">}}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkVlans</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Available Vlans&#34;</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">,</span> <span class="s2">&#34;VLAN&#34;</span><span class="p">,</span> <span class="s2">&#34;type&#34;</span><span class="p">,</span> <span class="s2">&#34;primaryRouter&#34;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">vlan</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                           <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">],</span>
-                           <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span>
-                           <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;primaryRouter&#39;</span><span class="p">][</span><span class="s1">&#39;hostname&#39;</span><span class="p">]]</span>
-                          <span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">getServerPrices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">):</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[regions,items[prices],activeServerItems[prices]]&#34;</span>
-        <span class="c1"># locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
-
-        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Locations&#34;</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Location ID&#34;</span><span class="p">,</span> <span class="s2">&#34;Location Name&#34;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;regions&#39;</span><span class="p">]:</span>
-            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]])</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Items Prices&#34;</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Price ID&#34;</span><span class="p">,</span> <span class="s2">&#34;description&#34;</span><span class="p">,</span> <span class="s2">&#34;cores&#34;</span><span class="p">,</span> <span class="s2">&#34;Monthly Fee&#34;</span><span class="p">,</span> <span class="s2">&#34;KeyName&#34;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;items&#39;</span><span class="p">]:</span>
-            <span class="k">for</span> <span class="n">prices</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]:</span>
-                <span class="c1"># only print the Default location price.</span>
-                <span class="c1"># The ordering system will replace the default price id for you if ordering in a non-usa region.</span>
-                <span class="k">if</span> <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="c1"># Some software has core restrictions that effect prices</span>
-                    <span class="k">if</span> <span class="s1">&#39;capacityRestrictionType&#39;</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">:</span>
-                        <span class="n">cores</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span>
-                            <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;capacityRestrictionMinimum&#39;</span><span class="p">],</span>
-                            <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;capacityRestrictionMaximum&#39;</span><span class="p">])</span>
-                        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">prices</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                                       <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34; - &#34;</span><span class="p">,</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">),</span>
-                                       <span class="n">cores</span><span class="p">,</span> <span class="n">prices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">),</span>
-                                       <span class="n">item</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]])</span>
-
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">prices</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                                       <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34; - &#34;</span><span class="p">,</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">),</span>
-                                       <span class="s2">&#34;&#34;</span><span class="p">,</span> <span class="n">prices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">),</span>
-                                       <span class="n">item</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]])</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-        <span class="c1"># serverItems = self.client[&#39;Product_Package&#39;].getActiveServerItems(id=package_id)</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;SERVER ITEMS&#34;</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Price ID&#34;</span><span class="p">,</span> <span class="s2">&#34;description&#34;</span><span class="p">,</span> <span class="s2">&#34;Monthly Fee&#34;</span><span class="p">,</span> <span class="s2">&#34;KeyName&#34;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;activeServerItems&#39;</span><span class="p">]:</span>
-            <span class="k">for</span> <span class="n">prices</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]:</span>
-                <span class="c1"># only print the Default location price.</span>
-                <span class="c1"># The ordering system will replace the default price id for you if ordering in a non-usa region.</span>
-                <span class="k">if</span> <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">prices</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                                   <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34; - &#34;</span><span class="p">,</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">),</span>
-                                   <span class="n">prices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">),</span>
-                                   <span class="n">item</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]])</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">gatherPriceIds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">,</span> <span class="n">keyNames</span><span class="p">):</span>
-        <span class="c1"># This will work for prices that have core requirements</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s1">&#39;mask[id,itemCategory,keyName,prices[categories],&#39;</span> \
-               <span class="s1">&#39;capacityRestrictedProductFlag,totalPhysicalCoreCapacity]&#39;</span>
-        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
-
-        <span class="n">items_restricted_by_capacity</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;capacityRestrictedProductFlag&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">]</span>
-
-        <span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">category_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;gpu0&#34;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&#34;pcie_slot0&#34;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}</span>
-        <span class="n">core_capacity</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="k">for</span> <span class="n">item_keyname</span> <span class="ow">in</span> <span class="n">keyNames</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">matching_item</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">item_keyname</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerError</span><span class="p">(</span>
-                    <span class="s2">&#34;Item </span><span class="si">{}</span><span class="s2"> does not exist for package </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item_keyname</span><span class="p">,</span>
-                                                                   <span class="n">package_id</span><span class="p">))</span>
-            <span class="n">item_category</span> <span class="o">=</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">item_category</span> <span class="o">==</span> <span class="s1">&#39;server&#39;</span><span class="p">:</span>
-                <span class="n">core_capacity</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;totalPhysicalCoreCapacity&#39;</span><span class="p">])</span>
-                <span class="k">break</span>
-
-        <span class="k">for</span> <span class="n">item_keyname</span> <span class="ow">in</span> <span class="n">keyNames</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">matching_item</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">item_keyname</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerError</span><span class="p">(</span>
-                    <span class="s2">&#34;Item </span><span class="si">{}</span><span class="s2"> does not exist for package </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item_keyname</span><span class="p">,</span>
-                                                                   <span class="n">package_id</span><span class="p">))</span>
-
-            <span class="n">item_category</span> <span class="o">=</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span>
-
-            <span class="k">if</span> <span class="n">item_category</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">category_dict</span><span class="p">:</span>
-
-                <span class="k">if</span> <span class="n">matching_item</span> <span class="ow">in</span> <span class="n">items_restricted_by_capacity</span><span class="p">:</span>
-                    <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]</span>
-                                <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span>
-                                <span class="ow">and</span> <span class="n">core_capacity</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;capacityRestrictionMaximum&#39;</span><span class="p">])][</span><span class="mi">0</span><span class="p">]</span>
-
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]</span>
-                                <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
-
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">category_dict</span><span class="p">[</span><span class="n">item_category</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="n">category_code</span> <span class="o">=</span> <span class="n">item_category</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">category_dict</span><span class="p">[</span><span class="n">item_category</span><span class="p">])</span>
-                <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]</span>
-                            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span>
-                            <span class="ow">and</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category_code</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-
-            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">})</span>
-
-        <span class="k">return</span> <span class="n">prices</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">Ordering</span><span class="p">()</span>
-
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">    Step 1, find the processor type you want    
-</span><span class="s2">    553  Dual E5-2600 v4 Series (12 Drives)  DUAL_E52600_V4_12_DRIVES  BARE_METAL_CPU
-</span><span class="s2">    &#34;&#34;&#34;</span>
-    <span class="c1"># main.listServerPackages()</span>
-    <span class="n">package_id</span> <span class="o">=</span> <span class="mi">553</span>
-
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">    Step 2, collect all the pieces you want to order
-</span><span class="s2">    getServerPrices will list out all the keyNames and cost of components
-</span><span class="s2">    that can be ordered on a certain package. Will also list the DCs that this
-</span><span class="s2">    server is available in.
-</span><span class="s2">    &#34;&#34;&#34;</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">getServerPrices</span><span class="p">(</span><span class="n">package_id</span><span class="p">)</span>
-    <span class="n">location_id</span> <span class="o">=</span> <span class="mi">814994</span>  <span class="c1"># &#34;AMSTERDAM03&#34;</span>
-
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">    Step 3, customize and place the order
-</span><span class="s2">    &#34;&#34;&#34;</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">listAvailableVlans</span><span class="p">(</span><span class="n">location_id</span><span class="p">)</span>
-    <span class="n">pub_vlan_id</span> <span class="o">=</span> <span class="mi">2439425</span>
-    <span class="n">priv_vlan_id</span> <span class="o">=</span> <span class="mi">2207425</span>
-    <span class="c1"># main.listPartitionTemplates()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">listRaidArrayTypes</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">location_id</span><span class="p">,</span> <span class="n">pub_vlan_id</span><span class="p">,</span> <span class="n">priv_vlan_id</span><span class="p">)</span>
-</code></pre></div><h2 id="exceptions-you-might-see">Exceptions you might see</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">@author Christopher Gallo
+</span></span></span><span class="line"><span class="cl"><span class="s2">Places an order for a Bare Metal Server
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">prettytable</span> <span class="kn">import</span> <span class="n">PrettyTable</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Ordering</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">,</span> <span class="n">location_id</span><span class="p">,</span> <span class="n">pub_vlan_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">priv_vlan_id</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Places an order for a Bare Metal Instance
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;These items are required for all servers and have a 0$ cost, some can be upgraded&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">required_items</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;AUTOMATED_NOTIFICATION&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;MONITORING_HOST_PING&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;NOTIFICATION_EMAIL_AND_TICKET&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;REBOOT_KVM_OVER_IP&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;REDUNDANT_POWER_SUPPLY&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;We need bandwidth, at least 1 ip, and the port speed &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">network_items</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;BANDWIDTH_500_GB&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;1_IP_ADDRESS&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;1_GBPS_DUAL_PUBLIC_PRIVATE_NETWORK_UPLINKS_UNBONDED&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;A disk controller, a duplicate entry for each disk you want, in order, ram, OS and processor chip &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">physical_items</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;DISK_CONTROLLER_RAID&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_2_00_TB_SATA_2&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;RAM_64_GB_DDR4_2133_ECC_NON_REG&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;OS_CENTOS_7_X_64_BIT&#39;,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;OS_WINDOWS_2012_FULL_STD_64_BIT&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;INTEL_INTEL_XEON_E52620_V4_2_10&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_NVME_375_GB_PCIE&#39;</span><span class="p">,</span>  <span class="c1"># PCIe component slot0</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_NVME_375_GB_PCIE&#39;</span>  <span class="c1"># PCIe component slot1</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">all_items</span> <span class="o">=</span> <span class="n">required_items</span> <span class="o">+</span> <span class="n">network_items</span> <span class="o">+</span> <span class="n">physical_items</span>
+</span></span><span class="line"><span class="cl">        <span class="n">prices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gatherPriceIds</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">all_items</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">productOrder</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;orderContainers&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span><span class="s1">&#39;hardware&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;cgallo.com&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;vmware-testing01&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">priv_vlan_id</span><span class="p">)}},</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">pub_vlan_id</span><span class="p">)}}</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">location_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;packageId&#39;</span><span class="p">:</span> <span class="n">package_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;storageGroups&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;partitionTemplateId&#39;</span><span class="p">:</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># Defining partitions on secondary storage groups is only allowed for CentOS</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># and Red Hat operating systems.</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># &#39;partitions&#39;: [</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1">#     {&#39;name&#39;: &#39;/&#39;, &#39;size&#39;: 200, &#39;isGrow&#39;: 0},</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1">#     {&#39;name&#39;: &#39;/boot&#39;, &#39;size&#39;: 100},</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1">#     {&#39;name&#39;: &#39;/usr&#39;, &#39;size&#39;: 200},</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1">#     {&#39;name&#39;: &#39;/mine&#39;, &#39;size&#39;: 200},</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1">#     {&#39;name&#39;: &#39;/media&#39;, &#39;size&#39;: 1, &#39;isGrow&#39;: 1},</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># ]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">productOrder</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">productOrder</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># order = self.client[&#39;Product_Order&#39;].placeOrder(productOrder)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">listServerPackages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[type]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;keyName&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;BARE_METAL_CPU&#39;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">            <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Server Packages&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">,</span> <span class="s2">&#34;name&#34;</span><span class="p">,</span> <span class="s2">&#34;keyName&#34;</span><span class="p">,</span> <span class="s2">&#34;type&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">product</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">product</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">product</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">product</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">                          <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">listPartitionTemplates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[partitionTemplates[data]]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Hardware_Component_Partition_OperatingSystem&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;OS Type, Notes&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Partition Templates&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;OS Type - Notes&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">os_type</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table_os</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table_os</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os_type</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span> <span class="n">os_type</span><span class="p">[</span><span class="s1">&#39;notes&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table_os</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Template id&#34;</span><span class="p">,</span> <span class="s2">&#34;Description&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">template</span> <span class="ow">in</span> <span class="n">os_type</span><span class="p">[</span><span class="s1">&#39;partitionTemplates&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">template_data</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">                <span class="n">table_partition</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="n">table_partition</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">                <span class="n">table_partition</span><span class="o">.</span><span class="n">align</span><span class="p">[</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&#34;l&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="n">partition</span> <span class="ow">in</span> <span class="n">template</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">template_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">                                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">partition</span><span class="p">[</span><span class="s1">&#39;partitionName&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                                                 <span class="n">partition</span><span class="p">[</span><span class="s1">&#39;partitionSize&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                                                 <span class="s1">&#39;Grow&#39;</span> <span class="k">if</span> <span class="n">partition</span><span class="p">[</span><span class="s1">&#39;isGrow&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">                <span class="n">table_partition</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">template_data</span><span class="p">)])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">table_os</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">template</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">table_partition</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">table_os</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">listRaidArrayTypes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Configuration_Storage_Group_Array_Type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Raid Array Types&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">,</span> <span class="s2">&#34;keyName&#34;</span><span class="p">,</span> <span class="s2">&#34;description&#34;</span><span class="p">,</span> <span class="s2">&#34;Min&#34;</span><span class="p">,</span> <span class="s1">&#39;Max&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">raid</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">raid</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;minimumDrives&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">raid</span><span class="p">[</span><span class="s1">&#39;maximumDrives&#39;</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">                          <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">listAvailableVlans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[network,type,primaryRouter[datacenter]]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;networkVlans&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;primaryRouter&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="s1">&#39;datacenter&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">dc_id</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkVlans</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Available Vlans&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">,</span> <span class="s2">&#34;VLAN&#34;</span><span class="p">,</span> <span class="s2">&#34;type&#34;</span><span class="p">,</span> <span class="s2">&#34;primaryRouter&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">vlan</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                           <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;primaryRouter&#39;</span><span class="p">][</span><span class="s1">&#39;hostname&#39;</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">                          <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getServerPrices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[regions,items[prices],activeServerItems[prices]]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># locations = self.client[&#39;Product_Package&#39;].getLocations(id=package_id)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Locations&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Location ID&#34;</span><span class="p">,</span> <span class="s2">&#34;Location Name&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;regions&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;location&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]])</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;Items Prices&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Price ID&#34;</span><span class="p">,</span> <span class="s2">&#34;description&#34;</span><span class="p">,</span> <span class="s2">&#34;cores&#34;</span><span class="p">,</span> <span class="s2">&#34;Monthly Fee&#34;</span><span class="p">,</span> <span class="s2">&#34;KeyName&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;items&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">prices</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># only print the Default location price.</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># The ordering system will replace the default price id for you if ordering in a non-usa region.</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="c1"># Some software has core restrictions that effect prices</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">if</span> <span class="s1">&#39;capacityRestrictionType&#39;</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">cores</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;capacityRestrictionMinimum&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;capacityRestrictionMaximum&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">prices</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                                       <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34; - &#34;</span><span class="p">,</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                       <span class="n">cores</span><span class="p">,</span> <span class="n">prices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                       <span class="n">item</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">prices</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                                       <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34; - &#34;</span><span class="p">,</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                       <span class="s2">&#34;&#34;</span><span class="p">,</span> <span class="n">prices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                       <span class="n">item</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]])</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># serverItems = self.client[&#39;Product_Package&#39;].getActiveServerItems(id=package_id)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">PrettyTable</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&#34;SERVER ITEMS&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;Price ID&#34;</span><span class="p">,</span> <span class="s2">&#34;description&#34;</span><span class="p">,</span> <span class="s2">&#34;Monthly Fee&#34;</span><span class="p">,</span> <span class="s2">&#34;KeyName&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;activeServerItems&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">prices</span> <span class="ow">in</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># only print the Default location price.</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># The ordering system will replace the default price id for you if ordering in a non-usa region.</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">prices</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">([</span><span class="n">prices</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                                   <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34; - &#34;</span><span class="p">,</span> <span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                   <span class="n">prices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                   <span class="n">item</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]])</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">gatherPriceIds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">,</span> <span class="n">keyNames</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># This will work for prices that have core requirements</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s1">&#39;mask[id,itemCategory,keyName,prices[categories],&#39;</span> \
+</span></span><span class="line"><span class="cl">               <span class="s1">&#39;capacityRestrictedProductFlag,totalPhysicalCoreCapacity]&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">items_restricted_by_capacity</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;capacityRestrictedProductFlag&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">category_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;gpu0&#34;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&#34;pcie_slot0&#34;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">core_capacity</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">item_keyname</span> <span class="ow">in</span> <span class="n">keyNames</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">matching_item</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">item_keyname</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">raise</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerError</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;Item </span><span class="si">{}</span><span class="s2"> does not exist for package </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item_keyname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                   <span class="n">package_id</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">item_category</span> <span class="o">=</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">item_category</span> <span class="o">==</span> <span class="s1">&#39;server&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">core_capacity</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;totalPhysicalCoreCapacity&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="k">break</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">item_keyname</span> <span class="ow">in</span> <span class="n">keyNames</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">matching_item</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;keyName&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">item_keyname</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">raise</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerError</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;Item </span><span class="si">{}</span><span class="s2"> does not exist for package </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item_keyname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                   <span class="n">package_id</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">item_category</span> <span class="o">=</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;itemCategory&#39;</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">item_category</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">category_dict</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">matching_item</span> <span class="ow">in</span> <span class="n">items_restricted_by_capacity</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                                <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                                <span class="ow">and</span> <span class="n">core_capacity</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;capacityRestrictionMaximum&#39;</span><span class="p">])][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                                <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">category_dict</span><span class="p">[</span><span class="n">item_category</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">                <span class="n">category_code</span> <span class="o">=</span> <span class="n">item_category</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">category_dict</span><span class="p">[</span><span class="n">item_category</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">matching_item</span><span class="p">[</span><span class="s1">&#39;prices&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                            <span class="ow">and</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;categoryCode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">category_code</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">price_id</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">prices</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">Ordering</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Step 1, find the processor type you want    
+</span></span></span><span class="line"><span class="cl"><span class="s2">    553  Dual E5-2600 v4 Series (12 Drives)  DUAL_E52600_V4_12_DRIVES  BARE_METAL_CPU
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># main.listServerPackages()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">package_id</span> <span class="o">=</span> <span class="mi">553</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Step 2, collect all the pieces you want to order
+</span></span></span><span class="line"><span class="cl"><span class="s2">    getServerPrices will list out all the keyNames and cost of components
+</span></span></span><span class="line"><span class="cl"><span class="s2">    that can be ordered on a certain package. Will also list the DCs that this
+</span></span></span><span class="line"><span class="cl"><span class="s2">    server is available in.
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">getServerPrices</span><span class="p">(</span><span class="n">package_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">location_id</span> <span class="o">=</span> <span class="mi">814994</span>  <span class="c1"># &#34;AMSTERDAM03&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Step 3, customize and place the order
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">listAvailableVlans</span><span class="p">(</span><span class="n">location_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pub_vlan_id</span> <span class="o">=</span> <span class="mi">2439425</span>
+</span></span><span class="line"><span class="cl">    <span class="n">priv_vlan_id</span> <span class="o">=</span> <span class="mi">2207425</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># main.listPartitionTemplates()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">listRaidArrayTypes</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">package_id</span><span class="p">,</span> <span class="n">location_id</span><span class="p">,</span> <span class="n">pub_vlan_id</span><span class="p">,</span> <span class="n">priv_vlan_id</span><span class="p">)</span>
+</span></span></code></pre></div><h2 id="exceptions-you-might-see">Exceptions you might see</h2>
 <ul>
 <li>SoftLayerAPIError(SoftLayer_Exception_Order_InvalidStorageGroups):</li>
 </ul>
@@ -543,114 +539,113 @@ if (!doNotTrack) {
 <blockquote>
 <p>This is an older example that hard codes priceIds, which can be a bad practice as priceIds can change without notice.</p>
 </blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">import</span> <span class="nn">json</span>
-
-<span class="n">quantity</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">location</span> <span class="o">=</span> <span class="s1">&#39;AMSTERDAM&#39;</span>
-<span class="n">packageId</span> <span class="o">=</span> <span class="mi">259</span>
-<span class="n">lvmFlag</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="c1"># Building a skeleton SoftLayer_Hardware_Server object to model the hostname and</span>
-<span class="c1"># domain we want for our server. If you set quantity greater then 1 then you</span>
-<span class="c1"># need to define one hostname/domain pair per server you wish to order.</span>
-<span class="n">hardware</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="s1">&#39;test&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="s1">&#39;example.org&#39;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># Building a skeleton SoftLayer_Product_Item_Price objects. These objects contain</span>
-<span class="c1"># much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id</span>
-<span class="c1"># to know what you want to order.</span>
-<span class="c1"># Every item in SoftLayer&#39;s product catalog is assigned an id. Use these ids</span>
-<span class="c1"># to tell the SoftLayer API which options you want in your new server. Use</span>
-<span class="c1"># the getActivePackages() method in the SoftLayer_Account API service to get</span>
-<span class="c1"># a list of available item and price options per available package.</span>
-<span class="n">prices</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">179861</span><span class="p">},</span>  <span class="c1"># server: Single  Intel  Xeon  E5-2620 (6 Cores, 2.00 GHz)</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">76165</span><span class="p">},</span>  <span class="c1"># ram: 8 GB RAM</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">44988</span><span class="p">},</span>  <span class="c1"># os: CentOS 7.x (64 bit)</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">74995</span><span class="p">},</span>  <span class="c1"># disk_controller: RAID</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">64769</span><span class="p">},</span>  <span class="c1"># disk0: 2.00 TB SATA</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">69535</span><span class="p">},</span>  <span class="c1"># disk1: 500 GB SATA</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">69535</span><span class="p">},</span>  <span class="c1"># disk2: 500 GB SATA</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">50357</span><span class="p">},</span>  <span class="c1"># bandwidth: 500 GB Bandwidth</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">273</span><span class="p">},</span>  <span class="c1"># port_speed: 100 Mbps Public &amp; Private Network Uplinks</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">55</span><span class="p">},</span>  <span class="c1"># monitoring: Host Ping</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">58</span><span class="p">},</span>  <span class="c1"># response: Automated Notification</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">420</span><span class="p">},</span>  <span class="c1"># vpn_management: Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">418</span><span class="p">},</span>  <span class="c1"># vulnerability_scanner: Nessus Vulnerability Assessment &amp; Reporting</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">21</span><span class="p">},</span>  <span class="c1"># pri_ip_addresses: 1 IP Address</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">57</span><span class="p">},</span>  <span class="c1"># notification: Email and Ticket</span>
-    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">906</span><span class="p">}</span>  <span class="c1"># remote_management: Reboot / KVM over IP</span>
-<span class="p">]</span>
-
-<span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Storage_Group object</span>
-<span class="c1"># Storage groups will only be used if the &#39;RAID&#39; disk controller price is selected.</span>
-<span class="c1"># Any other disk controller types will ignore the storage groups set here.</span>
-<span class="c1"># The first storage group in this array will be considered the primary storage group,</span>
-<span class="c1"># which is used for the OS. Any other storage groups will act as data storage.</span>
-<span class="n">storageGroups</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-         <span class="s2">&#34;arraySize&#34;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
-         <span class="s2">&#34;arrayTypeId&#34;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>  <span class="c1"># RAID_5</span>
-         <span class="s2">&#34;hardDrives&#34;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="mi">0</span><span class="p">,</span>
-            <span class="mi">1</span><span class="p">,</span>
-            <span class="mi">2</span>
-         <span class="p">],</span>
-         <span class="s2">&#34;partitionTemplateId&#34;</span><span class="p">:</span> <span class="mi">6</span>
-     <span class="p">},</span>
-    <span class="p">{</span>
-         <span class="s2">&#34;arraySize&#34;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
-         <span class="s2">&#34;arrayTypeId&#34;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
-         <span class="s2">&#34;hardDrives&#34;</span><span class="p">:</span> <span class="p">[</span>
-             <span class="mi">0</span>
-         <span class="p">],</span>
-         <span class="c1"># The custom partitions only work on other storage groups</span>
-         <span class="c1"># different from the primary one</span>
-         <span class="s2">&#34;partitions&#34;</span><span class="p">:</span> <span class="p">[</span>
-             <span class="p">{</span>
-                 <span class="s2">&#34;isGrow&#34;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;/test&#34;</span><span class="p">,</span>
-                 <span class="s2">&#34;size&#34;</span><span class="p">:</span> <span class="mi">100</span>
-             <span class="p">},</span>
-             <span class="p">{</span>
-                 <span class="s2">&#34;isGrow&#34;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                 <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;/test2&#34;</span><span class="p">,</span>
-                 <span class="s2">&#34;size&#34;</span><span class="p">:</span> <span class="mi">200</span>
-             <span class="p">}</span>
-         <span class="p">]</span>
-     <span class="p">},</span>
-<span class="p">]</span>
-
-<span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Hardware_Server object</span>
-<span class="c1"># containing the order you wish to place.</span>
-<span class="n">orderTemplate</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="n">quantity</span><span class="p">,</span>
-    <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span>
-    <span class="s1">&#39;packageId&#39;</span><span class="p">:</span> <span class="n">packageId</span><span class="p">,</span>
-    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
-    <span class="s1">&#39;hardware&#39;</span><span class="p">:</span> <span class="n">hardware</span><span class="p">,</span>
-    <span class="s1">&#39;storageGroups&#39;</span><span class="p">:</span> <span class="n">storageGroups</span><span class="p">,</span>
-    <span class="s1">&#39;lvmFlag&#39;</span><span class="p">:</span> <span class="n">lvmFlag</span>
-<span class="p">}</span>
-
-<span class="c1"># Creating a SoftLayer API client object</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-<span class="c1"># verifyOrder() will check your order for errors. Replace this with a call</span>
-<span class="c1"># to placeOrder() when you&#39;re ready to order. Both calls return a receipt</span>
-<span class="c1"># object that you can use for your records.</span>
-<span class="c1"># Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and</span>
-<span class="c1"># provisioning process. When it&#39;s done you&#39;ll have a new</span>
-<span class="c1"># SoftLayer_Hardware_Server object and server ready to use.</span>
-<span class="n">receipt</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderTemplate</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">receipt</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback">
-[^1]:https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">quantity</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="n">location</span> <span class="o">=</span> <span class="s1">&#39;AMSTERDAM&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="n">packageId</span> <span class="o">=</span> <span class="mi">259</span>
+</span></span><span class="line"><span class="cl"><span class="n">lvmFlag</span> <span class="o">=</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Hardware_Server object to model the hostname and</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># domain we want for our server. If you set quantity greater then 1 then you</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># need to define one hostname/domain pair per server you wish to order.</span>
+</span></span><span class="line"><span class="cl"><span class="n">hardware</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="s1">&#39;test&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="s1">&#39;example.org&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Product_Item_Price objects. These objects contain</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># to know what you want to order.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Every item in SoftLayer&#39;s product catalog is assigned an id. Use these ids</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># to tell the SoftLayer API which options you want in your new server. Use</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the getActivePackages() method in the SoftLayer_Account API service to get</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># a list of available item and price options per available package.</span>
+</span></span><span class="line"><span class="cl"><span class="n">prices</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">179861</span><span class="p">},</span>  <span class="c1"># server: Single  Intel  Xeon  E5-2620 (6 Cores, 2.00 GHz)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">76165</span><span class="p">},</span>  <span class="c1"># ram: 8 GB RAM</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">44988</span><span class="p">},</span>  <span class="c1"># os: CentOS 7.x (64 bit)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">74995</span><span class="p">},</span>  <span class="c1"># disk_controller: RAID</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">64769</span><span class="p">},</span>  <span class="c1"># disk0: 2.00 TB SATA</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">69535</span><span class="p">},</span>  <span class="c1"># disk1: 500 GB SATA</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">69535</span><span class="p">},</span>  <span class="c1"># disk2: 500 GB SATA</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">50357</span><span class="p">},</span>  <span class="c1"># bandwidth: 500 GB Bandwidth</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">273</span><span class="p">},</span>  <span class="c1"># port_speed: 100 Mbps Public &amp; Private Network Uplinks</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">55</span><span class="p">},</span>  <span class="c1"># monitoring: Host Ping</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">58</span><span class="p">},</span>  <span class="c1"># response: Automated Notification</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">420</span><span class="p">},</span>  <span class="c1"># vpn_management: Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">418</span><span class="p">},</span>  <span class="c1"># vulnerability_scanner: Nessus Vulnerability Assessment &amp; Reporting</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">21</span><span class="p">},</span>  <span class="c1"># pri_ip_addresses: 1 IP Address</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">57</span><span class="p">},</span>  <span class="c1"># notification: Email and Ticket</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="mi">906</span><span class="p">}</span>  <span class="c1"># remote_management: Reboot / KVM over IP</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Storage_Group object</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Storage groups will only be used if the &#39;RAID&#39; disk controller price is selected.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Any other disk controller types will ignore the storage groups set here.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The first storage group in this array will be considered the primary storage group,</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># which is used for the OS. Any other storage groups will act as data storage.</span>
+</span></span><span class="line"><span class="cl"><span class="n">storageGroups</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;arraySize&#34;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;arrayTypeId&#34;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>  <span class="c1"># RAID_5</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;hardDrives&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">         <span class="p">],</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;partitionTemplateId&#34;</span><span class="p">:</span> <span class="mi">6</span>
+</span></span><span class="line"><span class="cl">     <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;arraySize&#34;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;arrayTypeId&#34;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;hardDrives&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">             <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">         <span class="p">],</span>
+</span></span><span class="line"><span class="cl">         <span class="c1"># The custom partitions only work on other storage groups</span>
+</span></span><span class="line"><span class="cl">         <span class="c1"># different from the primary one</span>
+</span></span><span class="line"><span class="cl">         <span class="s2">&#34;partitions&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">             <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                 <span class="s2">&#34;isGrow&#34;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                 <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;/test&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                 <span class="s2">&#34;size&#34;</span><span class="p">:</span> <span class="mi">100</span>
+</span></span><span class="line"><span class="cl">             <span class="p">},</span>
+</span></span><span class="line"><span class="cl">             <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                 <span class="s2">&#34;isGrow&#34;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                 <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;/test2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                 <span class="s2">&#34;size&#34;</span><span class="p">:</span> <span class="mi">200</span>
+</span></span><span class="line"><span class="cl">             <span class="p">}</span>
+</span></span><span class="line"><span class="cl">         <span class="p">]</span>
+</span></span><span class="line"><span class="cl">     <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Hardware_Server object</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># containing the order you wish to place.</span>
+</span></span><span class="line"><span class="cl"><span class="n">orderTemplate</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="n">quantity</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;packageId&#39;</span><span class="p">:</span> <span class="n">packageId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;prices&#39;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;hardware&#39;</span><span class="p">:</span> <span class="n">hardware</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;storageGroups&#39;</span><span class="p">:</span> <span class="n">storageGroups</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;lvmFlag&#39;</span><span class="p">:</span> <span class="n">lvmFlag</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Creating a SoftLayer API client object</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># verifyOrder() will check your order for errors. Replace this with a call</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># to placeOrder() when you&#39;re ready to order. Both calls return a receipt</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># object that you can use for your records.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># provisioning process. When it&#39;s done you&#39;ll have a new</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Hardware_Server object and server ready to use.</span>
+</span></span><span class="line"><span class="cl"><span class="n">receipt</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">receipt</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">[^1]:https://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Storage_Group
+</span></span></code></pre></div>
             </div>
         </div>
 

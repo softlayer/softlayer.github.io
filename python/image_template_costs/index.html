@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -153,141 +149,141 @@ if (!doNotTrack) {
                 <p>The way this script works is that first it gets your last invoice, and finds all the <code>Image Template</code> items on it and builds a list of those, with their cost.</p>
 <p>Then it goes through all your current image templates, correlates the templates Storage_Repository, and child templates with what was on your last invoice, and does some very basic math to come up with a next month cost.</p>
 <p>Be aware that the next month cost assumes the template has existed in the repository for the entire month. So the result this script returns may not match exactly with what is on your next bill. This script also is not able to estimate cost of images that have been delete in the current month.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Image template cost calculator.
-</span><span class="s2">
-</span><span class="s2">SoftLayer stores image templates in a SoftLayer_Virtual_Storage_Repository, which has a collection of other templates.
-</span><span class="s2">You are billed per Storage_Repository, based on the images size on disk (not actual disk size).
-</span><span class="s2">An image template created mid-month will result in a smaller bill than calcualted. 
-</span><span class="s2">It is not possible for this script to pull usage data for images that have been deleted, so those are not included in these estimates.
-</span><span class="s2">Any entry in the CSV output that has a number for the first column means that Storage_Repo was delete since the last bill.
-</span><span class="s2">&#34;&#34;&#34;</span>
- 
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span>  <span class="nn">click</span>
-
- 
-<span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
- 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">       :param int start: epoch time to start at. Should align to 00:00 UTC
-</span><span class="s2">       :param int end: epoch time to end at. Should align to 00:00 UTC
-</span><span class="s2">       &#34;&#34;&#34;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
- 
-        <span class="c1"># logger = logging.getLogger()</span>
-        <span class="c1"># logger.addHandler(logging.StreamHandler())</span>
-   
-    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        Useful for printing out the exact API calls that were used. If using the rest transport, will print cure-able commands.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
- 
-    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">        Goes through all image templates on your account and tries to figure out how much they will cost next month.
-</span><span class="s2">        These costs are ESTIMATES and assumes the image template exists on your account for the entire month.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-
-        <span class="n">storage_repos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastInvoiceRepos</span><span class="p">()</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[children[blockDevicesDiskSpaceTotal,storageRepository[id,datacenter,name,metricTrackingObject,billingItem[item[activeUsagePrices]]]]]&#34;&#34;&#34;</span>
-        <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getPrivateBlockDeviceTemplateGroups&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">_object</span> <span class="ow">in</span> <span class="n">objects</span><span class="p">:</span>
-
-            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">_object</span><span class="p">[</span><span class="s1">&#39;children&#39;</span><span class="p">]:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">repo_id</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-                    <span class="n">repo_name</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
-
-                    <span class="n">metric_id</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;metricTrackingObject&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-                    <span class="n">rate</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;activeUsagePrices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;usageRate&#39;</span><span class="p">])</span>
-                    <span class="n">size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;blockDevicesDiskSpaceTotal&#39;</span><span class="p">])</span>
-
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">storage_repos</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">repo_id</span><span class="p">):</span>
-                        <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;images&#39;</span><span class="p">:[],</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">repo_name</span><span class="p">}</span>
-
-                    <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo_id</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">repo_name</span><span class="p">)</span>
-                    <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo_id</span><span class="p">][</span><span class="s1">&#39;images&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                        <span class="s1">&#39;metricTrackingObject&#39;</span><span class="p">:</span> <span class="n">metric_id</span><span class="p">,</span>
-                        <span class="s1">&#39;billingItemId&#39;</span><span class="p">:</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-                        <span class="s1">&#39;rate&#39;</span><span class="p">:</span> <span class="n">rate</span><span class="p">,</span> 
-                        <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
-                        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
-                        <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">size</span> <span class="o">*</span> <span class="n">rate</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-                    <span class="p">})</span>
-                <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="k">pass</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Valut, Last Cost, Next Cost, Size, Images&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">repo</span> <span class="ow">in</span> <span class="n">storage_repos</span><span class="p">:</span>
-            <span class="n">next_cost</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">size</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo</span><span class="p">][</span><span class="s1">&#39;images&#39;</span><span class="p">]:</span>
-                <span class="n">next_cost</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;cost&#39;</span><span class="p">])</span>
-                <span class="n">size</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span>
-                <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
-
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo</span><span class="p">][</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">],</span>
-                <span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">next_cost</span><span class="p">),</span><span class="mi">2</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">size</span><span class="p">),</span><span class="mi">2</span><span class="p">),</span> <span class="s2">&#34;,&#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
-            <span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">lastInvoiceRepos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Gets the last invoice and fines all the SoftLayer_Virtual_Storage_Repository items&#34;&#34;&#34;</span>
-        <span class="n">repos</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">invoice_mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id]&#34;&#34;&#34;</span>
-        <span class="n">top_mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[category,billingItem,product]&#34;&#34;&#34;</span>
-        <span class="c1"># Image Template Storage or Public Image Storage</span>
-        <span class="c1"># Archive Storage Repository or Public Storage Repository</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;invoiceTopLevelItems&#39;</span> <span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;categoryCode&#39;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;or&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[{</span>
-                        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span>
-                        <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;public_storage&#39;</span><span class="p">,</span> <span class="s1">&#39;guest_storage&#39;</span><span class="p">]</span>
-                    <span class="p">}]</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-
-        <span class="n">invoice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getLatestRecurringInvoice&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">invoice_mask</span><span class="p">)</span>
-        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Billing_Invoice&#39;</span><span class="p">,</span> <span class="s1">&#39;getInvoiceTopLevelItems&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">top_mask</span><span class="p">,</span> 
-                                 <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">invoice</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
-            <span class="n">repos</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;resourceTableId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s1">&#39;product&#39;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;product&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
-                <span class="s1">&#39;recurringFee&#39;</span> <span class="p">:</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">],</span>
-                <span class="s1">&#39;oneTimeFee&#39;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;oneTimeFee&#39;</span><span class="p">],</span>
-                <span class="s1">&#39;images&#39;</span><span class="p">:</span> <span class="p">[],</span>
-                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;resourceTableId&#39;</span><span class="p">]</span>
-            <span class="p">}</span>
-
-        <span class="k">return</span> <span class="n">repos</span>
- 
-
-    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
-        <span class="k">return</span>  <span class="nb">round</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">**</span><span class="mi">3</span> <span class="p">),</span><span class="mi">2</span><span class="p">)</span>
- 
-<span class="nd">@click</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
-    
-    <span class="c1"># Uncomment this to print out the API calls made.</span>
-    <span class="c1"># main.debug()</span>
- 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span><span class="p">()</span>
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Image template cost calculator.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">SoftLayer stores image templates in a SoftLayer_Virtual_Storage_Repository, which has a collection of other templates.
+</span></span></span><span class="line"><span class="cl"><span class="s2">You are billed per Storage_Repository, based on the images size on disk (not actual disk size).
+</span></span></span><span class="line"><span class="cl"><span class="s2">An image template created mid-month will result in a smaller bill than calcualted. 
+</span></span></span><span class="line"><span class="cl"><span class="s2">It is not possible for this script to pull usage data for images that have been deleted, so those are not included in these estimates.
+</span></span></span><span class="line"><span class="cl"><span class="s2">Any entry in the CSV output that has a number for the first column means that Storage_Repo was delete since the last bill.
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">logging</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span>  <span class="nn">click</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">example</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">       :param int start: epoch time to start at. Should align to 00:00 UTC
+</span></span></span><span class="line"><span class="cl"><span class="s2">       :param int end: epoch time to end at. Should align to 00:00 UTC
+</span></span></span><span class="line"><span class="cl"><span class="s2">       &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">        <span class="c1"># logger = logging.getLogger()</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># logger.addHandler(logging.StreamHandler())</span>
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Useful for printing out the exact API calls that were used. If using the rest transport, will print cure-able commands.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">get_last_calls</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">print_reproduceable</span><span class="p">(</span><span class="n">call</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Goes through all image templates on your account and tries to figure out how much they will cost next month.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        These costs are ESTIMATES and assumes the image template exists on your account for the entire month.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">storage_repos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lastInvoiceRepos</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[children[blockDevicesDiskSpaceTotal,storageRepository[id,datacenter,name,metricTrackingObject,billingItem[item[activeUsagePrices]]]]]&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getPrivateBlockDeviceTemplateGroups&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">_object</span> <span class="ow">in</span> <span class="n">objects</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">_object</span><span class="p">[</span><span class="s1">&#39;children&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">repo_id</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">repo_name</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="n">metric_id</span> <span class="o">=</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;metricTrackingObject&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">rate</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;activeUsagePrices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;usageRate&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">&#39;blockDevicesDiskSpaceTotal&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="k">if</span> <span class="ow">not</span> <span class="n">storage_repos</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">repo_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;images&#39;</span><span class="p">:[],</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">repo_name</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo_id</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">repo_name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo_id</span><span class="p">][</span><span class="s1">&#39;images&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;metricTrackingObject&#39;</span><span class="p">:</span> <span class="n">metric_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;billingItemId&#39;</span><span class="p">:</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;storageRepository&#39;</span><span class="p">][</span><span class="s1">&#39;billingItem&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;rate&#39;</span><span class="p">:</span> <span class="n">rate</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">child</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">size</span> <span class="o">*</span> <span class="n">rate</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">})</span>
+</span></span><span class="line"><span class="cl">                <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">pass</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Valut, Last Cost, Next Cost, Size, Images&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">repo</span> <span class="ow">in</span> <span class="n">storage_repos</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">next_cost</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">size</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo</span><span class="p">][</span><span class="s1">&#39;images&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">next_cost</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;cost&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">size</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">storage_repos</span><span class="p">[</span><span class="n">repo</span><span class="p">][</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">next_cost</span><span class="p">),</span><span class="mi">2</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">size</span><span class="p">),</span><span class="mi">2</span><span class="p">),</span> <span class="s2">&#34;,&#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">lastInvoiceRepos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Gets the last invoice and fines all the SoftLayer_Virtual_Storage_Repository items&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">repos</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">invoice_mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id]&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">top_mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[category,billingItem,product]&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Image Template Storage or Public Image Storage</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Archive Storage Repository or Public Storage Repository</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;invoiceTopLevelItems&#39;</span> <span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;categoryCode&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="s1">&#39;or&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">[{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;public_storage&#39;</span><span class="p">,</span> <span class="s1">&#39;guest_storage&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}]</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">invoice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="s1">&#39;getLatestRecurringInvoice&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">invoice_mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Billing_Invoice&#39;</span><span class="p">,</span> <span class="s1">&#39;getInvoiceTopLevelItems&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">top_mask</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">                                 <span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">invoice</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">repos</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;resourceTableId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;product&#39;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;product&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;recurringFee&#39;</span> <span class="p">:</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;recurringFee&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;oneTimeFee&#39;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;oneTimeFee&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;images&#39;</span><span class="p">:</span> <span class="p">[],</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;resourceTableId&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">repos</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span>  <span class="nb">round</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">bytes</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">**</span><span class="mi">3</span> <span class="p">),</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="nd">@click</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">example</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># Uncomment this to print out the API calls made.</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># main.debug()</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="p">()</span>
+</span></span></code></pre></div>
             </div>
         </div>
 
