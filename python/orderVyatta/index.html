@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -157,270 +153,269 @@ if (!doNotTrack) {
                 
 				
                 <p>This example goes over how to order a Single or HA vyatta with a bunch of optional settings. More context around ordering can be found in  <a href="https://softlayer.github.io/python/orderBareMetal/">https://softlayer.github.io/python/orderBareMetal/</a> and  <a href="https://softlayer.github.io/python/ordering_slcli/">https://softlayer.github.io/python/ordering_slcli/</a></p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">SoftLayer.managers</span> <span class="kn">import</span> <span class="n">ordering</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span>  <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-
-
-<span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&#34;Starting up&#34;</span><span class="p">)</span>
-<span class="c1"># Requires softlayer-python 5.4.3+</span>
-
-<span class="k">class</span> <span class="nc">vyattaOrderer</span><span class="p">():</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&lt;</span> <span class="s1">&#39;v5.4.3&#39;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;SoftLayer needs to be 5.4.3+, is currently </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-        <span class="c1"># slcli order package-list --package_type BARE_METAL_GATEWAY </span>
-        <span class="c1"># Will get you available package keynames</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">package_keyname</span> <span class="o">=</span> <span class="s2">&#34;2U_NETWORK_GATEWAY_APPLIANCE_1O_GBPS&#34;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">complex_type</span> <span class="o">=</span> <span class="s1">&#39;SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance&#39;</span>
-
-
-    <span class="k">def</span> <span class="nf">orderVyatta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Actually orders a vyatts
-</span><span class="s2">            Required
-</span><span class="s2">                - dc
-</span><span class="s2">                - Server Chassis
-</span><span class="s2">                - RAM
-</span><span class="s2">                - OS (not really though)
-</span><span class="s2">                - HD (number, raid, partition)
-</span><span class="s2">                - Bandwidth 
-</span><span class="s2">                - Port Speed
-</span><span class="s2">                - IPv6
-</span><span class="s2">            Options
-</span><span class="s2">                - vlans
-</span><span class="s2">                - provision scrips
-</span><span class="s2">                - ssh keys
-</span><span class="s2">                - userdata
-</span><span class="s2">                - hostname, domain
-</span><span class="s2">        &#34;&#34;&#34;</span>
-        
-        <span class="n">order_svc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span>
-
-        <span class="n">order_items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemKeynameList</span><span class="p">()</span>
-
-        <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;hardware&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generateHardwareEntry</span><span class="p">(</span><span class="s1">&#39;vyatta1&#39;</span><span class="p">,</span> <span class="s1">&#39;test.com&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="p">,</span> <span class="s1">&#39;vyatta1 Test&#39;</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;storageGroups&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">generateRaidEntry</span><span class="p">()]</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">87634</span><span class="p">]}]</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;provisionScripts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s1">&#39;https://raw.githubusercontent.com/softlayer/softlayer.github.io/master/provision-test.sh&#39;</span>
-        <span class="p">]</span>
-
-        <span class="n">vyatta_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getOrderObject</span><span class="p">(</span><span class="n">dc</span><span class="p">,</span> <span class="n">order_items</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">order_object</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;orderContainers&#39;</span><span class="p">:</span> <span class="p">[</span>
-                <span class="n">vyatta_order</span>
-            <span class="p">]</span>
-        <span class="p">}</span>
-
-        <span class="n">verify</span> <span class="o">=</span> <span class="n">order_svc</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">order_object</span><span class="p">)</span>
-        <span class="c1"># verify = order_svc.placeOrder(order_object)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">verify</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;done&#34;</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">orderVyattaHA</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-        <span class="n">order_svc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span>
-        <span class="n">om</span> <span class="o">=</span> <span class="n">ordering</span><span class="o">.</span><span class="n">OrderingManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
-
-        <span class="n">order_items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemKeynameList</span><span class="p">()</span>
-
-        <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;hardware&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generateHardwareEntry</span><span class="p">(</span><span class="s1">&#39;vyatta1&#39;</span><span class="p">,</span> <span class="s1">&#39;test.com&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="p">,</span> <span class="s1">&#39;vyatta1 Test&#39;</span><span class="p">),</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generateHardwareEntry</span><span class="p">(</span><span class="s1">&#39;vyatta2&#39;</span><span class="p">,</span> <span class="s1">&#39;test.com&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="p">,</span> <span class="s1">&#39;vyatta2 Test&#39;</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;storageGroups&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">generateRaidEntry</span><span class="p">()]</span>
-        <span class="n">mySshKey</span> <span class="o">=</span> <span class="mi">87634</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">mySshKey</span><span class="p">]},</span> <span class="p">{</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">mySshKey</span><span class="p">]}]</span>
-        <span class="c1"># Each server needs a provision script</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;provisionScripts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s1">&#39;https://raw.githubusercontent.com/softlayer/softlayer.github.io/master/provision-test.sh&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;https://raw.githubusercontent.com/softlayer/softlayer.github.io/master/provision-test.sh&#39;</span>
-        <span class="p">]</span>
-        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;clusterIdentifier&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;myTestClusterOfVyattas&#39;</span>
-
-        <span class="n">vyatta_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getOrderObject</span><span class="p">(</span><span class="n">dc</span><span class="p">,</span> <span class="n">order_items</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-        <span class="n">cluster_extras</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;clusterIdentifier&#39;</span><span class="p">:</span> <span class="s1">&#39;myTestClusterOfVyattas&#39;</span><span class="p">,</span>
-            <span class="s2">&#34;sshKeys&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;sshKeyIds&#34;</span><span class="p">:</span> <span class="p">[</span><span class="n">mySshKey</span><span class="p">]}]</span>
-        <span class="p">}</span>
-        <span class="n">cluster_type</span> <span class="o">=</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Gateway_Appliance_Cluster&#34;</span>
-        <span class="n">cluster_object</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">generate_order</span><span class="p">(</span><span class="s1">&#39;NETWORK_GATEWAY_APPLIANCE_CLUSTER&#39;</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;GATEWAY_APPLIANCE_CLUSTER&#39;</span><span class="p">],</span>
-                                            <span class="n">cluster_type</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cluster_extras</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="c1"># the cluster order object is a bit special, and we need to remove these for it to work properly</span>
-        <span class="k">del</span> <span class="n">cluster_object</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
-        <span class="k">del</span> <span class="n">cluster_object</span><span class="p">[</span><span class="s1">&#39;useHourlyPricing&#39;</span><span class="p">]</span>
-        <span class="n">order_object</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;orderContainers&#39;</span><span class="p">:</span> <span class="p">[</span>
-                <span class="n">vyatta_order</span><span class="p">,</span>
-                <span class="n">cluster_object</span>
-            <span class="p">]</span>
-        <span class="p">}</span>
-
-        <span class="n">verify</span> <span class="o">=</span> <span class="n">order_svc</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">order_object</span><span class="p">)</span>
-        <span class="c1"># verify = order_svc.placeOrder(order_object)</span>
-        <span class="n">pp</span><span class="p">(</span><span class="n">verify</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;done&#34;</span><span class="p">)</span>
-
-
-    <span class="k">def</span> <span class="nf">generateHardwareEntry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">userData</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-        <span class="n">hardware</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
-            <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span>
-            <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">:</span> 
-                <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">pub_vlan</span><span class="p">)}},</span>
-            <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> 
-                <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">prv_vlan</span><span class="p">)}},</span>
-            <span class="s1">&#39;userData&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">userData</span><span class="p">}]</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="n">hardware</span>
-
-    <span class="k">def</span> <span class="nf">generateRaidEntry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># TODO add a way to calculate arraySize based on raidType and drives chosen.</span>
-        <span class="n">storage</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-                <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
-                <span class="s1">&#39;partitionTemplateId&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">500</span> 
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="n">storage</span>
-
-    <span class="k">def</span> <span class="nf">getOrderObject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="n">quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Uses the ordering manager to build a order object&#34;&#34;&#34;</span>
-        <span class="n">om</span> <span class="o">=</span> <span class="n">ordering</span><span class="o">.</span><span class="n">OrderingManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
-        <span class="n">order</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">generate_order</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_keyname</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">complex_type</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="n">quantity</span><span class="p">)</span>
-        <span class="c1"># pp(order)</span>
-        <span class="k">return</span> <span class="n">order</span>
-
-
-
-    <span class="k">def</span> <span class="nf">datacenterList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Prints a list of dcs and their ids&#34;&#34;&#34;</span>
-        <span class="n">om</span> <span class="o">=</span> <span class="n">ordering</span><span class="o">.</span><span class="n">OrderingManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
-        <span class="n">locations</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">package_locations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_keyname</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;ID, name, longName&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">locations</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">region</span><span class="p">[</span><span class="s1">&#39;locations&#39;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;locationPackageDetails&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;isAvailable&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">dc</span> <span class="o">=</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dc</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">dc</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">dc</span><span class="p">[</span><span class="s1">&#39;longName&#39;</span><span class="p">]))</span>
-
-
-    <span class="k">def</span> <span class="nf">itemKeynameList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Builds a list of item keyNames needed to order a VYATTA
-</span><span class="s2">
-</span><span class="s2">        To see what category of items are required, use this command
-</span><span class="s2">        $&gt; slcli order category-list 2U_NETWORK_GATEWAY_APPLIANCE_1O_GBPS
-</span><span class="s2">        
-</span><span class="s2">        To see what items are in each category, use this command
-</span><span class="s2">        $&gt; slcli order item-list 2U_NETWORK_GATEWAY_APPLIANCE_1O_GBPS
-</span><span class="s2">        
-</span><span class="s2">        Price Ids are subject to change, so please use keynames to get price ids
-</span><span class="s2">        at order time.
-</span><span class="s2">        &#34;&#34;&#34;</span>
-
-        <span class="c1"># The junk all orders have to have</span>
-        <span class="n">required_items</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;AUTOMATED_NOTIFICATION&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;MONITORING_HOST_PING&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;NOTIFICATION_EMAIL_AND_TICKET&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;REBOOT_KVM_OVER_IP&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;REDUNDANT_POWER_SUPPLY&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;SRIOV_ENABLED&#39;</span>
-        <span class="p">]</span>
-
-        <span class="c1"># 20000GB is recommended. </span>
-        <span class="c1"># BANDWIDTH_0_GB_2 and BANDWIDTH_UNLIMITED_100_MBPS_UPLINK are also possible</span>
-        <span class="n">network_items</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;BANDWIDTH_20000_GB&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;10_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;1_IP_ADDRESS&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;1_IPV6_ADDRESS&#39;</span> 
-        <span class="p">]</span>
-
-        <span class="c1"># Were going to go with RAID1, 500GB. </span>
-        <span class="n">hard_drive</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;HARD_DRIVE_500GB_SATA_II&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HARD_DRIVE_500GB_SATA_II&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;DISK_CONTROLLER_RAID_1&#39;</span>
-        <span class="p">]</span>
-
-        <span class="n">ram</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="c1"># &#39;RAM_16_GB_DDR3_1333_ECC_REG&#39;</span>
-            <span class="s1">&#39;RAM_32_GB_DDR3_1333_REG_2&#39;</span><span class="p">,</span>
-            <span class="c1"># &#39;RAM_64_GB_DDR3_1333_REG_2&#39;</span>
-            <span class="c1"># &#39;RAM_48_GB_DDR3_1333_REG&#39;</span>
-            <span class="c1"># &#39;RAM_96_GB_DDR3_1333_REG&#39;</span>
-            <span class="c1"># &#39;RAM_128_GB_DDR3_1333_REG_2&#39;</span>
-            <span class="c1"># &#39;RAM_256_GB_DDR3_1333_REG_2&#39;</span>
-        <span class="p">]</span>
-
-        <span class="c1"># Sets the server chassis and OS</span>
-        <span class="n">server</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s1">&#39;OS_VYATTA_5600_5_X_UP_TO_20GBPS_SUBSCRIPTION_EDITION_64_BIT&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;INTEL_XEON_2620_2_40&#39;</span><span class="p">,</span>
-            <span class="c1"># &#39;INTEL_INTEL_XEON_E52620_V4_2_10&#39;</span>
-            <span class="c1"># &#39;INTEL_XEON_2650_2_30&#39;</span>
-            <span class="c1"># &#39;INTEL_INTEL_XEON_E52650_V4_2_20&#39;</span>
-            <span class="c1"># &#39;INTEL_XEON_2690_2_60&#39;</span>
-            <span class="c1"># &#39;INTEL_INTEL_XEON_E52690_V4_2_60&#39;</span>
-        <span class="p">]</span>
-
-        <span class="n">allItems</span> <span class="o">=</span> <span class="n">required_items</span> <span class="o">+</span> <span class="n">network_items</span> <span class="o">+</span> <span class="n">hard_drive</span> <span class="o">+</span> <span class="n">ram</span> <span class="o">+</span> <span class="n">server</span>
-        <span class="k">return</span> <span class="n">allItems</span>
-
-    <span class="k">def</span> <span class="nf">listAvailableVlans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc_id</span><span class="p">):</span>
-        <span class="s2">&#34;&#34;&#34;Will find available VLANs that a vyatta can be ordered on&#34;&#34;&#34;</span>
-
-        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[
-</span><span class="s2">            network, type, primaryRouter[datacenter], 
-</span><span class="s2">            attachedNetworkGatewayFlag, dedicatedFirewallFlag
-</span><span class="s2">        ]&#34;&#34;&#34;</span>
-
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;networkVlans&#39;</span> <span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;primaryRouter&#39;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s1">&#39;datacenter&#39;</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">dc_id</span><span class="p">}</span> <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkVlans</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
-
-        <span class="c1"># Vlans that are not-standard, part of a firewall or gateway, can&#39;t be ordered on. </span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;ID, Vlan Number, Type, Router&#34;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">vlan</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">vlan_type</span> <span class="o">=</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">vlan_type</span> <span class="o">==</span> <span class="s1">&#39;GATEWAY&#39;</span><span class="p">:</span>
-                <span class="n">vlan_type</span> <span class="o">=</span> <span class="s1">&#39;GATEWAY (No ordering)&#39;</span>
-            <span class="k">elif</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;dedicatedFirewallFlag&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">vlan_type</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">/FIREWALL (No ordering)&#34;</span> <span class="o">%</span> <span class="n">vlan_type</span>
-            <span class="k">elif</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;attachedNetworkGatewayFlag&#39;</span><span class="p">]:</span>
-                <span class="n">vlan_type</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">/GATEWAY MEMBER (No ordering)&#34;</span> <span class="o">%</span> <span class="n">vlan_type</span>
-
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - VLAN: </span><span class="si">%s</span><span class="s2"> - Type: </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> &#34;</span> <span class="o">%</span> 
-                <span class="p">(</span><span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
-                 <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">],</span>
-                 <span class="n">vlan_type</span><span class="p">,</span> 
-                 <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;primaryRouter&#39;</span><span class="p">][</span><span class="s1">&#39;hostname&#39;</span><span class="p">])</span>
-            <span class="p">)</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">main</span> <span class="o">=</span> <span class="n">vyattaOrderer</span><span class="p">()</span>
-    <span class="c1"># 2255245 - VLAN: 946 - Type: STANDARD - bcr01a.sjc04</span>
-    <span class="c1"># 2255243 - VLAN: 913 - Type: STANDARD - fcr01a.sjc04</span>
-    <span class="c1"># main.orderVyatta(&#39;sjc04&#39;, 2255243, 2255245)</span>
-    <span class="n">main</span><span class="o">.</span><span class="n">orderVyattaHA</span><span class="p">(</span><span class="s1">&#39;sjc04&#39;</span><span class="p">,</span> <span class="mi">2255243</span><span class="p">,</span> <span class="mi">2255245</span><span class="p">)</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">SoftLayer.managers</span> <span class="kn">import</span> <span class="n">ordering</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">sys</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span>  <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">logging</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&#34;Starting up&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Requires softlayer-python 5.4.3+</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">vyattaOrderer</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&lt;</span> <span class="s1">&#39;v5.4.3&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;SoftLayer needs to be 5.4.3+, is currently </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># slcli order package-list --package_type BARE_METAL_GATEWAY </span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Will get you available package keynames</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">package_keyname</span> <span class="o">=</span> <span class="s2">&#34;2U_NETWORK_GATEWAY_APPLIANCE_1O_GBPS&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">complex_type</span> <span class="o">=</span> <span class="s1">&#39;SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">orderVyatta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Actually orders a vyatts
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Required
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - dc
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - Server Chassis
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - RAM
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - OS (not really though)
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - HD (number, raid, partition)
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - Bandwidth 
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - Port Speed
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - IPv6
+</span></span></span><span class="line"><span class="cl"><span class="s2">            Options
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - vlans
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - provision scrips
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - ssh keys
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - userdata
+</span></span></span><span class="line"><span class="cl"><span class="s2">                - hostname, domain
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="n">order_svc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">order_items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemKeynameList</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;hardware&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">generateHardwareEntry</span><span class="p">(</span><span class="s1">&#39;vyatta1&#39;</span><span class="p">,</span> <span class="s1">&#39;test.com&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="p">,</span> <span class="s1">&#39;vyatta1 Test&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;storageGroups&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">generateRaidEntry</span><span class="p">()]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">87634</span><span class="p">]}]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;provisionScripts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;https://raw.githubusercontent.com/softlayer/softlayer.github.io/master/provision-test.sh&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">vyatta_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getOrderObject</span><span class="p">(</span><span class="n">dc</span><span class="p">,</span> <span class="n">order_items</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">order_object</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;orderContainers&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="n">vyatta_order</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">verify</span> <span class="o">=</span> <span class="n">order_svc</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">order_object</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># verify = order_svc.placeOrder(order_object)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">verify</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;done&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">orderVyattaHA</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">order_svc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">om</span> <span class="o">=</span> <span class="n">ordering</span><span class="o">.</span><span class="n">OrderingManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">order_items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">itemKeynameList</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;hardware&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">generateHardwareEntry</span><span class="p">(</span><span class="s1">&#39;vyatta1&#39;</span><span class="p">,</span> <span class="s1">&#39;test.com&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="p">,</span> <span class="s1">&#39;vyatta1 Test&#39;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">generateHardwareEntry</span><span class="p">(</span><span class="s1">&#39;vyatta2&#39;</span><span class="p">,</span> <span class="s1">&#39;test.com&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="p">,</span> <span class="s1">&#39;vyatta2 Test&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;storageGroups&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">generateRaidEntry</span><span class="p">()]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mySshKey</span> <span class="o">=</span> <span class="mi">87634</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">mySshKey</span><span class="p">]},</span> <span class="p">{</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">mySshKey</span><span class="p">]}]</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Each server needs a provision script</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;provisionScripts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;https://raw.githubusercontent.com/softlayer/softlayer.github.io/master/provision-test.sh&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s1">&#39;https://raw.githubusercontent.com/softlayer/softlayer.github.io/master/provision-test.sh&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">extras</span><span class="p">[</span><span class="s1">&#39;clusterIdentifier&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;myTestClusterOfVyattas&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">vyatta_order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getOrderObject</span><span class="p">(</span><span class="n">dc</span><span class="p">,</span> <span class="n">order_items</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">cluster_extras</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;clusterIdentifier&#39;</span><span class="p">:</span> <span class="s1">&#39;myTestClusterOfVyattas&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;sshKeys&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;sshKeyIds&#34;</span><span class="p">:</span> <span class="p">[</span><span class="n">mySshKey</span><span class="p">]}]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">cluster_type</span> <span class="o">=</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Gateway_Appliance_Cluster&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">cluster_object</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">generate_order</span><span class="p">(</span><span class="s1">&#39;NETWORK_GATEWAY_APPLIANCE_CLUSTER&#39;</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;GATEWAY_APPLIANCE_CLUSTER&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                                            <span class="n">cluster_type</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cluster_extras</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># the cluster order object is a bit special, and we need to remove these for it to work properly</span>
+</span></span><span class="line"><span class="cl">        <span class="k">del</span> <span class="n">cluster_object</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">del</span> <span class="n">cluster_object</span><span class="p">[</span><span class="s1">&#39;useHourlyPricing&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">order_object</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;orderContainers&#39;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="n">vyatta_order</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="n">cluster_object</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">verify</span> <span class="o">=</span> <span class="n">order_svc</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">order_object</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># verify = order_svc.placeOrder(order_object)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pp</span><span class="p">(</span><span class="n">verify</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;done&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">generateHardwareEntry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">domain</span><span class="p">,</span> <span class="n">prv_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">pub_vlan</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">userData</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">hardware</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">:</span> 
+</span></span><span class="line"><span class="cl">                <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">pub_vlan</span><span class="p">)}},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">:</span> 
+</span></span><span class="line"><span class="cl">                <span class="p">{</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">prv_vlan</span><span class="p">)}},</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;userData&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">userData</span><span class="p">}]</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">hardware</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">generateRaidEntry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># TODO add a way to calculate arraySize based on raidType and drives chosen.</span>
+</span></span><span class="line"><span class="cl">        <span class="n">storage</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;arrayTypeId&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;hardDrives&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;partitionTemplateId&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;arraySize&#39;</span><span class="p">:</span> <span class="mi">500</span> 
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">storage</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getOrderObject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="n">quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Uses the ordering manager to build a order object&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">om</span> <span class="o">=</span> <span class="n">ordering</span><span class="o">.</span><span class="n">OrderingManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">order</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">generate_order</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_keyname</span><span class="p">,</span> <span class="n">dc</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">complex_type</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="n">quantity</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># pp(order)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">order</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">datacenterList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Prints a list of dcs and their ids&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">om</span> <span class="o">=</span> <span class="n">ordering</span><span class="o">.</span><span class="n">OrderingManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">locations</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">package_locations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package_keyname</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;ID, name, longName&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">locations</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">region</span><span class="p">[</span><span class="s1">&#39;locations&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;locationPackageDetails&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;isAvailable&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">dc</span> <span class="o">=</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dc</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">dc</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">dc</span><span class="p">[</span><span class="s1">&#39;longName&#39;</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">itemKeynameList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Builds a list of item keyNames needed to order a VYATTA
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">        To see what category of items are required, use this command
+</span></span></span><span class="line"><span class="cl"><span class="s2">        $&gt; slcli order category-list 2U_NETWORK_GATEWAY_APPLIANCE_1O_GBPS
+</span></span></span><span class="line"><span class="cl"><span class="s2">        
+</span></span></span><span class="line"><span class="cl"><span class="s2">        To see what items are in each category, use this command
+</span></span></span><span class="line"><span class="cl"><span class="s2">        $&gt; slcli order item-list 2U_NETWORK_GATEWAY_APPLIANCE_1O_GBPS
+</span></span></span><span class="line"><span class="cl"><span class="s2">        
+</span></span></span><span class="line"><span class="cl"><span class="s2">        Price Ids are subject to change, so please use keynames to get price ids
+</span></span></span><span class="line"><span class="cl"><span class="s2">        at order time.
+</span></span></span><span class="line"><span class="cl"><span class="s2">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># The junk all orders have to have</span>
+</span></span><span class="line"><span class="cl">        <span class="n">required_items</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;AUTOMATED_NOTIFICATION&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;MONITORING_HOST_PING&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;NOTIFICATION_EMAIL_AND_TICKET&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;REBOOT_KVM_OVER_IP&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;UNLIMITED_SSL_VPN_USERS_1_PPTP_VPN_USER_PER_ACCOUNT&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;REDUNDANT_POWER_SUPPLY&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;SRIOV_ENABLED&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 20000GB is recommended. </span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># BANDWIDTH_0_GB_2 and BANDWIDTH_UNLIMITED_100_MBPS_UPLINK are also possible</span>
+</span></span><span class="line"><span class="cl">        <span class="n">network_items</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;BANDWIDTH_20000_GB&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;10_GBPS_PUBLIC_PRIVATE_NETWORK_UPLINKS&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;1_IP_ADDRESS&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;1_IPV6_ADDRESS&#39;</span> 
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># Were going to go with RAID1, 500GB. </span>
+</span></span><span class="line"><span class="cl">        <span class="n">hard_drive</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_500GB_SATA_II&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;HARD_DRIVE_500GB_SATA_II&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;DISK_CONTROLLER_RAID_1&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">ram</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;RAM_16_GB_DDR3_1333_ECC_REG&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;RAM_32_GB_DDR3_1333_REG_2&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;RAM_64_GB_DDR3_1333_REG_2&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;RAM_48_GB_DDR3_1333_REG&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;RAM_96_GB_DDR3_1333_REG&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;RAM_128_GB_DDR3_1333_REG_2&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;RAM_256_GB_DDR3_1333_REG_2&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># Sets the server chassis and OS</span>
+</span></span><span class="line"><span class="cl">        <span class="n">server</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;OS_VYATTA_5600_5_X_UP_TO_20GBPS_SUBSCRIPTION_EDITION_64_BIT&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;INTEL_XEON_2620_2_40&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;INTEL_INTEL_XEON_E52620_V4_2_10&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;INTEL_XEON_2650_2_30&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;INTEL_INTEL_XEON_E52650_V4_2_20&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;INTEL_XEON_2690_2_60&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># &#39;INTEL_INTEL_XEON_E52690_V4_2_60&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">allItems</span> <span class="o">=</span> <span class="n">required_items</span> <span class="o">+</span> <span class="n">network_items</span> <span class="o">+</span> <span class="n">hard_drive</span> <span class="o">+</span> <span class="n">ram</span> <span class="o">+</span> <span class="n">server</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">allItems</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">listAvailableVlans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Will find available VLANs that a vyatta can be ordered on&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[
+</span></span></span><span class="line"><span class="cl"><span class="s2">            network, type, primaryRouter[datacenter], 
+</span></span></span><span class="line"><span class="cl"><span class="s2">            attachedNetworkGatewayFlag, dedicatedFirewallFlag
+</span></span></span><span class="line"><span class="cl"><span class="s2">        ]&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s1">&#39;networkVlans&#39;</span> <span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s1">&#39;primaryRouter&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="s1">&#39;datacenter&#39;</span> <span class="p">:</span> <span class="p">{</span> <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">dc_id</span><span class="p">}</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkVlans</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># Vlans that are not-standard, part of a firewall or gateway, can&#39;t be ordered on. </span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;ID, Vlan Number, Type, Router&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">vlan</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">vlan_type</span> <span class="o">=</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;keyName&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">vlan_type</span> <span class="o">==</span> <span class="s1">&#39;GATEWAY&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">vlan_type</span> <span class="o">=</span> <span class="s1">&#39;GATEWAY (No ordering)&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="k">elif</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;dedicatedFirewallFlag&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">vlan_type</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">/FIREWALL (No ordering)&#34;</span> <span class="o">%</span> <span class="n">vlan_type</span>
+</span></span><span class="line"><span class="cl">            <span class="k">elif</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;attachedNetworkGatewayFlag&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">vlan_type</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">%s</span><span class="s2">/GATEWAY MEMBER (No ordering)&#34;</span> <span class="o">%</span> <span class="n">vlan_type</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2"> - VLAN: </span><span class="si">%s</span><span class="s2"> - Type: </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2"> &#34;</span> <span class="o">%</span> 
+</span></span><span class="line"><span class="cl">                <span class="p">(</span><span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> 
+</span></span><span class="line"><span class="cl">                 <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                 <span class="n">vlan_type</span><span class="p">,</span> 
+</span></span><span class="line"><span class="cl">                 <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;primaryRouter&#39;</span><span class="p">][</span><span class="s1">&#39;hostname&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span> <span class="o">=</span> <span class="n">vyattaOrderer</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># 2255245 - VLAN: 946 - Type: STANDARD - bcr01a.sjc04</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># 2255243 - VLAN: 913 - Type: STANDARD - fcr01a.sjc04</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># main.orderVyatta(&#39;sjc04&#39;, 2255243, 2255245)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">main</span><span class="o">.</span><span class="n">orderVyattaHA</span><span class="p">(</span><span class="s1">&#39;sjc04&#39;</span><span class="p">,</span> <span class="mi">2255243</span><span class="p">,</span> <span class="mi">2255245</span><span class="p">)</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

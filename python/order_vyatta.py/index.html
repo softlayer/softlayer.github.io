@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -154,120 +150,119 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="s">&#34;&#34;&#34;
-</span><span class="s">Order a Network Gateway Appliance (Vyatta)
-</span><span class="s">
-</span><span class="s">The script orders a (Vyatta) high availability pair
-</span><span class="s">it uses the SoftLayer_Product_Order::placeOrder to make the order
-</span><span class="s">For more information see below:
-</span><span class="s">
-</span><span class="s">Important manual pages:
-</span><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-</span><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
-</span><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-</span><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span class="s">
-</span><span class="s">License: http://sldn.softlayer.com/article/License
-</span><span class="s">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="s">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nx">SoftLayer</span>
-
-<span class="err">#</span> <span class="nx">Your</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">username</span> <span class="nx">and</span> <span class="nx">key</span><span class="p">.</span>
-<span class="nx">USERNAME</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
-<span class="nx">API_KEY</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
-
-<span class="s">&#34;&#34;&#34;
-</span><span class="s">Build a skeleton SoftLayer_Container_Product_Order object.
-</span><span class="s">The object contains the configuration for the Vyatta server
-</span><span class="s">such as the quantity, the location, etc.
-</span><span class="s">&#34;&#34;&#34;</span>
-<span class="nx">productOrder</span> <span class="p">=</span> <span class="p">{</span>
-    <span class="err">#</span> <span class="nx">The</span> <span class="nx">number</span> <span class="nx">of</span> <span class="nx">servers</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">If</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">a</span> <span class="nx">high</span> <span class="nx">availability</span> <span class="nx">pair</span> <span class="nx">you</span> <span class="nx">must</span> <span class="nx">specify</span> <span class="mi">2</span> <span class="nx">as</span> <span class="nx">quantity</span><span class="p">.</span>
-    <span class="s">&#34;quantity&#34;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="err">#</span> <span class="nx">Build</span> <span class="nx">a</span> <span class="nx">skeleton</span> <span class="nx">SoftLayer_Hardware_Server</span> <span class="nx">object</span> <span class="nx">to</span> <span class="nx">model</span> <span class="nx">the</span> <span class="nx">hostname</span> <span class="nx">and</span>
-    <span class="err">#</span> <span class="nx">domain</span> <span class="nx">we</span> <span class="nx">want</span> <span class="k">for</span> <span class="nx">our</span> <span class="nx">server</span><span class="p">.</span> <span class="nx">If</span> <span class="nx">you</span> <span class="nx">set</span> <span class="nx">quantity</span> <span class="nx">greater</span> <span class="nx">then</span> <span class="mi">1</span> <span class="nx">then</span> <span class="nx">you</span>
-    <span class="err">#</span> <span class="nx">need</span> <span class="nx">to</span> <span class="nx">define</span> <span class="nx">one</span> <span class="nx">hostname</span><span class="o">/</span><span class="nx">domain</span> <span class="nx">pair</span> <span class="nx">per</span> <span class="nx">server</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
-    <span class="s">&#34;hardware&#34;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="s">&#34;hostname&#34;</span><span class="p">:</span> <span class="s">&#34;vyattagw&#34;</span><span class="p">,</span>
-            <span class="s">&#34;domain&#34;</span><span class="p">:</span> <span class="s">&#34;test.com&#34;</span>
-        <span class="p">},</span>
-        <span class="p">{</span>
-            <span class="s">&#34;hostname&#34;</span><span class="p">:</span> <span class="s">&#34;vyattagw2&#34;</span><span class="p">,</span>
-            <span class="s">&#34;domain&#34;</span><span class="p">:</span> <span class="s">&#34;test.com&#34;</span>
-        <span class="p">}</span>
-    <span class="p">],</span>
-
-    <span class="err">#</span> <span class="nx">Where</span> <span class="nx">you</span><span class="err">&#39;</span><span class="nx">d</span> <span class="nx">like</span> <span class="nx">your</span> <span class="nx">new</span> <span class="nx">server</span> <span class="nx">provisioned</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">This</span> <span class="nx">can</span> <span class="nx">either</span> <span class="nx">be</span> <span class="nx">the</span> <span class="nx">id</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">datacenter</span>
-    <span class="err">#</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">your</span> <span class="nx">new</span> <span class="nx">server</span> <span class="nx">to</span> <span class="nx">be</span> <span class="nx">provisioned</span> <span class="nx">in</span>
-    <span class="s">&#34;location&#34;</span><span class="p">:</span> <span class="mi">265592</span><span class="p">,</span>
-    <span class="err">#</span> <span class="nx">The</span> <span class="nx">id</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">SoftLayer_Product_Package</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">In</span> <span class="nx">this</span> <span class="k">case</span> <span class="nx">the</span> <span class="nx">Network</span> <span class="nx">Gateway</span> <span class="nf">Appliance</span> <span class="p">(</span><span class="nx">Vyatta</span><span class="p">)</span> <span class="kn">package</span> <span class="nx">id</span> <span class="nx">is</span> <span class="mf">174.</span>
-    <span class="s">&#34;packageId&#34;</span><span class="p">:</span> <span class="mi">174</span><span class="p">,</span>
-
-    <span class="err">#</span> <span class="nx">Build</span> <span class="nx">a</span> <span class="nx">skeleton</span> <span class="nx">SoftLayer_Product_Item_Price</span> <span class="nx">objects</span><span class="p">.</span> <span class="nx">These</span> <span class="nx">objects</span> <span class="nx">contain</span>
-    <span class="err">#</span> <span class="nx">much</span> <span class="nx">more</span> <span class="nx">than</span> <span class="nx">ids</span><span class="p">,</span> <span class="nx">but</span> <span class="nx">SoftLayer</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">ordering</span> <span class="nx">system</span> <span class="nx">only</span> <span class="nx">needs</span> <span class="nx">the</span> <span class="nx">price</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">id</span>
-    <span class="err">#</span> <span class="nx">to</span> <span class="nx">know</span> <span class="nx">what</span> <span class="nx">you</span> <span class="nx">want</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
-
-    <span class="err">#</span> <span class="nx">Every</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">SoftLayer</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">product</span> <span class="nx">catalog</span> <span class="nx">is</span> <span class="nx">assigned</span> <span class="nx">an</span> <span class="nx">id</span><span class="p">.</span> <span class="nx">Use</span> <span class="nx">these</span> <span class="nx">ids</span>
-    <span class="err">#</span> <span class="nx">to</span> <span class="nx">tell</span> <span class="nx">the</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">which</span> <span class="nx">options</span> <span class="nx">you</span> <span class="nx">want</span> <span class="nx">in</span> <span class="nx">your</span> <span class="nx">new</span> <span class="nx">server</span><span class="p">.</span> <span class="nx">Use</span>
-    <span class="err">#</span> <span class="nx">the</span> <span class="nf">getActivePackages</span><span class="p">()</span> <span class="nx">method</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">SoftLayer_Account</span> <span class="nx">API</span> <span class="nx">service</span> <span class="nx">to</span> <span class="nx">get</span>
-    <span class="err">#</span> <span class="nx">a</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">available</span> <span class="nx">item</span> <span class="nx">and</span> <span class="nx">price</span> <span class="nx">options</span> <span class="nx">per</span> <span class="nx">available</span> <span class="kn">package</span><span class="p">.</span>
-    <span class="s">&#34;prices&#34;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">13738</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">21010</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">36044</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">876</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">1267</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">342</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">273</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">17129</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">55</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">58</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">420</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">418</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">21</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">57</span><span class="p">},</span>
-        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">906</span><span class="p">}</span>
-        <span class="p">]</span>
-    <span class="p">}</span>
-
-<span class="s">&#34;&#34;&#34;
-</span><span class="s">Build a skeleton SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance object.
-</span><span class="s">This object contains the order for the Vyatta server.
-</span><span class="s">&#34;&#34;&#34;</span>
-<span class="nx">orderData</span> <span class="p">=</span> <span class="p">{</span>
-    <span class="s">&#34;orderContainers&#34;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="nx">productOrder</span>
-    <span class="p">]</span>
-<span class="p">}</span>
-
-<span class="err">#</span> <span class="nx">Create</span> <span class="nx">a</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">client</span> <span class="nx">object</span>
-<span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nf">Client</span><span class="p">(</span><span class="nx">username</span><span class="p">=</span><span class="nx">USERNAME</span><span class="p">,</span> <span class="nx">api_key</span><span class="p">=</span><span class="nx">API_KEY</span><span class="p">)</span>
-<span class="nx">softLayerProductOrder</span> <span class="p">=</span> <span class="nx">client</span><span class="p">[</span><span class="s">&#34;SoftLayer_Product_Order&#34;</span><span class="p">]</span>
-
-<span class="nx">try</span><span class="p">:</span>
-    <span class="s">&#34;&#34;&#34;
-</span><span class="s">    verifyOrder() will check your order for errors. Replace this with a call
-</span><span class="s">    to placeOrder() when you&#39;re ready to order. Both calls return a receipt
-</span><span class="s">    object that you can use for your records.
-</span><span class="s">
-</span><span class="s">    Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
-</span><span class="s">    provisioning process. When it&#39;s done you&#39;ll have a new
-</span><span class="s">    SoftLayer_Hardware_Server object and server ready to use.
-</span><span class="s">    &#34;&#34;&#34;</span>
-    <span class="nx">result</span> <span class="p">=</span> <span class="nx">softLayerProductOrder</span><span class="p">.</span><span class="nf">verifyOrder</span><span class="p">(</span><span class="nx">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;The order was verified successfully&#34;</span><span class="p">)</span>
-<span class="nx">except</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nx">SoftLayerAPIError</span> <span class="nx">as</span> <span class="nx">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;The order could not be verified by the server faultCode=%s, faultString=%s&#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">faultCode</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">faultString</span><span class="p">))</span>
-    <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">Order a Network Gateway Appliance (Vyatta)
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">The script orders a (Vyatta) high availability pair
+</span></span></span><span class="line"><span class="cl"><span class="s">it uses the SoftLayer_Product_Order::placeOrder to make the order
+</span></span></span><span class="line"><span class="cl"><span class="s">For more information see below:
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+</span></span></span><span class="line"><span class="cl"><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance
+</span></span></span><span class="line"><span class="cl"><span class="s">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+</span></span></span><span class="line"><span class="cl"><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span></span></span><span class="line"><span class="cl"><span class="s">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="s">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nx">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Your</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">username</span> <span class="nx">and</span> <span class="nx">key</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">USERNAME</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">API_KEY</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">Build a skeleton SoftLayer_Container_Product_Order object.
+</span></span></span><span class="line"><span class="cl"><span class="s">The object contains the configuration for the Vyatta server
+</span></span></span><span class="line"><span class="cl"><span class="s">such as the quantity, the location, etc.
+</span></span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">productOrder</span> <span class="p">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">The</span> <span class="nx">number</span> <span class="nx">of</span> <span class="nx">servers</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">If</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">a</span> <span class="nx">high</span> <span class="nx">availability</span> <span class="nx">pair</span> <span class="nx">you</span> <span class="nx">must</span> <span class="nx">specify</span> <span class="mi">2</span> <span class="nx">as</span> <span class="nx">quantity</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;quantity&#34;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">Build</span> <span class="nx">a</span> <span class="nx">skeleton</span> <span class="nx">SoftLayer_Hardware_Server</span> <span class="nx">object</span> <span class="nx">to</span> <span class="nx">model</span> <span class="nx">the</span> <span class="nx">hostname</span> <span class="nx">and</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">domain</span> <span class="nx">we</span> <span class="nx">want</span> <span class="k">for</span> <span class="nx">our</span> <span class="nx">server</span><span class="p">.</span> <span class="nx">If</span> <span class="nx">you</span> <span class="nx">set</span> <span class="nx">quantity</span> <span class="nx">greater</span> <span class="nx">then</span> <span class="mi">1</span> <span class="nx">then</span> <span class="nx">you</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">need</span> <span class="nx">to</span> <span class="nx">define</span> <span class="nx">one</span> <span class="nx">hostname</span><span class="o">/</span><span class="nx">domain</span> <span class="nx">pair</span> <span class="nx">per</span> <span class="nx">server</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;hardware&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;hostname&#34;</span><span class="p">:</span> <span class="s">&#34;vyattagw&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;domain&#34;</span><span class="p">:</span> <span class="s">&#34;test.com&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;hostname&#34;</span><span class="p">:</span> <span class="s">&#34;vyattagw2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;domain&#34;</span><span class="p">:</span> <span class="s">&#34;test.com&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">Where</span> <span class="nx">you</span><span class="err">&#39;</span><span class="nx">d</span> <span class="nx">like</span> <span class="nx">your</span> <span class="nx">new</span> <span class="nx">server</span> <span class="nx">provisioned</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">This</span> <span class="nx">can</span> <span class="nx">either</span> <span class="nx">be</span> <span class="nx">the</span> <span class="nx">id</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">datacenter</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">your</span> <span class="nx">new</span> <span class="nx">server</span> <span class="nx">to</span> <span class="nx">be</span> <span class="nx">provisioned</span> <span class="nx">in</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;location&#34;</span><span class="p">:</span> <span class="mi">265592</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">The</span> <span class="nx">id</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">SoftLayer_Product_Package</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">In</span> <span class="nx">this</span> <span class="k">case</span> <span class="nx">the</span> <span class="nx">Network</span> <span class="nx">Gateway</span> <span class="nf">Appliance</span> <span class="p">(</span><span class="nx">Vyatta</span><span class="p">)</span> <span class="kn">package</span> <span class="nx">id</span> <span class="nx">is</span> <span class="mf">174.</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;packageId&#34;</span><span class="p">:</span> <span class="mi">174</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">Build</span> <span class="nx">a</span> <span class="nx">skeleton</span> <span class="nx">SoftLayer_Product_Item_Price</span> <span class="nx">objects</span><span class="p">.</span> <span class="nx">These</span> <span class="nx">objects</span> <span class="nx">contain</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">much</span> <span class="nx">more</span> <span class="nx">than</span> <span class="nx">ids</span><span class="p">,</span> <span class="nx">but</span> <span class="nx">SoftLayer</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">ordering</span> <span class="nx">system</span> <span class="nx">only</span> <span class="nx">needs</span> <span class="nx">the</span> <span class="nx">price</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">id</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">to</span> <span class="nx">know</span> <span class="nx">what</span> <span class="nx">you</span> <span class="nx">want</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">Every</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">SoftLayer</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">product</span> <span class="nx">catalog</span> <span class="nx">is</span> <span class="nx">assigned</span> <span class="nx">an</span> <span class="nx">id</span><span class="p">.</span> <span class="nx">Use</span> <span class="nx">these</span> <span class="nx">ids</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">to</span> <span class="nx">tell</span> <span class="nx">the</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">which</span> <span class="nx">options</span> <span class="nx">you</span> <span class="nx">want</span> <span class="nx">in</span> <span class="nx">your</span> <span class="nx">new</span> <span class="nx">server</span><span class="p">.</span> <span class="nx">Use</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">the</span> <span class="nf">getActivePackages</span><span class="p">()</span> <span class="nx">method</span> <span class="nx">in</span> <span class="nx">the</span> <span class="nx">SoftLayer_Account</span> <span class="nx">API</span> <span class="nx">service</span> <span class="nx">to</span> <span class="nx">get</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">a</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">available</span> <span class="nx">item</span> <span class="nx">and</span> <span class="nx">price</span> <span class="nx">options</span> <span class="nx">per</span> <span class="nx">available</span> <span class="kn">package</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;prices&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">13738</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">21010</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">36044</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">876</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">1267</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">342</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">273</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">17129</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">55</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">58</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">420</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">418</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">21</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">57</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span><span class="s">&#34;id&#34;</span><span class="p">:</span> <span class="mi">906</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">Build a skeleton SoftLayer_Container_Product_Order_Hardware_Server_Gateway_Appliance object.
+</span></span></span><span class="line"><span class="cl"><span class="s">This object contains the order for the Vyatta server.
+</span></span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">orderData</span> <span class="p">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;orderContainers&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">productOrder</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Create</span> <span class="nx">a</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">client</span> <span class="nx">object</span>
+</span></span><span class="line"><span class="cl"><span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nf">Client</span><span class="p">(</span><span class="nx">username</span><span class="p">=</span><span class="nx">USERNAME</span><span class="p">,</span> <span class="nx">api_key</span><span class="p">=</span><span class="nx">API_KEY</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">softLayerProductOrder</span> <span class="p">=</span> <span class="nx">client</span><span class="p">[</span><span class="s">&#34;SoftLayer_Product_Order&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">    verifyOrder() will check your order for errors. Replace this with a call
+</span></span></span><span class="line"><span class="cl"><span class="s">    to placeOrder() when you&#39;re ready to order. Both calls return a receipt
+</span></span></span><span class="line"><span class="cl"><span class="s">    object that you can use for your records.
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">    Once your order is placed it&#39;ll go through SoftLayer&#39;s approval and
+</span></span></span><span class="line"><span class="cl"><span class="s">    provisioning process. When it&#39;s done you&#39;ll have a new
+</span></span></span><span class="line"><span class="cl"><span class="s">    SoftLayer_Hardware_Server object and server ready to use.
+</span></span></span><span class="line"><span class="cl"><span class="s">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">result</span> <span class="p">=</span> <span class="nx">softLayerProductOrder</span><span class="p">.</span><span class="nf">verifyOrder</span><span class="p">(</span><span class="nx">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;The order was verified successfully&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">except</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nx">SoftLayerAPIError</span> <span class="nx">as</span> <span class="nx">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s">&#34;The order could not be verified by the server faultCode=%s, faultString=%s&#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">faultCode</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

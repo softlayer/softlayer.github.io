@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -153,113 +149,113 @@ if (!doNotTrack) {
                 <p>This example uses the <code>verifyOrder</code> method to check the order for errors, replace it by
 <code>placeOrder</code> method when you are ready to order.</p>
 <p><strong>NOTE:</strong> The selected Vlan must be in the same location you want to order the new portable subnet</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
-
-<span class="k">class</span> <span class="nc">Network</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">_get_package_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyname</span><span class="p">):</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">keyname</span><span class="p">}}}</span>
-    
-        <span class="n">package</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">package</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-        
-    <span class="k">def</span> <span class="nf">_get_item_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">,</span> <span class="n">item_keyname</span><span class="p">):</span>
-        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;items&#34;</span><span class="p">:{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">item_keyname</span><span class="p">}}}</span>
-        
-        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
-
-        <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&#34;prices&#34;</span><span class="p">]</span>
-                   <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s2">&#34;locationGroupId&#34;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">price_id</span>
-    
-    <span class="c1"># Verify ID or VlanNumber exists and returns the vlan ID</span>
-    <span class="k">def</span> <span class="nf">_resolve_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vlan_id</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">vlan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Network_Vlan&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">vlan_id</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">:</span>
-            <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;networkVlans&#34;</span><span class="p">:{</span><span class="s2">&#34;vlanNumber&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">vlan_id</span><span class="p">}}}</span>
-            <span class="n">vlan_object</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkVlans</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
-            
-            <span class="k">if</span> <span class="n">vlan_object</span><span class="p">:</span>
-                <span class="n">vlan</span> <span class="o">=</span> <span class="n">vlan_object</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span>
-
-        <span class="k">return</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">_build_answers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">question_answers</span><span class="p">,</span> <span class="n">item_category</span><span class="p">):</span>
-        <span class="n">list_answers</span> <span class="o">=</span> <span class="p">[]</span>
-        
-        <span class="n">list_questions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Item_Category&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getQuestions</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">item_category</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">])</span>
-
-        <span class="k">for</span> <span class="n">question</span> <span class="ow">in</span> <span class="n">question_answers</span><span class="p">:</span>
-            <span class="n">question_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">list_questions</span> <span class="k">if</span> <span class="n">q</span><span class="p">[</span><span class="s2">&#34;keyName&#34;</span><span class="p">]</span> <span class="o">==</span> <span class="n">question</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">question_answer</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&#34;categoryId&#34;</span><span class="p">:</span> <span class="n">item_category</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">],</span>
-                <span class="s2">&#34;categoryCode&#34;</span><span class="p">:</span> <span class="n">item_category</span><span class="p">[</span><span class="s2">&#34;categoryCode&#34;</span><span class="p">],</span>
-                <span class="s2">&#34;questionId&#34;</span><span class="p">:</span> <span class="n">question_id</span><span class="p">,</span>
-                <span class="s2">&#34;answer&#34;</span><span class="p">:</span> <span class="n">question_answers</span><span class="p">[</span><span class="n">question</span><span class="p">]</span>
-            <span class="p">}</span>
-            <span class="n">list_answers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">question_answer</span><span class="p">)</span>
-        
-        <span class="k">return</span> <span class="n">list_answers</span>
-
-    <span class="k">def</span> <span class="nf">order_subnet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">item_keyname</span><span class="p">,</span> <span class="n">vlan_number</span><span class="p">,</span> <span class="n">question_answers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">packageId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_package_id</span><span class="p">(</span><span class="n">package</span><span class="p">)</span>
-            <span class="n">item</span><span class="p">,</span> <span class="n">priceId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item_price</span><span class="p">(</span><span class="n">packageId</span><span class="p">,</span> <span class="n">item_keyname</span><span class="p">)</span>            
-            <span class="n">vlan_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_id</span><span class="p">(</span><span class="n">vlan_number</span><span class="p">)</span>       
-
-            <span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Network_Subnet&#34;</span><span class="p">,</span>
-                <span class="s2">&#34;packageId&#34;</span><span class="p">:</span> <span class="n">packageId</span><span class="p">,</span>
-                <span class="s2">&#34;location&#34;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span>
-                <span class="s2">&#34;endPointVlanId&#34;</span><span class="p">:</span> <span class="n">vlan_id</span><span class="p">,</span>    <span class="c1"># Set on which vlan we want to attach the subnet</span>
-                <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">priceId</span><span class="p">}],</span>
-                <span class="s2">&#34;quantity&#34;</span><span class="p">:</span> <span class="mi">1</span>            
-            <span class="p">}</span>
-
-            <span class="k">if</span> <span class="n">question_answers</span><span class="p">:</span>
-                <span class="n">orderData</span><span class="p">[</span><span class="s2">&#34;itemCategoryQuestionAnswers&#34;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_answers</span><span class="p">(</span><span class="n">question_answers</span><span class="p">,</span>
-                                                                               <span class="n">item</span><span class="p">[</span><span class="s2">&#34;itemCategory&#34;</span><span class="p">])</span>
-            <span class="c1"># verifyOrder will check your order for errors. Replace this with placeOrder</span>
-            <span class="c1"># when you&#39;re ready to order</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>            
-        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to order: </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
-    <span class="n">package</span> <span class="o">=</span> <span class="s2">&#34;ADDITIONAL_SERVICES_PORTABLE_IP_ADDRESSES&#34;</span>
-    <span class="n">location</span> <span class="o">=</span> <span class="s2">&#34;AMSTERDAM&#34;</span>
-    
-    <span class="c1"># set 4_PORTABLE_PRIVATE_IP_ADDRESSES if you want a private subnet</span>
-    <span class="n">subnet_type</span> <span class="o">=</span> <span class="s2">&#34;4_PORTABLE_PUBLIC_IP_ADDRESSES&#34;</span>
-    
-    <span class="c1"># ID or VlanNumber of the network vlan</span>
-    <span class="c1"># Set a PRIVATE Vlan if you want to order a private subnet</span>
-    <span class="n">vlan_id</span> <span class="o">=</span> <span class="mi">994</span>
-    
-    <span class="n">network</span> <span class="o">=</span> <span class="n">Network</span><span class="p">()</span>
-
-    <span class="c1"># Questions Answers</span>
-    <span class="c1"># Note: There aren&#39;t question_answers for 64_BLOCK_PORTABLE_PUBLIC_IPV6_ADDRESSES</span>
-    <span class="n">answers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&#34;TOTAL_IPS_IN_30_DAYS&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&#34;TOTAL_IPS_IN_12_MONTHS&#34;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-        <span class="s2">&#34;REASON_FOR_IPS&#34;</span><span class="p">:</span> <span class="s2">&#34;Any reason&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;CONTACT_NAME&#34;</span><span class="p">:</span> <span class="s2">&#34;Jhon Doe&#34;</span><span class="p">,</span>    <span class="c1"># Valid name, ex: Jhon Doe</span>
-        <span class="s2">&#34;CONTACT_JOB_TITLE&#34;</span><span class="p">:</span> <span class="s2">&#34;Network Administrator&#34;</span><span class="p">,</span> <span class="c1"># Valid job title, ex: Network Administrator</span>
-        <span class="s2">&#34;CONTACT_EMAIL&#34;</span><span class="p">:</span> <span class="s2">&#34;jhondoe@mail.com&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;CONTACT_PHONE_NUMBER&#34;</span><span class="p">:</span> <span class="s2">&#34;555-5555&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;CONTACT_VALIDATED&#34;</span><span class="p">:</span> <span class="mi">1</span> <span class="c1"># To confirm that the contact information is valid (0 or 1).</span>
-    <span class="p">}</span>
-    
-    <span class="n">receipt</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">order_subnet</span><span class="p">(</span><span class="n">package</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">subnet_type</span><span class="p">,</span> <span class="n">vlan_id</span><span class="p">,</span> <span class="n">question_answers</span><span class="o">=</span><span class="n">answers</span><span class="p">)</span>
-    <span class="n">pprint</span><span class="p">(</span><span class="n">receipt</span><span class="p">)</span>
-</code></pre></div><p>The python example above allows to create the following subnets which are in the package <code>ADDITIONAL_SERVICES_PORTABLE_IP_ADDRESSES</code>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Network</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">_get_package_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyname</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">keyname</span><span class="p">}}}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">        <span class="n">package</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getAllObjects</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">package</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">_get_item_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package_id</span><span class="p">,</span> <span class="n">item_keyname</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;items&#34;</span><span class="p">:{</span><span class="s2">&#34;keyName&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">item_keyname</span><span class="p">}}}</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Package&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">price_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&#34;prices&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                   <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">[</span><span class="s2">&#34;locationGroupId&#34;</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">price_id</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># Verify ID or VlanNumber exists and returns the vlan ID</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">_resolve_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vlan_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">vlan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Network_Vlan&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">vlan_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;networkVlans&#34;</span><span class="p">:{</span><span class="s2">&#34;vlanNumber&#34;</span><span class="p">:{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span><span class="n">vlan_id</span><span class="p">}}}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">vlan_object</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkVlans</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">vlan_object</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">vlan</span> <span class="o">=</span> <span class="n">vlan_object</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">raise</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">vlan</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">_build_answers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">question_answers</span><span class="p">,</span> <span class="n">item_category</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">list_answers</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="n">list_questions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Item_Category&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getQuestions</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">item_category</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">question</span> <span class="ow">in</span> <span class="n">question_answers</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">question_id</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">list_questions</span> <span class="k">if</span> <span class="n">q</span><span class="p">[</span><span class="s2">&#34;keyName&#34;</span><span class="p">]</span> <span class="o">==</span> <span class="n">question</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">question_answer</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;categoryId&#34;</span><span class="p">:</span> <span class="n">item_category</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;categoryCode&#34;</span><span class="p">:</span> <span class="n">item_category</span><span class="p">[</span><span class="s2">&#34;categoryCode&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;questionId&#34;</span><span class="p">:</span> <span class="n">question_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;answer&#34;</span><span class="p">:</span> <span class="n">question_answers</span><span class="p">[</span><span class="n">question</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">list_answers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">question_answer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">list_answers</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">order_subnet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">item_keyname</span><span class="p">,</span> <span class="n">vlan_number</span><span class="p">,</span> <span class="n">question_answers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">packageId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_package_id</span><span class="p">(</span><span class="n">package</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">item</span><span class="p">,</span> <span class="n">priceId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item_price</span><span class="p">(</span><span class="n">packageId</span><span class="p">,</span> <span class="n">item_keyname</span><span class="p">)</span>            
+</span></span><span class="line"><span class="cl">            <span class="n">vlan_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_id</span><span class="p">(</span><span class="n">vlan_number</span><span class="p">)</span>       
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;complexType&#34;</span><span class="p">:</span> <span class="s2">&#34;SoftLayer_Container_Product_Order_Network_Subnet&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;packageId&#34;</span><span class="p">:</span> <span class="n">packageId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;location&#34;</span><span class="p">:</span> <span class="n">location</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;endPointVlanId&#34;</span><span class="p">:</span> <span class="n">vlan_id</span><span class="p">,</span>    <span class="c1"># Set on which vlan we want to attach the subnet</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">priceId</span><span class="p">}],</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;quantity&#34;</span><span class="p">:</span> <span class="mi">1</span>            
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">question_answers</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">orderData</span><span class="p">[</span><span class="s2">&#34;itemCategoryQuestionAnswers&#34;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_answers</span><span class="p">(</span><span class="n">question_answers</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                                               <span class="n">item</span><span class="p">[</span><span class="s2">&#34;itemCategory&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># verifyOrder will check your order for errors. Replace this with placeOrder</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># when you&#39;re ready to order</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">[</span><span class="s1">&#39;Product_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>            
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to order: </span><span class="si">%s</span><span class="s2"> - </span><span class="si">%s</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">package</span> <span class="o">=</span> <span class="s2">&#34;ADDITIONAL_SERVICES_PORTABLE_IP_ADDRESSES&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">location</span> <span class="o">=</span> <span class="s2">&#34;AMSTERDAM&#34;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># set 4_PORTABLE_PRIVATE_IP_ADDRESSES if you want a private subnet</span>
+</span></span><span class="line"><span class="cl">    <span class="n">subnet_type</span> <span class="o">=</span> <span class="s2">&#34;4_PORTABLE_PUBLIC_IP_ADDRESSES&#34;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># ID or VlanNumber of the network vlan</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Set a PRIVATE Vlan if you want to order a private subnet</span>
+</span></span><span class="line"><span class="cl">    <span class="n">vlan_id</span> <span class="o">=</span> <span class="mi">994</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">network</span> <span class="o">=</span> <span class="n">Network</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Questions Answers</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Note: There aren&#39;t question_answers for 64_BLOCK_PORTABLE_PUBLIC_IPV6_ADDRESSES</span>
+</span></span><span class="line"><span class="cl">    <span class="n">answers</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;TOTAL_IPS_IN_30_DAYS&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;TOTAL_IPS_IN_12_MONTHS&#34;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;REASON_FOR_IPS&#34;</span><span class="p">:</span> <span class="s2">&#34;Any reason&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;CONTACT_NAME&#34;</span><span class="p">:</span> <span class="s2">&#34;Jhon Doe&#34;</span><span class="p">,</span>    <span class="c1"># Valid name, ex: Jhon Doe</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;CONTACT_JOB_TITLE&#34;</span><span class="p">:</span> <span class="s2">&#34;Network Administrator&#34;</span><span class="p">,</span> <span class="c1"># Valid job title, ex: Network Administrator</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;CONTACT_EMAIL&#34;</span><span class="p">:</span> <span class="s2">&#34;jhondoe@mail.com&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;CONTACT_PHONE_NUMBER&#34;</span><span class="p">:</span> <span class="s2">&#34;555-5555&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;CONTACT_VALIDATED&#34;</span><span class="p">:</span> <span class="mi">1</span> <span class="c1"># To confirm that the contact information is valid (0 or 1).</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">receipt</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">order_subnet</span><span class="p">(</span><span class="n">package</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">subnet_type</span><span class="p">,</span> <span class="n">vlan_id</span><span class="p">,</span> <span class="n">question_answers</span><span class="o">=</span><span class="n">answers</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pprint</span><span class="p">(</span><span class="n">receipt</span><span class="p">)</span>
+</span></span></code></pre></div><p>The python example above allows to create the following subnets which are in the package <code>ADDITIONAL_SERVICES_PORTABLE_IP_ADDRESSES</code>:</p>
 <table>
 <thead>
 <tr>

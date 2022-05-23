@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -149,295 +145,293 @@ if (!doNotTrack) {
 </ol>
 <h2 id="ordering-code">Ordering Code</h2>
 <p>This script will order a VSI, based on a configuration in the file, then order some storage, authorize storage to the new VSI, and set the VSI&rsquo;s metadata with the needed information for it to be mounted.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Create a new Virtual Guest and block storage.
-</span><span class="s2">allowAccessToNetworkStorageList, setUserMetadata
-</span><span class="s2">
-</span><span class="s2">createObject() enables the creation of computing instances on an account.
-</span><span class="s2">This method is a simplified alternative to interacting with the ordering
-</span><span class="s2">system directly.
-</span><span class="s2">
-</span><span class="s2">Important manual pages:
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject
-</span><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Product_Order/placeOrder/
-</span><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Billing_Order/getObject/
-</span><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Account/getNetworkStorage/
-</span><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/setUserMetadata/
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/generateOrderTemplate
-</span><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/allowAccessToNetworkStorageList/
-</span><span class="s2">
-</span><span class="s2">License: http://sldn.softlayer.com/article/License
-</span><span class="s2">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="s2">&#34;&#34;&#34;</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-
-<span class="c1"># For nice debug output:</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
-
-
-
-<span class="c1"># Initial setup of some variables</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
-<span class="n">storage_manager</span> <span class="o">=</span>  <span class="n">SoftLayer</span><span class="o">.</span><span class="n">BlockStorageManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
-<span class="n">guest_manager</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">VSManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
-
-<span class="n">vmId</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="n">username</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="n">password</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="n">targetAddress</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="n">blockStorageId</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="n">blockStorageOrderId</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="n">allowAccessToNetworkStorage</span> <span class="o">=</span> <span class="kc">None</span>
-
-
-<span class="c1"># Describes the VM we want to order</span>
-<span class="n">templateVirtualGuest</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;hostname&#34;</span><span class="p">:</span> <span class="s2">&#34;tester&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;domain&#34;</span><span class="p">:</span> <span class="s2">&#34;ibm.com&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;datacenter&#34;</span><span class="p">:</span> <span class="s2">&#34;dal13&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;flavor&#34;</span><span class="p">:</span> <span class="s2">&#34;BL2_2X4X100&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;hourlyBillingFlag&#34;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="s2">&#34;os_code&#34;</span><span class="p">:</span> <span class="s2">&#34;CENTOS_7_64&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;nic_speed&#34;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
-    <span class="s2">&#34;postInstallScriptUri&#34;</span><span class="p">:</span> <span class="s2">&#34;https://pastebin.com/whatever&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;ssh_keys&#34;</span><span class="p">:</span> <span class="p">[</span><span class="mi">87634</span><span class="p">],</span>
-    <span class="s2">&#34;public_security_groups&#34;</span><span class="p">:</span> <span class="p">[</span><span class="mi">128321</span><span class="p">,</span> <span class="mi">128323</span><span class="p">]</span>
-<span class="p">}</span>
-
-<span class="c1"># === ORDERS THE VM ===</span>
-<span class="n">virtualGuestResponse</span> <span class="o">=</span> <span class="n">guest_manager</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span><span class="o">**</span><span class="n">templateVirtualGuest</span><span class="p">)</span>
-<span class="n">vmId</span> <span class="o">=</span> <span class="n">virtualGuestResponse</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-<span class="n">pp</span><span class="p">(</span><span class="s2">&#34;virtualGuestId &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">vmId</span><span class="p">))</span>
-
-
-<span class="c1"># === ORDERS THE STORAGE ===</span>
-<span class="n">blockStorageOrder</span> <span class="o">=</span> <span class="n">storage_manager</span><span class="o">.</span><span class="n">order_block_volume</span><span class="p">(</span>
-    <span class="n">storage_type</span><span class="o">=</span><span class="s2">&#34;performance&#34;</span><span class="p">,</span>
-    <span class="n">location</span><span class="o">=</span><span class="s2">&#34;dal13&#34;</span><span class="p">,</span>
-    <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-    <span class="n">os_type</span><span class="o">=</span><span class="s2">&#34;LINUX&#34;</span><span class="p">,</span>
-    <span class="n">iops</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-    <span class="n">snapshot_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">service_offering</span><span class="o">=</span><span class="s1">&#39;storage_as_a_service&#39;</span><span class="p">,</span>
-    <span class="n">hourly_billing_flag</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-
-<span class="n">blockStorageOrderId</span> <span class="o">=</span> <span class="n">blockStorageOrder</span><span class="p">[</span><span class="s1">&#39;orderId&#39;</span><span class="p">]</span>
-<span class="n">pp</span><span class="p">(</span><span class="s2">&#34;blockStorageOrderId &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">blockStorageOrderId</span><span class="p">))</span>
-
-<span class="n">status</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="k">while</span> <span class="n">status</span> <span class="o">!=</span> <span class="s2">&#34;APPROVED&#34;</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Checking storage order status...&#34;</span><span class="p">)</span>
-    <span class="n">orderStatus</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Billing_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">blockStorageOrderId</span><span class="p">)</span>
-    <span class="n">status</span> <span class="o">=</span> <span class="n">orderStatus</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">&#34;APPROVED&#34;</span><span class="p">:</span>
-        <span class="k">break</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Order pending approval&#34;</span><span class="p">)</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span>
-
-<span class="c1"># Used to lookup the storage id based on its order</span>
-<span class="n">objectFilter</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;networkStorage&#34;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&#34;billingItem&#34;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&#34;orderItem&#34;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&#34;order&#34;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="p">{</span>
-                        <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">blockStorageOrderId</span>
-                        <span class="p">}</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-<span class="n">objectMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem[orderItem[order[id]]]]&#39;</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Getting block storage info&#34;</span><span class="p">)</span>
-<span class="n">blockStorageArray</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkStorage</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">objectFilter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
-
-<span class="k">for</span> <span class="n">blockStorage</span> <span class="ow">in</span> <span class="n">blockStorageArray</span><span class="p">:</span>
-    <span class="n">blockStorageId</span> <span class="o">=</span> <span class="n">blockStorage</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;blockStorageId &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">blockStorageId</span><span class="p">))</span>
-
-<span class="c1"># Can&#39;t autorize a volume while there is an active transaction</span>
-<span class="n">activeTransaction</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getActiveTransactions</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">)</span>
-<span class="k">while</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">activeTransaction</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
-    <span class="n">activeTransaction</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getActiveTransactions</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;There is a block storage transaction running&#39;</span><span class="p">)</span>
-    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-
-<span class="n">blockStorageObject</span> <span class="o">=</span> <span class="p">[</span> <span class="p">{</span>  <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">blockStorageId</span> <span class="p">}</span> <span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Granting vm </span><span class="si">{}</span><span class="s2"> access to </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vmId</span><span class="p">,</span> <span class="n">blockStorageId</span><span class="p">))</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">allowAccessToNetworkStorage</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">allowAccessToNetworkStorageList</span><span class="p">(</span><span class="n">blockStorageObject</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vmId</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">faultCode</span> <span class="o">==</span> <span class="s2">&#34;SoftLayer_Exception_Network_Storage_Group_MassAccessControlModification&#34;</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;This host is already allowed access&#34;</span><span class="p">)</span>
-
-
-
-<span class="c1"># Find out the username/password/ip for our iscsi target</span>
-<span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id, iscsiTargetIpAddresses, allowedVirtualGuests[fullyQualifiedDomainName, 
-</span><span class="s2">allowedHost[id,name,resourceTableId,resourceTableName, credential[id,username,password],sourceSubnet]]]&#34;&#34;&#34;</span>
-<span class="n">blockStorageCredentials</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">)</span>
-
-<span class="c1"># We assume this volume only has 1 host authorized to mount it.</span>
-<span class="n">pp</span><span class="p">(</span><span class="n">blockStorageCredentials</span><span class="p">)</span>
-<span class="n">allowedHost</span> <span class="o">=</span> <span class="n">blockStorageCredentials</span><span class="p">[</span><span class="s1">&#39;allowedVirtualGuests&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">credentials</span> <span class="o">=</span> <span class="n">allowedHost</span><span class="p">[</span><span class="s1">&#39;allowedHost&#39;</span><span class="p">][</span><span class="s1">&#39;credential&#39;</span><span class="p">]</span>
-<span class="n">targetAddress</span> <span class="o">=</span> <span class="n">blockStorageCredentials</span><span class="p">[</span><span class="s1">&#39;iscsiTargetIpAddresses&#39;</span><span class="p">]</span>
-<span class="n">username</span> <span class="o">=</span> <span class="n">credentials</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
-<span class="n">password</span> <span class="o">=</span> <span class="n">credentials</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span>
-<span class="n">iqn</span> <span class="o">=</span> <span class="n">allowedHost</span><span class="p">[</span><span class="s1">&#39;allowedHost&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
-
-<span class="c1"># Set the meta data for the vm</span>
-<span class="n">meta_string</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{storageId}</span><span class="s2">, </span><span class="si">{iqn}</span><span class="s2">, </span><span class="si">{target}</span><span class="s2">, </span><span class="si">{user}</span><span class="s2">, </span><span class="si">{password}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">storageId</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&#34;, &#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">targetAddress</span><span class="p">),</span> <span class="n">user</span><span class="o">=</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">iqn</span><span class="o">=</span><span class="n">iqn</span><span class="p">)</span>
-<span class="n">metadata</span> <span class="o">=</span> <span class="p">[</span><span class="n">meta_string</span><span class="p">]</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Setting MetaData:</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">metadata</span><span class="p">)</span>
-<span class="n">metadataSet</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setUserMetadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vmId</span><span class="p">)</span>
-
-
-
-<span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[userData]&#34;</span>
-<span class="n">virtualGuestData</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vmId</span><span class="p">)</span>
-<span class="n">pp</span><span class="p">(</span><span class="n">virtualGuestData</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&#34;FINISHED&#34;</span><span class="p">)</span>
-
-</code></pre></div><h2 id="post-install-script">Post install script</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Create a new Virtual Guest and block storage.
+</span></span></span><span class="line"><span class="cl"><span class="s2">allowAccessToNetworkStorageList, setUserMetadata
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">createObject() enables the creation of computing instances on an account.
+</span></span></span><span class="line"><span class="cl"><span class="s2">This method is a simplified alternative to interacting with the ordering
+</span></span></span><span class="line"><span class="cl"><span class="s2">system directly.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject
+</span></span></span><span class="line"><span class="cl"><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Product_Order/placeOrder/
+</span></span></span><span class="line"><span class="cl"><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Billing_Order/getObject/
+</span></span></span><span class="line"><span class="cl"><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Account/getNetworkStorage/
+</span></span></span><span class="line"><span class="cl"><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/setUserMetadata/
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/generateOrderTemplate
+</span></span></span><span class="line"><span class="cl"><span class="s2">https://softlayer.github.io/reference/services/SoftLayer_Virtual_Guest/allowAccessToNetworkStorageList/
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="s2">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">time</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># For nice debug output:</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Initial setup of some variables</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">storage_manager</span> <span class="o">=</span>  <span class="n">SoftLayer</span><span class="o">.</span><span class="n">BlockStorageManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">guest_manager</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">VSManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">vmId</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="n">username</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="n">password</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="n">targetAddress</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="n">blockStorageId</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="n">blockStorageOrderId</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="n">allowAccessToNetworkStorage</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Describes the VM we want to order</span>
+</span></span><span class="line"><span class="cl"><span class="n">templateVirtualGuest</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;hostname&#34;</span><span class="p">:</span> <span class="s2">&#34;tester&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;domain&#34;</span><span class="p">:</span> <span class="s2">&#34;ibm.com&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;datacenter&#34;</span><span class="p">:</span> <span class="s2">&#34;dal13&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;flavor&#34;</span><span class="p">:</span> <span class="s2">&#34;BL2_2X4X100&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;hourlyBillingFlag&#34;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;os_code&#34;</span><span class="p">:</span> <span class="s2">&#34;CENTOS_7_64&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;nic_speed&#34;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;postInstallScriptUri&#34;</span><span class="p">:</span> <span class="s2">&#34;https://pastebin.com/whatever&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;ssh_keys&#34;</span><span class="p">:</span> <span class="p">[</span><span class="mi">87634</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;public_security_groups&#34;</span><span class="p">:</span> <span class="p">[</span><span class="mi">128321</span><span class="p">,</span> <span class="mi">128323</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># === ORDERS THE VM ===</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestResponse</span> <span class="o">=</span> <span class="n">guest_manager</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span><span class="o">**</span><span class="n">templateVirtualGuest</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">vmId</span> <span class="o">=</span> <span class="n">virtualGuestResponse</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">pp</span><span class="p">(</span><span class="s2">&#34;virtualGuestId &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">vmId</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># === ORDERS THE STORAGE ===</span>
+</span></span><span class="line"><span class="cl"><span class="n">blockStorageOrder</span> <span class="o">=</span> <span class="n">storage_manager</span><span class="o">.</span><span class="n">order_block_volume</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">storage_type</span><span class="o">=</span><span class="s2">&#34;performance&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">location</span><span class="o">=</span><span class="s2">&#34;dal13&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">os_type</span><span class="o">=</span><span class="s2">&#34;LINUX&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">iops</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">snapshot_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">service_offering</span><span class="o">=</span><span class="s1">&#39;storage_as_a_service&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">hourly_billing_flag</span><span class="o">=</span><span class="kc">True</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">blockStorageOrderId</span> <span class="o">=</span> <span class="n">blockStorageOrder</span><span class="p">[</span><span class="s1">&#39;orderId&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">pp</span><span class="p">(</span><span class="s2">&#34;blockStorageOrderId &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">blockStorageOrderId</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">status</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="n">status</span> <span class="o">!=</span> <span class="s2">&#34;APPROVED&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Checking storage order status...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">orderStatus</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Billing_Order&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">blockStorageOrderId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">status</span> <span class="o">=</span> <span class="n">orderStatus</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">&#34;APPROVED&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">break</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Order pending approval&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Used to lookup the storage id based on its order</span>
+</span></span><span class="line"><span class="cl"><span class="n">objectFilter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;networkStorage&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;billingItem&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;orderItem&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;order&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">blockStorageOrderId</span>
+</span></span><span class="line"><span class="cl">                        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">objectMask</span> <span class="o">=</span> <span class="s1">&#39;mask[billingItem[orderItem[order[id]]]]&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Getting block storage info&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">blockStorageArray</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Account&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getNetworkStorage</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">objectFilter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">blockStorage</span> <span class="ow">in</span> <span class="n">blockStorageArray</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">blockStorageId</span> <span class="o">=</span> <span class="n">blockStorage</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;blockStorageId &#34;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">blockStorageId</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Can&#39;t autorize a volume while there is an active transaction</span>
+</span></span><span class="line"><span class="cl"><span class="n">activeTransaction</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getActiveTransactions</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">activeTransaction</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">activeTransaction</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getActiveTransactions</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;There is a block storage transaction running&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">blockStorageObject</span> <span class="o">=</span> <span class="p">[</span> <span class="p">{</span>  <span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">blockStorageId</span> <span class="p">}</span> <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Granting vm </span><span class="si">{}</span><span class="s2"> access to </span><span class="si">{}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vmId</span><span class="p">,</span> <span class="n">blockStorageId</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">allowAccessToNetworkStorage</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">allowAccessToNetworkStorageList</span><span class="p">(</span><span class="n">blockStorageObject</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vmId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">faultCode</span> <span class="o">==</span> <span class="s2">&#34;SoftLayer_Exception_Network_Storage_Group_MassAccessControlModification&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;This host is already allowed access&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Find out the username/password/ip for our iscsi target</span>
+</span></span><span class="line"><span class="cl"><span class="n">objectMask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id, iscsiTargetIpAddresses, allowedVirtualGuests[fullyQualifiedDomainName, 
+</span></span></span><span class="line"><span class="cl"><span class="s2">allowedHost[id,name,resourceTableId,resourceTableName, credential[id,username,password],sourceSubnet]]]&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">blockStorageCredentials</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Storage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">objectMask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># We assume this volume only has 1 host authorized to mount it.</span>
+</span></span><span class="line"><span class="cl"><span class="n">pp</span><span class="p">(</span><span class="n">blockStorageCredentials</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">allowedHost</span> <span class="o">=</span> <span class="n">blockStorageCredentials</span><span class="p">[</span><span class="s1">&#39;allowedVirtualGuests&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">credentials</span> <span class="o">=</span> <span class="n">allowedHost</span><span class="p">[</span><span class="s1">&#39;allowedHost&#39;</span><span class="p">][</span><span class="s1">&#39;credential&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">targetAddress</span> <span class="o">=</span> <span class="n">blockStorageCredentials</span><span class="p">[</span><span class="s1">&#39;iscsiTargetIpAddresses&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">username</span> <span class="o">=</span> <span class="n">credentials</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">password</span> <span class="o">=</span> <span class="n">credentials</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">iqn</span> <span class="o">=</span> <span class="n">allowedHost</span><span class="p">[</span><span class="s1">&#39;allowedHost&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Set the meta data for the vm</span>
+</span></span><span class="line"><span class="cl"><span class="n">meta_string</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="si">{storageId}</span><span class="s2">, </span><span class="si">{iqn}</span><span class="s2">, </span><span class="si">{target}</span><span class="s2">, </span><span class="si">{user}</span><span class="s2">, </span><span class="si">{password}</span><span class="s2">&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                <span class="n">storageId</span><span class="o">=</span><span class="n">blockStorageId</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&#34;, &#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">targetAddress</span><span class="p">),</span> <span class="n">user</span><span class="o">=</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">iqn</span><span class="o">=</span><span class="n">iqn</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">metadata</span> <span class="o">=</span> <span class="p">[</span><span class="n">meta_string</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Setting MetaData:</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">metadata</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">metadataSet</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setUserMetadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vmId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;mask[userData]&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuestData</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;Virtual_Guest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getObject</span><span class="p">(</span><span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">vmId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">pp</span><span class="p">(</span><span class="n">virtualGuestData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s2">&#34;FINISHED&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><h2 id="post-install-script">Post install script</h2>
 <p>Most of the configuration for this script comes from <a href="https://console.bluemix.net/docs/infrastructure/BlockStorage/accessing_block_storage_linux.html#connecting-to-mpio-iscsi-luns-on-linux">https://console.bluemix.net/docs/infrastructure/BlockStorage/accessing_block_storage_linux.html#connecting-to-mpio-iscsi-luns-on-linux</a> and this specific script is meant to run on Centos7. If you are not using Centos7, you will need to make some minor adjustments to the configuration files.</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="cp">#!/bin/bash 
-</span><span class="cp"></span><span class="c1"># *************************  Connecting to MPIO ISCSI lun on Linux OS *************************</span>
-<span class="c1"># The following script uses steps for CentOS distribution only, to change configuration please review the following url:</span>
-<span class="c1"># https://console.bluemix.net/docs/infrastructure/BlockStorage/accessing_block_storage_linux.html#connecting-to-mpio-iscsi-luns-on-linux</span>
-
-<span class="c1"># Get the metadata</span>
-<span class="nv">IFS</span><span class="o">=</span><span class="s1">&#39;,&#39;</span> <span class="nb">read</span> -ra METAAA <span class="o">&lt;&lt;&lt;</span> <span class="sb">`</span>curl https://api.service.softlayer.com/rest/v3.1/SoftLayer_Resource_Metadata/getUserMetadata<span class="sb">`</span>
-<span class="nv">USERNAME</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[4]</span><span class="si">}</span>
-<span class="nv">IP_1</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[3]</span><span class="si">}</span>
-<span class="nv">IP_2</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[2]</span><span class="si">}</span>
-<span class="c1"># This removes the trailing \&#34; that comes from the curl command</span>
-<span class="nv">PASSWORD</span><span class="o">=</span><span class="s2">&#34;</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[5]%</span><span class="se">\&#34;</span><span class="si">}</span><span class="s2">&#34;</span>
-<span class="nv">INITIATOR</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[1]</span><span class="si">}</span>
-
-<span class="c1">#1 Install the iSCSI and multipath utilities to your host.</span>
-yum -y install iscsi-initiator-utils device-mapper-multipath
-
-<span class="c1">#2 Create/edit /etc/multipath.conf with the minimum configuration that is provided in the following commands. </span>
-<span class="nv">MINIMUMCONFIGURATION</span><span class="o">=</span><span class="s1">&#39;
-</span><span class="s1">defaults {
-</span><span class="s1">user_friendly_names no
-</span><span class="s1">max_fds max
-</span><span class="s1">flush_on_last_del yes
-</span><span class="s1">queue_without_daemon no
-</span><span class="s1">dev_loss_tmo infinity
-</span><span class="s1">fast_io_fail_tmo 5
-</span><span class="s1">}
-</span><span class="s1"># All data under blacklist must be specific to your system.
-</span><span class="s1">blacklist {
-</span><span class="s1">wwid &#34;SAdaptec*&#34;
-</span><span class="s1">devnode &#34;^hd[a-z]&#34;
-</span><span class="s1">devnode &#34;^(ram|raw|loop|fd|md|dm-|sr|scd|st)[0-9]*&#34;
-</span><span class="s1">devnode &#34;^cciss.*&#34;  
-</span><span class="s1">}
-</span><span class="s1">devices {
-</span><span class="s1">device {
-</span><span class="s1">vendor &#34;NETAPP&#34;
-</span><span class="s1">product &#34;LUN&#34;
-</span><span class="s1">path_grouping_policy group_by_prio
-</span><span class="s1">features &#34;3 queue_if_no_path pg_init_retries 50&#34;
-</span><span class="s1">prio &#34;alua&#34;
-</span><span class="s1">path_checker tur
-</span><span class="s1">failback immediate
-</span><span class="s1">path_selector &#34;round-robin 0&#34;
-</span><span class="s1">hardware_handler &#34;1 alua&#34;
-</span><span class="s1">rr_weight uniform
-</span><span class="s1">rr_min_io 128
-</span><span class="s1">}
-</span><span class="s1">}
-</span><span class="s1">&#39;</span>
-<span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$MINIMUMCONFIGURATION</span><span class="s2">&#34;</span> &gt; /etc/multipath.conf
-
-<span class="c1">#3 Load the multipath module, start multipath services, and set it start on boot.</span>
-<span class="c1"># CentOS 7 commands, change the following according the SO type.</span>
-modprobe dm-multipath
-systemctl start multipathd
-systemctl <span class="nb">enable</span> multipathd
-
-<span class="c1">#4 Verify that multipath is working.</span>
-multipath -ll
-
-<span class="c1">#5 Update /etc/iscsi/initiatorname.iscsi file with the IQN from the IBM Cloud infrastructure customer portal. </span>
-<span class="c1">#  Enter the value as lowercase.</span>
-<span class="nb">echo</span> <span class="s2">&#34;InitiatorName=</span><span class="nv">$INITIATOR</span><span class="s2">&#34;</span> &gt; /etc/iscsi/initiatorname.iscsi
-
-<span class="c1">#6 Edit the CHAP settings in /etc/iscsi/iscsid.conf by using the user name and password from the IBM Cloud infrastructure customer portal. </span>
-<span class="c1">#  Use uppercase for CHAP names.</span>
-<span class="nv">ISCSIDCONF</span><span class="o">=</span><span class="s2">&#34;
-</span><span class="s2">iscsid.startup = /bin/systemctl start iscsid.socket iscsiuio.socket
-</span><span class="s2">node.startup = automatic
-</span><span class="s2">node.leading_login = No
-</span><span class="s2">node.session.timeo.replacement_timeout = 120
-</span><span class="s2">node.conn[0].timeo.login_timeout = 15
-</span><span class="s2">node.conn[0].timeo.logout_timeout = 15
-</span><span class="s2">node.conn[0].timeo.noop_out_interval = 5
-</span><span class="s2">node.conn[0].timeo.noop_out_timeout = 5
-</span><span class="s2">node.session.err_timeo.abort_timeout = 15
-</span><span class="s2">node.session.err_timeo.lu_reset_timeout = 30
-</span><span class="s2">node.session.err_timeo.tgt_reset_timeout = 30
-</span><span class="s2">node.session.initial_login_retry_max = 8
-</span><span class="s2">node.session.cmds_max = 128
-</span><span class="s2">node.session.queue_depth = 32
-</span><span class="s2">node.session.xmit_thread_priority = -20
-</span><span class="s2">node.session.iscsi.InitialR2T = No
-</span><span class="s2">node.session.iscsi.ImmediateData = Yes
-</span><span class="s2">node.session.iscsi.FirstBurstLength = 262144
-</span><span class="s2">node.session.iscsi.MaxBurstLength = 16776192
-</span><span class="s2">node.conn[0].iscsi.MaxRecvDataSegmentLength = 262144
-</span><span class="s2">node.conn[0].iscsi.MaxXmitDataSegmentLength = 0
-</span><span class="s2">discovery.sendtargets.iscsi.MaxRecvDataSegmentLength = 32768
-</span><span class="s2">node.conn[0].iscsi.HeaderDigest = None
-</span><span class="s2">node.session.nr_sessions = 1
-</span><span class="s2">node.session.iscsi.FastAbort = Yes
-</span><span class="s2">node.session.scan = auto
-</span><span class="s2">node.session.auth.authmethod = CHAP
-</span><span class="s2">node.session.auth.username = </span><span class="si">${</span><span class="nv">USERNAME</span><span class="si">}</span><span class="s2">
-</span><span class="s2">node.session.auth.password =  </span><span class="si">${</span><span class="nv">PASSWORD</span><span class="si">}</span><span class="s2">
-</span><span class="s2">discovery.sendtargets.auth.authmethod = CHAP
-</span><span class="s2">discovery.sendtargets.auth.username =  </span><span class="si">${</span><span class="nv">USERNAME</span><span class="si">}</span><span class="s2">
-</span><span class="s2">discovery.sendtargets.auth.password =  </span><span class="si">${</span><span class="nv">PASSWORD</span><span class="si">}</span><span class="s2">&#34;</span>
-<span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$ISCSIDCONF</span><span class="s2">&#34;</span> &gt; /etc/iscsi/iscsid.conf
- 
-<span class="c1">#7 Set iSCSI to start at boot and start it now.</span>
-systemctl <span class="nb">enable</span> iscsi
-systemctl <span class="nb">enable</span> iscsid
-systemctl start iscsi
-systemctl start iscsid
-
-<span class="c1">#8 Discover the device by using the Target IP address that was obtained from the IBM Cloud infrastructure customer portal.</span>
-
-<span class="c1">#A. Run the discovery against the iSCSI array.</span>
-
-iscsiadm -m discovery -t sendtargets -p <span class="nv">$IP_1</span>
-
-<span class="c1">#B. Set the host to automatically log in to the iSCSI array.</span>
-iscsiadm -m node -L automatic
-
-<span class="c1">#9 Verify that the host is logged in to the iSCSI array and maintained its sessions.</span>
-iscsiadm -m session
-multipath -l
-
-<span class="c1">#10 Verify that the device is connected. </span>
-<span class="c1">#   By default the device attaches to /dev/mapper/mpathX where X is the generated ID of the connected device.</span>
-fdisk -l <span class="p">|</span> grep /dev/mapper
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash 
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="c1"># *************************  Connecting to MPIO ISCSI lun on Linux OS *************************</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The following script uses steps for CentOS distribution only, to change configuration please review the following url:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># https://console.bluemix.net/docs/infrastructure/BlockStorage/accessing_block_storage_linux.html#connecting-to-mpio-iscsi-luns-on-linux</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Get the metadata</span>
+</span></span><span class="line"><span class="cl"><span class="nv">IFS</span><span class="o">=</span><span class="s1">&#39;,&#39;</span> <span class="nb">read</span> -ra METAAA <span class="o">&lt;&lt;&lt;</span> <span class="sb">`</span>curl https://api.service.softlayer.com/rest/v3.1/SoftLayer_Resource_Metadata/getUserMetadata<span class="sb">`</span>
+</span></span><span class="line"><span class="cl"><span class="nv">USERNAME</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[4]</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl"><span class="nv">IP_1</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[3]</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl"><span class="nv">IP_2</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[2]</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># This removes the trailing \&#34; that comes from the curl command</span>
+</span></span><span class="line"><span class="cl"><span class="nv">PASSWORD</span><span class="o">=</span><span class="s2">&#34;</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[5]%</span><span class="se">\&#34;</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">INITIATOR</span><span class="o">=</span><span class="si">${</span><span class="nv">METAAA</span><span class="p">[1]</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#1 Install the iSCSI and multipath utilities to your host.</span>
+</span></span><span class="line"><span class="cl">yum -y install iscsi-initiator-utils device-mapper-multipath
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#2 Create/edit /etc/multipath.conf with the minimum configuration that is provided in the following commands. </span>
+</span></span><span class="line"><span class="cl"><span class="nv">MINIMUMCONFIGURATION</span><span class="o">=</span><span class="s1">&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">defaults {
+</span></span></span><span class="line"><span class="cl"><span class="s1">user_friendly_names no
+</span></span></span><span class="line"><span class="cl"><span class="s1">max_fds max
+</span></span></span><span class="line"><span class="cl"><span class="s1">flush_on_last_del yes
+</span></span></span><span class="line"><span class="cl"><span class="s1">queue_without_daemon no
+</span></span></span><span class="line"><span class="cl"><span class="s1">dev_loss_tmo infinity
+</span></span></span><span class="line"><span class="cl"><span class="s1">fast_io_fail_tmo 5
+</span></span></span><span class="line"><span class="cl"><span class="s1">}
+</span></span></span><span class="line"><span class="cl"><span class="s1"># All data under blacklist must be specific to your system.
+</span></span></span><span class="line"><span class="cl"><span class="s1">blacklist {
+</span></span></span><span class="line"><span class="cl"><span class="s1">wwid &#34;SAdaptec*&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">devnode &#34;^hd[a-z]&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">devnode &#34;^(ram|raw|loop|fd|md|dm-|sr|scd|st)[0-9]*&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">devnode &#34;^cciss.*&#34;  
+</span></span></span><span class="line"><span class="cl"><span class="s1">}
+</span></span></span><span class="line"><span class="cl"><span class="s1">devices {
+</span></span></span><span class="line"><span class="cl"><span class="s1">device {
+</span></span></span><span class="line"><span class="cl"><span class="s1">vendor &#34;NETAPP&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">product &#34;LUN&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">path_grouping_policy group_by_prio
+</span></span></span><span class="line"><span class="cl"><span class="s1">features &#34;3 queue_if_no_path pg_init_retries 50&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">prio &#34;alua&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">path_checker tur
+</span></span></span><span class="line"><span class="cl"><span class="s1">failback immediate
+</span></span></span><span class="line"><span class="cl"><span class="s1">path_selector &#34;round-robin 0&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">hardware_handler &#34;1 alua&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">rr_weight uniform
+</span></span></span><span class="line"><span class="cl"><span class="s1">rr_min_io 128
+</span></span></span><span class="line"><span class="cl"><span class="s1">}
+</span></span></span><span class="line"><span class="cl"><span class="s1">}
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$MINIMUMCONFIGURATION</span><span class="s2">&#34;</span> &gt; /etc/multipath.conf
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#3 Load the multipath module, start multipath services, and set it start on boot.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># CentOS 7 commands, change the following according the SO type.</span>
+</span></span><span class="line"><span class="cl">modprobe dm-multipath
+</span></span><span class="line"><span class="cl">systemctl start multipathd
+</span></span><span class="line"><span class="cl">systemctl <span class="nb">enable</span> multipathd
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#4 Verify that multipath is working.</span>
+</span></span><span class="line"><span class="cl">multipath -ll
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#5 Update /etc/iscsi/initiatorname.iscsi file with the IQN from the IBM Cloud infrastructure customer portal. </span>
+</span></span><span class="line"><span class="cl"><span class="c1">#  Enter the value as lowercase.</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;InitiatorName=</span><span class="nv">$INITIATOR</span><span class="s2">&#34;</span> &gt; /etc/iscsi/initiatorname.iscsi
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#6 Edit the CHAP settings in /etc/iscsi/iscsid.conf by using the user name and password from the IBM Cloud infrastructure customer portal. </span>
+</span></span><span class="line"><span class="cl"><span class="c1">#  Use uppercase for CHAP names.</span>
+</span></span><span class="line"><span class="cl"><span class="nv">ISCSIDCONF</span><span class="o">=</span><span class="s2">&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">iscsid.startup = /bin/systemctl start iscsid.socket iscsiuio.socket
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.startup = automatic
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.leading_login = No
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.timeo.replacement_timeout = 120
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.conn[0].timeo.login_timeout = 15
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.conn[0].timeo.logout_timeout = 15
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.conn[0].timeo.noop_out_interval = 5
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.conn[0].timeo.noop_out_timeout = 5
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.err_timeo.abort_timeout = 15
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.err_timeo.lu_reset_timeout = 30
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.err_timeo.tgt_reset_timeout = 30
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.initial_login_retry_max = 8
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.cmds_max = 128
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.queue_depth = 32
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.xmit_thread_priority = -20
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.iscsi.InitialR2T = No
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.iscsi.ImmediateData = Yes
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.iscsi.FirstBurstLength = 262144
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.iscsi.MaxBurstLength = 16776192
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.conn[0].iscsi.MaxRecvDataSegmentLength = 262144
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.conn[0].iscsi.MaxXmitDataSegmentLength = 0
+</span></span></span><span class="line"><span class="cl"><span class="s2">discovery.sendtargets.iscsi.MaxRecvDataSegmentLength = 32768
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.conn[0].iscsi.HeaderDigest = None
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.nr_sessions = 1
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.iscsi.FastAbort = Yes
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.scan = auto
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.auth.authmethod = CHAP
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.auth.username = </span><span class="si">${</span><span class="nv">USERNAME</span><span class="si">}</span><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">node.session.auth.password =  </span><span class="si">${</span><span class="nv">PASSWORD</span><span class="si">}</span><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">discovery.sendtargets.auth.authmethod = CHAP
+</span></span></span><span class="line"><span class="cl"><span class="s2">discovery.sendtargets.auth.username =  </span><span class="si">${</span><span class="nv">USERNAME</span><span class="si">}</span><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">discovery.sendtargets.auth.password =  </span><span class="si">${</span><span class="nv">PASSWORD</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$ISCSIDCONF</span><span class="s2">&#34;</span> &gt; /etc/iscsi/iscsid.conf
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="c1">#7 Set iSCSI to start at boot and start it now.</span>
+</span></span><span class="line"><span class="cl">systemctl <span class="nb">enable</span> iscsi
+</span></span><span class="line"><span class="cl">systemctl <span class="nb">enable</span> iscsid
+</span></span><span class="line"><span class="cl">systemctl start iscsi
+</span></span><span class="line"><span class="cl">systemctl start iscsid
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#8 Discover the device by using the Target IP address that was obtained from the IBM Cloud infrastructure customer portal.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#A. Run the discovery against the iSCSI array.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">iscsiadm -m discovery -t sendtargets -p <span class="nv">$IP_1</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#B. Set the host to automatically log in to the iSCSI array.</span>
+</span></span><span class="line"><span class="cl">iscsiadm -m node -L automatic
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#9 Verify that the host is logged in to the iSCSI array and maintained its sessions.</span>
+</span></span><span class="line"><span class="cl">iscsiadm -m session
+</span></span><span class="line"><span class="cl">multipath -l
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#10 Verify that the device is connected. </span>
+</span></span><span class="line"><span class="cl"><span class="c1">#   By default the device attaches to /dev/mapper/mpathX where X is the generated ID of the connected device.</span>
+</span></span><span class="line"><span class="cl">fdisk -l <span class="p">|</span> grep /dev/mapper
+</span></span></code></pre></div>
             </div>
         </div>
 

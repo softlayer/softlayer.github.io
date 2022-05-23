@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -154,98 +150,97 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
-<span class="sd">/**
-</span><span class="sd"> * Order Consistent Performance Block Storage
-</span><span class="sd"> *
-</span><span class="sd"> * This script orders a Consistent Performance Block Storage
-</span><span class="sd"> *
-</span><span class="sd"> * Important manual pages:
-</span><span class="sd"> * @see http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-</span><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi
-</span><span class="sd"> *
-</span><span class="sd"> * @license &lt;http://sldn.softlayer.com/wiki/index.php/license&gt;
-</span><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="sd"> */</span>
-<span class="k">require_once</span> <span class="nx">dirname</span><span class="p">(</span><span class="no">__FILE__</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&#34;/SoftLayer/SoapClient.class.php&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Your SoftLayer API username
-</span><span class="sd"> * @var string
-</span><span class="sd"> */</span>
-<span class="nv">$username</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Your SoftLayer API key
-</span><span class="sd"> * Generate one at: https://control.softlayer.com/account/users
-</span><span class="sd"> * @var string
-</span><span class="sd"> */</span>
-<span class="nv">$apiKey</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Declare the location, packageId and quantity for the Endurance that you wish to order
-</span><span class="sd"> * @var int $location
-</span><span class="sd"> * @var int $packageId
-</span><span class="sd"> * @var int $quantity
-</span><span class="sd"> */</span>
-<span class="nv">$location</span> <span class="o">=</span> <span class="mi">449506</span><span class="p">;</span> <span class="c1">// Frankfurt 2
-</span><span class="c1"></span><span class="nv">$packageId</span> <span class="o">=</span> <span class="mi">222</span><span class="p">;</span> <span class="c1">// The packageID for order Performance
-</span><span class="c1"></span><span class="nv">$quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-
-<span class="c1">// Create a SoftLayer API client object for &#34;SoftLayer_Product_Order&#34; service
-</span><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Build a skeleton SoftLayer_Product_Item_Price objects. These objects contain
-</span><span class="sd"> * much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id
-</span><span class="sd"> * to know what you want to order.
-</span><span class="sd"> * To get the list of valid prices for the package
-</span><span class="sd"> * use the SoftLayer_Product_Package:getItems method
-</span><span class="sd"> */</span>
-<span class="nv">$prices</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
-<span class="mi">40672</span><span class="p">,</span> <span class="c1">// Block Storage (Performance)
-</span><span class="c1"></span><span class="mi">62875</span><span class="p">,</span> <span class="c1">// 500 GB Storage Space 
-</span><span class="c1"></span><span class="mi">61509</span> <span class="c1">// 500 IOPS 
-</span><span class="c1"></span><span class="p">);</span>
-
-<span class="nv">$orderPrices</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
-<span class="k">foreach</span> <span class="p">(</span><span class="nv">$prices</span> <span class="k">as</span> <span class="nv">$priceId</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nv">$price</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-    <span class="nv">$price</span> <span class="o">-&gt;</span> <span class="na">id</span> <span class="o">=</span> <span class="nv">$priceId</span><span class="p">;</span>
-    <span class="nv">$orderPrices</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$price</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="c1">// This should match the OS type of the host(s) that will connect to the volume. The only required property is the keyName.
-</span><span class="c1"></span><span class="nv">$osFormatType</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$osFormatType</span> <span class="o">-&gt;</span> <span class="na">id</span> <span class="o">=</span> <span class="mi">28</span><span class="p">;</span>
-<span class="nv">$osFormatType</span> <span class="o">-&gt;</span> <span class="na">keyName</span> <span class="o">=</span> <span class="s2">&#34;WINDOWS&#34;</span><span class="p">;</span>
-<span class="nv">$osFormatType</span> <span class="o">-&gt;</span> <span class="na">name</span> <span class="o">=</span> <span class="s2">&#34;Windows 2003&#34;</span><span class="p">;</span>
-
-<span class="c1">// Build a SoftLayer_Container_Product_Order_Network_Storage_Enterprise object containing
-</span><span class="c1">// the order you wish to place.
-</span><span class="c1"></span><span class="nv">$orderContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">location</span> <span class="o">=</span> <span class="nv">$location</span><span class="p">;</span>
-<span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">packageId</span> <span class="o">=</span> <span class="nv">$packageId</span><span class="p">;</span>
-<span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">prices</span> <span class="o">=</span> <span class="nv">$orderPrices</span><span class="p">;</span>
-<span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">quantity</span> <span class="o">=</span> <span class="nv">$quantity</span><span class="p">;</span>
-<span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">osFormatType</span> <span class="o">=</span> <span class="nv">$osFormatType</span><span class="p">;</span>
-
-<span class="c1">// Re-declare the order template as a SOAP variable, so the SoftLayer ordering system knows what type of order you&#39;re placing.
-</span><span class="c1"></span><span class="nv">$orderTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SoapVar</span><span class="p">(</span><span class="nv">$orderContainer</span><span class="p">,</span> <span class="nx">SOAP_ENC_OBJECT</span><span class="p">,</span> <span class="s1">&#39;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&#39;</span><span class="p">,</span> <span class="s1">&#39;http://api.service.softlayer.com/soap/v3/&#39;</span><span class="p">);</span>
-
-<span class="k">try</span> <span class="p">{</span>
-    <span class="sd">/**
-</span><span class="sd">     * We will use verifyOrder() method to check for errors. Replace this with placeOrder() when you are ready to order.
-</span><span class="sd">     * @see http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span class="sd">     */</span>
-    <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">placeOrder</span><span class="p">(</span><span class="nv">$orderTemplate</span><span class="p">);</span>
-    <span class="nx">print_r</span><span class="p">(</span><span class="nv">$result</span><span class="p">);</span>
-<span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">echo</span> <span class="s2">&#34;Unable to order Consistent Performance Block Storage&#34;</span> <span class="o">.</span> <span class="nv">$e</span> <span class="o">-&gt;</span> <span class="na">getMessage</span><span class="p">();</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span>
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Order Consistent Performance Block Storage
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * This script orders a Consistent Performance Block Storage
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @license &lt;http://sldn.softlayer.com/wiki/index.php/license&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="k">require_once</span> <span class="nx">dirname</span><span class="p">(</span><span class="no">__FILE__</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&#34;/SoftLayer/SoapClient.class.php&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Your SoftLayer API username
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var string
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$username</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Your SoftLayer API key
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Generate one at: https://control.softlayer.com/account/users
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var string
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$apiKey</span> <span class="o">=</span> <span class="s2">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Declare the location, packageId and quantity for the Endurance that you wish to order
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var int $location
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var int $packageId
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var int $quantity
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$location</span> <span class="o">=</span> <span class="mi">449506</span><span class="p">;</span> <span class="c1">// Frankfurt 2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$packageId</span> <span class="o">=</span> <span class="mi">222</span><span class="p">;</span> <span class="c1">// The packageID for order Performance
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Create a SoftLayer API client object for &#34;SoftLayer_Product_Order&#34; service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Build a skeleton SoftLayer_Product_Item_Price objects. These objects contain
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * to know what you want to order.
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * To get the list of valid prices for the package
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$prices</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl"><span class="mi">40672</span><span class="p">,</span> <span class="c1">// Block Storage (Performance)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="mi">62875</span><span class="p">,</span> <span class="c1">// 500 GB Storage Space 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="mi">61509</span> <span class="c1">// 500 IOPS 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$orderPrices</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">foreach</span> <span class="p">(</span><span class="nv">$prices</span> <span class="k">as</span> <span class="nv">$priceId</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$price</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$price</span> <span class="o">-&gt;</span> <span class="na">id</span> <span class="o">=</span> <span class="nv">$priceId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$orderPrices</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$price</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// This should match the OS type of the host(s) that will connect to the volume. The only required property is the keyName.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$osFormatType</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$osFormatType</span> <span class="o">-&gt;</span> <span class="na">id</span> <span class="o">=</span> <span class="mi">28</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$osFormatType</span> <span class="o">-&gt;</span> <span class="na">keyName</span> <span class="o">=</span> <span class="s2">&#34;WINDOWS&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$osFormatType</span> <span class="o">-&gt;</span> <span class="na">name</span> <span class="o">=</span> <span class="s2">&#34;Windows 2003&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Build a SoftLayer_Container_Product_Order_Network_Storage_Enterprise object containing
+</span></span></span><span class="line"><span class="cl"><span class="c1">// the order you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$orderContainer</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">location</span> <span class="o">=</span> <span class="nv">$location</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">packageId</span> <span class="o">=</span> <span class="nv">$packageId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">prices</span> <span class="o">=</span> <span class="nv">$orderPrices</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">quantity</span> <span class="o">=</span> <span class="nv">$quantity</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$orderContainer</span> <span class="o">-&gt;</span> <span class="na">osFormatType</span> <span class="o">=</span> <span class="nv">$osFormatType</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Re-declare the order template as a SOAP variable, so the SoftLayer ordering system knows what type of order you&#39;re placing.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$orderTemplate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SoapVar</span><span class="p">(</span><span class="nv">$orderContainer</span><span class="p">,</span> <span class="nx">SOAP_ENC_OBJECT</span><span class="p">,</span> <span class="s1">&#39;SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi&#39;</span><span class="p">,</span> <span class="s1">&#39;http://api.service.softlayer.com/soap/v3/&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * We will use verifyOrder() method to check for errors. Replace this with placeOrder() when you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="sd">     * @see http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span></span></span><span class="line"><span class="cl"><span class="sd">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">placeOrder</span><span class="p">(</span><span class="nv">$orderTemplate</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">print_r</span><span class="p">(</span><span class="nv">$result</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">echo</span> <span class="s2">&#34;Unable to order Consistent Performance Block Storage&#34;</span> <span class="o">.</span> <span class="nv">$e</span> <span class="o">-&gt;</span> <span class="na">getMessage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

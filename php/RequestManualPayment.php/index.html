@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -146,121 +142,120 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
-<span class="sd">/**
-</span><span class="sd"> * Make a Payment
-</span><span class="sd"> *
-</span><span class="sd"> * This script makes a manual payment. Softlayer customers are permitted to request a manual
-</span><span class="sd"> * one-time payment at a minimum amount of $2.00.
-</span><span class="sd"> *
-</span><span class="sd"> * Important manual pages:
-</span><span class="sd"> * @see http://sldn.softlayer.com/reference/services/SoftLayer_Account/requestManualPayment
-</span><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Payment_Card_ManualPayment
-</span><span class="sd"> *
-</span><span class="sd"> * @license &lt;http://sldn.softlayer.com/article/License&gt;
-</span><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="sd"> */</span>
-
-<span class="k">require_once</span> <span class="nx">dirname</span><span class="p">(</span><span class="no">__FILE__</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&#34;/SoftLayer/SoapClient.class.php&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * SoftLayer API username
-</span><span class="sd"> * @var string
-</span><span class="sd"> */</span>
-<span class="nv">$username</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * SoftLayer API key
-</span><span class="sd"> * @var string
-</span><span class="sd"> */</span>
-<span class="nv">$apiKey</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Declare parameters for Payment Information
-</span><span class="sd"> * @var Decimal $amount
-</span><span class="sd"> */</span>
-<span class="nv">$amount</span> <span class="o">=</span> <span class="mf">50.55</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Declare Credit Card Payment information
-</span><span class="sd"> * @var String $cardAccountNumber
-</span><span class="sd"> * @var String $cardExpirationMonth
-</span><span class="sd"> * @var String $cardExpirationYear
-</span><span class="sd"> * @var String $cardType
-</span><span class="sd"> * @var String $creditCardVerificationNumber
-</span><span class="sd"> * @var String $currencyShortName
-</span><span class="sd"> * @var String $paymentType
-</span><span class="sd"> */</span>
-<span class="nv">$cardAccountNumber</span> <span class="o">=</span> <span class="s2">&#34;4111111111111111&#34;</span><span class="p">;</span>
-<span class="nv">$cardExpirationMonth</span> <span class="o">=</span> <span class="s2">&#34;10&#34;</span><span class="p">;</span>
-<span class="nv">$cardExpirationYear</span> <span class="o">=</span> <span class="s2">&#34;2017&#34;</span><span class="p">;</span>
-<span class="c1">// $cardType : Visa - 001, Mastercard - 002, American Express - 003, Discover - 004, PayPal - paypal
-</span><span class="c1"></span><span class="nv">$cardType</span> <span class="o">=</span> <span class="s2">&#34;001&#34;</span><span class="p">;</span>
-<span class="nv">$creditCardVerificationNumber</span> <span class="o">=</span> <span class="s2">&#34;1111&#34;</span><span class="p">;</span>
-<span class="nv">$currencyShortName</span> <span class="o">=</span> <span class="s2">&#34;USD&#34;</span><span class="p">;</span>
-<span class="c1">// $paymentType : The description of the type of payment sent.
-</span><span class="c1"></span><span class="nv">$paymentType</span> <span class="o">=</span> <span class="s2">&#34;cc&#34;</span><span class="p">;</span>
-
-<span class="sd">/**
-</span><span class="sd"> * Declare Credit Card Billing Addres information
-</span><span class="sd"> * @var String $billingAddressLine1
-</span><span class="sd"> * @var String $billingAddressLine2
-</span><span class="sd"> * @var String $billingCity
-</span><span class="sd"> * @var String $billingCountryCode
-</span><span class="sd"> * @var String $billingEmail
-</span><span class="sd"> * @var String $billingNameCompany
-</span><span class="sd"> * @var String $billingNameFirst
-</span><span class="sd"> * @var String $billingNameLast
-</span><span class="sd"> * @var String $billingPhoneVoice
-</span><span class="sd"> * @var String $billingPostalCode
-</span><span class="sd"> * @var String $billingState
-</span><span class="sd"> */</span>
-<span class="nv">$billingAddressLine1</span> <span class="o">=</span> <span class="s2">&#34;Test&#34;</span><span class="p">;</span>
-<span class="nv">$billingAddressLine2</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span><span class="p">;</span>
-<span class="nv">$billingCity</span> <span class="o">=</span> <span class="s2">&#34;Cbba&#34;</span><span class="p">;</span>
-<span class="nv">$billingCountryCode</span> <span class="o">=</span> <span class="s2">&#34;US&#34;</span><span class="p">;</span>
-<span class="nv">$billingEmail</span> <span class="o">=</span> <span class="s2">&#34;noreply@softlayer.com&#34;</span><span class="p">;</span>
-<span class="nv">$billingNameCompany</span> <span class="o">=</span> <span class="s2">&#34;TestCompany&#34;</span><span class="p">;</span>
-<span class="nv">$billingNameFirst</span> <span class="o">=</span> <span class="s2">&#34;Jhon&#34;</span><span class="p">;</span>
-<span class="nv">$billingNameLast</span> <span class="o">=</span> <span class="s2">&#34;Thoms&#34;</span><span class="p">;</span>
-<span class="nv">$billingPhoneVoice</span> <span class="o">=</span> <span class="s2">&#34;2342342&#34;</span><span class="p">;</span>
-<span class="nv">$billingPostalCode</span> <span class="o">=</span> <span class="s2">&#34;44559&#34;</span><span class="p">;</span>
-<span class="nv">$billingState</span> <span class="o">=</span> <span class="s2">&#34;TX&#34;</span><span class="p">;</span>
-
-<span class="c1">// Build a SoftLayer_Billing_Payment_Card_ManualPayment object containing
-</span><span class="c1">// the details required to request a manual payment.
-</span><span class="c1"></span><span class="nv">$request</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">amount</span> <span class="o">=</span> <span class="nv">$amount</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingAddressLine1</span> <span class="o">=</span> <span class="nv">$billingAddressLine1</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingCity</span> <span class="o">=</span> <span class="nv">$billingCity</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingCountryCode</span> <span class="o">=</span> <span class="nv">$billingCountryCode</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingEmail</span> <span class="o">=</span> <span class="nv">$billingEmail</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingNameCompany</span> <span class="o">=</span> <span class="nv">$billingNameCompany</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingNameFirst</span> <span class="o">=</span> <span class="nv">$billingNameFirst</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingNameLast</span> <span class="o">=</span> <span class="nv">$billingNameLast</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingPhoneVoice</span> <span class="o">=</span> <span class="nv">$billingPhoneVoice</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingPostalCode</span> <span class="o">=</span> <span class="nv">$billingPostalCode</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingState</span> <span class="o">=</span> <span class="nv">$billingState</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardAccountNumber</span> <span class="o">=</span> <span class="nv">$cardAccountNumber</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardExpirationMonth</span> <span class="o">=</span> <span class="nv">$cardExpirationMonth</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardExpirationYear</span> <span class="o">=</span> <span class="nv">$cardExpirationYear</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardType</span> <span class="o">=</span> <span class="nv">$cardType</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">creditCardVerificationNumber</span> <span class="o">=</span> <span class="nv">$creditCardVerificationNumber</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">currencyShortName</span> <span class="o">=</span> <span class="nv">$currencyShortName</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">paymentType</span> <span class="o">=</span> <span class="nv">$paymentType</span><span class="p">;</span>
-<span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingPostalCode</span> <span class="o">=</span> <span class="nv">$billingPostalCode</span><span class="p">;</span>
-
-<span class="c1">// Create SoftLayer API client object
-</span><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
-
-<span class="k">try</span> <span class="p">{</span>
-    <span class="nv">$receipt</span> <span class="o">=</span> <span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">requestManualPayment</span><span class="p">(</span><span class="nv">$request</span><span class="p">);</span>
-    <span class="nx">print_r</span><span class="p">(</span><span class="nv">$receipt</span><span class="p">);</span>
-<span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">echo</span> <span class="s2">&#34;Unable to request manual payment: &#34;</span> <span class="o">.</span> <span class="nv">$e</span> <span class="o">-&gt;</span> <span class="na">getMessage</span><span class="p">();</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span>
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Make a Payment
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * This script makes a manual payment. Softlayer customers are permitted to request a manual
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * one-time payment at a minimum amount of $2.00.
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/reference/services/SoftLayer_Account/requestManualPayment
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @see http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Payment_Card_ManualPayment
+</span></span></span><span class="line"><span class="cl"><span class="sd"> *
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @license &lt;http://sldn.softlayer.com/article/License&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">require_once</span> <span class="nx">dirname</span><span class="p">(</span><span class="no">__FILE__</span><span class="p">)</span> <span class="o">.</span> <span class="s2">&#34;/SoftLayer/SoapClient.class.php&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * SoftLayer API username
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var string
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$username</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * SoftLayer API key
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var string
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$apiKey</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Declare parameters for Payment Information
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var Decimal $amount
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$amount</span> <span class="o">=</span> <span class="mf">50.55</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Declare Credit Card Payment information
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $cardAccountNumber
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $cardExpirationMonth
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $cardExpirationYear
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $cardType
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $creditCardVerificationNumber
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $currencyShortName
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $paymentType
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$cardAccountNumber</span> <span class="o">=</span> <span class="s2">&#34;4111111111111111&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$cardExpirationMonth</span> <span class="o">=</span> <span class="s2">&#34;10&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$cardExpirationYear</span> <span class="o">=</span> <span class="s2">&#34;2017&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// $cardType : Visa - 001, Mastercard - 002, American Express - 003, Discover - 004, PayPal - paypal
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$cardType</span> <span class="o">=</span> <span class="s2">&#34;001&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$creditCardVerificationNumber</span> <span class="o">=</span> <span class="s2">&#34;1111&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$currencyShortName</span> <span class="o">=</span> <span class="s2">&#34;USD&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// $paymentType : The description of the type of payment sent.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$paymentType</span> <span class="o">=</span> <span class="s2">&#34;cc&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * Declare Credit Card Billing Addres information
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingAddressLine1
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingAddressLine2
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingCity
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingCountryCode
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingEmail
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingNameCompany
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingNameFirst
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingNameLast
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingPhoneVoice
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingPostalCode
+</span></span></span><span class="line"><span class="cl"><span class="sd"> * @var String $billingState
+</span></span></span><span class="line"><span class="cl"><span class="sd"> */</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingAddressLine1</span> <span class="o">=</span> <span class="s2">&#34;Test&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingAddressLine2</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingCity</span> <span class="o">=</span> <span class="s2">&#34;Cbba&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingCountryCode</span> <span class="o">=</span> <span class="s2">&#34;US&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingEmail</span> <span class="o">=</span> <span class="s2">&#34;noreply@softlayer.com&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingNameCompany</span> <span class="o">=</span> <span class="s2">&#34;TestCompany&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingNameFirst</span> <span class="o">=</span> <span class="s2">&#34;Jhon&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingNameLast</span> <span class="o">=</span> <span class="s2">&#34;Thoms&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingPhoneVoice</span> <span class="o">=</span> <span class="s2">&#34;2342342&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingPostalCode</span> <span class="o">=</span> <span class="s2">&#34;44559&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$billingState</span> <span class="o">=</span> <span class="s2">&#34;TX&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Build a SoftLayer_Billing_Payment_Card_ManualPayment object containing
+</span></span></span><span class="line"><span class="cl"><span class="c1">// the details required to request a manual payment.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$request</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">amount</span> <span class="o">=</span> <span class="nv">$amount</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingAddressLine1</span> <span class="o">=</span> <span class="nv">$billingAddressLine1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingCity</span> <span class="o">=</span> <span class="nv">$billingCity</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingCountryCode</span> <span class="o">=</span> <span class="nv">$billingCountryCode</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingEmail</span> <span class="o">=</span> <span class="nv">$billingEmail</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingNameCompany</span> <span class="o">=</span> <span class="nv">$billingNameCompany</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingNameFirst</span> <span class="o">=</span> <span class="nv">$billingNameFirst</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingNameLast</span> <span class="o">=</span> <span class="nv">$billingNameLast</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingPhoneVoice</span> <span class="o">=</span> <span class="nv">$billingPhoneVoice</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingPostalCode</span> <span class="o">=</span> <span class="nv">$billingPostalCode</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingState</span> <span class="o">=</span> <span class="nv">$billingState</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardAccountNumber</span> <span class="o">=</span> <span class="nv">$cardAccountNumber</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardExpirationMonth</span> <span class="o">=</span> <span class="nv">$cardExpirationMonth</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardExpirationYear</span> <span class="o">=</span> <span class="nv">$cardExpirationYear</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">cardType</span> <span class="o">=</span> <span class="nv">$cardType</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">creditCardVerificationNumber</span> <span class="o">=</span> <span class="nv">$creditCardVerificationNumber</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">currencyShortName</span> <span class="o">=</span> <span class="nv">$currencyShortName</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">paymentType</span> <span class="o">=</span> <span class="nv">$paymentType</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$request</span> <span class="o">-&gt;</span> <span class="na">billingPostalCode</span> <span class="o">=</span> <span class="nv">$billingPostalCode</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Create SoftLayer API client object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$client</span> <span class="o">=</span> <span class="nx">SoftLayer_SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$apiKey</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$receipt</span> <span class="o">=</span> <span class="nv">$client</span> <span class="o">-&gt;</span> <span class="na">requestManualPayment</span><span class="p">(</span><span class="nv">$request</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">print_r</span><span class="p">(</span><span class="nv">$receipt</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">Exception</span> <span class="nv">$e</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">echo</span> <span class="s2">&#34;Unable to request manual payment: &#34;</span> <span class="o">.</span> <span class="nv">$e</span> <span class="o">-&gt;</span> <span class="na">getMessage</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

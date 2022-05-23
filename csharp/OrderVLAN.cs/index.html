@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -154,118 +150,117 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">//-----------------------------------------------------------------------
-</span><span class="c1">// &lt;copyright file=&#34;OrderVLAN.cs&#34; company=&#34;Softlayer&#34;&gt;
-</span><span class="c1">//     SoftLayer Technologies, Inc.
-</span><span class="c1">// &lt;/copyright&gt;
-</span><span class="c1">// &lt;license&gt;
-</span><span class="c1">// http://sldn.softlayer.com/article/License
-</span><span class="c1">// &lt;/license&gt;
-</span><span class="c1">//-----------------------------------------------------------------------
-</span><span class="c1"></span>
-<span class="nx">namespace</span> <span class="nx">OrderVLANNamespace</span>
-<span class="p">{</span>
-    <span class="nx">using</span> <span class="nx">System</span><span class="p">;</span>
-    <span class="nx">using</span> <span class="nx">System</span><span class="p">.</span><span class="nx">Collections</span><span class="p">.</span><span class="nx">Generic</span><span class="p">;</span>
-
-    <span class="nx">class</span> <span class="nx">OrderVLAN</span>
-    <span class="p">{</span>
-        <span class="c1">/// &lt;summary&gt;
-</span><span class="c1"></span>        <span class="c1">/// Example to create a new VLAN
-</span><span class="c1"></span>        <span class="c1">/// the script uses the placeOrder method to order
-</span><span class="c1"></span>        <span class="c1">/// a new VLAN with 32 static IP address
-</span><span class="c1"></span>        <span class="c1">/// &lt;/summary&gt;
-</span><span class="c1"></span>        <span class="c1">/// &lt;manualPages&gt;
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Vlan
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price        
-</span><span class="c1"></span>        <span class="c1">/// &lt;/manualPages&gt;
-</span><span class="c1"></span>        <span class="nx">static</span> <span class="nx">void</span> <span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="nx">args</span><span class="p">)</span>
-        <span class="p">{</span>
-            <span class="c1">// Your SoftLayer API and username key.
-</span><span class="c1"></span>            <span class="kt">string</span> <span class="nx">username</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
-            <span class="kt">string</span> <span class="nx">apiKey</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
-
-            <span class="kt">string</span> <span class="nx">location</span> <span class="p">=</span> <span class="s">&#34;AMSTERDAM&#34;</span><span class="p">;</span>
-
-            <span class="c1">// The package id for order monitoring packages is 0
-</span><span class="c1"></span>            <span class="kt">int</span> <span class="nx">packageId</span> <span class="p">=</span> <span class="mi">0</span><span class="p">;</span>
-
-            <span class="kt">int</span> <span class="nx">quantity</span> <span class="p">=</span> <span class="mi">1</span><span class="p">;</span>
-
-            <span class="kt">string</span> <span class="nx">name</span> <span class="p">=</span> <span class="s">&#34;myVLANnew&#34;</span><span class="p">;</span>
-
-            <span class="kt">bool</span> <span class="nx">sendQuoteEmailFlag</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
-
-            <span class="kt">int</span> <span class="nx">routerID</span> <span class="p">=</span> <span class="mi">117960</span><span class="p">;</span>
-
-            <span class="c1">// Building a skeleton SoftLayer_Product_Item_Price objects. These objects contain
-</span><span class="c1"></span>            <span class="c1">// much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id
-</span><span class="c1"></span>            <span class="c1">// to know what you want to order.
-</span><span class="c1"></span>            <span class="c1">// to get the list of valid prices for the package
-</span><span class="c1"></span>            <span class="c1">// use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>            <span class="kt">int</span><span class="p">[]</span> <span class="nx">prices</span> <span class="p">=</span> 
-            <span class="p">{</span>
-                <span class="mi">2018</span><span class="p">,</span>
-                <span class="mi">1092</span> 
-            <span class="p">};</span>
-
-            <span class="nx">List</span><span class="p">&lt;</span><span class="nx">SoftLayer_Product_Item_Price</span><span class="p">&gt;</span> <span class="nx">pricesList</span> <span class="p">=</span> <span class="nx">new</span> <span class="nx">List</span><span class="p">&lt;</span><span class="nx">SoftLayer_Product_Item_Price</span><span class="p">&gt;();</span>
-
-            <span class="nf">foreach</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">prices</span><span class="p">)</span>
-            <span class="p">{</span>
-                <span class="nx">SoftLayer_Product_Item_Price</span> <span class="nx">price</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">SoftLayer_Product_Item_Price</span><span class="p">();</span>
-                <span class="nx">price</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">item</span><span class="p">;</span>
-                <span class="nx">price</span><span class="p">.</span><span class="nx">idSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
-                <span class="nx">pricesList</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">price</span><span class="p">);</span>
-            <span class="p">}</span>
-
-            <span class="c1">// Building a skeleton SoftLayer_Container_Product_Order_Network_Vlan object
-</span><span class="c1"></span>            <span class="c1">// containing the order you wish to place.
-</span><span class="c1"></span>            <span class="nx">SoftLayer_Container_Product_Order_Network_Vlan</span> <span class="nx">orderTemplate</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">SoftLayer_Container_Product_Order_Network_Vlan</span><span class="p">();</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">location</span> <span class="p">=</span> <span class="nx">location</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">name</span> <span class="p">=</span> <span class="nx">name</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">routerId</span> <span class="p">=</span> <span class="nx">routerID</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">routerIdSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">quantity</span> <span class="p">=</span> <span class="nx">quantity</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">quantitySpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">packageId</span> <span class="p">=</span> <span class="nx">packageId</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">packageIdSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">prices</span> <span class="p">=</span> <span class="nx">pricesList</span><span class="p">.</span><span class="nf">ToArray</span><span class="p">();</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">sendQuoteEmailFlag</span> <span class="p">=</span> <span class="nx">sendQuoteEmailFlag</span><span class="p">;</span>
-            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">sendQuoteEmailFlagSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
-
-            <span class="c1">// Creating a connection to the SoftLayer_Product_Order API service and             
-</span><span class="c1"></span>            <span class="c1">// bind our API username and key to it.           
-</span><span class="c1"></span>            <span class="nx">authenticate</span> <span class="nx">authenticate</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">authenticate</span><span class="p">();</span>
-            <span class="nx">authenticate</span><span class="p">.</span><span class="nx">username</span> <span class="p">=</span> <span class="nx">username</span><span class="p">;</span>
-            <span class="nx">authenticate</span><span class="p">.</span><span class="nx">apiKey</span> <span class="p">=</span> <span class="nx">apiKey</span><span class="p">;</span>
-
-            <span class="nx">SoftLayer_Product_OrderService</span> <span class="nx">orderService</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">SoftLayer_Product_OrderService</span><span class="p">();</span>
-            <span class="nx">orderService</span><span class="p">.</span><span class="nx">authenticateValue</span> <span class="p">=</span> <span class="nx">authenticate</span><span class="p">;</span>
-
-            <span class="c1">// verifyOrder() will check your order for errors. Replace this             
-</span><span class="c1"></span>            <span class="c1">// with a call to placeOrder() when you&#39;re ready to order. Both             
-</span><span class="c1"></span>            <span class="c1">// calls return a receipt object that you can use for your records.            
-</span><span class="c1"></span>            <span class="c1">// Once your order is placed it&#39;ll go through SoftLayer&#39;s approval             
-</span><span class="c1"></span>            <span class="c1">// and provisioning process. When it&#39;s done you&#39;ll have a new            
-</span><span class="c1"></span>            <span class="c1">// SoftLayer_Network_Subnet object ready to use.            
-</span><span class="c1"></span>            <span class="nx">try</span>
-            <span class="p">{</span>
-                <span class="nx">SoftLayer_Container_Product_Order</span> <span class="nx">verifiedOrder</span> <span class="p">=</span> <span class="p">(</span><span class="nx">SoftLayer_Container_Product_Order</span><span class="p">)</span><span class="nx">orderService</span><span class="p">.</span><span class="nf">verifyOrder</span><span class="p">(</span><span class="nx">orderTemplate</span><span class="p">);</span>
-                <span class="nx">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">&#34;Order verified!&#34;</span><span class="p">);</span>
-            <span class="p">}</span>
-            <span class="nf">catch</span> <span class="p">(</span><span class="nx">Exception</span> <span class="nx">e</span><span class="p">)</span>
-            <span class="p">{</span>
-                <span class="nx">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">&#34;Invalid order: &#34;</span> <span class="o">+</span> <span class="nx">e</span><span class="p">.</span><span class="nx">Message</span><span class="p">);</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">//-----------------------------------------------------------------------
+</span></span></span><span class="line"><span class="cl"><span class="c1">// &lt;copyright file=&#34;OrderVLAN.cs&#34; company=&#34;Softlayer&#34;&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1">//     SoftLayer Technologies, Inc.
+</span></span></span><span class="line"><span class="cl"><span class="c1">// &lt;/copyright&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1">// &lt;license&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1">// http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="c1">// &lt;/license&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1">//-----------------------------------------------------------------------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="nx">namespace</span> <span class="nx">OrderVLANNamespace</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">using</span> <span class="nx">System</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">using</span> <span class="nx">System</span><span class="p">.</span><span class="nx">Collections</span><span class="p">.</span><span class="nx">Generic</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">class</span> <span class="nx">OrderVLAN</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">/// &lt;summary&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// Example to create a new VLAN
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// the script uses the placeOrder method to order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// a new VLAN with 32 static IP address
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// &lt;/summary&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// &lt;manualPages&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Vlan
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price        
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">/// &lt;/manualPages&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">static</span> <span class="nx">void</span> <span class="nf">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="nx">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// Your SoftLayer API and username key.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="kt">string</span> <span class="nx">username</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="nx">apiKey</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="nx">location</span> <span class="p">=</span> <span class="s">&#34;AMSTERDAM&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// The package id for order monitoring packages is 0
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="kt">int</span> <span class="nx">packageId</span> <span class="p">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="nx">quantity</span> <span class="p">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="nx">name</span> <span class="p">=</span> <span class="s">&#34;myVLANnew&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="kt">bool</span> <span class="nx">sendQuoteEmailFlag</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="nx">routerID</span> <span class="p">=</span> <span class="mi">117960</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Building a skeleton SoftLayer_Product_Item_Price objects. These objects contain
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// to know what you want to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// to get the list of valid prices for the package
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="kt">int</span><span class="p">[]</span> <span class="nx">prices</span> <span class="p">=</span> 
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="mi">2018</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="mi">1092</span> 
+</span></span><span class="line"><span class="cl">            <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="nx">List</span><span class="p">&lt;</span><span class="nx">SoftLayer_Product_Item_Price</span><span class="p">&gt;</span> <span class="nx">pricesList</span> <span class="p">=</span> <span class="nx">new</span> <span class="nx">List</span><span class="p">&lt;</span><span class="nx">SoftLayer_Product_Item_Price</span><span class="p">&gt;();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="nf">foreach</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">prices</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">SoftLayer_Product_Item_Price</span> <span class="nx">price</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">SoftLayer_Product_Item_Price</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">price</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">item</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">price</span><span class="p">.</span><span class="nx">idSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">pricesList</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">price</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Building a skeleton SoftLayer_Container_Product_Order_Network_Vlan object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// containing the order you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="nx">SoftLayer_Container_Product_Order_Network_Vlan</span> <span class="nx">orderTemplate</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">SoftLayer_Container_Product_Order_Network_Vlan</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">location</span> <span class="p">=</span> <span class="nx">location</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">name</span> <span class="p">=</span> <span class="nx">name</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">routerId</span> <span class="p">=</span> <span class="nx">routerID</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">routerIdSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">quantity</span> <span class="p">=</span> <span class="nx">quantity</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">quantitySpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">packageId</span> <span class="p">=</span> <span class="nx">packageId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">packageIdSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">prices</span> <span class="p">=</span> <span class="nx">pricesList</span><span class="p">.</span><span class="nf">ToArray</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">sendQuoteEmailFlag</span> <span class="p">=</span> <span class="nx">sendQuoteEmailFlag</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">sendQuoteEmailFlagSpecified</span> <span class="p">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Creating a connection to the SoftLayer_Product_Order API service and             
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// bind our API username and key to it.           
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="nx">authenticate</span> <span class="nx">authenticate</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">authenticate</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">authenticate</span><span class="p">.</span><span class="nx">username</span> <span class="p">=</span> <span class="nx">username</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">authenticate</span><span class="p">.</span><span class="nx">apiKey</span> <span class="p">=</span> <span class="nx">apiKey</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="nx">SoftLayer_Product_OrderService</span> <span class="nx">orderService</span> <span class="p">=</span> <span class="nx">new</span> <span class="nf">SoftLayer_Product_OrderService</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">orderService</span><span class="p">.</span><span class="nx">authenticateValue</span> <span class="p">=</span> <span class="nx">authenticate</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// verifyOrder() will check your order for errors. Replace this             
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// with a call to placeOrder() when you&#39;re ready to order. Both             
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// calls return a receipt object that you can use for your records.            
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// Once your order is placed it&#39;ll go through SoftLayer&#39;s approval             
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// and provisioning process. When it&#39;s done you&#39;ll have a new            
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// SoftLayer_Network_Subnet object ready to use.            
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="nx">try</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">SoftLayer_Container_Product_Order</span> <span class="nx">verifiedOrder</span> <span class="p">=</span> <span class="p">(</span><span class="nx">SoftLayer_Container_Product_Order</span><span class="p">)</span><span class="nx">orderService</span><span class="p">.</span><span class="nf">verifyOrder</span><span class="p">(</span><span class="nx">orderTemplate</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">&#34;Order verified!&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">catch</span> <span class="p">(</span><span class="nx">Exception</span> <span class="nx">e</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="s">&#34;Invalid order: &#34;</span> <span class="o">+</span> <span class="nx">e</span><span class="p">.</span><span class="nx">Message</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

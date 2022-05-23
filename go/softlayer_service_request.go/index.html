@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -142,112 +138,111 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">slapi</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;bytes&#34;</span>
-	<span class="s">&#34;net/http&#34;</span>
-	<span class="s">&#34;log&#34;</span>
-	<span class="s">&#34;io/ioutil&#34;</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;net/url&#34;</span>
-	<span class="s">&#34;strings&#34;</span>
-<span class="p">)</span>
-
-<span class="c1">// This structure is used to build the URL request
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">SoftLayerServiceRequest</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">Endpoint</span> <span class="kt">string</span>
-	<span class="nx">InitParameter</span> <span class="kt">int</span>
-	<span class="nx">ServiceName</span> <span class="kt">string</span>
-	<span class="nx">Method</span> <span class="kt">string</span>
-	<span class="nx">Mask</span> <span class="kt">string</span>
-	<span class="nx">Filter</span> <span class="kt">string</span>
-	<span class="nx">Limit</span> <span class="kt">string</span>
-<span class="p">}</span>
-
-<span class="cm">/*
-</span><span class="cm">UrlRequest function builds the url request with the following structure:
-</span><span class="cm">
-</span><span class="cm">  [end_point]/[service]/[initParameter]/[method]?[objectFilter]&amp;[objectMask]&amp;[resultLimit]
-</span><span class="cm">
-</span><span class="cm">Example:
-</span><span class="cm">  https://api.softlayer.com/rest/v3/SoftLayer_Account/getVirtualGuests?objectMask=mask[id]
-</span><span class="cm">
-</span><span class="cm">The result depends of parameters set in the SoftLayerRequest argument.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">UrlRequest</span><span class="p">(</span><span class="nx">sl</span> <span class="nx">SoftLayerServiceRequest</span><span class="p">)</span> <span class="kt">string</span><span class="p">{</span>
-
-	<span class="kd">var</span> <span class="nx">request</span> <span class="o">*</span><span class="nx">url</span><span class="p">.</span><span class="nx">URL</span>
-
-	<span class="nx">request</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">url</span><span class="p">.</span><span class="nf">Parse</span><span class="p">(</span><span class="nx">strings</span><span class="p">.</span><span class="nf">TrimSuffix</span><span class="p">(</span><span class="nx">sl</span><span class="p">.</span><span class="nx">Endpoint</span><span class="p">,</span> <span class="s">&#34;/&#34;</span><span class="p">))</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nb">panic</span><span class="p">(</span><span class="s">&#34;boom&#34;</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">InitParameter</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">request</span><span class="p">.</span><span class="nx">Path</span> <span class="o">+=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;/%s/%d/%s&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">ServiceName</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">InitParameter</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Method</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">request</span><span class="p">.</span><span class="nx">Path</span> <span class="o">+=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;/%s/%s&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">ServiceName</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Method</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="nx">paramaters</span> <span class="o">:=</span> <span class="nx">url</span><span class="p">.</span><span class="nx">Values</span><span class="p">{}</span>
-	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Filter</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;objectFilter&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Filter</span><span class="p">)}</span>
-	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Mask</span>   <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;objectMask&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Mask</span><span class="p">)</span> <span class="p">}</span>
-	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Limit</span>  <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;resultLimit&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Limit</span><span class="p">)</span> <span class="p">}</span>
-
-	<span class="nx">request</span><span class="p">.</span><span class="nx">RawQuery</span> <span class="p">=</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Encode</span><span class="p">()</span>
-
-	<span class="k">return</span> <span class="nx">request</span><span class="p">.</span><span class="nf">String</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="cm">/*
-</span><span class="cm"> RestRequest function makes a REST request to the SoftLayer API according to following parameters:
-</span><span class="cm"> 	urlRequest -  This can be build by using the UrlRequest function
-</span><span class="cm"> 	username   -  The username you want to use for authentication
-</span><span class="cm"> 	apikey     -  The apiKey you want to use for authentication
-</span><span class="cm"> 	parameters -  Value in JSON format which is used in POST requests, set nil for GET requests
-</span><span class="cm"> 	method     -  Request method GET/POST
-</span><span class="cm">
-</span><span class="cm"> This will return a JSON string with the response.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">RestRequest</span><span class="p">(</span><span class="nx">urlRequest</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">username</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">apikey</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">parameters</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">method</span> <span class="kt">string</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Response</span> <span class="p">{</span>
-
-	<span class="kd">var</span> <span class="nx">bodyJSON</span> <span class="nx">bytes</span><span class="p">.</span><span class="nx">Buffer</span>
-	<span class="k">if</span> <span class="nx">parameters</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span> <span class="nx">bodyJSON</span> <span class="p">=</span> <span class="o">*</span><span class="nx">bytes</span><span class="p">.</span><span class="nf">NewBuffer</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="o">*</span><span class="nx">parameters</span><span class="p">))</span> <span class="p">}</span>
-	<span class="nx">request</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">NewRequest</span><span class="p">(</span><span class="nx">method</span><span class="p">,</span> <span class="nx">urlRequest</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">bodyJSON</span><span class="p">)</span>
-	<span class="nx">request</span><span class="p">.</span><span class="nf">SetBasicAuth</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-	<span class="nx">request</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="s">&#34;X-Custom-Header&#34;</span><span class="p">,</span> <span class="s">&#34;SoftLayer-Api&#34;</span><span class="p">)</span>
-	<span class="nx">request</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">,</span> <span class="s">&#34;application/json&#34;</span><span class="p">)</span>
-
-	<span class="nx">client</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">{}</span>
-	<span class="nx">response</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">request</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Do: &#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="o">*</span><span class="nx">response</span>
-<span class="p">}</span>
-
-<span class="cm">/*
-</span><span class="cm">PrintJsonFormat prints a *Response object in Json format.
-</span><span class="cm">	response - The http.Response object
-</span><span class="cm">	indent   - The response will be printed in Json format with indentation if TRUE. It will be
-</span><span class="cm">		   printed in a single line if FALSE.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">PrintJsonFormat</span><span class="p">(</span><span class="nx">response</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Response</span><span class="p">,</span> <span class="nx">indent</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">jsonResponse</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nf">ReadAll</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
-
-	<span class="k">if</span> <span class="nx">indent</span> <span class="o">==</span> <span class="kc">false</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonResponse</span><span class="p">))</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">buffer</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">bytes</span><span class="p">.</span><span class="nx">Buffer</span><span class="p">)</span>
-		<span class="nx">json</span><span class="p">.</span><span class="nf">Indent</span><span class="p">(</span><span class="nx">buffer</span><span class="p">,</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonResponse</span><span class="p">)),</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;  &#34;</span><span class="p">)</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">buffer</span><span class="p">)</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">slapi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;bytes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;net/http&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;io/ioutil&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;net/url&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;strings&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// This structure is used to build the URL request
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">SoftLayerServiceRequest</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Endpoint</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">InitParameter</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ServiceName</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Method</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Mask</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Filter</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Limit</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">UrlRequest function builds the url request with the following structure:
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">  [end_point]/[service]/[initParameter]/[method]?[objectFilter]&amp;[objectMask]&amp;[resultLimit]
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Example:
+</span></span></span><span class="line"><span class="cl"><span class="cm">  https://api.softlayer.com/rest/v3/SoftLayer_Account/getVirtualGuests?objectMask=mask[id]
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">The result depends of parameters set in the SoftLayerRequest argument.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">UrlRequest</span><span class="p">(</span><span class="nx">sl</span> <span class="nx">SoftLayerServiceRequest</span><span class="p">)</span> <span class="kt">string</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">request</span> <span class="o">*</span><span class="nx">url</span><span class="p">.</span><span class="nx">URL</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">request</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">url</span><span class="p">.</span><span class="nf">Parse</span><span class="p">(</span><span class="nx">strings</span><span class="p">.</span><span class="nf">TrimSuffix</span><span class="p">(</span><span class="nx">sl</span><span class="p">.</span><span class="nx">Endpoint</span><span class="p">,</span> <span class="s">&#34;/&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nb">panic</span><span class="p">(</span><span class="s">&#34;boom&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">InitParameter</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">request</span><span class="p">.</span><span class="nx">Path</span> <span class="o">+=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;/%s/%d/%s&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">ServiceName</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">InitParameter</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Method</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">request</span><span class="p">.</span><span class="nx">Path</span> <span class="o">+=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;/%s/%s&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">ServiceName</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Method</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">paramaters</span> <span class="o">:=</span> <span class="nx">url</span><span class="p">.</span><span class="nx">Values</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Filter</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;objectFilter&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Filter</span><span class="p">)}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Mask</span>   <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;objectMask&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Mask</span><span class="p">)</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Limit</span>  <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="s">&#34;resultLimit&#34;</span><span class="p">,</span> <span class="nx">sl</span><span class="p">.</span><span class="nx">Limit</span><span class="p">)</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">request</span><span class="p">.</span><span class="nx">RawQuery</span> <span class="p">=</span> <span class="nx">paramaters</span><span class="p">.</span><span class="nf">Encode</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">request</span><span class="p">.</span><span class="nf">String</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm"> RestRequest function makes a REST request to the SoftLayer API according to following parameters:
+</span></span></span><span class="line"><span class="cl"><span class="cm"> 	urlRequest -  This can be build by using the UrlRequest function
+</span></span></span><span class="line"><span class="cl"><span class="cm"> 	username   -  The username you want to use for authentication
+</span></span></span><span class="line"><span class="cl"><span class="cm"> 	apikey     -  The apiKey you want to use for authentication
+</span></span></span><span class="line"><span class="cl"><span class="cm"> 	parameters -  Value in JSON format which is used in POST requests, set nil for GET requests
+</span></span></span><span class="line"><span class="cl"><span class="cm"> 	method     -  Request method GET/POST
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm"> This will return a JSON string with the response.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">RestRequest</span><span class="p">(</span><span class="nx">urlRequest</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">username</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">apikey</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">parameters</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">method</span> <span class="kt">string</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Response</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">bodyJSON</span> <span class="nx">bytes</span><span class="p">.</span><span class="nx">Buffer</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">parameters</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span> <span class="nx">bodyJSON</span> <span class="p">=</span> <span class="o">*</span><span class="nx">bytes</span><span class="p">.</span><span class="nf">NewBuffer</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="o">*</span><span class="nx">parameters</span><span class="p">))</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">request</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">NewRequest</span><span class="p">(</span><span class="nx">method</span><span class="p">,</span> <span class="nx">urlRequest</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">bodyJSON</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">request</span><span class="p">.</span><span class="nf">SetBasicAuth</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">request</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="s">&#34;X-Custom-Header&#34;</span><span class="p">,</span> <span class="s">&#34;SoftLayer-Api&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">request</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Set</span><span class="p">(</span><span class="s">&#34;Content-Type&#34;</span><span class="p">,</span> <span class="s">&#34;application/json&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">client</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">response</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">request</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Do: &#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="o">*</span><span class="nx">response</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">PrintJsonFormat prints a *Response object in Json format.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	response - The http.Response object
+</span></span></span><span class="line"><span class="cl"><span class="cm">	indent   - The response will be printed in Json format with indentation if TRUE. It will be
+</span></span></span><span class="line"><span class="cl"><span class="cm">		   printed in a single line if FALSE.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">PrintJsonFormat</span><span class="p">(</span><span class="nx">response</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Response</span><span class="p">,</span> <span class="nx">indent</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">jsonResponse</span><span class="p">,</span><span class="nx">_</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nf">ReadAll</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">indent</span> <span class="o">==</span> <span class="kc">false</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonResponse</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">buffer</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">bytes</span><span class="p">.</span><span class="nx">Buffer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">json</span><span class="p">.</span><span class="nf">Indent</span><span class="p">(</span><span class="nx">buffer</span><span class="p">,</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonResponse</span><span class="p">)),</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;  &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">buffer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

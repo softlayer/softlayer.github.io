@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -155,132 +151,132 @@ if (!doNotTrack) {
                 
 				
                 <p>With a given date range, get all the invoice details for all of the owned brands, and all of their owned accounts. The $filter can be used to get just a single accounts invoices, just take off the -&gt;allOwnedAccounts bits</p>
-<div class="highlight"><pre class="chroma"><code class="language-php" data-lang="php"><span class="o">&lt;?</span><span class="nx">php</span>
-<span class="k">require_once</span> <span class="no">__DIR__</span><span class="o">.</span><span class="s1">&#39;/vendor/autoload.php&#39;</span><span class="p">;</span>
-
-
-<span class="sd">/**
-</span><span class="sd">* This class structure is mostly used so this can be run as a script.
-</span><span class="sd">* Most of the print statements use fancy bash color codes to make things pretty
-</span><span class="sd">*/</span>
-<span class="k">class</span> <span class="nc">topBillingItems</span>
-<span class="p">{</span>
-
-    <span class="k">function</span> <span class="fm">__construct</span><span class="p">()</span> <span class="p">{</span>
-        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
-        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
-        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">startDate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DateTime</span><span class="p">(</span><span class="s1">&#39;2015-02-12T00:00:00&#39;</span><span class="p">,</span> <span class="k">new</span> <span class="nx">DateTimeZone</span><span class="p">(</span><span class="s1">&#39;CST&#39;</span><span class="p">));</span>
-        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">endDate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DateTime</span><span class="p">(</span><span class="s1">&#39;2015-03-12T00:00:00&#39;</span><span class="p">,</span> <span class="k">new</span> <span class="nx">DateTimeZone</span><span class="p">(</span><span class="s1">&#39;CST&#39;</span><span class="p">));</span>
-    <span class="p">}</span>
-
-    <span class="cm">/*!
-</span><span class="cm">    * Will get all the brands on an account, THEN all of those brand&#39;s accounts,
-</span><span class="cm">    * Then all of THEIR brands, then all of THEIR accounts. Then, go through each
-</span><span class="cm">    * of the final tier accounts, and get all the invoices, then all the billing items.
-</span><span class="cm">    *
-</span><span class="cm">    */</span>
-    <span class="k">function</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-
-        <span class="c1">//The First Object Mask. Used to get all the front line brands, which will have the
-</span><span class="c1"></span>        <span class="c1">//accounts that are actually buying things
-</span><span class="c1"></span>        <span class="nv">$objectMask</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\SoftLayer\Common\ObjectMask</span><span class="p">();</span>
-        <span class="nv">$objectMask</span><span class="o">-&gt;</span><span class="na">ownedBrands</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">ownedBrands</span><span class="p">;</span>
-
-        <span class="nv">$client</span> <span class="o">=</span> <span class="nx">\SoftLayer\SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span><span class="p">);</span>
-        <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$objectMask</span><span class="p">);</span>
-
-        <span class="nv">$response</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">getObject</span><span class="p">();</span>
-
-        <span class="c1">//Start off with the main brand
-</span><span class="c1"></span>        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$response</span><span class="o">-&gt;</span><span class="na">ownedBrands</span> <span class="k">as</span> <span class="nv">$brand</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">print</span> <span class="s2">&#34;BRAND=\e[31m&#34;</span> <span class="o">.</span> <span class="nv">$brand</span><span class="o">-&gt;</span><span class="na">keyName</span> <span class="o">.</span>  <span class="s2">&#34; ::&#34;</span> <span class="o">.</span> <span class="nv">$brand</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">.</span> <span class="s2">&#34;\e[0m=</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
-
-            <span class="c1">//Go into each of the top brands accounts
-</span><span class="c1"></span>            <span class="k">foreach</span> <span class="p">(</span><span class="nv">$brand</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span> <span class="k">as</span> <span class="nv">$account</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">print</span> <span class="s2">&#34;==\e[32m&#34;</span> <span class="o">.</span> <span class="nv">$account</span><span class="o">-&gt;</span><span class="na">companyName</span> <span class="o">.</span><span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
-
-                <span class="c1">//Go into each of those accounts brands...
-</span><span class="c1"></span>                <span class="k">foreach</span> <span class="p">(</span><span class="nv">$account</span><span class="o">-&gt;</span><span class="na">ownedBrands</span> <span class="k">as</span> <span class="nv">$brand1</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="k">print</span> <span class="s2">&#34;====\e[33m&#34;</span> <span class="o">.</span> <span class="nv">$brand1</span><span class="o">-&gt;</span><span class="na">name</span> <span class="o">.</span><span class="s2">&#34; ::&#34;</span> <span class="o">.</span> <span class="nv">$brand1</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">.</span> <span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
-                    <span class="nv">$brandInvoice</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">getAllBrandAccounts</span><span class="p">(</span><span class="nv">$brand1</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
-
-                    <span class="c1">//Go through each of the accounts on the brand
-</span><span class="c1"></span>                    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$brandInvoice</span> <span class="k">as</span> <span class="nv">$brandAccount</span><span class="p">)</span> <span class="p">{</span>
-
-                        <span class="c1">//This is recursive and a very large data structure.
-</span><span class="c1"></span>                        <span class="c1">//we unset it here so it doesn&#39;t get in the way later
-</span><span class="c1"></span>                        <span class="nx">unset</span><span class="p">(</span><span class="nv">$brandAccount</span><span class="o">-&gt;</span><span class="na">brand</span><span class="p">);</span>
-                        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">workAccount</span><span class="p">(</span><span class="nv">$brandAccount</span><span class="p">);</span>
-
-                    <span class="p">}</span> <span class="c1">//END foreach $brandInvoice
-</span><span class="c1"></span>                <span class="p">}</span> <span class="c1">//END foreach $account-&gt;ownedBrands
-</span><span class="c1"></span>            <span class="p">}</span> <span class="c1">//END foreach $brand-&gt;allOwnedAccounts
-</span><span class="c1"></span>        <span class="p">}</span> <span class="c1">//END foreach $response-&gt;ownedBrands
-</span><span class="c1"></span>    <span class="p">}</span><span class="c1">//END MAIN
-</span><span class="c1"></span>
-    <span class="k">function</span> <span class="nf">getAllBrandAccounts</span><span class="p">(</span><span class="nv">$brandId</span><span class="p">)</span> <span class="p">{</span>
-
-        <span class="c1">//This filters out all invoices that are not in our date range.
-</span><span class="c1"></span>        <span class="c1">//all based on the invoices createDate
-</span><span class="c1"></span>        <span class="nv">$filter</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">operation</span> <span class="o">=</span> <span class="s1">&#39;betweenDate&#39;</span><span class="p">;</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">name</span> <span class="o">=</span> <span class="s1">&#39;startDate&#39;</span><span class="p">;</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">value</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">startDate</span><span class="o">-&gt;</span><span class="na">format</span><span class="p">(</span><span class="s1">&#39;m/d/Y H:i:s&#39;</span><span class="p">));</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">name</span> <span class="o">=</span> <span class="s1">&#39;endDate&#39;</span><span class="p">;</span>
-        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">value</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">endDate</span><span class="o">-&gt;</span><span class="na">format</span><span class="p">(</span><span class="s1">&#39;m/d/Y H:i:s&#39;</span><span class="p">));</span>
-
-        <span class="c1">//Mask for the front line brands, used to get all their accounts, and their invoices
-</span><span class="c1"></span>        <span class="nv">$brandMask</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\SoftLayer\Common\ObjectMask</span><span class="p">();</span>
-        <span class="nv">$brandMask</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="p">;</span>
-
-        <span class="c1">//From that brand, get all the brand&#39;s owned accounts, with their invoices from the current month
-</span><span class="c1"></span>        <span class="nv">$brandClient</span> <span class="o">=</span> <span class="nx">\SoftLayer\SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Brand&#39;</span><span class="p">,</span> <span class="nv">$brandId</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span><span class="p">);</span>
-        <span class="nv">$brandClient</span><span class="o">-&gt;</span><span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$brandMask</span><span class="p">);</span>
-        <span class="nv">$brandClient</span><span class="o">-&gt;</span><span class="na">setObjectFilter</span><span class="p">(</span><span class="nv">$filter</span><span class="p">);</span>
-        <span class="k">return</span> <span class="nv">$brandClient</span><span class="o">-&gt;</span><span class="na">getAllOwnedAccounts</span><span class="p">();</span>
-
-    <span class="p">}</span>
-
-    <span class="k">function</span> <span class="nf">workAccount</span><span class="p">(</span><span class="nv">$account</span><span class="p">)</span> <span class="p">{</span>
-
-        <span class="k">print</span> <span class="s2">&#34;=====\e[94m&#34;</span> <span class="o">.</span> <span class="nv">$account</span><span class="o">-&gt;</span><span class="na">companyName</span> <span class="o">.</span><span class="s2">&#34; ::&#34;</span> <span class="o">.</span> <span class="nv">$account</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">.</span> <span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
-        <span class="c1">//Used to get all the actual line items from an invoice
-</span><span class="c1"></span>        <span class="nv">$invoiceMask</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\SoftLayer\Common\ObjectMask</span><span class="p">();</span>
-        <span class="nv">$invoiceMask</span><span class="o">-&gt;</span><span class="na">items</span><span class="p">;</span>
-        <span class="nv">$invoiceMask</span><span class="o">-&gt;</span><span class="na">invoiceTotalAmount</span><span class="p">;</span>
-        <span class="c1">//Go through each of the accounts monthly invoices
-</span><span class="c1"></span>        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$account</span><span class="o">-&gt;</span><span class="na">invoices</span> <span class="k">as</span> <span class="nv">$invoice</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">print</span> <span class="s2">&#34;Created: &#34;</span> <span class="o">.</span> <span class="nv">$invoice</span><span class="o">-&gt;</span><span class="na">createDate</span> <span class="o">.</span> <span class="s2">&#34; TYPE: &#34;</span> <span class="o">.</span> <span class="nv">$invoice</span><span class="o">-&gt;</span><span class="na">typeCode</span> <span class="o">.</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
-
-            <span class="c1">//Here we get the actual invoice and all the billing items inside of it
-</span><span class="c1"></span>            <span class="nv">$bClient</span> <span class="o">=</span> <span class="nx">\SoftLayer\SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Billing_Invoice&#39;</span><span class="p">,</span> <span class="nv">$invoice</span><span class="o">-&gt;</span><span class="na">id</span> <span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span><span class="p">);</span>
-            <span class="nv">$bClient</span><span class="o">-&gt;</span><span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$invoiceMask</span><span class="p">);</span>
-            <span class="nv">$bt</span> <span class="o">=</span> <span class="nv">$bClient</span><span class="o">-&gt;</span><span class="na">getObject</span><span class="p">();</span>
-            <span class="k">print</span> <span class="s2">&#34;====\e[42;90m&#34;</span> <span class="o">.</span> <span class="nv">$bt</span><span class="o">-&gt;</span><span class="na">invoiceTotalAmount</span> <span class="o">.</span><span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
-
-            <span class="c1">//Go through each item on the invoice and print out its decription + fee.
-</span><span class="c1"></span>            <span class="c1">//There are a few other fields that could be billable, but these are the main ones.
-</span><span class="c1"></span>            <span class="k">foreach</span> <span class="p">(</span><span class="nv">$bt</span><span class="o">-&gt;</span><span class="na">items</span> <span class="k">as</span> <span class="nv">$lineItem</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">unset</span><span class="p">(</span><span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">invoice</span><span class="p">);</span>
-                <span class="nv">$fee</span> <span class="o">=</span> <span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">recurringAfterTaxAmount</span> <span class="o">+</span> <span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">oneTimeAfterTaxAmount</span><span class="p">;</span>
-                <span class="k">print</span> <span class="s2">&#34;====\e[35m&#34;</span> <span class="o">.</span> <span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">description</span> <span class="o">.</span> <span class="s2">&#34; =&gt; &#34;</span> <span class="o">.</span> <span class="nv">$fee</span> <span class="o">.</span> <span class="s2">&#34;$ \e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
-            <span class="p">}</span>
-
-        <span class="p">}</span><span class="c1">//end invoice
-</span><span class="c1"></span>    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="nv">$main</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">topBillingItems</span><span class="p">();</span>
-<span class="nv">$main</span><span class="o">-&gt;</span><span class="na">main</span><span class="p">();</span>
-
-<span class="cp">?&gt;</span><span class="err">
-</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span>
+</span></span><span class="line"><span class="cl"><span class="k">require_once</span> <span class="no">__DIR__</span><span class="o">.</span><span class="s1">&#39;/vendor/autoload.php&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="sd">/**
+</span></span></span><span class="line"><span class="cl"><span class="sd">* This class structure is mostly used so this can be run as a script.
+</span></span></span><span class="line"><span class="cl"><span class="sd">* Most of the print statements use fancy bash color codes to make things pretty
+</span></span></span><span class="line"><span class="cl"><span class="sd">*/</span>
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">topBillingItems</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">function</span> <span class="fm">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">startDate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DateTime</span><span class="p">(</span><span class="s1">&#39;2015-02-12T00:00:00&#39;</span><span class="p">,</span> <span class="k">new</span> <span class="nx">DateTimeZone</span><span class="p">(</span><span class="s1">&#39;CST&#39;</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">endDate</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DateTime</span><span class="p">(</span><span class="s1">&#39;2015-03-12T00:00:00&#39;</span><span class="p">,</span> <span class="k">new</span> <span class="nx">DateTimeZone</span><span class="p">(</span><span class="s1">&#39;CST&#39;</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/*!
+</span></span></span><span class="line"><span class="cl"><span class="cm">    * Will get all the brands on an account, THEN all of those brand&#39;s accounts,
+</span></span></span><span class="line"><span class="cl"><span class="cm">    * Then all of THEIR brands, then all of THEIR accounts. Then, go through each
+</span></span></span><span class="line"><span class="cl"><span class="cm">    * of the final tier accounts, and get all the invoices, then all the billing items.
+</span></span></span><span class="line"><span class="cl"><span class="cm">    *
+</span></span></span><span class="line"><span class="cl"><span class="cm">    */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">function</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">//The First Object Mask. Used to get all the front line brands, which will have the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">//accounts that are actually buying things
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nv">$objectMask</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\SoftLayer\Common\ObjectMask</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$objectMask</span><span class="o">-&gt;</span><span class="na">ownedBrands</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">ownedBrands</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nv">$client</span> <span class="o">=</span> <span class="nx">\SoftLayer\SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$objectMask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nv">$response</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">getObject</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">//Start off with the main brand
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$response</span><span class="o">-&gt;</span><span class="na">ownedBrands</span> <span class="k">as</span> <span class="nv">$brand</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">print</span> <span class="s2">&#34;BRAND=\e[31m&#34;</span> <span class="o">.</span> <span class="nv">$brand</span><span class="o">-&gt;</span><span class="na">keyName</span> <span class="o">.</span>  <span class="s2">&#34; ::&#34;</span> <span class="o">.</span> <span class="nv">$brand</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">.</span> <span class="s2">&#34;\e[0m=</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">//Go into each of the top brands accounts
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">foreach</span> <span class="p">(</span><span class="nv">$brand</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span> <span class="k">as</span> <span class="nv">$account</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">print</span> <span class="s2">&#34;==\e[32m&#34;</span> <span class="o">.</span> <span class="nv">$account</span><span class="o">-&gt;</span><span class="na">companyName</span> <span class="o">.</span><span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="c1">//Go into each of those accounts brands...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                <span class="k">foreach</span> <span class="p">(</span><span class="nv">$account</span><span class="o">-&gt;</span><span class="na">ownedBrands</span> <span class="k">as</span> <span class="nv">$brand1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">print</span> <span class="s2">&#34;====\e[33m&#34;</span> <span class="o">.</span> <span class="nv">$brand1</span><span class="o">-&gt;</span><span class="na">name</span> <span class="o">.</span><span class="s2">&#34; ::&#34;</span> <span class="o">.</span> <span class="nv">$brand1</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">.</span> <span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">                    <span class="nv">$brandInvoice</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">getAllBrandAccounts</span><span class="p">(</span><span class="nv">$brand1</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="c1">//Go through each of the accounts on the brand
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$brandInvoice</span> <span class="k">as</span> <span class="nv">$brandAccount</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                        <span class="c1">//This is recursive and a very large data structure.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                        <span class="c1">//we unset it here so it doesn&#39;t get in the way later
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                        <span class="nx">unset</span><span class="p">(</span><span class="nv">$brandAccount</span><span class="o">-&gt;</span><span class="na">brand</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">                        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">workAccount</span><span class="p">(</span><span class="nv">$brandAccount</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span> <span class="c1">//END foreach $brandInvoice
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                <span class="p">}</span> <span class="c1">//END foreach $account-&gt;ownedBrands
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="p">}</span> <span class="c1">//END foreach $brand-&gt;allOwnedAccounts
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span> <span class="c1">//END foreach $response-&gt;ownedBrands
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span><span class="c1">//END MAIN
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">function</span> <span class="nf">getAllBrandAccounts</span><span class="p">(</span><span class="nv">$brandId</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">//This filters out all invoices that are not in our date range.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">//all based on the invoices createDate
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nv">$filter</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">operation</span> <span class="o">=</span> <span class="s1">&#39;betweenDate&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">name</span> <span class="o">=</span> <span class="s1">&#39;startDate&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">value</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">startDate</span><span class="o">-&gt;</span><span class="na">format</span><span class="p">(</span><span class="s1">&#39;m/d/Y H:i:s&#39;</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="k">stdClass</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">name</span> <span class="o">=</span> <span class="s1">&#39;endDate&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$filter</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="o">-&gt;</span><span class="na">createDate</span><span class="o">-&gt;</span><span class="na">options</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="na">value</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">endDate</span><span class="o">-&gt;</span><span class="na">format</span><span class="p">(</span><span class="s1">&#39;m/d/Y H:i:s&#39;</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">//Mask for the front line brands, used to get all their accounts, and their invoices
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nv">$brandMask</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\SoftLayer\Common\ObjectMask</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$brandMask</span><span class="o">-&gt;</span><span class="na">allOwnedAccounts</span><span class="o">-&gt;</span><span class="na">invoices</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">//From that brand, get all the brand&#39;s owned accounts, with their invoices from the current month
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nv">$brandClient</span> <span class="o">=</span> <span class="nx">\SoftLayer\SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Brand&#39;</span><span class="p">,</span> <span class="nv">$brandId</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$brandClient</span><span class="o">-&gt;</span><span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$brandMask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$brandClient</span><span class="o">-&gt;</span><span class="na">setObjectFilter</span><span class="p">(</span><span class="nv">$filter</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nv">$brandClient</span><span class="o">-&gt;</span><span class="na">getAllOwnedAccounts</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">function</span> <span class="nf">workAccount</span><span class="p">(</span><span class="nv">$account</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">print</span> <span class="s2">&#34;=====\e[94m&#34;</span> <span class="o">.</span> <span class="nv">$account</span><span class="o">-&gt;</span><span class="na">companyName</span> <span class="o">.</span><span class="s2">&#34; ::&#34;</span> <span class="o">.</span> <span class="nv">$account</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">.</span> <span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//Used to get all the actual line items from an invoice
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nv">$invoiceMask</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">\SoftLayer\Common\ObjectMask</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$invoiceMask</span><span class="o">-&gt;</span><span class="na">items</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">$invoiceMask</span><span class="o">-&gt;</span><span class="na">invoiceTotalAmount</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//Go through each of the accounts monthly invoices
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$account</span><span class="o">-&gt;</span><span class="na">invoices</span> <span class="k">as</span> <span class="nv">$invoice</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">print</span> <span class="s2">&#34;Created: &#34;</span> <span class="o">.</span> <span class="nv">$invoice</span><span class="o">-&gt;</span><span class="na">createDate</span> <span class="o">.</span> <span class="s2">&#34; TYPE: &#34;</span> <span class="o">.</span> <span class="nv">$invoice</span><span class="o">-&gt;</span><span class="na">typeCode</span> <span class="o">.</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">//Here we get the actual invoice and all the billing items inside of it
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="nv">$bClient</span> <span class="o">=</span> <span class="nx">\SoftLayer\SoapClient</span><span class="o">::</span><span class="na">getClient</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Billing_Invoice&#39;</span><span class="p">,</span> <span class="nv">$invoice</span><span class="o">-&gt;</span><span class="na">id</span> <span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiUsername</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">apiKey</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nv">$bClient</span><span class="o">-&gt;</span><span class="na">setObjectMask</span><span class="p">(</span><span class="nv">$invoiceMask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nv">$bt</span> <span class="o">=</span> <span class="nv">$bClient</span><span class="o">-&gt;</span><span class="na">getObject</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="k">print</span> <span class="s2">&#34;====\e[42;90m&#34;</span> <span class="o">.</span> <span class="nv">$bt</span><span class="o">-&gt;</span><span class="na">invoiceTotalAmount</span> <span class="o">.</span><span class="s2">&#34;\e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">//Go through each item on the invoice and print out its decription + fee.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">//There are a few other fields that could be billable, but these are the main ones.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">foreach</span> <span class="p">(</span><span class="nv">$bt</span><span class="o">-&gt;</span><span class="na">items</span> <span class="k">as</span> <span class="nv">$lineItem</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">unset</span><span class="p">(</span><span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">invoice</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">                <span class="nv">$fee</span> <span class="o">=</span> <span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">recurringAfterTaxAmount</span> <span class="o">+</span> <span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">oneTimeAfterTaxAmount</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">                <span class="k">print</span> <span class="s2">&#34;====\e[35m&#34;</span> <span class="o">.</span> <span class="nv">$lineItem</span><span class="o">-&gt;</span><span class="na">description</span> <span class="o">.</span> <span class="s2">&#34; =&gt; &#34;</span> <span class="o">.</span> <span class="nv">$fee</span> <span class="o">.</span> <span class="s2">&#34;$ \e[0m</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="p">}</span><span class="c1">//end invoice
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$main</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">topBillingItems</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$main</span><span class="o">-&gt;</span><span class="na">main</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">?&gt;</span><span class="err">
+</span></span></span></code></pre></div>
             </div>
         </div>
 

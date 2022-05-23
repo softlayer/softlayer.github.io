@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -147,79 +143,77 @@ if (!doNotTrack) {
                 
 				
                 <p>With the introduction to Location-based Pricing, we updated our pricing model to represent the costs in each data center more clearly. Instead of adding premiums to a base server price, we have priced servers and services in each data center with their own location-based <a href="http://sldn.softlayer.com/reference/services/SoftLayer_Product_Item_Price">SoftLayer_Product_Item_Price</a> objects via the API. In the following example we will query for the Dallas 6 data center, and then filter our item (Local Load Balancer) and prices to include only the location-based pricing for the specific data center we&rsquo;re in —or we can filter for the standard price if a location-based price doesn&rsquo;t exist.</p>
-<div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python">
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">import</span> <span class="nn">json</span>
-
-<span class="n">package_id</span> <span class="o">=</span> <span class="mi">194</span>
-<span class="n">datacenter</span> <span class="o">=</span> <span class="s1">&#39;dal06&#39;</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-
-<span class="n">location_object_filter</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">datacenter</span><span class="p">}</span>
-<span class="p">}</span>
-
-<span class="n">location_object_mask</span> <span class="o">=</span> <span class="s2">&#34;priceGroups&#34;</span>
-
-<span class="n">location</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Location_Datacenter&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getDatacenters</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">location_object_filter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">location_object_mask</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">location</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-    <span class="c1"># error handling</span>
-    <span class="n">exit</span><span class="p">()</span>
-
-<span class="c1"># lookup location group ids</span>
-<span class="n">location_group_ids</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">location_group</span> <span class="ow">in</span> <span class="n">location</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&#34;priceGroups&#34;</span><span class="p">]:</span>
-    <span class="n">location_group_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">location_group</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">])</span>
-
-<span class="n">object_filter_standard</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&#34;locationGroupId&#34;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;is null&#34;</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="n">standard_items</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">object_filter_standard</span><span class="p">)</span>
-
-<span class="n">object_filter_location</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&#34;locationGroupId&#34;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;in&#34;</span><span class="p">,</span>
-                <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span>
-                        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;data&#34;</span><span class="p">,</span>
-                        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="n">location_group_ids</span>
-                    <span class="p">}</span>
-                <span class="p">]</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="n">location_items</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">object_filter_location</span><span class="p">)</span>
-
-<span class="c1"># let&#39;s key by item id</span>
-<span class="n">items</span> <span class="o">=</span> <span class="p">{}</span>
-
-<span class="k">for</span> <span class="n">standard_item</span> <span class="ow">in</span> <span class="n">standard_items</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">location_item</span> <span class="ow">in</span> <span class="n">location_items</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">location_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="o">==</span> <span class="n">standard_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]:</span>
-            <span class="n">items</span><span class="p">[</span><span class="n">location_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">location_item</span>
-            <span class="k">break</span>
-
-    <span class="k">if</span> <span class="n">standard_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
-        <span class="n">items</span><span class="p">[</span><span class="n">standard_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">standard_item</span>
-
-
-<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">package_id</span> <span class="o">=</span> <span class="mi">194</span>
+</span></span><span class="line"><span class="cl"><span class="n">datacenter</span> <span class="o">=</span> <span class="s1">&#39;dal06&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">location_object_filter</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;operation&#39;</span><span class="p">:</span> <span class="n">datacenter</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">location_object_mask</span> <span class="o">=</span> <span class="s2">&#34;priceGroups&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">location</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Location_Datacenter&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getDatacenters</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">location_object_filter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">location_object_mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">location</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># error handling</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># lookup location group ids</span>
+</span></span><span class="line"><span class="cl"><span class="n">location_group_ids</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">location_group</span> <span class="ow">in</span> <span class="n">location</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&#34;priceGroups&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">location_group_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">location_group</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">object_filter_standard</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;locationGroupId&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;is null&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">standard_items</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">object_filter_standard</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">object_filter_location</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;locationGroupId&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;in&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;data&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="n">location_group_ids</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">location_items</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s2">&#34;SoftLayer_Product_Package&#34;</span><span class="p">]</span><span class="o">.</span><span class="n">getItems</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">package_id</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">object_filter_location</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># let&#39;s key by item id</span>
+</span></span><span class="line"><span class="cl"><span class="n">items</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">standard_item</span> <span class="ow">in</span> <span class="n">standard_items</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">location_item</span> <span class="ow">in</span> <span class="n">location_items</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">location_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="o">==</span> <span class="n">standard_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">items</span><span class="p">[</span><span class="n">location_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">location_item</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">standard_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">items</span><span class="p">[</span><span class="n">standard_item</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">standard_item</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

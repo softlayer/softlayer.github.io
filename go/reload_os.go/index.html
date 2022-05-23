@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -146,123 +142,122 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Reload the Operating System of a Virtual Guest
-</span><span class="cm">
-</span><span class="cm">This script reloads the Operating System configuration with another one. It makes a single call
-</span><span class="cm">to the reloadOperatingSystem() method in the SoftLayer_Virtual_Guest API service
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/reloadOperatingSystem
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span> 	 <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// The id of Virtual Guest server you wish to reload
-</span><span class="c1"></span>	<span class="nx">guestId</span> <span class="o">:=</span> <span class="mi">29857155</span>
-
-	<span class="cm">/*
-</span><span class="cm">	 The new items you want to load in the OS configuration. You can add following items:
-</span><span class="cm">	  - Operating System
-</span><span class="cm">	  - OS-Specific Addon
-</span><span class="cm">	  - CDP Addon
-</span><span class="cm">	  - Control Panel Software
-</span><span class="cm">	  - Database Software
-</span><span class="cm">	  - Anti-Virus &amp; Spyware Protection
-</span><span class="cm">	  - Hardware &amp; Software Firewall
-</span><span class="cm">	*/</span>
-	<span class="nx">osDescriptions</span> <span class="o">:=</span> <span class="p">[]</span> <span class="kt">string</span> <span class="p">{</span>
-		<span class="s">&#34;CentOS 6.x - Minimal Install (64 bit)&#34;</span><span class="p">,</span>         <span class="c1">// Operating System
-</span><span class="c1"></span>		<span class="s">&#34;APF Software Firewall for Linux&#34;</span><span class="p">,</span>		 <span class="c1">// Software Firewall for Linux OS
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="c1">// Add an object mask to retrieve the prices related to the SoftLayer_Virtual_Guest object
-</span><span class="c1"></span>	<span class="c1">// for a list of the relational properties you can retrieve along with hardware.
-</span><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;mask[billingItem[package[items[prices]]]]&#34;</span>
-
-	<span class="c1">// Create a session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Order service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Call to getObject() method in order to get the SoftLayer_Virtual_Guest object with
-</span><span class="c1"></span>	<span class="c1">// information set in the mask
-</span><span class="c1"></span>	<span class="nx">server</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">guestId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get the Virtual Server:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Call to getActiveTransactions() to know if there are transactions in progress.
-</span><span class="c1"></span>	<span class="nx">transactions</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">guestId</span><span class="p">).</span><span class="nf">GetActiveTransactions</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Active Transactions:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Server can not be reloaded if there are pending_with_issues transactions.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">transactions</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="s">&#34;\n Server can not be reloaded because there is a transaction in progress for this device.\n&#34;</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Server can not be reloaded if there isn&#39;t a SoftLayer_Billing_Item object.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">BillingItem</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="s">&#34;\n Unable to continue with OS Reload. Please contact support.\n&#34;</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following function (Function Literal) will get prices of items set in the
-</span><span class="c1"></span>	<span class="c1">// &#39;osDescriptions&#39; variable.
-</span><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">descriptions</span> <span class="p">[]</span><span class="kt">string</span><span class="p">,</span> <span class="nx">items</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
-		<span class="kd">var</span> <span class="nx">itemPrices</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span>
-		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span><span class="nx">itemDescription</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">descriptions</span> <span class="p">{</span>
-			<span class="k">for</span> <span class="nx">_</span><span class="p">,</span><span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
-				<span class="k">if</span> <span class="o">*</span><span class="nx">item</span><span class="p">.</span><span class="nx">Description</span> <span class="o">==</span> <span class="nx">itemDescription</span> <span class="p">{</span>
-					<span class="nx">itemPrices</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span>
-						<span class="nx">itemPrices</span><span class="p">,</span>
-						<span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">item</span><span class="p">.</span><span class="nx">Prices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span><span class="p">)</span> <span class="p">},</span>
-					<span class="p">)</span>
-					<span class="k">break</span>
-				<span class="p">}</span>
-			<span class="p">}</span>
-		<span class="p">}</span>
-		<span class="k">return</span> <span class="nx">itemPrices</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Build the configuration skeleton that will be used to reload the OS
-</span><span class="c1"></span>	<span class="nx">configuration</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Hardware_Server_Configuration</span><span class="p">{</span>
-		<span class="nx">ItemPrices</span><span class="p">:</span> <span class="nf">prices</span><span class="p">(</span><span class="nx">osDescriptions</span><span class="p">,</span> <span class="nx">server</span><span class="p">.</span><span class="nx">BillingItem</span><span class="p">.</span><span class="nx">Package</span><span class="p">.</span><span class="nx">Items</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Call method reloadOperatingSystem()
-</span><span class="c1"></span>	<span class="nx">reload</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">ReloadOperatingSystem</span><span class="p">(</span><span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;FORCE&#34;</span><span class="p">),</span> <span class="o">&amp;</span><span class="nx">configuration</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to reload the Operation System:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n %s - OS reload transaction is running with requested configuration\n&#34;</span><span class="p">,</span> <span class="nx">reload</span><span class="p">)</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Reload the Operating System of a Virtual Guest
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">This script reloads the Operating System configuration with another one. It makes a single call
+</span></span></span><span class="line"><span class="cl"><span class="cm">to the reloadOperatingSystem() method in the SoftLayer_Virtual_Guest API service
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/reloadOperatingSystem
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span> 	 <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of Virtual Guest server you wish to reload
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">guestId</span> <span class="o">:=</span> <span class="mi">29857155</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">	 The new items you want to load in the OS configuration. You can add following items:
+</span></span></span><span class="line"><span class="cl"><span class="cm">	  - Operating System
+</span></span></span><span class="line"><span class="cl"><span class="cm">	  - OS-Specific Addon
+</span></span></span><span class="line"><span class="cl"><span class="cm">	  - CDP Addon
+</span></span></span><span class="line"><span class="cl"><span class="cm">	  - Control Panel Software
+</span></span></span><span class="line"><span class="cl"><span class="cm">	  - Database Software
+</span></span></span><span class="line"><span class="cl"><span class="cm">	  - Anti-Virus &amp; Spyware Protection
+</span></span></span><span class="line"><span class="cl"><span class="cm">	  - Hardware &amp; Software Firewall
+</span></span></span><span class="line"><span class="cl"><span class="cm">	*/</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">osDescriptions</span> <span class="o">:=</span> <span class="p">[]</span> <span class="kt">string</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;CentOS 6.x - Minimal Install (64 bit)&#34;</span><span class="p">,</span>         <span class="c1">// Operating System
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="s">&#34;APF Software Firewall for Linux&#34;</span><span class="p">,</span>		 <span class="c1">// Software Firewall for Linux OS
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Add an object mask to retrieve the prices related to the SoftLayer_Virtual_Guest object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// for a list of the relational properties you can retrieve along with hardware.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;mask[billingItem[package[items[prices]]]]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call to getObject() method in order to get the SoftLayer_Virtual_Guest object with
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// information set in the mask
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">server</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">guestId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get the Virtual Server:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call to getActiveTransactions() to know if there are transactions in progress.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">transactions</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">guestId</span><span class="p">).</span><span class="nf">GetActiveTransactions</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Active Transactions:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Server can not be reloaded if there are pending_with_issues transactions.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">transactions</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="s">&#34;\n Server can not be reloaded because there is a transaction in progress for this device.\n&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Server can not be reloaded if there isn&#39;t a SoftLayer_Billing_Item object.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">server</span><span class="p">.</span><span class="nx">BillingItem</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Print</span><span class="p">(</span><span class="s">&#34;\n Unable to continue with OS Reload. Please contact support.\n&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following function (Function Literal) will get prices of items set in the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// &#39;osDescriptions&#39; variable.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">descriptions</span> <span class="p">[]</span><span class="kt">string</span><span class="p">,</span> <span class="nx">items</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item</span><span class="p">)</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="kd">var</span> <span class="nx">itemPrices</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span>
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span><span class="nx">itemDescription</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">descriptions</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">for</span> <span class="nx">_</span><span class="p">,</span><span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="k">if</span> <span class="o">*</span><span class="nx">item</span><span class="p">.</span><span class="nx">Description</span> <span class="o">==</span> <span class="nx">itemDescription</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">itemPrices</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">						<span class="nx">itemPrices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">						<span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">item</span><span class="p">.</span><span class="nx">Prices</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Id</span><span class="p">)</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">					<span class="p">)</span>
+</span></span><span class="line"><span class="cl">					<span class="k">break</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">itemPrices</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build the configuration skeleton that will be used to reload the OS
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">configuration</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Hardware_Server_Configuration</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ItemPrices</span><span class="p">:</span> <span class="nf">prices</span><span class="p">(</span><span class="nx">osDescriptions</span><span class="p">,</span> <span class="nx">server</span><span class="p">.</span><span class="nx">BillingItem</span><span class="p">.</span><span class="nx">Package</span><span class="p">.</span><span class="nx">Items</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call method reloadOperatingSystem()
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">reload</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">server</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">ReloadOperatingSystem</span><span class="p">(</span><span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="s">&#34;FORCE&#34;</span><span class="p">),</span> <span class="o">&amp;</span><span class="nx">configuration</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to reload the Operation System:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n %s - OS reload transaction is running with requested configuration\n&#34;</span><span class="p">,</span> <span class="nx">reload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -146,67 +142,66 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s1">&#39;&#39;&#39;
-</span><span class="s1">Code example of how to list virtual instances from a SoftLayer account
-</span><span class="s1">You can call the script from the command and provide the user ID you
-</span><span class="s1">want to check. The script expects that you have the SoftLayer CLI
-</span><span class="s1">installed and have it configured with the credentials you&#39;d like
-</span><span class="s1">to use with SoftLayer.
-</span><span class="s1">
-</span><span class="s1">You can run the script with the user ID you&#39;d like to check under
-</span><span class="s1">the account you have configured:
-</span><span class="s1">find_my_active_vms userid
-</span><span class="s1">
-</span><span class="s1">The output of the script is in a csv format with tabs as the
-</span><span class="s1">column separator.
-</span><span class="s1">&#39;&#39;&#39;</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-
-
-<span class="k">def</span> <span class="nf">list_my_vms</span><span class="p">(</span><span class="n">creator_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="s2">&#34;&#34;&#34;
-</span><span class="s2">    Get the list of active VMs based on the creator ID
-</span><span class="s2">
-</span><span class="s2">    Keyword arguments:
-</span><span class="s2">    creator_id -- the SoftLayer ID of the VM&#39;s creator (default: None)
-</span><span class="s2">    &#34;&#34;&#34;</span>
-
-    <span class="c1"># create a client to the SoftLayer_Account API service.</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
-
-    <span class="c1"># number of results that we expect at a time</span>
-    <span class="n">chunk</span> <span class="o">=</span> <span class="mi">200</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;id,fullyQualifiedDomainName,primaryIpAddress,createDate,billingItem[orderItem[description, order[userRecord[username], id]]]&#34;</span>
-
-    <span class="c1"># get the data from the SoftLayer APIs</span>
-    <span class="n">vms</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">iter_call</span><span class="p">(</span><span class="s2">&#34;Account&#34;</span><span class="p">,</span> <span class="s2">&#34;getVirtualGuests&#34;</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="n">chunk</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">creator_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># if the creator wasn&#39;t provided use the</span>
-        <span class="c1"># user provided to the API call as the creator</span>
-        <span class="n">creator_id</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">username</span>
-
-    <span class="c1"># add table header</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;VM ID&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;Host&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;Public IP&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;Create Date&#39;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">vsi</span> <span class="ow">in</span> <span class="n">vms</span><span class="p">:</span>
-        <span class="c1"># navigate to the creator property under the VMs billing item</span>
-        <span class="k">if</span> <span class="s1">&#39;billingItem&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">billing_item</span> <span class="o">=</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s1">&#39;orderItem&#39;</span> <span class="ow">in</span> <span class="n">billing_item</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="n">vm_creator_userid</span> <span class="o">=</span> <span class="n">billing_item</span><span class="p">[</span><span class="s1">&#39;orderItem&#39;</span><span class="p">][</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;userRecord&#39;</span><span class="p">][</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">creator_id</span> <span class="o">==</span> <span class="n">vm_creator_userid</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]),</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span>
-                          <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span>
-                          <span class="n">vsi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;primaryIpAddress&#39;</span><span class="p">,</span> <span class="s1">&#39;N/A&#39;</span><span class="p">),</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;createDate&#39;</span><span class="p">])</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">list_my_vms</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">list_my_vms</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">Code example of how to list virtual instances from a SoftLayer account
+</span></span></span><span class="line"><span class="cl"><span class="s1">You can call the script from the command and provide the user ID you
+</span></span></span><span class="line"><span class="cl"><span class="s1">want to check. The script expects that you have the SoftLayer CLI
+</span></span></span><span class="line"><span class="cl"><span class="s1">installed and have it configured with the credentials you&#39;d like
+</span></span></span><span class="line"><span class="cl"><span class="s1">to use with SoftLayer.
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">You can run the script with the user ID you&#39;d like to check under
+</span></span></span><span class="line"><span class="cl"><span class="s1">the account you have configured:
+</span></span></span><span class="line"><span class="cl"><span class="s1">find_my_active_vms userid
+</span></span></span><span class="line"><span class="cl"><span class="s1">
+</span></span></span><span class="line"><span class="cl"><span class="s1">The output of the script is in a csv format with tabs as the
+</span></span></span><span class="line"><span class="cl"><span class="s1">column separator.
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;&#39;&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">sys</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">list_my_vms</span><span class="p">(</span><span class="n">creator_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Get the list of active VMs based on the creator ID
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">    Keyword arguments:
+</span></span></span><span class="line"><span class="cl"><span class="s2">    creator_id -- the SoftLayer ID of the VM&#39;s creator (default: None)
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># create a client to the SoftLayer_Account API service.</span>
+</span></span><span class="line"><span class="cl">    <span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># number of results that we expect at a time</span>
+</span></span><span class="line"><span class="cl">    <span class="n">chunk</span> <span class="o">=</span> <span class="mi">200</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mask</span> <span class="o">=</span> <span class="s2">&#34;id,fullyQualifiedDomainName,primaryIpAddress,createDate,billingItem[orderItem[description, order[userRecord[username], id]]]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># get the data from the SoftLayer APIs</span>
+</span></span><span class="line"><span class="cl">    <span class="n">vms</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">iter_call</span><span class="p">(</span><span class="s2">&#34;Account&#34;</span><span class="p">,</span> <span class="s2">&#34;getVirtualGuests&#34;</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="n">chunk</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">creator_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># if the creator wasn&#39;t provided use the</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># user provided to the API call as the creator</span>
+</span></span><span class="line"><span class="cl">        <span class="n">creator_id</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">username</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># add table header</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;VM ID&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;Host&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;Public IP&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;Create Date&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">vsi</span> <span class="ow">in</span> <span class="n">vms</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># navigate to the creator property under the VMs billing item</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="s1">&#39;billingItem&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="n">billing_item</span> <span class="o">=</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;billingItem&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="s1">&#39;orderItem&#39;</span> <span class="ow">in</span> <span class="n">billing_item</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">                <span class="n">vm_creator_userid</span> <span class="o">=</span> <span class="n">billing_item</span><span class="p">[</span><span class="s1">&#39;orderItem&#39;</span><span class="p">][</span><span class="s1">&#39;order&#39;</span><span class="p">][</span><span class="s1">&#39;userRecord&#39;</span><span class="p">][</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">creator_id</span> <span class="o">==</span> <span class="n">vm_creator_userid</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]),</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                          <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                          <span class="n">vsi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;primaryIpAddress&#39;</span><span class="p">,</span> <span class="s1">&#39;N/A&#39;</span><span class="p">),</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;createDate&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">list_my_vms</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">list_my_vms</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

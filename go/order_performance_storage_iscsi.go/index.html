@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -148,102 +144,101 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Order Performance Storage iSCSI.
-</span><span class="cm">
-</span><span class="cm">This script creates an order for Performance Storage iSCSI, for that we&#39;ll build a
-</span><span class="cm">SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi object and pass it to
-</span><span class="cm">SoftLayer_Product_Order::placeOrder method.
-</span><span class="cm">See below references for more details.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi
-</span><span class="cm">
-</span><span class="cm">@License: http://sldn.softlayer.com/article/License
-</span><span class="cm">@Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-  	<span class="s">&#34;encoding/json&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span>    <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-  	<span class="nx">apikey</span>      <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the complexType, location, packageId and quantity for the storage
-</span><span class="c1"></span>	<span class="c1">// you wish to order
-</span><span class="c1"></span>  	<span class="nx">quantity</span>    <span class="o">:=</span> <span class="mi">1</span>
-  	<span class="nx">location</span>    <span class="o">:=</span> <span class="s">&#34;DALLAS09&#34;</span>
-  	<span class="nx">packageId</span>   <span class="o">:=</span> <span class="mi">222</span>
-  	<span class="nx">osKeyName</span>   <span class="o">:=</span> <span class="s">&#34;LINUX&#34;</span>
-
-	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>  	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
-		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">40672</span><span class="p">)</span> <span class="p">},</span>  <span class="c1">// Block Storage Performance (ISCSI)
-</span><span class="c1"></span>		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">40682</span><span class="p">)</span> <span class="p">},</span>  <span class="c1">// 20 GB Storage Space
-</span><span class="c1"></span>		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">40792</span><span class="p">)</span> <span class="p">},</span>  <span class="c1">// 100 IOPS
-</span><span class="c1"></span>  	<span class="p">}</span>
-
-	<span class="c1">// This should match the OS type of the host(s) that will connect to the volume.
-</span><span class="c1"></span>	<span class="c1">// The only required property is the keyName.
-</span><span class="c1"></span>	<span class="nx">osFormatType</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Storage_Iscsi_OS_Type</span> <span class="p">{</span>
-		<span class="nx">KeyName</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">osKeyName</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Build a Container_Product_Order_Network_PerformanceStorage object
-</span><span class="c1"></span>	<span class="nx">storageOrder</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_PerformanceStorage</span> <span class="p">{</span>
-		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-			<span class="nx">Quantity</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-			<span class="nx">Location</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
-			<span class="nx">PackageId</span>     <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-			<span class="nx">Prices</span>        <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
-		<span class="p">},</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Build a Container_Product_Order_Network_PerformanceStorage_Iscsi object containing
-</span><span class="c1"></span>	<span class="c1">// the order you wish to place.
-</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_PerformanceStorage_Iscsi</span> <span class="p">{</span>
-		<span class="nx">Container_Product_Order_Network_PerformanceStorage</span> <span class="p">:</span> <span class="nx">storageOrder</span><span class="p">,</span>
-		<span class="nx">OsFormatType</span>                                       <span class="p">:</span> <span class="nx">osFormatType</span><span class="p">,</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create a session.
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Order service.
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>	<span class="c1">// you are ready to order.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Order Performance Storage iSCSI.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">This script creates an order for Performance Storage iSCSI, for that we&#39;ll build a
+</span></span></span><span class="line"><span class="cl"><span class="cm">SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi object and pass it to
+</span></span></span><span class="line"><span class="cl"><span class="cm">SoftLayer_Product_Order::placeOrder method.
+</span></span></span><span class="line"><span class="cl"><span class="cm">See below references for more details.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_PerformanceStorage_Iscsi
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">@License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">@Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span>    <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">apikey</span>      <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the complexType, location, packageId and quantity for the storage
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you wish to order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">quantity</span>    <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">location</span>    <span class="o">:=</span> <span class="s">&#34;DALLAS09&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">packageId</span>   <span class="o">:=</span> <span class="mi">222</span>
+</span></span><span class="line"><span class="cl">  	<span class="nx">osKeyName</span>   <span class="o">:=</span> <span class="s">&#34;LINUX&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">40672</span><span class="p">)</span> <span class="p">},</span>  <span class="c1">// Block Storage Performance (ISCSI)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">40682</span><span class="p">)</span> <span class="p">},</span>  <span class="c1">// 20 GB Storage Space
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">40792</span><span class="p">)</span> <span class="p">},</span>  <span class="c1">// 100 IOPS
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// This should match the OS type of the host(s) that will connect to the volume.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// The only required property is the keyName.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">osFormatType</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Storage_Iscsi_OS_Type</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">KeyName</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">osKeyName</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a Container_Product_Order_Network_PerformanceStorage object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">storageOrder</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_PerformanceStorage</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Quantity</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Location</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">PackageId</span>     <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Prices</span>        <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a Container_Product_Order_Network_PerformanceStorage_Iscsi object containing
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// the order you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_PerformanceStorage_Iscsi</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Container_Product_Order_Network_PerformanceStorage</span> <span class="p">:</span> <span class="nx">storageOrder</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">OsFormatType</span>                                       <span class="p">:</span> <span class="nx">osFormatType</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

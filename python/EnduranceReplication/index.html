@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -176,215 +172,214 @@ if (!doNotTrack) {
 <li><a href="http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Storage/failoverToReplicant</a></li>
 </ul>
 <p>Failback is always immediate.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="s">&#34;&#34;&#34;
-</span><span class="s">@package examples 
-</span><span class="s">@author Christopher Gallo
-</span><span class="s">&#34;&#34;&#34;</span>
-
-<span class="kn">import</span> <span class="nx">SoftLayer</span>
-<span class="kn">import</span> <span class="nx">logging</span>
-<span class="nx">from</span> <span class="nx">pprint</span> <span class="kn">import</span> <span class="nx">pprint</span> <span class="nx">as</span> <span class="nx">pp</span>
-
-<span class="nx">class</span> <span class="nf">example</span><span class="p">():</span>
-
-    <span class="nx">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
-        <span class="s">&#34;&#34;&#34;
-</span><span class="s">        If you need debugging, uncomment these. be prepared for a lot of XML
-</span><span class="s">        &#34;&#34;&#34;</span>
-        <span class="err">#</span> <span class="nx">logger</span> <span class="p">=</span> <span class="nx">logging</span><span class="p">.</span><span class="nf">getLogger</span><span class="p">()</span>
-        <span class="err">#</span> <span class="nx">logger</span><span class="p">.</span><span class="nf">addHandler</span><span class="p">(</span><span class="nx">logging</span><span class="p">.</span><span class="nf">StreamHandler</span><span class="p">())</span>
-        <span class="err">#</span> <span class="nx">logger</span><span class="p">.</span><span class="nf">setLevel</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nf">Client</span><span class="p">()</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">SoftLayer_Network_Storage</span><span class="err">&#39;</span><span class="p">]</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nf">FileStorageManager</span><span class="p">(</span><span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">)</span>
-        <span class="err">#</span> <span class="nx">Broken</span> <span class="nx">up</span> <span class="nx">like</span> <span class="nx">this</span> <span class="nx">to</span> <span class="nx">look</span> <span class="err">&#39;</span><span class="nx">good</span><span class="err">&#39;</span> <span class="nx">on</span> <span class="nx">softlayer</span><span class="p">.</span><span class="nx">github</span><span class="p">.</span><span class="nx">io</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">objectMask</span> <span class="p">=</span> <span class="s">&#34;mask[&#34;</span>
-            <span class="s">&#34;id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], &#34;</span>
-            <span class="s">&#34;serviceResourceBackendIpAddress, activeTransactionCount, &#34;</span>
-            <span class="s">&#34;fileNetworkMountAddress, snapshots[id,createDate], hourlySchedule, &#34;</span> 
-            <span class="s">&#34;allowedReplicationVirtualGuests[hostname], allowedVirtualGuests[hostname], &#34;</span>
-            <span class="s">&#34;replicationStatus, replicationPartners]&#34;</span>
-
-    <span class="nx">def</span> <span class="nf">orderStorage</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
-        <span class="s">&#34;&#34;&#34;
-</span><span class="s">        This will order endurance storage in HOU02 with 20G in size, and the 0.25IOPS/GB tier
-</span><span class="s">        0.25, 2, 4 and 10 iops/g are tiers available. 
-</span><span class="s">        &#34;&#34;&#34;</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span><span class="p">.</span><span class="nf">order_file_volume</span><span class="p">(</span>
-            <span class="nx">storage_type</span><span class="p">=</span><span class="s">&#34;storage_service_enterprise&#34;</span><span class="p">,</span>
-            <span class="nx">location</span> <span class="p">=</span> <span class="s">&#34;hou02&#34;</span><span class="p">,</span>
-            <span class="nx">size</span> <span class="p">=</span> <span class="mi">20</span><span class="p">,</span>
-            <span class="nx">tier_level</span> <span class="p">=</span> <span class="mf">0.25</span>
-            <span class="p">)</span>
-        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">orderSnapshot</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span><span class="p">.</span><span class="nf">order_snapshot_space</span><span class="p">(</span>
-            <span class="nx">volume_id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">,</span>
-            <span class="nx">capacity</span><span class="p">=</span><span class="mi">20</span><span class="p">,</span>
-            <span class="nx">tier</span> <span class="p">=</span> <span class="mf">0.25</span><span class="p">,</span>
-            <span class="nx">upgrade</span><span class="p">=</span><span class="nx">False</span><span class="p">)</span>
-        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">orderReplicant</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">schedule</span><span class="p">):</span>
-        <span class="s">&#34;&#34;&#34;
-</span><span class="s">        Same as other ordering methods, schedule is 
-</span><span class="s">        &#34;</span><span class="nx">HOURLY</span><span class="s">&#34;, &#34;</span><span class="nx">DAILY</span><span class="s">&#34; or &#34;</span><span class="nx">WEEKLY</span><span class="s">&#34;
-</span><span class="s">        &#34;&#34;&#34;</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span><span class="p">.</span><span class="nf">order_replicant_volume</span><span class="p">(</span>
-            <span class="nx">volume_id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">,</span>
-            <span class="nx">snapshot_schedule</span><span class="p">=</span><span class="nx">schedule</span><span class="p">,</span>
-            <span class="nx">location</span> <span class="p">=</span> <span class="s">&#34;dal06&#34;</span><span class="p">,</span>
-            <span class="nx">tier</span> <span class="p">=</span> <span class="mf">0.25</span>
-        <span class="p">)</span>
-        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-
-
-
-    <span class="nx">def</span> <span class="nf">listStoragePrices</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
-        <span class="s">&#34;&#34;&#34;
-</span><span class="s">        222 - Performance - PERFORMANCE_STORAGE_SERVICE
-</span><span class="s">        240 - Endurance - CODENAME_PRIME_STORAGE
-</span><span class="s">        If you feel like building the pricing object yourself, start here.
-</span><span class="s">        &#34;&#34;&#34;</span>
-        <span class="nx">mask</span> <span class="p">=</span> <span class="s">&#34;mask[items[prices[pricingLocationGroup,categories],attributes]]&#34;</span>
-        <span class="err">#</span> <span class="nx">locations</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">Product_Package</span><span class="err">&#39;</span><span class="p">].</span><span class="nf">getLocations</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">package_id</span><span class="p">)</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">Product_Package</span><span class="err">&#39;</span><span class="p">].</span><span class="nf">getObject</span><span class="p">(</span><span class="nx">mask</span><span class="p">=</span><span class="nx">mask</span><span class="p">,</span><span class="nx">id</span><span class="p">=</span><span class="mi">240</span><span class="p">)</span>
-        <span class="k">for</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">result</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">items</span><span class="err">&#39;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s">&#34;%s - %s - %s&#34;</span> <span class="o">%</span> 
-                <span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">]),</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">],</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">keyName</span><span class="err">&#39;</span><span class="p">])</span> 
-            <span class="err">#</span> <span class="nf">pp</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
-            <span class="k">for</span> <span class="nx">prices</span> <span class="nx">in</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">prices</span><span class="err">&#39;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="nx">prices</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">locationGroupId</span><span class="err">&#39;</span><span class="p">]</span> <span class="nx">is</span>  <span class="err">&#39;&#39;</span><span class="p">:</span>
-                    <span class="nx">print</span> <span class="s">&#34;\t&#34;</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="nx">prices</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">])</span>
-                <span class="err">#</span> <span class="nf">pp</span><span class="p">(</span><span class="nx">prices</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">listStorage</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;
-</span><span class="s">    Super complicated objectFilter. Mostly here as an example of how to do an IN filter.
-</span><span class="s">    Returns all storage that is in DAL06, HOU02, is NOT NAS, and is Endurance_File_Storage
-</span><span class="s">    &#34;&#34;&#34;</span>
-        <span class="nx">objectFilter</span> <span class="p">=</span> <span class="p">{</span>
-            <span class="err">&#39;</span><span class="nx">nasNetworkStorage</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="err">&#39;</span><span class="nx">serviceResource</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="err">&#39;</span><span class="kd">type</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
-                        <span class="err">&#39;</span><span class="kd">type</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="p">!</span><span class="err">~</span> <span class="nx">NAS</span><span class="err">&#39;</span><span class="p">}</span>
-                    <span class="p">},</span>
-                    <span class="err">&#39;</span><span class="nx">datacenter</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
-                        <span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
-                            <span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="nx">in</span><span class="err">&#39;</span><span class="p">,</span>
-                            <span class="err">&#39;</span><span class="nx">options</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">[{</span>
-                                <span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="nx">data</span><span class="err">&#39;</span><span class="p">,</span>
-                                <span class="err">&#39;</span><span class="nx">value</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">[</span><span class="err">&#39;</span><span class="nx">dal06</span><span class="sc">&#39;,&#39;</span><span class="nx">hou02</span><span class="err">&#39;</span><span class="p">]</span>
-                            <span class="p">}]</span>
-                        <span class="p">}</span>
-                    <span class="p">}</span>
-                <span class="p">},</span>
-                <span class="err">&#39;</span><span class="nx">storageType</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="err">&#39;</span><span class="nx">keyName</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="nx">ENDURANCE_FILE_STORAGE</span><span class="err">&#39;</span><span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">Account</span><span class="err">&#39;</span><span class="p">].</span><span class="nf">getNasNetworkStorage</span><span class="p">(</span>
-            <span class="nx">mask</span><span class="p">=</span><span class="nx">self</span><span class="p">.</span><span class="nx">objectMask</span><span class="p">,</span><span class="nx">filter</span><span class="p">=</span><span class="nx">objectFilter</span><span class="p">)</span>
-        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">authHost</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">host_id</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;
-</span><span class="s">    each host that needs to mount the volume needs to be authorized.
-</span><span class="s">    host and volume need to be in the same DC
-</span><span class="s">    &#34;&#34;&#34;</span>
-        <span class="nx">guest</span> <span class="p">=</span> <span class="p">{</span>
-            <span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">:</span> <span class="nx">host_id</span>
-        <span class="p">}</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">allowAccessFromVirtualGuest</span><span class="p">(</span><span class="nx">guest</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">authReplicant</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">host_id</span><span class="p">):</span>
-    <span class="s">&#34;&#34;&#34;
-</span><span class="s">    each host that needs to mount the REPLICANT needs to be authorized.
-</span><span class="s">    host and volume need to be in the same DC
-</span><span class="s">    &#34;&#34;&#34;</span>
-        <span class="nx">guest</span> <span class="p">=</span> <span class="p">{</span>
-            <span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">:</span> <span class="nx">host_id</span>
-        <span class="p">}</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">allowAccessToReplicantFromVirtualGuest</span><span class="p">(</span><span class="nx">guest</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">createSnapSchedule</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
-        <span class="err">#</span> <span class="nx">HOURLY</span><span class="p">,</span> <span class="mi">24</span> <span class="nx">copies</span><span class="p">,</span> <span class="nx">first</span> <span class="nx">minute</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">hour</span><span class="p">.</span> 
-        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">enableSnapshots</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">HOURLY</span><span class="err">&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">manualSnap</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">createSnapshot</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">Manual</span> <span class="nx">SNAP</span><span class="err">&#39;</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">getReplicantId</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
-        <span class="s">&#34;&#34;&#34;
-</span><span class="s">        there might be more than 1 replicant id in this list if there are more 
-</span><span class="s">        than 1 replicant targets. Or none of course.
-</span><span class="s">        &#34;&#34;&#34;</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">getReplicationPartners</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nx">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">]</span>
-        
-
-    <span class="nx">def</span> <span class="nf">houIsDown</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">now</span><span class="p">=</span><span class="nx">False</span><span class="p">):</span>
-
-        <span class="nx">replicate_to</span> <span class="p">=</span> <span class="nx">main</span><span class="p">.</span><span class="nf">getReplicantId</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nx">now</span><span class="p">:</span>
-            <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">immediateFailoverToReplicant</span><span class="p">(</span><span class="nx">replicate_to</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-        <span class="k">else</span>
-            <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">failoverToReplicant</span><span class="p">(</span><span class="nx">replicate_to</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">houIsBack</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
-        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">failbackFromReplicant</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">,</span><span class="nx">now</span><span class="p">=</span><span class="nx">False</span><span class="p">)</span>
-
-    <span class="nx">def</span> <span class="nf">volumeStatus</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
-        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">getObject</span><span class="p">(</span><span class="nx">mask</span><span class="p">=</span><span class="nx">self</span><span class="p">.</span><span class="nx">objectMask</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
-        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-
-
-<span class="k">if</span> <span class="nx">__name__</span> <span class="o">==</span> <span class="s">&#34;__main__&#34;</span><span class="p">:</span>
-<span class="s">&#34;&#34;&#34;
-</span><span class="s">Covers each of the steps required to create a storage volume, and then fail it over.
-</span><span class="s">The ordering methods will need to be slightly modified for block storage. 
-</span><span class="s">everything else should be good as is.
-</span><span class="s">
-</span><span class="s">&#34;&#34;&#34;</span>
-
-    <span class="nx">host_a</span> <span class="p">=</span> <span class="mi">25206857</span>
-    <span class="nx">host_b</span> <span class="p">=</span> <span class="mi">28630647</span>
-    <span class="nx">main</span> <span class="p">=</span> <span class="nf">example</span><span class="p">()</span>
-    <span class="nx">main</span><span class="p">.</span><span class="nf">listStorage</span><span class="p">()</span>
-    <span class="err">###</span> <span class="nx">First</span> <span class="nx">we</span> <span class="nx">need</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">a</span> <span class="nx">storage</span> <span class="nx">volume</span><span class="p">,</span> <span class="nx">and</span> <span class="nx">get</span> <span class="nx">its</span> <span class="nx">ID</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">orderStorage</span><span class="p">()</span>
-    <span class="nx">volume_id</span> <span class="p">=</span> <span class="mi">20017773</span>
-
-    <span class="err">###</span> <span class="nx">Then</span> <span class="nx">we</span> <span class="nx">need</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">snapshot</span> <span class="nx">space</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">orderSnapshot</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="err">###</span> <span class="nx">Then</span> <span class="nx">create</span> <span class="nx">a</span> <span class="nx">snapshot</span> <span class="nx">schedule</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">createSnapSchedule</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="err">###</span> <span class="nx">Then</span> <span class="nx">Allow</span> <span class="nx">our</span> <span class="nx">host</span> <span class="nx">to</span> <span class="nx">access</span> <span class="nx">the</span> <span class="nx">volume</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">authHost</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">,</span> <span class="p">[</span><span class="nx">host_a</span><span class="p">])</span>
-
-    <span class="err">###</span> <span class="nx">Create</span> <span class="nx">a</span> <span class="nx">manual</span> <span class="nx">snapshot</span> <span class="k">for</span> <span class="nx">fun</span> 
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">manualSnap</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="err">###</span> <span class="nx">Order</span> <span class="nx">replication</span> <span class="nx">space</span><span class="p">.</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">orderReplicant</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">,</span> <span class="err">&#39;</span><span class="nx">HOURLY</span><span class="err">&#39;</span><span class="p">)</span>
-
-    <span class="err">###</span> <span class="nx">Allow</span> <span class="nx">our</span> <span class="nx">vm</span> <span class="nx">to</span> <span class="nx">access</span> <span class="nx">replicant</span> <span class="nx">volume</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">authReplicant</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">,</span><span class="nx">host_b</span><span class="p">)</span>
-
-    <span class="err">###</span> <span class="nx">Failover</span> <span class="nx">to</span> <span class="nx">replicant</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">houIsDown</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="err">###</span> <span class="nx">Failback</span> <span class="nx">to</span> <span class="nx">main</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">houIsBack</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
-
-    <span class="err">###</span> <span class="nx">Get</span> <span class="nx">some</span> <span class="nx">status</span>
-    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">volumeStatus</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">@package examples 
+</span></span></span><span class="line"><span class="cl"><span class="s">@author Christopher Gallo
+</span></span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nx">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nx">logging</span>
+</span></span><span class="line"><span class="cl"><span class="nx">from</span> <span class="nx">pprint</span> <span class="kn">import</span> <span class="nx">pprint</span> <span class="nx">as</span> <span class="nx">pp</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">class</span> <span class="nf">example</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">        If you need debugging, uncomment these. be prepared for a lot of XML
+</span></span></span><span class="line"><span class="cl"><span class="s">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="err">#</span> <span class="nx">logger</span> <span class="p">=</span> <span class="nx">logging</span><span class="p">.</span><span class="nf">getLogger</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="err">#</span> <span class="nx">logger</span><span class="p">.</span><span class="nf">addHandler</span><span class="p">(</span><span class="nx">logging</span><span class="p">.</span><span class="nf">StreamHandler</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">        <span class="err">#</span> <span class="nx">logger</span><span class="p">.</span><span class="nf">setLevel</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nf">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">SoftLayer_Network_Storage</span><span class="err">&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">.</span><span class="nf">FileStorageManager</span><span class="p">(</span><span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="err">#</span> <span class="nx">Broken</span> <span class="nx">up</span> <span class="nx">like</span> <span class="nx">this</span> <span class="nx">to</span> <span class="nx">look</span> <span class="err">&#39;</span><span class="nx">good</span><span class="err">&#39;</span> <span class="nx">on</span> <span class="nx">softlayer</span><span class="p">.</span><span class="nx">github</span><span class="p">.</span><span class="nx">io</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">objectMask</span> <span class="p">=</span> <span class="s">&#34;mask[&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;id, username, capacityGb, bytesUsed, serviceResource[datacenter[name]], &#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;serviceResourceBackendIpAddress, activeTransactionCount, &#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;fileNetworkMountAddress, snapshots[id,createDate], hourlySchedule, &#34;</span> 
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;allowedReplicationVirtualGuests[hostname], allowedVirtualGuests[hostname], &#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#34;replicationStatus, replicationPartners]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">orderStorage</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">        This will order endurance storage in HOU02 with 20G in size, and the 0.25IOPS/GB tier
+</span></span></span><span class="line"><span class="cl"><span class="s">        0.25, 2, 4 and 10 iops/g are tiers available. 
+</span></span></span><span class="line"><span class="cl"><span class="s">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span><span class="p">.</span><span class="nf">order_file_volume</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">storage_type</span><span class="p">=</span><span class="s">&#34;storage_service_enterprise&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">location</span> <span class="p">=</span> <span class="s">&#34;hou02&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">size</span> <span class="p">=</span> <span class="mi">20</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">tier_level</span> <span class="p">=</span> <span class="mf">0.25</span>
+</span></span><span class="line"><span class="cl">            <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">orderSnapshot</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span><span class="p">.</span><span class="nf">order_snapshot_space</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">volume_id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">capacity</span><span class="p">=</span><span class="mi">20</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">tier</span> <span class="p">=</span> <span class="mf">0.25</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">upgrade</span><span class="p">=</span><span class="nx">False</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">orderReplicant</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">schedule</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">        Same as other ordering methods, schedule is 
+</span></span></span><span class="line"><span class="cl"><span class="s">        &#34;</span><span class="nx">HOURLY</span><span class="s">&#34;, &#34;</span><span class="nx">DAILY</span><span class="s">&#34; or &#34;</span><span class="nx">WEEKLY</span><span class="s">&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">mgr</span><span class="p">.</span><span class="nf">order_replicant_volume</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">volume_id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">snapshot_schedule</span><span class="p">=</span><span class="nx">schedule</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">location</span> <span class="p">=</span> <span class="s">&#34;dal06&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">tier</span> <span class="p">=</span> <span class="mf">0.25</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">listStoragePrices</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">        222 - Performance - PERFORMANCE_STORAGE_SERVICE
+</span></span></span><span class="line"><span class="cl"><span class="s">        240 - Endurance - CODENAME_PRIME_STORAGE
+</span></span></span><span class="line"><span class="cl"><span class="s">        If you feel like building the pricing object yourself, start here.
+</span></span></span><span class="line"><span class="cl"><span class="s">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">mask</span> <span class="p">=</span> <span class="s">&#34;mask[items[prices[pricingLocationGroup,categories],attributes]]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="err">#</span> <span class="nx">locations</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">Product_Package</span><span class="err">&#39;</span><span class="p">].</span><span class="nf">getLocations</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">package_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">Product_Package</span><span class="err">&#39;</span><span class="p">].</span><span class="nf">getObject</span><span class="p">(</span><span class="nx">mask</span><span class="p">=</span><span class="nx">mask</span><span class="p">,</span><span class="nx">id</span><span class="p">=</span><span class="mi">240</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">item</span> <span class="nx">in</span> <span class="nx">result</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">items</span><span class="err">&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s">&#34;%s - %s - %s&#34;</span> <span class="o">%</span> 
+</span></span><span class="line"><span class="cl">                <span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">]),</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">description</span><span class="err">&#39;</span><span class="p">],</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">keyName</span><span class="err">&#39;</span><span class="p">])</span> 
+</span></span><span class="line"><span class="cl">            <span class="err">#</span> <span class="nf">pp</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="nx">prices</span> <span class="nx">in</span> <span class="nx">item</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">prices</span><span class="err">&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="nx">prices</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">locationGroupId</span><span class="err">&#39;</span><span class="p">]</span> <span class="nx">is</span>  <span class="err">&#39;&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="nx">print</span> <span class="s">&#34;\t&#34;</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="nx">prices</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="err">#</span> <span class="nf">pp</span><span class="p">(</span><span class="nx">prices</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">listStorage</span><span class="p">(</span><span class="nx">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">    Super complicated objectFilter. Mostly here as an example of how to do an IN filter.
+</span></span></span><span class="line"><span class="cl"><span class="s">    Returns all storage that is in DAL06, HOU02, is NOT NAS, and is Endurance_File_Storage
+</span></span></span><span class="line"><span class="cl"><span class="s">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">objectFilter</span> <span class="p">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="err">&#39;</span><span class="nx">nasNetworkStorage</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="err">&#39;</span><span class="nx">serviceResource</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">&#39;</span><span class="kd">type</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="err">&#39;</span><span class="kd">type</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="p">!</span><span class="err">~</span> <span class="nx">NAS</span><span class="err">&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">&#39;</span><span class="nx">datacenter</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                            <span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="nx">in</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                            <span class="err">&#39;</span><span class="nx">options</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">[{</span>
+</span></span><span class="line"><span class="cl">                                <span class="err">&#39;</span><span class="nx">name</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="nx">data</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                <span class="err">&#39;</span><span class="nx">value</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">[</span><span class="err">&#39;</span><span class="nx">dal06</span><span class="sc">&#39;,&#39;</span><span class="nx">hou02</span><span class="err">&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                            <span class="p">}]</span>
+</span></span><span class="line"><span class="cl">                        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">},</span>
+</span></span><span class="line"><span class="cl">                <span class="err">&#39;</span><span class="nx">storageType</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">&#39;</span><span class="nx">keyName</span><span class="err">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="err">&#39;</span><span class="nx">operation</span><span class="err">&#39;</span><span class="p">:</span> <span class="err">&#39;</span><span class="nx">ENDURANCE_FILE_STORAGE</span><span class="err">&#39;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">Account</span><span class="err">&#39;</span><span class="p">].</span><span class="nf">getNasNetworkStorage</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">mask</span><span class="p">=</span><span class="nx">self</span><span class="p">.</span><span class="nx">objectMask</span><span class="p">,</span><span class="nx">filter</span><span class="p">=</span><span class="nx">objectFilter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">authHost</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">host_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">    each host that needs to mount the volume needs to be authorized.
+</span></span></span><span class="line"><span class="cl"><span class="s">    host and volume need to be in the same DC
+</span></span></span><span class="line"><span class="cl"><span class="s">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">guest</span> <span class="p">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">:</span> <span class="nx">host_id</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">allowAccessFromVirtualGuest</span><span class="p">(</span><span class="nx">guest</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">authReplicant</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">host_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">    each host that needs to mount the REPLICANT needs to be authorized.
+</span></span></span><span class="line"><span class="cl"><span class="s">    host and volume need to be in the same DC
+</span></span></span><span class="line"><span class="cl"><span class="s">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">guest</span> <span class="p">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">:</span> <span class="nx">host_id</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">allowAccessToReplicantFromVirtualGuest</span><span class="p">(</span><span class="nx">guest</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">createSnapSchedule</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="err">#</span> <span class="nx">HOURLY</span><span class="p">,</span> <span class="mi">24</span> <span class="nx">copies</span><span class="p">,</span> <span class="nx">first</span> <span class="nx">minute</span> <span class="nx">of</span> <span class="nx">the</span> <span class="nx">hour</span><span class="p">.</span> 
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">enableSnapshots</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">HOURLY</span><span class="err">&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">manualSnap</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">createSnapshot</span><span class="p">(</span><span class="err">&#39;</span><span class="nx">Manual</span> <span class="nx">SNAP</span><span class="err">&#39;</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">getReplicantId</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">        there might be more than 1 replicant id in this list if there are more 
+</span></span></span><span class="line"><span class="cl"><span class="s">        than 1 replicant targets. Or none of course.
+</span></span></span><span class="line"><span class="cl"><span class="s">        &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">getReplicationPartners</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="err">&#39;</span><span class="nx">id</span><span class="err">&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">houIsDown</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">,</span> <span class="nx">now</span><span class="p">=</span><span class="nx">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nx">replicate_to</span> <span class="p">=</span> <span class="nx">main</span><span class="p">.</span><span class="nf">getReplicantId</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nx">now</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">immediateFailoverToReplicant</span><span class="p">(</span><span class="nx">replicate_to</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">failoverToReplicant</span><span class="p">(</span><span class="nx">replicate_to</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">houIsBack</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">failbackFromReplicant</span><span class="p">(</span><span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">,</span><span class="nx">now</span><span class="p">=</span><span class="nx">False</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">def</span> <span class="nf">volumeStatus</span><span class="p">(</span><span class="nx">self</span><span class="p">,</span> <span class="nx">volume_id</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">result</span> <span class="p">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nf">getObject</span><span class="p">(</span><span class="nx">mask</span><span class="p">=</span><span class="nx">self</span><span class="p">.</span><span class="nx">objectMask</span><span class="p">,</span> <span class="nx">id</span><span class="p">=</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">pp</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="nx">__name__</span> <span class="o">==</span> <span class="s">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">Covers each of the steps required to create a storage volume, and then fail it over.
+</span></span></span><span class="line"><span class="cl"><span class="s">The ordering methods will need to be slightly modified for block storage. 
+</span></span></span><span class="line"><span class="cl"><span class="s">everything else should be good as is.
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">host_a</span> <span class="p">=</span> <span class="mi">25206857</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">host_b</span> <span class="p">=</span> <span class="mi">28630647</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">main</span> <span class="p">=</span> <span class="nf">example</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">main</span><span class="p">.</span><span class="nf">listStorage</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">First</span> <span class="nx">we</span> <span class="nx">need</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">a</span> <span class="nx">storage</span> <span class="nx">volume</span><span class="p">,</span> <span class="nx">and</span> <span class="nx">get</span> <span class="nx">its</span> <span class="nx">ID</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">orderStorage</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">volume_id</span> <span class="p">=</span> <span class="mi">20017773</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Then</span> <span class="nx">we</span> <span class="nx">need</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">snapshot</span> <span class="nx">space</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">orderSnapshot</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Then</span> <span class="nx">create</span> <span class="nx">a</span> <span class="nx">snapshot</span> <span class="nx">schedule</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">createSnapSchedule</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Then</span> <span class="nx">Allow</span> <span class="nx">our</span> <span class="nx">host</span> <span class="nx">to</span> <span class="nx">access</span> <span class="nx">the</span> <span class="nx">volume</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">authHost</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">,</span> <span class="p">[</span><span class="nx">host_a</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Create</span> <span class="nx">a</span> <span class="nx">manual</span> <span class="nx">snapshot</span> <span class="k">for</span> <span class="nx">fun</span> 
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">manualSnap</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Order</span> <span class="nx">replication</span> <span class="nx">space</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">orderReplicant</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">,</span> <span class="err">&#39;</span><span class="nx">HOURLY</span><span class="err">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Allow</span> <span class="nx">our</span> <span class="nx">vm</span> <span class="nx">to</span> <span class="nx">access</span> <span class="nx">replicant</span> <span class="nx">volume</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">authReplicant</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">,</span><span class="nx">host_b</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Failover</span> <span class="nx">to</span> <span class="nx">replicant</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">houIsDown</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Failback</span> <span class="nx">to</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">houIsBack</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">###</span> <span class="nx">Get</span> <span class="nx">some</span> <span class="nx">status</span>
+</span></span><span class="line"><span class="cl">    <span class="err">#</span> <span class="nx">main</span><span class="p">.</span><span class="nf">volumeStatus</span><span class="p">(</span><span class="nx">volume_id</span><span class="p">)</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

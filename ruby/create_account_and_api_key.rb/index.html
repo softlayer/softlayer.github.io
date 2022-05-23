@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -148,140 +144,139 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback"># Creates new account and create API key for that account
-#
-# The script creates a new account using the createCustomerAccount() method,
-# then the script will create the API key for that account, in order to achieve
-# that goal it is necessary to make soap request because in oder to create
-# the API key we need to call the method addApiAuthenticationKey() using the
-# the credentials of the new account as we do not have that information we are
-# calling the method using impersonation.
-# For perform the impersonation we need the userId and the token for the authentication.
-# For more details please see below.
-#
-# Important manual pages
-# http://sldn.softlayer.com/reference/services/SoftLayer_Account/addApiAuthenticationKey
-# http://sldn.softlayer.com/reference/services/SoftLayer_Account/getApiAuthenticationKeys
-# http://sldn.softlayer.com/reference/services/SoftLayer_Account/getOwnedBrands
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account/
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Brand/
-# http://sldn.softlayer.com/reference/services/SoftLayer_Brand
-# http://sldn.softlayer.com/reference/services/SoftLayer_Brand/createCustomerAccount
-# http://sldn.softlayer.com/reference/services/SoftLayer_Brand/getUsers
-# http://sldn.softlayer.com/reference/services/SoftLayer_Brand/getToken
-#
-# License: http://sldn.softlayer.com/article/License
-# Author: SoftLayer Technologies, Inc.&lt;sldn@softlayer.com&gt;
-require &#39;softlayer_api&#39;
-require &#39;pp&#39;
-
-# Your SoftLayer API username and key.
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
-ENDPOINT = &#39;set me&#39;
-
-# Declaring the API client to use the SoftLayer_Virtual_Guest API service
-client = SoftLayer::Client.new(
-  username: USERNAME,
-  api_key: API_KEY,
-  endpoint_url: ENDPOINT
-)
-
-brand_service = client.service_named(&#39;SoftLayer_Brand&#39;)
-account_service = client.service_named(&#39;SoftLayer_Account&#39;)
-
-begin
-  # Getting the brand for our account
-  # the account could belong to several brands
-  # you need to select one brand for the new account.
-  brands = account_service.getOwnedBrands
-
-  # Creating an SoftLayer_Account object which contains the data
-  # of our new account.
-  account_template = {
-    &#39;address1&#39; =&gt; &#39;8200 Warden Ave&#39;,
-    &#39;city&#39; =&gt; &#39;Markham&#39;,
-    &#39;companyName&#39; =&gt; &#39;IBM Bluemix Dedicated&#39;,
-    &#39;email&#39; =&gt; &#39;email@softlayer.com&#39;,
-    &#39;firstName&#39; =&gt; &#39;FirstName&#39;,
-    &#39;lastName&#39; =&gt; &#39;Surename&#39;,
-    &#39;officePhone&#39; =&gt; &#39;number&#39;,
-    &#39;postalCode&#39; =&gt; &#39;L6G 1C7&#39;,
-    &#39;state&#39; =&gt; &#39;TX&#39;,
-    &#39;brandId&#39; =&gt; brands[0][&#39;id&#39;],
-    &#39;country&#39; =&gt; &#39;CA&#39;
-  }
-
-  # Creating the new account
-  new_account = brand_service.createCustomerAccount(account_template)
-
-  # Looking for the master user for the new account
-  new_master_user = nil
-  users = brand_service.object_with_id(brands[0][&#39;id&#39;]).getUsers
-  users.each do |user|
-    if user[&#39;accountId&#39;] == new_account[&#39;id&#39;]
-      new_master_user = user
-      break
-    end
-  end
-
-  # Getting the token
-  token = brand_service.object_with_id(brands[0][&#39;id&#39;]).getToken(new_master_user[&#39;id&#39;])
-
-  print token # This is the token you need to send to the SOAP request
-  print &#39;  &#39;
-  print new_master_user[&#39;id&#39;] # This is the userId you need to send to the SOAP request
-
-rescue StandardError =&gt; exception
-  puts &#34;Unable to create the new account : #{exception}&#34;
-end
-
-# Here call the soap methods
-
-=begin
-This is a soap example to create the API key to the account.
-It will create the API key for the master account of the new account.
-In case the master account already has an API key the request will return an error.
-Please replace the values $TOKEN and $USERID
-
-&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;
-&lt;SOAP-ENV:Envelope xmlns:SOAP-ENV=&#34;http://schemas.xmlsoap.org/soap/envelope/&#34; xmlns:ns1=&#34;http://api.service.softlayer.com/soap/v3/&#34; xmlns:xsd=&#34;http://www.w3.org/2001/XMLSchema&#34; xmlns:SOAP-ENC=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34; SOAP-ENV:encodingStyle=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34;&gt;
-  &lt;SOAP-ENV:Header&gt;
-    &lt;ns1:clientLegacySession&gt;
-      &lt;userId&gt;$USERID&lt;/userId&gt;
-      &lt;authToken&gt;$TOKEN&lt;/authToken&gt;
-    &lt;/ns1:clientLegacySession&gt;
-    &lt;ns1:SoftLayer_User_CustomerInitParameters&gt;
-      &lt;id&gt;$USERID&lt;/id&gt;
-    &lt;/ns1:SoftLayer_User_CustomerInitParameters&gt;
-  &lt;/SOAP-ENV:Header&gt;
-  &lt;SOAP-ENV:Body&gt;
-    &lt;ns1:addApiAuthenticationKey/&gt;
-  &lt;/SOAP-ENV:Body&gt;
-&lt;/SOAP-ENV:Envelope&gt;
-
-You Also can execute this SOAP request to get the APIKey of the master account
-Note: The user should already has the APIKey created
-
-&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;
-&lt;SOAP-ENV:Envelope xmlns:SOAP-ENV=&#34;http://schemas.xmlsoap.org/soap/envelope/&#34; xmlns:ns1=&#34;http://api.service.softlayer.com/soap/v3/&#34; xmlns:xsd=&#34;http://www.w3.org/2001/XMLSchema&#34; xmlns:SOAP-ENC=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34; SOAP-ENV:encodingStyle=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34;&gt;
-  &lt;SOAP-ENV:Header&gt;
-    &lt;ns1:clientLegacySession&gt;
-      &lt;userId&gt;$USERID&lt;/userId&gt;
-      &lt;authToken&gt;$TOKEN&lt;/authToken&gt;
-    &lt;/ns1:clientLegacySession&gt;
-    &lt;ns1:SoftLayer_User_CustomerInitParameters&gt;
-      &lt;id&gt;$USERID&lt;/id&gt;
-    &lt;/ns1:SoftLayer_User_CustomerInitParameters&gt;
-  &lt;/SOAP-ENV:Header&gt;
-  &lt;SOAP-ENV:Body&gt;
-    &lt;ns1:getApiAuthenticationKeys/&gt;
-  &lt;/SOAP-ENV:Body&gt;
-&lt;/SOAP-ENV:Envelope&gt;
-
-=end
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># Creates new account and create API key for that account
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># The script creates a new account using the createCustomerAccount() method,
+</span></span><span class="line"><span class="cl"># then the script will create the API key for that account, in order to achieve
+</span></span><span class="line"><span class="cl"># that goal it is necessary to make soap request because in oder to create
+</span></span><span class="line"><span class="cl"># the API key we need to call the method addApiAuthenticationKey() using the
+</span></span><span class="line"><span class="cl"># the credentials of the new account as we do not have that information we are
+</span></span><span class="line"><span class="cl"># calling the method using impersonation.
+</span></span><span class="line"><span class="cl"># For perform the impersonation we need the userId and the token for the authentication.
+</span></span><span class="line"><span class="cl"># For more details please see below.
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># Important manual pages
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Account/addApiAuthenticationKey
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Account/getApiAuthenticationKeys
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Account/getOwnedBrands
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Account/
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Brand/
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Brand
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Brand/createCustomerAccount
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Brand/getUsers
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Brand/getToken
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># License: http://sldn.softlayer.com/article/License
+</span></span><span class="line"><span class="cl"># Author: SoftLayer Technologies, Inc.&lt;sldn@softlayer.com&gt;
+</span></span><span class="line"><span class="cl">require &#39;softlayer_api&#39;
+</span></span><span class="line"><span class="cl">require &#39;pp&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Your SoftLayer API username and key.
+</span></span><span class="line"><span class="cl">USERNAME = &#39;set me&#39;
+</span></span><span class="line"><span class="cl">API_KEY = &#39;set me&#39;
+</span></span><span class="line"><span class="cl">ENDPOINT = &#39;set me&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Declaring the API client to use the SoftLayer_Virtual_Guest API service
+</span></span><span class="line"><span class="cl">client = SoftLayer::Client.new(
+</span></span><span class="line"><span class="cl">  username: USERNAME,
+</span></span><span class="line"><span class="cl">  api_key: API_KEY,
+</span></span><span class="line"><span class="cl">  endpoint_url: ENDPOINT
+</span></span><span class="line"><span class="cl">)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">brand_service = client.service_named(&#39;SoftLayer_Brand&#39;)
+</span></span><span class="line"><span class="cl">account_service = client.service_named(&#39;SoftLayer_Account&#39;)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">begin
+</span></span><span class="line"><span class="cl">  # Getting the brand for our account
+</span></span><span class="line"><span class="cl">  # the account could belong to several brands
+</span></span><span class="line"><span class="cl">  # you need to select one brand for the new account.
+</span></span><span class="line"><span class="cl">  brands = account_service.getOwnedBrands
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  # Creating an SoftLayer_Account object which contains the data
+</span></span><span class="line"><span class="cl">  # of our new account.
+</span></span><span class="line"><span class="cl">  account_template = {
+</span></span><span class="line"><span class="cl">    &#39;address1&#39; =&gt; &#39;8200 Warden Ave&#39;,
+</span></span><span class="line"><span class="cl">    &#39;city&#39; =&gt; &#39;Markham&#39;,
+</span></span><span class="line"><span class="cl">    &#39;companyName&#39; =&gt; &#39;IBM Bluemix Dedicated&#39;,
+</span></span><span class="line"><span class="cl">    &#39;email&#39; =&gt; &#39;email@softlayer.com&#39;,
+</span></span><span class="line"><span class="cl">    &#39;firstName&#39; =&gt; &#39;FirstName&#39;,
+</span></span><span class="line"><span class="cl">    &#39;lastName&#39; =&gt; &#39;Surename&#39;,
+</span></span><span class="line"><span class="cl">    &#39;officePhone&#39; =&gt; &#39;number&#39;,
+</span></span><span class="line"><span class="cl">    &#39;postalCode&#39; =&gt; &#39;L6G 1C7&#39;,
+</span></span><span class="line"><span class="cl">    &#39;state&#39; =&gt; &#39;TX&#39;,
+</span></span><span class="line"><span class="cl">    &#39;brandId&#39; =&gt; brands[0][&#39;id&#39;],
+</span></span><span class="line"><span class="cl">    &#39;country&#39; =&gt; &#39;CA&#39;
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  # Creating the new account
+</span></span><span class="line"><span class="cl">  new_account = brand_service.createCustomerAccount(account_template)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  # Looking for the master user for the new account
+</span></span><span class="line"><span class="cl">  new_master_user = nil
+</span></span><span class="line"><span class="cl">  users = brand_service.object_with_id(brands[0][&#39;id&#39;]).getUsers
+</span></span><span class="line"><span class="cl">  users.each do |user|
+</span></span><span class="line"><span class="cl">    if user[&#39;accountId&#39;] == new_account[&#39;id&#39;]
+</span></span><span class="line"><span class="cl">      new_master_user = user
+</span></span><span class="line"><span class="cl">      break
+</span></span><span class="line"><span class="cl">    end
+</span></span><span class="line"><span class="cl">  end
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  # Getting the token
+</span></span><span class="line"><span class="cl">  token = brand_service.object_with_id(brands[0][&#39;id&#39;]).getToken(new_master_user[&#39;id&#39;])
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  print token # This is the token you need to send to the SOAP request
+</span></span><span class="line"><span class="cl">  print &#39;  &#39;
+</span></span><span class="line"><span class="cl">  print new_master_user[&#39;id&#39;] # This is the userId you need to send to the SOAP request
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">rescue StandardError =&gt; exception
+</span></span><span class="line"><span class="cl">  puts &#34;Unable to create the new account : #{exception}&#34;
+</span></span><span class="line"><span class="cl">end
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Here call the soap methods
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">=begin
+</span></span><span class="line"><span class="cl">This is a soap example to create the API key to the account.
+</span></span><span class="line"><span class="cl">It will create the API key for the master account of the new account.
+</span></span><span class="line"><span class="cl">In case the master account already has an API key the request will return an error.
+</span></span><span class="line"><span class="cl">Please replace the values $TOKEN and $USERID
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;
+</span></span><span class="line"><span class="cl">&lt;SOAP-ENV:Envelope xmlns:SOAP-ENV=&#34;http://schemas.xmlsoap.org/soap/envelope/&#34; xmlns:ns1=&#34;http://api.service.softlayer.com/soap/v3/&#34; xmlns:xsd=&#34;http://www.w3.org/2001/XMLSchema&#34; xmlns:SOAP-ENC=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34; SOAP-ENV:encodingStyle=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34;&gt;
+</span></span><span class="line"><span class="cl">  &lt;SOAP-ENV:Header&gt;
+</span></span><span class="line"><span class="cl">    &lt;ns1:clientLegacySession&gt;
+</span></span><span class="line"><span class="cl">      &lt;userId&gt;$USERID&lt;/userId&gt;
+</span></span><span class="line"><span class="cl">      &lt;authToken&gt;$TOKEN&lt;/authToken&gt;
+</span></span><span class="line"><span class="cl">    &lt;/ns1:clientLegacySession&gt;
+</span></span><span class="line"><span class="cl">    &lt;ns1:SoftLayer_User_CustomerInitParameters&gt;
+</span></span><span class="line"><span class="cl">      &lt;id&gt;$USERID&lt;/id&gt;
+</span></span><span class="line"><span class="cl">    &lt;/ns1:SoftLayer_User_CustomerInitParameters&gt;
+</span></span><span class="line"><span class="cl">  &lt;/SOAP-ENV:Header&gt;
+</span></span><span class="line"><span class="cl">  &lt;SOAP-ENV:Body&gt;
+</span></span><span class="line"><span class="cl">    &lt;ns1:addApiAuthenticationKey/&gt;
+</span></span><span class="line"><span class="cl">  &lt;/SOAP-ENV:Body&gt;
+</span></span><span class="line"><span class="cl">&lt;/SOAP-ENV:Envelope&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">You Also can execute this SOAP request to get the APIKey of the master account
+</span></span><span class="line"><span class="cl">Note: The user should already has the APIKey created
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;
+</span></span><span class="line"><span class="cl">&lt;SOAP-ENV:Envelope xmlns:SOAP-ENV=&#34;http://schemas.xmlsoap.org/soap/envelope/&#34; xmlns:ns1=&#34;http://api.service.softlayer.com/soap/v3/&#34; xmlns:xsd=&#34;http://www.w3.org/2001/XMLSchema&#34; xmlns:SOAP-ENC=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34; SOAP-ENV:encodingStyle=&#34;http://schemas.xmlsoap.org/soap/encoding/&#34;&gt;
+</span></span><span class="line"><span class="cl">  &lt;SOAP-ENV:Header&gt;
+</span></span><span class="line"><span class="cl">    &lt;ns1:clientLegacySession&gt;
+</span></span><span class="line"><span class="cl">      &lt;userId&gt;$USERID&lt;/userId&gt;
+</span></span><span class="line"><span class="cl">      &lt;authToken&gt;$TOKEN&lt;/authToken&gt;
+</span></span><span class="line"><span class="cl">    &lt;/ns1:clientLegacySession&gt;
+</span></span><span class="line"><span class="cl">    &lt;ns1:SoftLayer_User_CustomerInitParameters&gt;
+</span></span><span class="line"><span class="cl">      &lt;id&gt;$USERID&lt;/id&gt;
+</span></span><span class="line"><span class="cl">    &lt;/ns1:SoftLayer_User_CustomerInitParameters&gt;
+</span></span><span class="line"><span class="cl">  &lt;/SOAP-ENV:Header&gt;
+</span></span><span class="line"><span class="cl">  &lt;SOAP-ENV:Body&gt;
+</span></span><span class="line"><span class="cl">    &lt;ns1:getApiAuthenticationKeys/&gt;
+</span></span><span class="line"><span class="cl">  &lt;/SOAP-ENV:Body&gt;
+</span></span><span class="line"><span class="cl">&lt;/SOAP-ENV:Envelope&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">=end
+</span></span></code></pre></div>
             </div>
         </div>
 

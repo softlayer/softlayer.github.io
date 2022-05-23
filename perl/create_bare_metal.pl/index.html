@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -156,114 +152,113 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1"># Order a new server.</span>
-<span class="c1">#</span>
-<span class="c1"># Building a SoftLayer_Container_Product_Order object for a new</span>
-<span class="c1"># server order and pass it to the SoftLayer_Product_Order API service to order</span>
-<span class="c1"># it. In this care we&#39;ll order a Xeon 3460 server with 2G RAM, 100mbit NICs,</span>
-<span class="c1"># 2000GB bandwidth, a 500G SATA drive, CentOS 5 32-bit, and default server</span>
-<span class="c1"># order options. See below for more details.</span>
-<span class="c1">#</span>
-<span class="c1"># Important manual pages:</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder</span>
-<span class="c1">#</span>
-<span class="c1"># License &lt;http://sldn.softlayer.com/article/License&gt;</span>
-<span class="c1"># Author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;/path/to/client/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API username.</span>
-<span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API key.</span>
-<span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me too&#39;</span><span class="p">;</span>
-
-<span class="c1"># The number of servers you wish to order in this configuration.</span>
-<span class="k">my</span> <span class="nv">$quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-
-<span class="c1"># Where you&#39;d like your new server provisioned.</span>
-<span class="c1"># This can either be the id of the datacenter you wish your new server to be</span>
-<span class="c1"># provisioned in or the string &#39;FIRST_AVAILABLE&#39; if you have no preference</span>
-<span class="c1"># where your server is provisioned.</span>
-<span class="c1"># Location id 3     = Dallas</span>
-<span class="c1"># Location id 18171 = Seattle</span>
-<span class="c1"># Location id 37473 = Washington, D.C.</span>
-<span class="k">my</span> <span class="nv">$location</span> <span class="o">=</span> <span class="s">&#39;FIRST_AVAILABLE&#39;</span><span class="p">;</span>
-
-<span class="c1"># The id of the SoftLayer_Product_Package you wish to order.</span>
-<span class="c1"># In this case the Intel Xeon 3460&#39;s package id is 145.</span>
-<span class="k">my</span> <span class="nv">$package_id</span> <span class="o">=</span> <span class="mi">145</span><span class="p">;</span>
-
-<span class="c1"># Building a skeleton SoftLayer_Hardware_Server object to model the hostname and</span>
-<span class="c1"># domain we want for our server. If you set quantity greater than 1 then you</span>
-<span class="c1"># need to define one hostname/domain pair per server you wish to order.</span>
-<span class="k">my</span> <span class="nv">@hardware</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="p">{</span>
-        <span class="s">&#39;hostname&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;test&#39;</span><span class="p">,</span> <span class="c1"># The hostname of the server you wish to order.</span>
-        <span class="s">&#39;domain&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;example.org&#39;</span> <span class="c1"># The domain name of the server you wish to order.</span>
-    <span class="p">}</span>
-<span class="p">);</span>
-
-<span class="c1"># Building a skeleton SoftLayer_Product_Item_Price objects. These objects contain</span>
-<span class="c1"># much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id</span>
-<span class="c1"># to know what you want to order.</span>
-
-<span class="c1"># Every item in SoftLayer&#39;s product catalog is assigned an id. Use these ids</span>
-<span class="c1"># to tell the SoftLayer API which options you want in your new server. Use</span>
-<span class="c1"># the getActivePackages() method in the SoftLayer_Account API service to get</span>
-<span class="c1"># a list of available item and price options per available package.</span>
-<span class="k">my</span> <span class="nv">@prices</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">17231</span> <span class="p">}</span> <span class="p">,</span> <span class="c1"># Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">637</span> <span class="p">},</span> <span class="c1"># 2 GB DDR2 667</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">682</span> <span class="p">},</span> <span class="c1"># CentOS 5.x (32 bit)</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">876</span> <span class="p">},</span> <span class="c1"># 2 GB DDR2 667</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">19087</span> <span class="p">},</span> <span class="c1"># 500GB SATA II</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">342</span> <span class="p">},</span> <span class="c1"># 20000 GB Bandwidth</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">273</span> <span class="p">},</span> <span class="c1"># 100 Mbps Public &amp; Private Network Uplinks</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">55</span> <span class="p">},</span> <span class="c1"># Host Ping</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">58</span> <span class="p">},</span> <span class="c1"># Automated Notification</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">420</span> <span class="p">},</span> <span class="c1"># Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">418</span> <span class="p">},</span> <span class="c1"># Nessus Vulnerability Assessment &amp; Reporting</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">21</span> <span class="p">},</span> <span class="c1"># 1 IP Address</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">57</span> <span class="p">},</span> <span class="c1"># Email and Ticket</span>
-    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">906</span> <span class="p">}</span> <span class="c1"># Reboot / KVM over IP</span>
-<span class="p">);</span>
-
-<span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Hardware_Server object</span>
-<span class="c1"># containing the order you wish to place.</span>
-<span class="k">my</span> <span class="nv">$order_template</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">&#39;quantity&#39;</span> <span class="o">=&gt;</span> <span class="nv">$quantity</span><span class="p">,</span>
-    <span class="s">&#39;location&#39;</span> <span class="o">=&gt;</span> <span class="nv">$location</span><span class="p">,</span>
-    <span class="s">&#39;packageId&#39;</span> <span class="o">=&gt;</span> <span class="nv">$package_id</span><span class="p">,</span>
-    <span class="s">&#39;prices&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span> <span class="nv">@prices</span> <span class="p">],</span>
-    <span class="s">&#39;hardware&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span> <span class="nv">@hardware</span> <span class="p">]</span>
-<span class="p">};</span>
-
-<span class="c1"># Declaring the API client to use the SoftLayer_Product_Order API service</span>
-<span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">,</span><span class="nv">$endpoint</span><span class="p">);</span>
-
-<span class="c1"># verifyOrder() will check your order for errors. Replace this with a call to</span>
-<span class="c1"># placeOrder() when you&#39;re ready to order. Both calls return a receipt object</span>
-<span class="c1"># that you can use for your records.</span>
-<span class="c1">#</span>
-<span class="c1"># Once your order is placed it&#39;ll go through SoftLayer&#39;s provisioning process.</span>
-<span class="c1"># When it&#39;s done you&#39;ll have a new SoftLayer_Virtual_Guest object and CCI ready</span>
-<span class="c1"># to use.</span>
-<span class="k">my</span> <span class="nv">$receipt</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">verifyOrder</span><span class="p">(</span><span class="nv">$order_template</span><span class="p">);</span>
-
-<span class="k">if</span> <span class="p">(</span><span class="nv">$receipt</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nb">die</span> <span class="s">&#39;There was an error in your order. &#39;</span> <span class="o">.</span> <span class="nv">$receipt</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="c1"># Pretty print the order receipt.</span>
-<span class="k">print</span> <span class="n">Dumper</span><span class="p">(</span><span class="nv">$receipt</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">);</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1"># Order a new server.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a SoftLayer_Container_Product_Order object for a new</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># server order and pass it to the SoftLayer_Product_Order API service to order</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># it. In this care we&#39;ll order a Xeon 3460 server with 2G RAM, 100mbit NICs,</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 2000GB bandwidth, a 500G SATA drive, CentOS 5 32-bit, and default server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># order options. See below for more details.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License &lt;http://sldn.softlayer.com/article/License&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;/path/to/client/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me too&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The number of servers you wish to order in this configuration.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Where you&#39;d like your new server provisioned.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># This can either be the id of the datacenter you wish your new server to be</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># provisioned in or the string &#39;FIRST_AVAILABLE&#39; if you have no preference</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># where your server is provisioned.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Location id 3     = Dallas</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Location id 18171 = Seattle</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Location id 37473 = Washington, D.C.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$location</span> <span class="o">=</span> <span class="s">&#39;FIRST_AVAILABLE&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The id of the SoftLayer_Product_Package you wish to order.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># In this case the Intel Xeon 3460&#39;s package id is 145.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$package_id</span> <span class="o">=</span> <span class="mi">145</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Hardware_Server object to model the hostname and</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># domain we want for our server. If you set quantity greater than 1 then you</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># need to define one hostname/domain pair per server you wish to order.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">@hardware</span> <span class="o">=</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#39;hostname&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;test&#39;</span><span class="p">,</span> <span class="c1"># The hostname of the server you wish to order.</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#39;domain&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;example.org&#39;</span> <span class="c1"># The domain name of the server you wish to order.</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Product_Item_Price objects. These objects contain</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># much more than ids, but SoftLayer&#39;s ordering system only needs the price&#39;s id</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># to know what you want to order.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Every item in SoftLayer&#39;s product catalog is assigned an id. Use these ids</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># to tell the SoftLayer API which options you want in your new server. Use</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the getActivePackages() method in the SoftLayer_Account API service to get</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># a list of available item and price options per available package.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">@prices</span> <span class="o">=</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">17231</span> <span class="p">}</span> <span class="p">,</span> <span class="c1"># Single Processor Quad Core Xeon 3460 - 2.80GHz (Lynnfield) - 1 x 8MB cache w/HT</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">637</span> <span class="p">},</span> <span class="c1"># 2 GB DDR2 667</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">682</span> <span class="p">},</span> <span class="c1"># CentOS 5.x (32 bit)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">876</span> <span class="p">},</span> <span class="c1"># 2 GB DDR2 667</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">19087</span> <span class="p">},</span> <span class="c1"># 500GB SATA II</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">342</span> <span class="p">},</span> <span class="c1"># 20000 GB Bandwidth</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">273</span> <span class="p">},</span> <span class="c1"># 100 Mbps Public &amp; Private Network Uplinks</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">55</span> <span class="p">},</span> <span class="c1"># Host Ping</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">58</span> <span class="p">},</span> <span class="c1"># Automated Notification</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">420</span> <span class="p">},</span> <span class="c1"># Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">418</span> <span class="p">},</span> <span class="c1"># Nessus Vulnerability Assessment &amp; Reporting</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">21</span> <span class="p">},</span> <span class="c1"># 1 IP Address</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">57</span> <span class="p">},</span> <span class="c1"># Email and Ticket</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">906</span> <span class="p">}</span> <span class="c1"># Reboot / KVM over IP</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Hardware_Server object</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># containing the order you wish to place.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$order_template</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;quantity&#39;</span> <span class="o">=&gt;</span> <span class="nv">$quantity</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;location&#39;</span> <span class="o">=&gt;</span> <span class="nv">$location</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;packageId&#39;</span> <span class="o">=&gt;</span> <span class="nv">$package_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;prices&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span> <span class="nv">@prices</span> <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;hardware&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span> <span class="nv">@hardware</span> <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declaring the API client to use the SoftLayer_Product_Order API service</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$client</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">,</span><span class="nv">$endpoint</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># verifyOrder() will check your order for errors. Replace this with a call to</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># placeOrder() when you&#39;re ready to order. Both calls return a receipt object</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># that you can use for your records.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Once your order is placed it&#39;ll go through SoftLayer&#39;s provisioning process.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># When it&#39;s done you&#39;ll have a new SoftLayer_Virtual_Guest object and CCI ready</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># to use.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$receipt</span> <span class="o">=</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="n">verifyOrder</span><span class="p">(</span><span class="nv">$order_template</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$receipt</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">die</span> <span class="s">&#39;There was an error in your order. &#39;</span> <span class="o">.</span> <span class="nv">$receipt</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Pretty print the order receipt.</span>
+</span></span><span class="line"><span class="cl"><span class="k">print</span> <span class="n">Dumper</span><span class="p">(</span><span class="nv">$receipt</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">);</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

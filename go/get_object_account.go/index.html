@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -144,74 +140,73 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Get information about account
-</span><span class="cm">
-</span><span class="cm">This is an example gets SoftLayer_Account information without using softlayer-go client.
-</span><span class="cm">On this case we will build a SoftLayerServiceRequest object which contains information about service
-</span><span class="cm">we want to send a request, this will be passed to UrlRequest() method to build the url of service
-</span><span class="cm">and finally we will make the request by using the method RestRequest().
-</span><span class="cm">
-</span><span class="cm">Additionally we will show how to save the response data in an structure called &#39;Struct&#39;.
-</span><span class="cm">
-</span><span class="cm">See below for more details.
-</span><span class="cm">
-</span><span class="cm">Important softlayer manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;../slapi&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;log&#34;</span>
-<span class="p">)</span>
-
-<span class="c1">// Structure used to save response data, on this case we will save the id, address1, and firstName.
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Account</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">Id</span> <span class="kt">int</span> <span class="s">`json:&#34;id&#34;`</span>
-	<span class="nx">Address1</span> <span class="kt">string</span> <span class="s">`json:&#34;address1&#34;`</span>
-	<span class="nx">FirstName</span> <span class="kt">string</span> <span class="s">`json:&#34;firstName&#34;`</span>
-<span class="p">}</span>
-
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Build the SoftLayer request you want to send to the API by using REST
-</span><span class="c1"></span>	<span class="nx">slRequest</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">slapi</span><span class="p">.</span><span class="nx">SoftLayerServiceRequest</span><span class="p">{</span>
-		<span class="nx">Endpoint</span><span class="p">:</span> <span class="s">&#34;https://api.softlayer.com/rest/v3&#34;</span><span class="p">,</span>
-		<span class="nx">ServiceName</span><span class="p">:</span> <span class="s">&#34;SoftLayer_Account&#34;</span><span class="p">,</span>
-		<span class="nx">Method</span><span class="p">:</span> <span class="s">&#34;getObject&#34;</span><span class="p">,</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Send API request
-</span><span class="c1"></span>	<span class="nx">response</span> <span class="o">:=</span> <span class="nx">slapi</span><span class="p">.</span><span class="nf">RestRequest</span><span class="p">(</span><span class="nx">slapi</span><span class="p">.</span><span class="nf">UrlRequest</span><span class="p">(</span><span class="o">*</span><span class="nx">slRequest</span><span class="p">),</span> <span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;GET&#34;</span><span class="p">)</span>
-	<span class="k">defer</span> <span class="nx">response</span><span class="p">.</span><span class="nx">Body</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
-
-	<span class="c1">// Following is used to save the response in the Account struct
-</span><span class="c1"></span>	<span class="c1">// Use json.Decode for reading streams of JSON data
-</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">record</span> <span class="nx">Account</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">NewDecoder</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">Body</span><span class="p">).</span><span class="nf">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">record</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="c1">// To verify that response was saved you can make a single print like below.
-</span><span class="c1"></span>	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;ID = &#34;</span><span class="p">,</span> <span class="nx">record</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;FirstName = &#34;</span><span class="p">,</span> <span class="nx">record</span><span class="p">.</span><span class="nx">FirstName</span><span class="p">)</span>
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Address = &#34;</span><span class="p">,</span> <span class="nx">record</span><span class="p">.</span><span class="nx">Address1</span><span class="p">)</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Get information about account
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">This is an example gets SoftLayer_Account information without using softlayer-go client.
+</span></span></span><span class="line"><span class="cl"><span class="cm">On this case we will build a SoftLayerServiceRequest object which contains information about service
+</span></span></span><span class="line"><span class="cl"><span class="cm">we want to send a request, this will be passed to UrlRequest() method to build the url of service
+</span></span></span><span class="line"><span class="cl"><span class="cm">and finally we will make the request by using the method RestRequest().
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Additionally we will show how to save the response data in an structure called &#39;Struct&#39;.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">See below for more details.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important softlayer manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;../slapi&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Structure used to save response data, on this case we will save the id, address1, and firstName.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Account</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Id</span> <span class="kt">int</span> <span class="s">`json:&#34;id&#34;`</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Address1</span> <span class="kt">string</span> <span class="s">`json:&#34;address1&#34;`</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">FirstName</span> <span class="kt">string</span> <span class="s">`json:&#34;firstName&#34;`</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build the SoftLayer request you want to send to the API by using REST
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">slRequest</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">slapi</span><span class="p">.</span><span class="nx">SoftLayerServiceRequest</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Endpoint</span><span class="p">:</span> <span class="s">&#34;https://api.softlayer.com/rest/v3&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ServiceName</span><span class="p">:</span> <span class="s">&#34;SoftLayer_Account&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Method</span><span class="p">:</span> <span class="s">&#34;getObject&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Send API request
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">response</span> <span class="o">:=</span> <span class="nx">slapi</span><span class="p">.</span><span class="nf">RestRequest</span><span class="p">(</span><span class="nx">slapi</span><span class="p">.</span><span class="nf">UrlRequest</span><span class="p">(</span><span class="o">*</span><span class="nx">slRequest</span><span class="p">),</span> <span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;GET&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">response</span><span class="p">.</span><span class="nx">Body</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following is used to save the response in the Account struct
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Use json.Decode for reading streams of JSON data
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kd">var</span> <span class="nx">record</span> <span class="nx">Account</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">NewDecoder</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">Body</span><span class="p">).</span><span class="nf">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">record</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// To verify that response was saved you can make a single print like below.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;ID = &#34;</span><span class="p">,</span> <span class="nx">record</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;FirstName = &#34;</span><span class="p">,</span> <span class="nx">record</span><span class="p">.</span><span class="nx">FirstName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Address = &#34;</span><span class="p">,</span> <span class="nx">record</span><span class="p">.</span><span class="nx">Address1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

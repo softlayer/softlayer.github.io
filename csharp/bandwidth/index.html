@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -145,182 +141,181 @@ if (!doNotTrack) {
                 
 				
                 <h2 id="bandwidth-graph">Bandwidth Graph</h2>
-<div class="highlight"><pre class="chroma"><code class="language-csharp" data-lang="csharp"><span class="k">namespace</span> <span class="nn">GetBandwidthGraphNamespace</span>
-<span class="p">{</span>
-    <span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
-    <span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
-
-    <span class="k">class</span> <span class="nc">GetBandwidthGraph</span>
-    <span class="p">{</span>
-        <span class="c1">/// &lt;summary&gt;
-</span><span class="c1"></span>        <span class="c1">/// Retrieve a bandwidth graph for a single server.
-</span><span class="c1"></span>        <span class="c1">/// Retrieve a bandwidth graph for a single server for an arbitrary start and
-</span><span class="c1"></span>        <span class="c1">/// end date, specifying graph size and other graphing options. We can do this
-</span><span class="c1"></span>        <span class="c1">/// with two calls to the SoftLayer API.
-</span><span class="c1"></span>        <span class="c1">/// Counter data such as bandwidth counters and VSI resource use are stored in
-</span><span class="c1"></span>        <span class="c1">/// a server&#39;s metric tracking object. Our first call retrieves that server&#39;s
-</span><span class="c1"></span>        <span class="c1">/// tracking object record. The second call is to the tracking object service
-</span><span class="c1"></span>        <span class="c1">/// which will generate a PNG image of our bandwidth graph.
-</span><span class="c1"></span>        <span class="c1">/// &lt;/summary&gt;
-</span><span class="c1"></span>        <span class="c1">/// &lt;manualPages&gt;
-</span><span class="c1"></span>        <span class="c1">/// Important manual pages:
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Metric_Tracking_Object/getBandwidthGraph
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Bandwidth_GraphOutputs
-</span><span class="c1"></span>        <span class="c1">/// &lt;/manualPages&gt;
-</span><span class="c1"></span>        <span class="k">static</span> <span class="k">void</span> <span class="n">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
-        <span class="p">{</span>
-            <span class="c1">// Your SoftLayer API username.           
-</span><span class="c1"></span>            <span class="kt">string</span> <span class="n">username</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
-
-            <span class="c1">// Your SoftLayer API key.                    
-</span><span class="c1"></span>            <span class="kt">string</span> <span class="n">apiKey</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
-
-            <span class="c1">// The id number of the server whose graph you wish to retrieve. Call the
-</span><span class="c1"></span>            <span class="c1">// getHardware() method in the SoftLayer_Account API service to retrieve a list
-</span><span class="c1"></span>            <span class="c1">// of the servers on your account.
-</span><span class="c1"></span>            <span class="kt">int</span> <span class="n">serverId</span> <span class="p">=</span> <span class="m">153851</span><span class="p">;</span>
-
-            <span class="c1">// The date at which you wish to start graphing bandwidth.
-</span><span class="c1"></span>            <span class="n">DateTime</span> <span class="n">startDate</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">.</span><span class="n">Subtract</span><span class="p">(</span><span class="k">new</span> <span class="n">TimeSpan</span><span class="p">(</span><span class="m">20</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">));</span>
-
-            <span class="c1">// The date at which you wish to end graphing bandwidth.
-</span><span class="c1"></span>            <span class="n">DateTime</span> <span class="n">endDate</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
-
-            <span class="c1">// Whether to get a graph for &#39;public&#39; or &#39;private&#39; bandwidth usage.
-</span><span class="c1"></span>            <span class="kt">string</span> <span class="n">graphType</span> <span class="p">=</span> <span class="s">&#34;public&#34;</span><span class="p">;</span>
-
-            <span class="c1">// The height of the text in the bandwidth graph in pixels.
-</span><span class="c1"></span>            <span class="kt">int</span> <span class="n">fontSize</span> <span class="p">=</span> <span class="m">8</span><span class="p">;</span>
-
-            <span class="c1">// The width of the graph to retrieve in pixels.
-</span><span class="c1"></span>            <span class="kt">int</span> <span class="n">graphWidth</span> <span class="p">=</span> <span class="m">827</span><span class="p">;</span>
-            <span class="kt">int</span> <span class="n">graphHeight</span> <span class="p">=</span> <span class="m">273</span><span class="p">;</span>
-            <span class="kt">bool</span> <span class="n">hideTimeZone</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
-
-            <span class="c1">// Creating a connection to the SoftLayer_Account API service and             
-</span><span class="c1"></span>            <span class="c1">// bind our API username and key to it.           
-</span><span class="c1"></span>            <span class="n">authenticate</span> <span class="n">authenticate</span> <span class="p">=</span> <span class="k">new</span> <span class="n">authenticate</span><span class="p">();</span>
-            <span class="n">authenticate</span><span class="p">.</span><span class="n">username</span> <span class="p">=</span> <span class="n">username</span><span class="p">;</span>
-            <span class="n">authenticate</span><span class="p">.</span><span class="n">apiKey</span> <span class="p">=</span> <span class="n">apiKey</span><span class="p">;</span>
-
-            <span class="n">SoftLayer_HardwareService</span> <span class="n">hardwareService</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareService</span><span class="p">();</span>
-            <span class="n">hardwareService</span><span class="p">.</span><span class="n">authenticateValue</span> <span class="p">=</span> <span class="n">authenticate</span><span class="p">;</span>
-
-            <span class="n">SoftLayer_Metric_Tracking_ObjectService</span> <span class="n">metricTrackingObjectService</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_Metric_Tracking_ObjectService</span><span class="p">();</span>
-            <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">authenticateValue</span> <span class="p">=</span> <span class="n">authenticate</span><span class="p">;</span>
-
-            <span class="c1">// Setting the init parameter for the hardwareService
-</span><span class="c1"></span>            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareInitParameters</span><span class="p">();</span>
-            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span><span class="p">.</span><span class="n">id</span> <span class="p">=</span> <span class="n">serverId</span><span class="p">;</span>
-
-            <span class="n">SoftLayer_Metric_Tracking_Object_HardwareServer</span> <span class="n">trackingObject</span> <span class="p">=</span> <span class="n">hardwareService</span><span class="p">.</span><span class="n">getMetricTrackingObject</span><span class="p">();</span>
-
-            <span class="c1">// Setting the init parameter for the hardwareService
-</span><span class="c1"></span>            <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">SoftLayer_Metric_Tracking_ObjectInitParametersValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_Metric_Tracking_ObjectInitParameters</span><span class="p">();</span>
-            <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">SoftLayer_Metric_Tracking_ObjectInitParametersValue</span><span class="p">.</span><span class="n">id</span> <span class="p">=</span> <span class="n">trackingObject</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">GetValueOrDefault</span><span class="p">();</span>
-
-            <span class="k">try</span>
-            <span class="p">{</span>
-                <span class="c1">// getBandwidthGraph() returns a SoftLayer_Container_Bandwidth_GraphOutputs
-</span><span class="c1"></span>                <span class="c1">// object. The contents of the bandwidth image is in $image-&gt;graphImage.
-</span><span class="c1"></span>                <span class="c1">// From here you can write it to the file system, display it to a web
-</span><span class="c1"></span>                <span class="c1">// browser, or run other functions on it.
-</span><span class="c1"></span>                <span class="n">SoftLayer_Container_Bandwidth_GraphOutputs</span> <span class="n">image</span> <span class="p">=</span> <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">getBandwidthGraph</span><span class="p">(</span><span class="n">startDate</span><span class="p">,</span> <span class="n">endDate</span><span class="p">,</span> <span class="n">graphType</span><span class="p">,</span> <span class="n">fontSize</span><span class="p">,</span> <span class="n">graphWidth</span><span class="p">,</span> <span class="n">graphHeight</span><span class="p">,</span> <span class="n">hideTimeZone</span><span class="p">);</span>
-                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;Image retrieved!&#34;</span><span class="p">);</span>
-                <span class="c1">//TODO: Base64 Decode the $image-&gt;graphImage data, write it to a file.
-</span><span class="c1"></span>            <span class="p">}</span>
-            <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="n">e</span><span class="p">)</span>
-            <span class="p">{</span>
-                <span class="c1">// If there was an error returned from the SoftLayer API then bomb out with the
-</span><span class="c1"></span>                <span class="c1">// error message.
-</span><span class="c1"></span>                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;Unable to get the bandwidth. &#34;</span> <span class="p">+</span> <span class="n">e</span><span class="p">.</span><span class="n">Message</span><span class="p">);</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div><h2 id="bandwidth-usage">Bandwidth Usage</h2>
-<div class="highlight"><pre class="chroma"><code class="language-csharp" data-lang="csharp"><span class="c1">//-----------------------------------------------------------------------
-</span><span class="c1">// &lt;copyright file=&#34;GetBandwidthUsage.cs&#34; company=&#34;Softlayer&#34;&gt;
-</span><span class="c1">//     SoftLayer Technologies, Inc.
-</span><span class="c1">// &lt;/copyright&gt;
-</span><span class="c1">// &lt;license&gt;
-</span><span class="c1">// http://sldn.softlayer.com/article/License
-</span><span class="c1">// &lt;/license&gt;
-</span><span class="c1">//-----------------------------------------------------------------------
-</span><span class="c1"></span>
-<span class="k">namespace</span> <span class="nn">GetBandwidthUsageNamespace</span>
-<span class="p">{</span>
-    <span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
-    <span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
-
-    <span class="k">class</span> <span class="nc">GetBandwidthUsage</span>
-    <span class="p">{</span>
-        <span class="c1">/// &lt;summary&gt;
-</span><span class="c1"></span>        <span class="c1">/// Retrieve a bandwidth usage for a list of  servers.
-</span><span class="c1"></span>        <span class="c1">/// The scripts returns the bandwidth usage from an arbitrary
-</span><span class="c1"></span>        <span class="c1">/// list of servers, the script makes a simple call to the
-</span><span class="c1"></span>        <span class="c1">/// Softlayer_Hardware_Server::getObject method using a object mask
-</span><span class="c1"></span>        <span class="c1">/// in order to get the bandwidth information.
-</span><span class="c1"></span>        <span class="c1">/// &lt;/summary&gt;
-</span><span class="c1"></span>        <span class="c1">/// &lt;manualPages&gt;
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject
-</span><span class="c1"></span>        <span class="c1">/// http://sldn.softlayer.com/reference/datatype/SoftLayer_Hardware_Server/
-</span><span class="c1"></span>        <span class="c1">/// &lt;/manualPages&gt;
-</span><span class="c1"></span>        <span class="k">static</span> <span class="k">void</span> <span class="n">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
-        <span class="p">{</span>
-            <span class="c1">// Your SoftLayer API username.           
-</span><span class="c1"></span>            <span class="kt">string</span> <span class="n">username</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
-
-            <span class="c1">// Your SoftLayer API key.            
-</span><span class="c1"></span>            <span class="kt">string</span> <span class="n">apiKey</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
-
-            <span class="c1">// The list of server that wish to see the bandwidth usage
-</span><span class="c1"></span>            <span class="kt">int</span><span class="p">[]</span> <span class="n">servers</span> <span class="p">=</span> <span class="p">{</span> <span class="m">153851</span><span class="p">,</span> <span class="m">166391</span> <span class="p">};</span>
-
-            <span class="c1">// Creating a connection to the SoftLayer_Account API service and             
-</span><span class="c1"></span>            <span class="c1">// bind our API username and key to it.           
-</span><span class="c1"></span>            <span class="n">authenticate</span> <span class="n">authenticate</span> <span class="p">=</span> <span class="k">new</span> <span class="n">authenticate</span><span class="p">();</span>
-            <span class="n">authenticate</span><span class="p">.</span><span class="n">username</span> <span class="p">=</span> <span class="n">username</span><span class="p">;</span>
-            <span class="n">authenticate</span><span class="p">.</span><span class="n">apiKey</span> <span class="p">=</span> <span class="n">apiKey</span><span class="p">;</span>
-
-            <span class="n">SoftLayer_HardwareService</span> <span class="n">hardwareService</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareService</span><span class="p">();</span>
-            <span class="n">hardwareService</span><span class="p">.</span><span class="n">authenticateValue</span> <span class="p">=</span> <span class="n">authenticate</span><span class="p">;</span>
-
-            <span class="c1">// Add an object mask to retrieve our hardware&#39; related items such as its
-</span><span class="c1"></span>            <span class="c1">// host name and currentBillableBandwidthUsage. Object masks
-</span><span class="c1"></span>            <span class="c1">// can retrieve any information related to your object. See
-</span><span class="c1"></span>            <span class="c1">// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
-</span><span class="c1"></span>            <span class="c1">// for a list of the relational properties you can retrieve along with hardware.
-</span><span class="c1"></span>            <span class="kt">string</span> <span class="n">objectMask</span> <span class="p">=</span> <span class="s">&#34;mask[hostname,currentBillableBandwidthUsage]&#34;</span><span class="p">;</span>
-
-            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_ObjectMaskValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_ObjectMask</span><span class="p">();</span>
-            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_ObjectMaskValue</span><span class="p">.</span><span class="n">mask</span> <span class="p">=</span> <span class="n">objectMask</span><span class="p">;</span>
-
-            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareInitParameters</span><span class="p">();</span>
-
-            <span class="k">try</span>
-            <span class="p">{</span>
-                <span class="kt">decimal</span> <span class="n">total</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
-                <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">server</span> <span class="k">in</span> <span class="n">servers</span><span class="p">)</span>
-                <span class="p">{</span>
-                    <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span><span class="p">.</span><span class="n">id</span> <span class="p">=</span> <span class="n">server</span><span class="p">;</span>
-                    <span class="kt">var</span> <span class="n">bandwidth_data</span> <span class="p">=</span> <span class="n">hardwareService</span><span class="p">.</span><span class="n">getObject</span><span class="p">();</span>
-                    <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="n">bandwidth_data</span><span class="p">.</span><span class="n">hostname</span> <span class="p">+</span> <span class="s">&#34;:&#34;</span> <span class="p">+</span> <span class="n">bandwidth_data</span><span class="p">.</span><span class="n">currentBillableBandwidthUsage</span> <span class="p">+</span> <span class="s">&#34;GB&#34;</span><span class="p">);</span>
-                    <span class="n">total</span> <span class="p">=</span> <span class="n">total</span> <span class="p">+</span> <span class="n">bandwidth_data</span><span class="p">.</span><span class="n">currentBillableBandwidthUsage</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;Total :&#34;</span> <span class="p">+</span> <span class="n">total</span> <span class="p">+</span> <span class="s">&#34;GB&#34;</span><span class="p">);</span>
-            <span class="p">}</span>
-            <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="n">e</span><span class="p">)</span>
-            <span class="p">{</span>
-                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;unable to bandwidth usage : &#34;</span> <span class="p">+</span> <span class="n">e</span><span class="p">.</span><span class="n">Message</span><span class="p">);</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-csharp" data-lang="csharp"><span class="line"><span class="cl"><span class="k">namespace</span> <span class="nn">GetBandwidthGraphNamespace</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">class</span> <span class="nc">GetBandwidthGraph</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;summary&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// Retrieve a bandwidth graph for a single server.</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// Retrieve a bandwidth graph for a single server for an arbitrary start and</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// end date, specifying graph size and other graphing options. We can do this</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// with two calls to the SoftLayer API.</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// Counter data such as bandwidth counters and VSI resource use are stored in</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// a server&#39;s metric tracking object. Our first call retrieves that server&#39;s</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// tracking object record. The second call is to the tracking object service</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// which will generate a PNG image of our bandwidth graph.</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;/summary&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;manualPages&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// Important manual pages:</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// http://sldn.softlayer.com/reference/services/SoftLayer_Metric_Tracking_Object/getBandwidthGraph</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Bandwidth_GraphOutputs</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;/manualPages&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">static</span> <span class="k">void</span> <span class="n">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// Your SoftLayer API username.           </span>
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="n">username</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Your SoftLayer API key.                    </span>
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="n">apiKey</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// The id number of the server whose graph you wish to retrieve. Call the</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// getHardware() method in the SoftLayer_Account API service to retrieve a list</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// of the servers on your account.</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="n">serverId</span> <span class="p">=</span> <span class="m">153851</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// The date at which you wish to start graphing bandwidth.</span>
+</span></span><span class="line"><span class="cl">            <span class="n">DateTime</span> <span class="n">startDate</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">.</span><span class="n">Subtract</span><span class="p">(</span><span class="k">new</span> <span class="n">TimeSpan</span><span class="p">(</span><span class="m">20</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// The date at which you wish to end graphing bandwidth.</span>
+</span></span><span class="line"><span class="cl">            <span class="n">DateTime</span> <span class="n">endDate</span> <span class="p">=</span> <span class="n">DateTime</span><span class="p">.</span><span class="n">Now</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Whether to get a graph for &#39;public&#39; or &#39;private&#39; bandwidth usage.</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="n">graphType</span> <span class="p">=</span> <span class="s">&#34;public&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// The height of the text in the bandwidth graph in pixels.</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="n">fontSize</span> <span class="p">=</span> <span class="m">8</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// The width of the graph to retrieve in pixels.</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="n">graphWidth</span> <span class="p">=</span> <span class="m">827</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="n">graphHeight</span> <span class="p">=</span> <span class="m">273</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">bool</span> <span class="n">hideTimeZone</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Creating a connection to the SoftLayer_Account API service and             </span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// bind our API username and key to it.           </span>
+</span></span><span class="line"><span class="cl">            <span class="n">authenticate</span> <span class="n">authenticate</span> <span class="p">=</span> <span class="k">new</span> <span class="n">authenticate</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">authenticate</span><span class="p">.</span><span class="n">username</span> <span class="p">=</span> <span class="n">username</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">authenticate</span><span class="p">.</span><span class="n">apiKey</span> <span class="p">=</span> <span class="n">apiKey</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">SoftLayer_HardwareService</span> <span class="n">hardwareService</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareService</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hardwareService</span><span class="p">.</span><span class="n">authenticateValue</span> <span class="p">=</span> <span class="n">authenticate</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">SoftLayer_Metric_Tracking_ObjectService</span> <span class="n">metricTrackingObjectService</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_Metric_Tracking_ObjectService</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">authenticateValue</span> <span class="p">=</span> <span class="n">authenticate</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Setting the init parameter for the hardwareService</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareInitParameters</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span><span class="p">.</span><span class="n">id</span> <span class="p">=</span> <span class="n">serverId</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">SoftLayer_Metric_Tracking_Object_HardwareServer</span> <span class="n">trackingObject</span> <span class="p">=</span> <span class="n">hardwareService</span><span class="p">.</span><span class="n">getMetricTrackingObject</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Setting the init parameter for the hardwareService</span>
+</span></span><span class="line"><span class="cl">            <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">SoftLayer_Metric_Tracking_ObjectInitParametersValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_Metric_Tracking_ObjectInitParameters</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">SoftLayer_Metric_Tracking_ObjectInitParametersValue</span><span class="p">.</span><span class="n">id</span> <span class="p">=</span> <span class="n">trackingObject</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">GetValueOrDefault</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">try</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// getBandwidthGraph() returns a SoftLayer_Container_Bandwidth_GraphOutputs</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// object. The contents of the bandwidth image is in $image-&gt;graphImage.</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// From here you can write it to the file system, display it to a web</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// browser, or run other functions on it.</span>
+</span></span><span class="line"><span class="cl">                <span class="n">SoftLayer_Container_Bandwidth_GraphOutputs</span> <span class="n">image</span> <span class="p">=</span> <span class="n">metricTrackingObjectService</span><span class="p">.</span><span class="n">getBandwidthGraph</span><span class="p">(</span><span class="n">startDate</span><span class="p">,</span> <span class="n">endDate</span><span class="p">,</span> <span class="n">graphType</span><span class="p">,</span> <span class="n">fontSize</span><span class="p">,</span> <span class="n">graphWidth</span><span class="p">,</span> <span class="n">graphHeight</span><span class="p">,</span> <span class="n">hideTimeZone</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;Image retrieved!&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">//TODO: Base64 Decode the $image-&gt;graphImage data, write it to a file.</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="n">e</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// If there was an error returned from the SoftLayer API then bomb out with the</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// error message.</span>
+</span></span><span class="line"><span class="cl">                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;Unable to get the bandwidth. &#34;</span> <span class="p">+</span> <span class="n">e</span><span class="p">.</span><span class="n">Message</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="bandwidth-usage">Bandwidth Usage</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-csharp" data-lang="csharp"><span class="line"><span class="cl"><span class="c1">//-----------------------------------------------------------------------</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// &lt;copyright file=&#34;GetBandwidthUsage.cs&#34; company=&#34;Softlayer&#34;&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//     SoftLayer Technologies, Inc.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// &lt;/copyright&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// &lt;license&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// http://sldn.softlayer.com/article/License</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// &lt;/license&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//-----------------------------------------------------------------------</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">namespace</span> <span class="nn">GetBandwidthUsageNamespace</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">class</span> <span class="nc">GetBandwidthUsage</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;summary&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// Retrieve a bandwidth usage for a list of  servers.</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// The scripts returns the bandwidth usage from an arbitrary</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// list of servers, the script makes a simple call to the</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// Softlayer_Hardware_Server::getObject method using a object mask</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// in order to get the bandwidth information.</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;/summary&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;manualPages&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// http://sldn.softlayer.com/reference/datatype/SoftLayer_Hardware_Server/</span>
+</span></span><span class="line"><span class="cl">        <span class="cs">/// &lt;/manualPages&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">static</span> <span class="k">void</span> <span class="n">Main</span><span class="p">(</span><span class="kt">string</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// Your SoftLayer API username.           </span>
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="n">username</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Your SoftLayer API key.            </span>
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="n">apiKey</span> <span class="p">=</span> <span class="s">&#34;set me&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// The list of server that wish to see the bandwidth usage</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">int</span><span class="p">[]</span> <span class="n">servers</span> <span class="p">=</span> <span class="p">{</span> <span class="m">153851</span><span class="p">,</span> <span class="m">166391</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Creating a connection to the SoftLayer_Account API service and             </span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// bind our API username and key to it.           </span>
+</span></span><span class="line"><span class="cl">            <span class="n">authenticate</span> <span class="n">authenticate</span> <span class="p">=</span> <span class="k">new</span> <span class="n">authenticate</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">authenticate</span><span class="p">.</span><span class="n">username</span> <span class="p">=</span> <span class="n">username</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">authenticate</span><span class="p">.</span><span class="n">apiKey</span> <span class="p">=</span> <span class="n">apiKey</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">SoftLayer_HardwareService</span> <span class="n">hardwareService</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareService</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hardwareService</span><span class="p">.</span><span class="n">authenticateValue</span> <span class="p">=</span> <span class="n">authenticate</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// Add an object mask to retrieve our hardware&#39; related items such as its</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// host name and currentBillableBandwidthUsage. Object masks</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// can retrieve any information related to your object. See</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// for a list of the relational properties you can retrieve along with hardware.</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">string</span> <span class="n">objectMask</span> <span class="p">=</span> <span class="s">&#34;mask[hostname,currentBillableBandwidthUsage]&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_ObjectMaskValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_ObjectMask</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_ObjectMaskValue</span><span class="p">.</span><span class="n">mask</span> <span class="p">=</span> <span class="n">objectMask</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span> <span class="p">=</span> <span class="k">new</span> <span class="n">SoftLayer_HardwareInitParameters</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">try</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="kt">decimal</span> <span class="n">total</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">                <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">server</span> <span class="k">in</span> <span class="n">servers</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">hardwareService</span><span class="p">.</span><span class="n">SoftLayer_HardwareInitParametersValue</span><span class="p">.</span><span class="n">id</span> <span class="p">=</span> <span class="n">server</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">                    <span class="kt">var</span> <span class="n">bandwidth_data</span> <span class="p">=</span> <span class="n">hardwareService</span><span class="p">.</span><span class="n">getObject</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="n">bandwidth_data</span><span class="p">.</span><span class="n">hostname</span> <span class="p">+</span> <span class="s">&#34;:&#34;</span> <span class="p">+</span> <span class="n">bandwidth_data</span><span class="p">.</span><span class="n">currentBillableBandwidthUsage</span> <span class="p">+</span> <span class="s">&#34;GB&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">total</span> <span class="p">=</span> <span class="n">total</span> <span class="p">+</span> <span class="n">bandwidth_data</span><span class="p">.</span><span class="n">currentBillableBandwidthUsage</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;Total :&#34;</span> <span class="p">+</span> <span class="n">total</span> <span class="p">+</span> <span class="s">&#34;GB&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="k">catch</span> <span class="p">(</span><span class="n">Exception</span> <span class="n">e</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">&#34;unable to bandwidth usage : &#34;</span> <span class="p">+</span> <span class="n">e</span><span class="p">.</span><span class="n">Message</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

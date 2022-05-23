@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -144,94 +140,93 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-java" data-lang="java"><span class="kn">import</span> <span class="nn">com.google.gson.Gson</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.google.gson.GsonBuilder</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.ApiClient</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.RestApiClient</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.service.Location</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.service.virtual.Guest</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">com.softlayer.api.service.virtual.guest.block.device.template.Group</span><span class="o">;</span>
-
-<span class="cm">/**
-</span><span class="cm"> * Create a Virtual Server with Image Template
-</span><span class="cm"> *
-</span><span class="cm"> * This script creates a VSI order in a simplified way using the minimum required properties that
-</span><span class="cm"> * SoftLayer_Virtual_Guest::createObject method specifies and setting an Image Template to be used to provision
-</span><span class="cm"> * on Computing Instance. The execution of this script will incur charges on your account. For testing input parameters
-</span><span class="cm"> * before ordering a VSI use SoftLayer_Virtual_Guest::generateOrderTemplate method instead.
-</span><span class="cm"> *
-</span><span class="cm"> * Important manual pages:
-</span><span class="cm"> * http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject
-</span><span class="cm"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
-</span><span class="cm"> * http://sldn.softlayer.com/reference/services/SoftLayer_Location
-</span><span class="cm"> *
-</span><span class="cm"> * @license &lt;http://sldn.softlayer.com/article/License&gt;
-</span><span class="cm"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm"> * @version 0.2.4
-</span><span class="cm"> */</span>
-
-
-<span class="kd">public</span> <span class="kd">class</span> <span class="nc">CreateObjectWithTemplate</span> <span class="o">{</span>
-    
-    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span> <span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
-    <span class="o">{</span>
-        <span class="n">String</span> <span class="n">username</span> <span class="o">=</span> <span class="s">&#34;set-me&#34;</span><span class="o">;</span>
-        <span class="n">String</span> <span class="n">apiKey</span> <span class="o">=</span> <span class="s">&#34;set-me&#34;</span><span class="o">;</span>
-
-        <span class="c1">//declare Variables
-</span><span class="c1"></span>        <span class="n">String</span> <span class="n">hostname</span> <span class="o">=</span> <span class="s">&#34;SimpleVSI2&#34;</span><span class="o">;</span>
-        <span class="n">String</span> <span class="n">domain</span> <span class="o">=</span> <span class="s">&#34;techs.com&#34;</span><span class="o">;</span>
-        <span class="n">Long</span> <span class="n">startCpus</span> <span class="o">=</span> <span class="n">2L</span><span class="o">;</span>
-        <span class="n">Long</span> <span class="n">maxMemory</span> <span class="o">=</span> <span class="n">8L</span><span class="o">;</span>
-        <span class="n">String</span> <span class="n">datacenterName</span> <span class="o">=</span> <span class="s">&#34;ams03&#34;</span><span class="o">;</span>
-        <span class="kt">boolean</span> <span class="n">hourlyBillingFlag</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
-        <span class="kt">boolean</span> <span class="n">localDiskFlag</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
-
-        <span class="c1">// Get Api Client and service
-</span><span class="c1"></span>        <span class="n">ApiClient</span> <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RestApiClient</span><span class="o">().</span><span class="na">withCredentials</span><span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">apiKey</span><span class="o">);</span>
-        <span class="n">Guest</span><span class="o">.</span><span class="na">Service</span> <span class="n">guestService</span> <span class="o">=</span> <span class="n">Guest</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
-
-        <span class="c1">// Create a SoftLayer_Virtual_Guest object
-</span><span class="c1"></span>        <span class="n">Guest</span> <span class="n">templateObject</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Guest</span><span class="o">();</span>
-
-        <span class="c1">// Declare properties for Skeleton input SoftLayer_Virtual_Guest datatype
-</span><span class="c1"></span>        <span class="n">templateObject</span><span class="o">.</span><span class="na">setHostname</span><span class="o">(</span><span class="n">hostname</span><span class="o">);</span>
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setDomain</span><span class="o">(</span><span class="n">domain</span><span class="o">);</span>
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setStartCpus</span><span class="o">(</span><span class="n">startCpus</span><span class="o">);</span>
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setMaxMemory</span><span class="o">(</span><span class="n">maxMemory</span><span class="o">);</span>
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setHourlyBillingFlag</span><span class="o">(</span><span class="n">hourlyBillingFlag</span><span class="o">);</span>
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setLocalDiskFlag</span><span class="o">(</span><span class="n">localDiskFlag</span><span class="o">);</span>
-
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setNotes</span><span class="o">(</span><span class="s">&#34;This is an optional property: &#34;</span> <span class="o">+</span>
-                <span class="s">&#34;This script creates a VSI order with the minimum properties required and using an image Template, &#34;</span> <span class="o">+</span>
-                <span class="s">&#34;it is required that operatingSystemReferenceCode property shouldn&#39;t be set&#34;</span><span class="o">);</span>
-        <span class="c1">// Setting location to the skeleton
-</span><span class="c1"></span>        <span class="n">Location</span> <span class="n">newLocation</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Location</span><span class="o">();</span>
-        <span class="n">newLocation</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">datacenterName</span><span class="o">);</span>
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setDatacenter</span><span class="o">(</span><span class="n">newLocation</span><span class="o">);</span>
-
-        <span class="c1">// Setting image template to the skeleton
-</span><span class="c1"></span>        <span class="n">Group</span> <span class="n">blockDevice</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Group</span><span class="o">();</span>
-        <span class="n">blockDevice</span><span class="o">.</span><span class="na">setGlobalIdentifier</span><span class="o">(</span><span class="s">&#34;ce3f5ea3-893a-4992-ad14-5bcd99d9b32a&#34;</span><span class="o">);</span>
-        <span class="n">templateObject</span><span class="o">.</span><span class="na">setBlockDeviceTemplateGroup</span><span class="o">(</span><span class="n">blockDevice</span><span class="o">);</span>
-
-        <span class="k">try</span><span class="o">{</span>
-            <span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">product</span><span class="o">.</span><span class="na">Order</span> <span class="n">result</span> <span class="o">=</span> <span class="n">guestService</span><span class="o">.</span><span class="na">generateOrderTemplate</span><span class="o">(</span><span class="n">templateObject</span><span class="o">);</span>
-            <span class="c1">// Comment above generateOrderTemplate method and use the createObject below instead when you are ready to order
-</span><span class="c1"></span>            <span class="c1">// the server.
-</span><span class="c1"></span>            <span class="c1">// Guest result = guestService.createObject(templateObject);
-</span><span class="c1"></span>
-            <span class="c1">//Print result
-</span><span class="c1"></span>            <span class="n">Gson</span> <span class="n">gson</span> <span class="o">=</span> <span class="k">new</span> <span class="n">GsonBuilder</span><span class="o">().</span><span class="na">setPrettyPrinting</span><span class="o">().</span><span class="na">create</span><span class="o">();</span>
-            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">gson</span><span class="o">.</span><span class="na">toJson</span><span class="o">(</span><span class="n">result</span><span class="o">));</span>
-        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span>
-        <span class="o">{</span>
-            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Error: &#34;</span> <span class="o">+</span> <span class="n">e</span><span class="o">);</span>
-        <span class="o">}</span>
-    <span class="o">}</span>
-<span class="o">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.google.gson.Gson</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.google.gson.GsonBuilder</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.ApiClient</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.RestApiClient</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.Location</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.virtual.Guest</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.virtual.guest.block.device.template.Group</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * Create a Virtual Server with Image Template
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * This script creates a VSI order in a simplified way using the minimum required properties that
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * SoftLayer_Virtual_Guest::createObject method specifies and setting an Image Template to be used to provision
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * on Computing Instance. The execution of this script will incur charges on your account. For testing input parameters
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * before ordering a VSI use SoftLayer_Virtual_Guest::generateOrderTemplate method instead.
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/createObject
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * http://sldn.softlayer.com/reference/services/SoftLayer_Location
+</span></span></span><span class="line"><span class="cl"><span class="cm"> *
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * @license &lt;http://sldn.softlayer.com/article/License&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * @author SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * @version 0.2.4
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CreateObjectWithTemplate</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span> <span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">username</span> <span class="o">=</span> <span class="s">&#34;set-me&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">apiKey</span> <span class="o">=</span> <span class="s">&#34;set-me&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">//declare Variables
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">String</span> <span class="n">hostname</span> <span class="o">=</span> <span class="s">&#34;SimpleVSI2&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">domain</span> <span class="o">=</span> <span class="s">&#34;techs.com&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Long</span> <span class="n">startCpus</span> <span class="o">=</span> <span class="n">2L</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Long</span> <span class="n">maxMemory</span> <span class="o">=</span> <span class="n">8L</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">datacenterName</span> <span class="o">=</span> <span class="s">&#34;ams03&#34;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">boolean</span> <span class="n">hourlyBillingFlag</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">boolean</span> <span class="n">localDiskFlag</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Get Api Client and service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">ApiClient</span> <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RestApiClient</span><span class="o">().</span><span class="na">withCredentials</span><span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">apiKey</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Guest</span><span class="o">.</span><span class="na">Service</span> <span class="n">guestService</span> <span class="o">=</span> <span class="n">Guest</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Create a SoftLayer_Virtual_Guest object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">Guest</span> <span class="n">templateObject</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Guest</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Declare properties for Skeleton input SoftLayer_Virtual_Guest datatype
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">templateObject</span><span class="o">.</span><span class="na">setHostname</span><span class="o">(</span><span class="n">hostname</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setDomain</span><span class="o">(</span><span class="n">domain</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setStartCpus</span><span class="o">(</span><span class="n">startCpus</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setMaxMemory</span><span class="o">(</span><span class="n">maxMemory</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setHourlyBillingFlag</span><span class="o">(</span><span class="n">hourlyBillingFlag</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setLocalDiskFlag</span><span class="o">(</span><span class="n">localDiskFlag</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setNotes</span><span class="o">(</span><span class="s">&#34;This is an optional property: &#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;This script creates a VSI order with the minimum properties required and using an image Template, &#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">                <span class="s">&#34;it is required that operatingSystemReferenceCode property shouldn&#39;t be set&#34;</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// Setting location to the skeleton
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">Location</span> <span class="n">newLocation</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Location</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">newLocation</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">datacenterName</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setDatacenter</span><span class="o">(</span><span class="n">newLocation</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Setting image template to the skeleton
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">Group</span> <span class="n">blockDevice</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Group</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">blockDevice</span><span class="o">.</span><span class="na">setGlobalIdentifier</span><span class="o">(</span><span class="s">&#34;ce3f5ea3-893a-4992-ad14-5bcd99d9b32a&#34;</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">templateObject</span><span class="o">.</span><span class="na">setBlockDeviceTemplateGroup</span><span class="o">(</span><span class="n">blockDevice</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">com</span><span class="o">.</span><span class="na">softlayer</span><span class="o">.</span><span class="na">api</span><span class="o">.</span><span class="na">service</span><span class="o">.</span><span class="na">container</span><span class="o">.</span><span class="na">product</span><span class="o">.</span><span class="na">Order</span> <span class="n">result</span> <span class="o">=</span> <span class="n">guestService</span><span class="o">.</span><span class="na">generateOrderTemplate</span><span class="o">(</span><span class="n">templateObject</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// Comment above generateOrderTemplate method and use the createObject below instead when you are ready to order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// the server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// Guest result = guestService.createObject(templateObject);
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">            <span class="c1">//Print result
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">Gson</span> <span class="n">gson</span> <span class="o">=</span> <span class="k">new</span> <span class="n">GsonBuilder</span><span class="o">().</span><span class="na">setPrettyPrinting</span><span class="o">().</span><span class="na">create</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">gson</span><span class="o">.</span><span class="na">toJson</span><span class="o">(</span><span class="n">result</span><span class="o">));</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&#34;Error: &#34;</span> <span class="o">+</span> <span class="n">e</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

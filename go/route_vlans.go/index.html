@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -144,66 +140,65 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Route the vlans in a gateway device.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Gateway/getInsideVlans
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Gateway/unbypassVlans
-</span><span class="cm">http://sldn.softlayer.com/article/Object-Filters
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// The id of gateway
-</span><span class="c1"></span>	<span class="nx">gatewayId</span> <span class="o">:=</span> <span class="mi">61522</span>
-
-	<span class="c1">// The ids of Vlans you wish to bypass
-</span><span class="c1"></span>	<span class="nx">vlanIds</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span> <span class="p">{</span><span class="mi">865555</span><span class="p">,</span><span class="mi">1084325</span><span class="p">}</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Network_Gateway service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkGatewayService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// To get the Vlan objects we might use the SoftLayer_Network_Vlan::getObject for each one
-</span><span class="c1"></span>	<span class="c1">// and build an array in order to pass it to unbypassVlans() method. But take account that
-</span><span class="c1"></span>	<span class="c1">// Vlans should be inside gateway and to get a vlans&#39; array we can use following code.
-</span><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;insideVlans&#34;</span><span class="p">).</span><span class="nf">In</span><span class="p">(</span><span class="s">&#34;networkVlanId&#34;</span><span class="p">).</span><span class="nf">Opt</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">,</span><span class="nx">vlanIds</span><span class="p">).</span><span class="nf">Build</span><span class="p">()</span>
-
-	<span class="c1">// Call method getInsideVlans() method to get a vlans&#39;s array according to the filter
-</span><span class="c1"></span>	<span class="nx">gatewayVlans</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">gatewayId</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetInsideVlans</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get gateway inside vlans:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Call method unbypassVlans() in order to bypass all vlans into array
-</span><span class="c1"></span>	<span class="nx">unbypassErr</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">gatewayId</span><span class="p">).</span><span class="nf">UnbypassVlans</span><span class="p">(</span><span class="nx">gatewayVlans</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">unbypassErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to route selected vlans:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">unbypassErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;\n Selected Vlans were routed!!&#34;</span><span class="p">)</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Route the vlans in a gateway device.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Gateway/getInsideVlans
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Gateway/unbypassVlans
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/article/Object-Filters
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of gateway
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">gatewayId</span> <span class="o">:=</span> <span class="mi">61522</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The ids of Vlans you wish to bypass
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vlanIds</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span> <span class="p">{</span><span class="mi">865555</span><span class="p">,</span><span class="mi">1084325</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Network_Gateway service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkGatewayService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// To get the Vlan objects we might use the SoftLayer_Network_Vlan::getObject for each one
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// and build an array in order to pass it to unbypassVlans() method. But take account that
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Vlans should be inside gateway and to get a vlans&#39; array we can use following code.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;insideVlans&#34;</span><span class="p">).</span><span class="nf">In</span><span class="p">(</span><span class="s">&#34;networkVlanId&#34;</span><span class="p">).</span><span class="nf">Opt</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">,</span><span class="nx">vlanIds</span><span class="p">).</span><span class="nf">Build</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call method getInsideVlans() method to get a vlans&#39;s array according to the filter
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">gatewayVlans</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">gatewayId</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetInsideVlans</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get gateway inside vlans:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call method unbypassVlans() in order to bypass all vlans into array
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">unbypassErr</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">gatewayId</span><span class="p">).</span><span class="nf">UnbypassVlans</span><span class="p">(</span><span class="nx">gatewayVlans</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">unbypassErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to route selected vlans:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">unbypassErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;\n Selected Vlans were routed!!&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

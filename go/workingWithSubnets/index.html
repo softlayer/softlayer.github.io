@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -157,577 +153,569 @@ if (!doNotTrack) {
                 <p>Read up on the <a href="https://sldn.softlayer.com/go/exampleFramework">Golang Example Framework</a> for information on how to setup the CLI Framework to get this code to run easily.</p>
 <h2 id="canceling-a-subnet">Canceling a Subnet</h2>
 <p>This script makes a paginated API call to <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem/">SoftLayer_Billing_Item::cancelItem()</a>.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Cancel a Subnet. Cancel network subnet using its billing Item.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// The id of Subnet you wish to get information about &#34;Allowed Network Storages&#34;.
-</span><span class="c1"></span>	<span class="nx">subnetId</span> <span class="o">:=</span> <span class="mi">259934</span>
-
-	<span class="c1">// In order to cancel billing item of subnet we need to set following values
-</span><span class="c1"></span>	<span class="nx">cancelImmediately</span>     <span class="o">:=</span> <span class="kc">true</span>
-	<span class="nx">cancelAssociatedItems</span> <span class="o">:=</span> <span class="kc">true</span>
-	<span class="nx">reason</span>                <span class="o">:=</span> <span class="s">&#34;For testing purposes&#34;</span>
-	<span class="nx">customerNote</span>          <span class="o">:=</span> <span class="s">&#34;API test&#34;</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Network_Subnet and SoftLayer_Billing_Item services
-</span><span class="c1"></span>	<span class="nx">subnetService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkSubnetService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">billingService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingItemService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Get the billing item from Subnet
-</span><span class="c1"></span>	<span class="nx">billingItem</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">subnetService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">subnetId</span><span class="p">).</span><span class="nf">GetBillingItem</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get IP Addresses from Subnet:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Call th method SoftLayer_Billing_Item::cancelItem in order to cancel the Subnet service.
-</span><span class="c1"></span>	<span class="c1">// You can also use cancelService() instead of cancelItem() method to cancel immediately
-</span><span class="c1"></span>	<span class="c1">// without filling a reason or note.
-</span><span class="c1"></span>	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">billingService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">billingItem</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">CancelItem</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">cancelImmediately</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">cancelAssociatedItems</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">reason</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">customerNote</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="getting-subnets-of-a-vlan">Getting subnets of a VLAN</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Cancel a Subnet. Cancel network subnet using its billing Item.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelItem
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of Subnet you wish to get information about &#34;Allowed Network Storages&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">subnetId</span> <span class="o">:=</span> <span class="mi">259934</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// In order to cancel billing item of subnet we need to set following values
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">cancelImmediately</span>     <span class="o">:=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cancelAssociatedItems</span> <span class="o">:=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">reason</span>                <span class="o">:=</span> <span class="s">&#34;For testing purposes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">customerNote</span>          <span class="o">:=</span> <span class="s">&#34;API test&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Network_Subnet and SoftLayer_Billing_Item services
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">subnetService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkSubnetService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">billingService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingItemService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get the billing item from Subnet
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">billingItem</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">subnetService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">subnetId</span><span class="p">).</span><span class="nf">GetBillingItem</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get IP Addresses from Subnet:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call th method SoftLayer_Billing_Item::cancelItem in order to cancel the Subnet service.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// You can also use cancelService() instead of cancelItem() method to cancel immediately
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// without filling a reason or note.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">billingService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">billingItem</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">CancelItem</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">cancelImmediately</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">cancelAssociatedItems</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">reason</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">customerNote</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="getting-subnets-of-a-vlan">Getting subnets of a VLAN</h2>
 <p>This script makes a paginated API call to <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getSubnets/">SoftLayer_Network_Vlan::getSubnets()</a>.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Retrieve the subnets for a VLAN
-</span><span class="cm">
-</span><span class="cm">Retrieve all the subnets for a determinate VLAN associated with a SoftLayer customer account
-</span><span class="cm">We do this with a call to the getSubnets() method in the SoftLayer_Network_Vlan API service.
-</span><span class="cm">See below for more details.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getSubnets
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Vlan id you wish to get its subnets
-</span><span class="c1"></span>	<span class="nx">vlanId</span> <span class="o">:=</span> <span class="mi">1054267</span>
-
-	<span class="c1">// Create a session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Network_Vlan service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Object-Mask to get specific subnet&#39;s information
-</span><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;networkIdentifier;cidr;subnetType;totalIpAddresses;usableIpAddressCount&#34;</span>
-
-	<span class="c1">// Call to getSubnets() in order to retrieve all vlan&#39;s subnets.
-</span><span class="c1"></span>	<span class="nx">subnets</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetSubnets</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Vlan&#39;s subnets:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span><span class="nx">subnet</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">subnets</span> <span class="p">{</span>
-		<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">subnet</span><span class="p">)</span>
-		<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-			<span class="k">return</span>
-		<span class="p">}</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="listing-subnets">Listing subnets</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Retrieve the subnets for a VLAN
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Retrieve all the subnets for a determinate VLAN associated with a SoftLayer customer account
+</span></span></span><span class="line"><span class="cl"><span class="cm">We do this with a call to the getSubnets() method in the SoftLayer_Network_Vlan API service.
+</span></span></span><span class="line"><span class="cl"><span class="cm">See below for more details.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getSubnets
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Vlan id you wish to get its subnets
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vlanId</span> <span class="o">:=</span> <span class="mi">1054267</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Network_Vlan service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Object-Mask to get specific subnet&#39;s information
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;networkIdentifier;cidr;subnetType;totalIpAddresses;usableIpAddressCount&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call to getSubnets() in order to retrieve all vlan&#39;s subnets.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">subnets</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetSubnets</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Vlan&#39;s subnets:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span><span class="nx">subnet</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">subnets</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">subnet</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="listing-subnets">Listing subnets</h2>
 <p>This script makes a paginated API call to <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Account/getSubnets/">SoftLayer_Account::getSubnets()</a>.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">List subnets. It retrieves all network subnets associated with an account.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getSubnets
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Account service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="cm">/*
-</span><span class="cm">	Filter all subnets by subnetType, following are possible values:
-</span><span class="cm">	      PRIMARY_6, GLOBAL_IP, PRIMARY, STATIC_IP_ROUTED,
-</span><span class="cm">	      SECONDARY_ON_VLAN, ADDITIONAL_PRIMARY
-</span><span class="cm">	On this case we&#39;ll filter by &#39;PRIMARY&#39; type.
-</span><span class="cm">	*/</span>
-	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;subnets.subnetType&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="s">&#34;PRIMARY&#34;</span><span class="p">).</span><span class="nf">Build</span><span class="p">()</span>
-
-	<span class="c1">// Call method getSubnets() in order to get all subnets in the Account.
-</span><span class="c1"></span>	<span class="nx">subnets</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetSubnets</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get subnets:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">subnet</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">subnets</span> <span class="p">{</span>
-		<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">subnet</span><span class="p">)</span>
-		<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-			<span class="k">return</span>
-		<span class="p">}</span>
-
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="creating-subnets">Creating subnets</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">List subnets. It retrieves all network subnets associated with an account.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getSubnets
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Subnet
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Account service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">	Filter all subnets by subnetType, following are possible values:
+</span></span></span><span class="line"><span class="cl"><span class="cm">	      PRIMARY_6, GLOBAL_IP, PRIMARY, STATIC_IP_ROUTED,
+</span></span></span><span class="line"><span class="cl"><span class="cm">	      SECONDARY_ON_VLAN, ADDITIONAL_PRIMARY
+</span></span></span><span class="line"><span class="cl"><span class="cm">	On this case we&#39;ll filter by &#39;PRIMARY&#39; type.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	*/</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;subnets.subnetType&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="s">&#34;PRIMARY&#34;</span><span class="p">).</span><span class="nf">Build</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call method getSubnets() in order to get all subnets in the Account.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">subnets</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">GetSubnets</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get subnets:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">subnet</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">subnets</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">subnet</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="creating-subnets">Creating subnets</h2>
 <p>These scripts make a paginated API call to <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/">SoftLayer_Product_Order::verifyOrder()</a>.</p>
 <h3 id="ordering-a-new-portable-private-subnet">Ordering a new portable private subnet</h3>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Order a new portable private subnet.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-  	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
-</span><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
-	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
-	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;DALLAS05&#34;</span>
-
-	<span class="c1">// The id of a Private Network Vlan. To get the list of vlans use the method
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPrivateNetworkVlans
-</span><span class="c1"></span>	<span class="nx">vlanId</span>    <span class="o">:=</span> <span class="mi">865555</span>
-
-	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
-		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">13981</span><span class="p">)},</span>         <span class="c1">// 4 Portable Private IP Addresses
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
-</span><span class="c1"></span>	<span class="c1">// you wish to place.
-</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
-		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
-			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
-		<span class="p">},</span>
-		<span class="nx">EndPointVlanId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Order service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>	<span class="c1">// you are ready to order.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div><h3 id="ordering-a-new-portable-public-subnet">Ordering a new portable public subnet</h3>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Order a new portable public subnet.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
-</span><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
-	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
-	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;SINGAPORE01&#34;</span>
-
-	<span class="c1">// The id of a Public Network Vlan. To get the list of vlans use the method
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicNetworkVlans
-</span><span class="c1"></span>	<span class="nx">vlanId</span>    <span class="o">:=</span> <span class="mi">863477</span>
-
-	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
-		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">13980</span><span class="p">)},</span>          <span class="c1">// 4 Portable Public IP Addresses
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
-</span><span class="c1"></span>	<span class="c1">// you wish to place.
-</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
-		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
-			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
-		<span class="p">},</span>
-		<span class="nx">EndPointVlanId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Order service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>	<span class="c1">// you are ready to order.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div><h3 id="ordering-a-new-portable-public-subnet-ipv6">Ordering a new portable public subnet IPv6</h3>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Orders a new portable Public subnet IPv6
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
-</span><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
-	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
-	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;MEXICO&#34;</span>
-
-	<span class="c1">// The id of a Public Network Vlan. To get the list of vlans use the method
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicNetworkVlans
-</span><span class="c1"></span>	<span class="nx">vlanId</span>    <span class="o">:=</span> <span class="mi">863477</span>
-
-	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
-		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1482</span><span class="p">)},</span>          <span class="c1">// 64 Block Portable Public IPv6 Addresses
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
-</span><span class="c1"></span>	<span class="c1">// you wish to place.
-</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
-		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
-			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
-		<span class="p">},</span>
-		<span class="nx">EndPointVlanId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Order service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>	<span class="c1">// you are ready to order.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div><h3 id="ordering-a-new-static-public-subnet">Ordering a new static public subnet</h3>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Order a new static public subnet
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-  	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
-</span><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
-	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
-	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;SINGAPORE01&#34;</span>
-
-	<span class="c1">// The id of a Public Ip Addresses. To get the list of ip address you can use the methods
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicIpAddresses, SoftLayer_Account::getIpAddresses
-</span><span class="c1"></span>	<span class="nx">ipAddressIp</span> <span class="o">:=</span> <span class="mi">47665099</span>
-
-	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
-		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">13983</span><span class="p">)},</span>          <span class="c1">// 1 Static Public IP Address
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
-</span><span class="c1"></span>	<span class="c1">// you wish to place.
-</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
-		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
-			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
-		<span class="p">},</span>
-		<span class="nx">EndPointIpAddressId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">ipAddressIp</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Order service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>	<span class="c1">// you are ready to order.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div><h3 id="ordering-a-new-static-public-subnet-ipv6">Ordering a new static public subnet ipv6</h3>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Order a new static public subnet ipv6
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
-</span><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
-	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
-	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;SINGAPORE01&#34;</span>
-
-	<span class="c1">// The id of a Public Ip Addresses. To get the list of ip address you can use the methods
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicIpAddresses, SoftLayer_Account::getIpAddresses
-</span><span class="c1"></span>	<span class="nx">ipAddressIp</span> <span class="o">:=</span> <span class="mi">47665101</span>
-
-	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
-		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1481</span><span class="p">)},</span>          <span class="c1">// 64 Block Static Public IPv6 Addresses
-</span><span class="c1"></span>	<span class="p">}</span>
-
-	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
-</span><span class="c1"></span>	<span class="c1">// you wish to place.
-</span><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
-		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
-			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
-		<span class="p">},</span>
-		<span class="nx">EndPointIpAddressId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">ipAddressIp</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create SoftLayer API session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Product_Order service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>	<span class="c1">// you are ready to order.
-</span><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Order a new portable private subnet.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;DALLAS05&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of a Private Network Vlan. To get the list of vlans use the method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPrivateNetworkVlans
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vlanId</span>    <span class="o">:=</span> <span class="mi">865555</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">13981</span><span class="p">)},</span>         <span class="c1">// 4 Portable Private IP Addresses
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">EndPointVlanId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="ordering-a-new-portable-public-subnet">Ordering a new portable public subnet</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Order a new portable public subnet.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;SINGAPORE01&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of a Public Network Vlan. To get the list of vlans use the method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicNetworkVlans
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vlanId</span>    <span class="o">:=</span> <span class="mi">863477</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">13980</span><span class="p">)},</span>          <span class="c1">// 4 Portable Public IP Addresses
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">EndPointVlanId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="ordering-a-new-portable-public-subnet-ipv6">Ordering a new portable public subnet IPv6</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Orders a new portable Public subnet IPv6
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Subnet
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;MEXICO&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of a Public Network Vlan. To get the list of vlans use the method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicNetworkVlans
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">vlanId</span>    <span class="o">:=</span> <span class="mi">863477</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1482</span><span class="p">)},</span>          <span class="c1">// 64 Block Portable Public IPv6 Addresses
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">EndPointVlanId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="ordering-a-new-static-public-subnet">Ordering a new static public subnet</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Order a new static public subnet
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">  	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;SINGAPORE01&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of a Public Ip Addresses. To get the list of ip address you can use the methods
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicIpAddresses, SoftLayer_Account::getIpAddresses
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">ipAddressIp</span> <span class="o">:=</span> <span class="mi">47665099</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">13983</span><span class="p">)},</span>          <span class="c1">// 1 Static Public IP Address
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">EndPointIpAddressId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">ipAddressIp</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="ordering-a-new-static-public-subnet-ipv6">Ordering a new static public subnet ipv6</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Order a new static public subnet ipv6
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder/
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the quantity, location, and packageId for the subnet you wish to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">quantity</span>  <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">packageId</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">location</span>  <span class="o">:=</span> <span class="s">&#34;SINGAPORE01&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of a Public Ip Addresses. To get the list of ip address you can use the methods
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Account::getPublicIpAddresses, SoftLayer_Account::getIpAddresses
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">ipAddressIp</span> <span class="o">:=</span> <span class="mi">47665101</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">prices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1481</span><span class="p">)},</span>          <span class="c1">// 64 Block Static Public IPv6 Addresses
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build a skeleton Container_Product_Order_Network_Subnet object containing the order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Subnet</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">PackageId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Location</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Quantity</span>  <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Prices</span>    <span class="p">:</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">EndPointIpAddressId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">ipAddressIp</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create SoftLayer API session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Product_Order service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

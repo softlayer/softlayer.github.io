@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -155,111 +151,110 @@ first we&rsquo;ll get de ID of all SoftLayer_Billing_Invoice objects between two
 use the method SoftLayer_Account::getInvoices. After that, through loops we will retrieve all invoice
 items, here we&rsquo;ll use the method SoftLayer_Billing_Invoice::getItems and &ldquo;result limits&rdquo; to avoid errors.
 See below for more information.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;strings&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Create a session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Account and SoftLayer_Billing_Invoice services
-</span><span class="c1"></span>	<span class="nx">accountService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">invoiceService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingInvoiceService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Object mask to get the ID of all SoftLayer_Billing_Invoice objects
-</span><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;createDate;typeCode&#34;</span>
-
-	<span class="c1">// Object mask to get information about SoftLayer_Billing_Invoice_Items
-</span><span class="c1"></span>	<span class="nx">itemMask</span> <span class="o">:=</span> <span class="s">&#34;id;recurringFee;recurringTaxAmount;oneTimeFee;oneTimeTaxAmount;description;&#34;</span> <span class="o">+</span>
-		    <span class="s">&#34;hostName;domainName;hourlyRecurringFee;laborFee;laborTaxAmount;setupFee;&#34;</span> <span class="o">+</span>
-		    <span class="s">&#34;setupTaxAmount;category[name];location[longName];billingItem[id;activeFlag;&#34;</span> <span class="o">+</span>
-		    <span class="s">&#34;hourlyFlag;allowCancellationFlag;cancellationDate;orderItem[id;order[id;&#34;</span> <span class="o">+</span>
-		    <span class="s">&#34;userRecord[id,username]]]]&#34;</span>
-
-	<span class="c1">// Filter to get all RECURRING invoices between two dates
-</span><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="s">`{&#34;invoices&#34;:{
-</span><span class="s">	                  &#34;createDate&#34;:{
-</span><span class="s">			       &#34;operation&#34;:&#34;betweenDate&#34;,
-</span><span class="s">			       &#34;options&#34;:[{
-</span><span class="s">			            &#34;name&#34;:&#34;startDate&#34;,
-</span><span class="s">			            &#34;value&#34;:[&#34;03/25/2017&#34;]
-</span><span class="s">			       },{
-</span><span class="s">			            &#34;name&#34;:&#34;endDate&#34;,
-</span><span class="s">			            &#34;value&#34;: [&#34;04/24/2017&#34;]
-</span><span class="s">			       }]
-</span><span class="s">			  },
-</span><span class="s">			  &#34;typeCode&#34;:{
-</span><span class="s">			       &#34;operation&#34;:&#34;RECURRING&#34;
-</span><span class="s">			  }
-</span><span class="s">		    }}`</span>
-
-	<span class="c1">// Call method getInvoices() in order to retrieve SoftLayer_Billing_Invoice objects.
-</span><span class="c1"></span>	<span class="nx">invoices</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">accountService</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetInvoices</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to retrieve invoices:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following loop is to get and print all items of each retrieved invoice
-</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">invoice</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">invoices</span> <span class="p">{</span>
-
-		<span class="c1">// Print Id, createDate and typeCode of each invoice
-</span><span class="c1"></span>		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n\nINVOICE ID: %d\t CREATE DATE: %s\t TYPE CODE: %s\n\n&#34;</span><span class="p">,</span>
-			<span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">CreateDate</span><span class="p">,</span> <span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">TypeCode</span><span class="p">)</span>
-
-		<span class="c1">// Some invoices have hundred of items and to avoid limitSize or timeout errors
-</span><span class="c1"></span>		<span class="c1">// we&#39;ll use result limits in order to get items 100 by 100.
-</span><span class="c1"></span>		<span class="nx">limit</span> <span class="o">:=</span> <span class="mi">100</span>
-		<span class="nx">offset</span> <span class="o">:=</span> <span class="mi">0</span>
-		<span class="nx">hasItems</span> <span class="o">:=</span> <span class="kc">true</span>
-
-		<span class="c1">// Following loop is used to get and print items 100 by 100.
-</span><span class="c1"></span>		<span class="c1">// &#39;hasItems&#39; will turn FALSE if there isn&#39;t more items, the loop will end and
-</span><span class="c1"></span>		<span class="c1">// code will continue with next invoice.
-</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">hasItems</span> <span class="p">{</span>
-			<span class="c1">// Call SoftLayer_Billing_Invoice::getItems method
-</span><span class="c1"></span>			<span class="nx">items</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span>  <span class="nx">invoiceService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">itemMask</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="nx">limit</span><span class="p">).</span><span class="nf">Offset</span><span class="p">(</span><span class="nx">offset</span><span class="p">).</span><span class="nf">GetItems</span><span class="p">()</span>
-			<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-				<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to retrieve invoice&#39;s items:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-				<span class="k">return</span>
-			<span class="p">}</span>
-
-			<span class="c1">// Following will print retrieved invoices
-</span><span class="c1"></span>			<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
-				<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
-				<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-					<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-					<span class="k">return</span>
-				<span class="p">}</span>
-				<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n%s&#34;</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-			<span class="p">}</span>
-
-			<span class="c1">// hasItems will turn FALSE if invoice doesn&#39;t have more items and code will
-</span><span class="c1"></span>			<span class="c1">// continue with next invoice.
-</span><span class="c1"></span>			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">items</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-				<span class="nx">offset</span> <span class="o">+=</span> <span class="nx">limit</span>
-			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-				<span class="nx">hasItems</span> <span class="p">=</span> <span class="kc">false</span>
-			<span class="p">}</span>
-		<span class="p">}</span>
-
-		<span class="c1">// Print a single separator between invoices
-</span><span class="c1"></span>		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n\n%s&#34;</span><span class="p">,</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">Repeat</span><span class="p">(</span><span class="s">&#34;-&#34;</span><span class="p">,</span> <span class="mi">150</span><span class="p">))</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;strings&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Account and SoftLayer_Billing_Invoice services
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">accountService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">invoiceService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingInvoiceService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Object mask to get the ID of all SoftLayer_Billing_Invoice objects
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id;createDate;typeCode&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Object mask to get information about SoftLayer_Billing_Invoice_Items
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">itemMask</span> <span class="o">:=</span> <span class="s">&#34;id;recurringFee;recurringTaxAmount;oneTimeFee;oneTimeTaxAmount;description;&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		    <span class="s">&#34;hostName;domainName;hourlyRecurringFee;laborFee;laborTaxAmount;setupFee;&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		    <span class="s">&#34;setupTaxAmount;category[name];location[longName];billingItem[id;activeFlag;&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		    <span class="s">&#34;hourlyFlag;allowCancellationFlag;cancellationDate;orderItem[id;order[id;&#34;</span> <span class="o">+</span>
+</span></span><span class="line"><span class="cl">		    <span class="s">&#34;userRecord[id,username]]]]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Filter to get all RECURRING invoices between two dates
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">filter</span> <span class="o">:=</span> <span class="s">`{&#34;invoices&#34;:{
+</span></span></span><span class="line"><span class="cl"><span class="s">	                  &#34;createDate&#34;:{
+</span></span></span><span class="line"><span class="cl"><span class="s">			       &#34;operation&#34;:&#34;betweenDate&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s">			       &#34;options&#34;:[{
+</span></span></span><span class="line"><span class="cl"><span class="s">			            &#34;name&#34;:&#34;startDate&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s">			            &#34;value&#34;:[&#34;03/25/2017&#34;]
+</span></span></span><span class="line"><span class="cl"><span class="s">			       },{
+</span></span></span><span class="line"><span class="cl"><span class="s">			            &#34;name&#34;:&#34;endDate&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s">			            &#34;value&#34;: [&#34;04/24/2017&#34;]
+</span></span></span><span class="line"><span class="cl"><span class="s">			       }]
+</span></span></span><span class="line"><span class="cl"><span class="s">			  },
+</span></span></span><span class="line"><span class="cl"><span class="s">			  &#34;typeCode&#34;:{
+</span></span></span><span class="line"><span class="cl"><span class="s">			       &#34;operation&#34;:&#34;RECURRING&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">			  }
+</span></span></span><span class="line"><span class="cl"><span class="s">		    }}`</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call method getInvoices() in order to retrieve SoftLayer_Billing_Invoice objects.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">invoices</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">accountService</span><span class="p">.</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetInvoices</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to retrieve invoices:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following loop is to get and print all items of each retrieved invoice
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">invoice</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">invoices</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// Print Id, createDate and typeCode of each invoice
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n\nINVOICE ID: %d\t CREATE DATE: %s\t TYPE CODE: %s\n\n&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">CreateDate</span><span class="p">,</span> <span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">TypeCode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// Some invoices have hundred of items and to avoid limitSize or timeout errors
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">// we&#39;ll use result limits in order to get items 100 by 100.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">limit</span> <span class="o">:=</span> <span class="mi">100</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">offset</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">hasItems</span> <span class="o">:=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// Following loop is used to get and print items 100 by 100.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">// &#39;hasItems&#39; will turn FALSE if there isn&#39;t more items, the loop will end and
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">// code will continue with next invoice.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">for</span> <span class="nx">hasItems</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="c1">// Call SoftLayer_Billing_Invoice::getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">items</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span>  <span class="nx">invoiceService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">invoice</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">itemMask</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="nx">limit</span><span class="p">).</span><span class="nf">Offset</span><span class="p">(</span><span class="nx">offset</span><span class="p">).</span><span class="nf">GetItems</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to retrieve invoice&#39;s items:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">// Following will print retrieved invoices
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">items</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">					<span class="k">return</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n%s&#34;</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">// hasItems will turn FALSE if invoice doesn&#39;t have more items and code will
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="c1">// continue with next invoice.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">items</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">offset</span> <span class="o">+=</span> <span class="nx">limit</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">hasItems</span> <span class="p">=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// Print a single separator between invoices
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n\n%s&#34;</span><span class="p">,</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">Repeat</span><span class="p">(</span><span class="s">&#34;-&#34;</span><span class="p">,</span> <span class="mi">150</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

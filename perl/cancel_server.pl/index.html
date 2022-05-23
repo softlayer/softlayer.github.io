@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -148,62 +144,61 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1"># Cancel servers from a list of IPs</span>
-<span class="c1">#</span>
-<span class="c1"># This script looks for a server with a determinate IP address and delete it.</span>
-<span class="c1">#</span>
-<span class="c1"># It makes a single call to the cancelService() method in the</span>
-<span class="c1"># SoftLayer_Billing_Item API service</span>
-<span class="c1">#</span>
-<span class="c1"># Important manual pages:</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item_Hardware</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService</span>
-<span class="c1">#</span>
-<span class="c1"># License: http://sldn.softlayer.com/article/License</span>
-<span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># Adding an object mask to retrieve our billing items related to the servers</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
-<span class="c1"># for a list of the relational properties you can retrieve along with hardware.</span>
-<span class="k">my</span> <span class="nv">$object_mask</span> <span class="o">=</span> <span class="s">&#39;mask[billingItem]&#39;</span><span class="p">;</span>
-
-<span class="c1"># The list of IPs from the servers you wish to cancel</span>
-<span class="k">my</span> <span class="nv">@ips_to_cancel</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;1.1.1.1&#39;</span><span class="p">,</span> <span class="s">&#39;2.2.2.2&#39;</span><span class="p">);</span>
-
-<span class="c1"># Declaring a new API service object for the</span>
-<span class="c1"># SoftLayer_Account API service</span>
-<span class="c1"># SoftLayer_Billing_Item service</span>
-<span class="k">my</span> <span class="nv">$hardware_server_service</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-<span class="k">my</span> <span class="nv">$billing_item_service</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="c1"># Making the call to retrieve our hardware records along with their billing item.</span>
-<span class="c1"># Setting the init parameter with the server Id</span>
-<span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">(</span><span class="nv">$object_mask</span><span class="p">);</span>
-
-<span class="k">for</span> <span class="k">my</span> <span class="nv">$ip_to_cancel</span> <span class="p">(</span><span class="nv">@ips_to_cancel</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">findByIpAddress</span><span class="p">(</span><span class="nv">$ip_to_cancel</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nv">$server</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nb">die</span> <span class="s">&#39;Unable to get the server. &#39;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">my</span> <span class="nv">$billing_id</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nn">result</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;billingItem&#39;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">};</span>
-    <span class="nv">$billing_item_service</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$billing_id</span><span class="p">);</span>
-    <span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$billing_item_service</span><span class="o">-&gt;</span><span class="n">cancelService</span><span class="p">();</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nb">die</span> <span class="s">&#39;Unable to cancel the server. &#39;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">print</span> <span class="n">Dumper</span><span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">);</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1"># Cancel servers from a list of IPs</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># This script looks for a server with a determinate IP address and delete it.</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># It makes a single call to the cancelService() method in the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Billing_Item API service</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Billing_Item_Hardware</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Billing_Item/cancelService</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License: http://sldn.softlayer.com/article/License</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;C:/softlayerApis/perl/softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Adding an object mask to retrieve our billing items related to the servers</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># for a list of the relational properties you can retrieve along with hardware.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$object_mask</span> <span class="o">=</span> <span class="s">&#39;mask[billingItem]&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The list of IPs from the servers you wish to cancel</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">@ips_to_cancel</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;1.1.1.1&#39;</span><span class="p">,</span> <span class="s">&#39;2.2.2.2&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declaring a new API service object for the</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Account API service</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># SoftLayer_Billing_Item service</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$hardware_server_service</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$billing_item_service</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Billing_Item&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Making the call to retrieve our hardware records along with their billing item.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Setting the init parameter with the server Id</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">setObjectMask</span><span class="p">(</span><span class="nv">$object_mask</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="k">my</span> <span class="nv">$ip_to_cancel</span> <span class="p">(</span><span class="nv">@ips_to_cancel</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$server</span> <span class="o">=</span> <span class="nv">$hardware_server_service</span><span class="o">-&gt;</span><span class="n">findByIpAddress</span><span class="p">(</span><span class="nv">$ip_to_cancel</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nv">$server</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">die</span> <span class="s">&#39;Unable to get the server. &#39;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$billing_id</span> <span class="o">=</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="nn">result</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;billingItem&#39;</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">$billing_item_service</span><span class="o">-&gt;</span><span class="n">setInitParameter</span><span class="p">(</span><span class="nv">$billing_id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$billing_item_service</span><span class="o">-&gt;</span><span class="n">cancelService</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">die</span> <span class="s">&#39;Unable to cancel the server. &#39;</span> <span class="o">.</span> <span class="nv">$server</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">print</span> <span class="n">Dumper</span><span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

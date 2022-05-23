@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -154,184 +150,183 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-python" data-lang="python"><span class="s2">&#34;&#34;&#34;
-</span><span class="s2">Order a new VSI.
-</span><span class="s2">
-</span><span class="s2">Important manual pages:
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getSshKeys
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItemPrices
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Location/getDatacenters
-</span><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getVlanForIpAddress
-</span><span class="s2">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
-</span><span class="s2">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
-</span><span class="s2">
-</span><span class="s2">License: http://sldn.softlayer.com/article/License
-</span><span class="s2">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="s2">&#34;&#34;&#34;</span>
-
-<span class="kn">import</span> <span class="nn">SoftLayer</span>
-<span class="kn">import</span> <span class="nn">json</span>
-
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="n">API_USERNAME</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span>
-
-<span class="c1"># Generate one at https://control.softlayer.com/account/users</span>
-<span class="n">API_KEY</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span>
-
-<span class="c1"># Declare variables</span>
-<span class="n">location</span> <span class="o">=</span> <span class="s2">&#34;AMS01&#34;</span>
-<span class="n">quantity</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="c1"># If you want the VSI hourly pricing</span>
-<span class="c1"># set the value as True</span>
-<span class="n">useHourlyPricing</span> <span class="o">=</span> <span class="kc">False</span>
-
-<span class="c1"># The configuration of the VSI</span>
-<span class="c1"># The values and names are the same like</span>
-<span class="c1"># the ones displayed in the portal.</span>
-<span class="n">configuration</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;COMPUTING INSTANCE&#34;</span><span class="p">:</span> <span class="s2">&#34;2 x 2.0 GHz Cores&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;RAM&#34;</span><span class="p">:</span> <span class="s2">&#34;4 GB&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;OPERATING SYSTEM&#34;</span><span class="p">:</span> <span class="s2">&#34;CentOS 7.x - Minimal Install (64 bit)&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;FIRST DISK&#34;</span><span class="p">:</span> <span class="s2">&#34;25 GB (SAN)&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;PUBLIC BANDWIDTH&#34;</span><span class="p">:</span> <span class="s2">&#34;250 GB Bandwidth&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;UPLINK PORT SPEEDS&#34;</span><span class="p">:</span> <span class="s2">&#34;100 Mbps Public &amp; Private Network Uplinks&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;MONITORING&#34;</span><span class="p">:</span> <span class="s2">&#34;Host Ping&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;RESPONSE&#34;</span><span class="p">:</span> <span class="s2">&#34;Automated Notification&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;Primary IP Addresses&#34;</span><span class="p">:</span> <span class="s2">&#34;1 IP Address&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;Remote Management&#34;</span><span class="p">:</span> <span class="s2">&#34;Reboot / Remote Console&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;Notification&#34;</span><span class="p">:</span> <span class="s2">&#34;Email and Ticket&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;VPN Management - Private Network&#34;</span><span class="p">:</span> <span class="s2">&#34;Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account&#34;</span><span class="p">,</span>
-    <span class="s2">&#34;Vulnerability Assessments &amp; Management&#34;</span><span class="p">:</span> <span class="s2">&#34;Nessus Vulnerability Assessment &amp; Reporting&#34;</span>
-<span class="p">}</span>
-
-<span class="c1"># Specifies the hostname and domain we want for our VSI.</span>
-<span class="c1"># If you set quantity greater than 1 then you</span>
-<span class="c1"># need to define one hostname/domain pair per VSI you wish to order.</span>
-<span class="n">virtualGuest</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&#34;domain&#34;</span><span class="p">:</span> <span class="s2">&#34;softlayer.ibm.com&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;hostname&#34;</span><span class="p">:</span> <span class="s2">&#34;VM1&#34;</span><span class="p">,</span>
-        <span class="c1"># The vlan configuration for the VSI if you do not wish to configure</span>
-        <span class="c1"># the vlans just comment the lines.</span>
-        <span class="c1"># set the any IP address which belongs to the VLAN you wish to configure in the VSI</span>
-        <span class="s2">&#34;backendVlanIp&#34;</span><span class="p">:</span> <span class="s2">&#34;10.68.117.193&#34;</span><span class="p">,</span>
-        <span class="s2">&#34;frontedVLAN&#34;</span><span class="p">:</span> <span class="s2">&#34;159.122.23.225&#34;</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="c1"># The post install script to apply.</span>
-<span class="c1"># Leave in empty if you do not wish to apply an script in the provisioning.</span>
-<span class="n">postInstallScript</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span>
-
-<span class="c1"># The list of ssh keys to apply to the VSI.</span>
-<span class="c1"># Set the label names of the ssh keys like in the portal</span>
-<span class="c1"># Leave in empty if you do not wish to apply any ssh key.</span>
-<span class="n">sshKeys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;labkey&#34;</span><span class="p">,</span> <span class="s2">&#34;matt-sl-test&#34;</span><span class="p">]</span>
-
-
-<span class="n">PACKAGE</span> <span class="o">=</span> <span class="mi">46</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="n">API_USERNAME</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">API_KEY</span><span class="p">)</span>
-<span class="n">orderService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span>
-<span class="n">accountService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span>
-<span class="n">packageService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Package&#39;</span><span class="p">]</span>
-<span class="n">locationService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Location&#39;</span><span class="p">]</span>
-<span class="n">valnService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Vlan&#39;</span><span class="p">]</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">location</span> <span class="o">=</span> <span class="n">locationService</span><span class="o">.</span><span class="n">getDatacenters</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">lower</span><span class="p">()}})</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the datacenter. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">pricesPackage</span> <span class="o">=</span> <span class="n">packageService</span><span class="o">.</span><span class="n">getItemPrices</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">PACKAGE</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[categories, item]&#34;</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the item prices. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-<span class="c1"># Getting the item prices for the order.</span>
-<span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">configuration</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-    <span class="k">for</span> <span class="n">price</span> <span class="ow">in</span> <span class="n">pricesPackage</span><span class="p">:</span>
-        <span class="n">added</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="s1">&#39;categories&#39;</span> <span class="ow">in</span> <span class="n">price</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">price</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">category</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">and</span> \
-                   <span class="n">price</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">configuration</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">and</span> \
-                   <span class="n">price</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&#34;&#34;</span><span class="p">:</span>
-                    <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>
-                    <span class="n">added</span> <span class="o">=</span> <span class="kc">True</span>
-                    <span class="k">break</span>
-            <span class="k">if</span> <span class="n">added</span><span class="p">:</span>
-                <span class="k">break</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">added</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;There is no price for the item: &#34;</span> <span class="o">+</span> <span class="n">item</span> <span class="o">+</span> <span class="s2">&#34;- &#34;</span> <span class="o">+</span> <span class="n">configuration</span><span class="p">[</span><span class="n">item</span><span class="p">])</span>
-        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-<span class="n">vsis</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">vsi</span> <span class="ow">in</span> <span class="n">virtualGuest</span><span class="p">:</span>
-    <span class="n">guest</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="s1">&#39;domain&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
-        <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="s1">&#39;hostname&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
-        <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="s1">&#39;backendVlanIp&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">backend</span> <span class="o">=</span> <span class="n">valnService</span><span class="o">.</span><span class="n">getVlanForIpAddress</span><span class="p">(</span><span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;backendVlanIp&#39;</span><span class="p">])</span>
-            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">][</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">backend</span>
-        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the backend Vlan. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="k">if</span> <span class="s1">&#39;frontedVLAN&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">fronted</span> <span class="o">=</span> <span class="n">valnService</span><span class="o">.</span><span class="n">getVlanForIpAddress</span><span class="p">(</span><span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;frontedVLAN&#39;</span><span class="p">])</span>
-            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">][</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fronted</span>
-        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the fronted Vlan. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="n">vsis</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">guest</span><span class="p">)</span>
-
-
-<span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
-    <span class="s2">&#34;packageId&#34;</span><span class="p">:</span> <span class="n">PACKAGE</span><span class="p">,</span>
-    <span class="s2">&#34;location&#34;</span><span class="p">:</span> <span class="n">location</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
-    <span class="s1">&#39;hardware&#39;</span><span class="p">:</span> <span class="n">vsis</span><span class="p">,</span>
-    <span class="s1">&#39;useHourlyPricing&#39;</span><span class="p">:</span> <span class="n">useHourlyPricing</span>
-<span class="p">}</span>
-
-<span class="k">if</span> <span class="n">postInstallScript</span><span class="p">:</span>
-    <span class="n">orderData</span><span class="p">[</span><span class="s1">&#39;provisionScripts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">postInstallScript</span><span class="p">]</span>
-
-<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sshKeys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-    <span class="n">objectfilter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;sshKeys&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;label&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;in&#34;</span><span class="p">,</span> <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;data&#34;</span><span class="p">,</span> <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="n">sshKeys</span><span class="p">}]}}}</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">sshs</span> <span class="o">=</span> <span class="n">accountService</span><span class="o">.</span><span class="n">getSshKeys</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">objectfilter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[id]&#34;</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the ssh keys. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sshs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">orderData</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">sshKeyIds</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">sshKeyIds</span><span class="p">[</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">ssh</span> <span class="ow">in</span> <span class="n">sshs</span><span class="p">:</span>
-            <span class="n">sshKeyIds</span><span class="p">[</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ssh</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
-        <span class="n">orderData</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sshKeyIds</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;None ssh key was found&#34;</span><span class="p">)</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="c1"># When you are ready to order the VSI</span>
-    <span class="c1"># change verifyOrder() method by placeOrder() method.</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">orderService</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
-<span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to create the order. &#34;</span>
-          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">Order a new VSI.
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getSshKeys
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItemPrices
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Location/getDatacenters
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getVlanForIpAddress
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order
+</span></span></span><span class="line"><span class="cl"><span class="s2">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="s2">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">json</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="n">API_USERNAME</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Generate one at https://control.softlayer.com/account/users</span>
+</span></span><span class="line"><span class="cl"><span class="n">API_KEY</span> <span class="o">=</span> <span class="s1">&#39;set me&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Declare variables</span>
+</span></span><span class="line"><span class="cl"><span class="n">location</span> <span class="o">=</span> <span class="s2">&#34;AMS01&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">quantity</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># If you want the VSI hourly pricing</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># set the value as True</span>
+</span></span><span class="line"><span class="cl"><span class="n">useHourlyPricing</span> <span class="o">=</span> <span class="kc">False</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The configuration of the VSI</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The values and names are the same like</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the ones displayed in the portal.</span>
+</span></span><span class="line"><span class="cl"><span class="n">configuration</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;COMPUTING INSTANCE&#34;</span><span class="p">:</span> <span class="s2">&#34;2 x 2.0 GHz Cores&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;RAM&#34;</span><span class="p">:</span> <span class="s2">&#34;4 GB&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;OPERATING SYSTEM&#34;</span><span class="p">:</span> <span class="s2">&#34;CentOS 7.x - Minimal Install (64 bit)&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;FIRST DISK&#34;</span><span class="p">:</span> <span class="s2">&#34;25 GB (SAN)&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;PUBLIC BANDWIDTH&#34;</span><span class="p">:</span> <span class="s2">&#34;250 GB Bandwidth&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;UPLINK PORT SPEEDS&#34;</span><span class="p">:</span> <span class="s2">&#34;100 Mbps Public &amp; Private Network Uplinks&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;MONITORING&#34;</span><span class="p">:</span> <span class="s2">&#34;Host Ping&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;RESPONSE&#34;</span><span class="p">:</span> <span class="s2">&#34;Automated Notification&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;Primary IP Addresses&#34;</span><span class="p">:</span> <span class="s2">&#34;1 IP Address&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;Remote Management&#34;</span><span class="p">:</span> <span class="s2">&#34;Reboot / Remote Console&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;Notification&#34;</span><span class="p">:</span> <span class="s2">&#34;Email and Ticket&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;VPN Management - Private Network&#34;</span><span class="p">:</span> <span class="s2">&#34;Unlimited SSL VPN Users &amp; 1 PPTP VPN User per account&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;Vulnerability Assessments &amp; Management&#34;</span><span class="p">:</span> <span class="s2">&#34;Nessus Vulnerability Assessment &amp; Reporting&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Specifies the hostname and domain we want for our VSI.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># If you set quantity greater than 1 then you</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># need to define one hostname/domain pair per VSI you wish to order.</span>
+</span></span><span class="line"><span class="cl"><span class="n">virtualGuest</span> <span class="o">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;domain&#34;</span><span class="p">:</span> <span class="s2">&#34;softlayer.ibm.com&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;hostname&#34;</span><span class="p">:</span> <span class="s2">&#34;VM1&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># The vlan configuration for the VSI if you do not wish to configure</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># the vlans just comment the lines.</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># set the any IP address which belongs to the VLAN you wish to configure in the VSI</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;backendVlanIp&#34;</span><span class="p">:</span> <span class="s2">&#34;10.68.117.193&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;frontedVLAN&#34;</span><span class="p">:</span> <span class="s2">&#34;159.122.23.225&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The post install script to apply.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Leave in empty if you do not wish to apply an script in the provisioning.</span>
+</span></span><span class="line"><span class="cl"><span class="n">postInstallScript</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># The list of ssh keys to apply to the VSI.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Set the label names of the ssh keys like in the portal</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Leave in empty if you do not wish to apply any ssh key.</span>
+</span></span><span class="line"><span class="cl"><span class="n">sshKeys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;labkey&#34;</span><span class="p">,</span> <span class="s2">&#34;matt-sl-test&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">PACKAGE</span> <span class="o">=</span> <span class="mi">46</span>
+</span></span><span class="line"><span class="cl"><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">create_client_from_env</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="n">API_USERNAME</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">API_KEY</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">orderService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Order&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">accountService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Account&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">packageService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Product_Package&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">locationService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Location&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">valnService</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="s1">&#39;SoftLayer_Network_Vlan&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">location</span> <span class="o">=</span> <span class="n">locationService</span><span class="o">.</span><span class="n">getDatacenters</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="n">location</span><span class="o">.</span><span class="n">lower</span><span class="p">()}})</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the datacenter. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pricesPackage</span> <span class="o">=</span> <span class="n">packageService</span><span class="o">.</span><span class="n">getItemPrices</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">PACKAGE</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[categories, item]&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the item prices. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Getting the item prices for the order.</span>
+</span></span><span class="line"><span class="cl"><span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">configuration</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">price</span> <span class="ow">in</span> <span class="n">pricesPackage</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">added</span> <span class="o">=</span> <span class="kc">False</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="s1">&#39;categories&#39;</span> <span class="ow">in</span> <span class="n">price</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">price</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">category</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">item</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">and</span> \
+</span></span><span class="line"><span class="cl">                   <span class="n">price</span><span class="p">[</span><span class="s1">&#39;item&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">configuration</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">and</span> \
+</span></span><span class="line"><span class="cl">                   <span class="n">price</span><span class="p">[</span><span class="s1">&#39;locationGroupId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&#34;&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">price</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">added</span> <span class="o">=</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">break</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">added</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">break</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">added</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;There is no price for the item: &#34;</span> <span class="o">+</span> <span class="n">item</span> <span class="o">+</span> <span class="s2">&#34;- &#34;</span> <span class="o">+</span> <span class="n">configuration</span><span class="p">[</span><span class="n">item</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">vsis</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">vsi</span> <span class="ow">in</span> <span class="n">virtualGuest</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">guest</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="s1">&#39;domain&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="s1">&#39;hostname&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;hostname&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="s1">&#39;backendVlanIp&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">backend</span> <span class="o">=</span> <span class="n">valnService</span><span class="o">.</span><span class="n">getVlanForIpAddress</span><span class="p">(</span><span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;backendVlanIp&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryBackendNetworkComponent&#39;</span><span class="p">][</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">backend</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the backend Vlan. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="s1">&#39;frontedVLAN&#39;</span> <span class="ow">in</span> <span class="n">vsi</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">fronted</span> <span class="o">=</span> <span class="n">valnService</span><span class="o">.</span><span class="n">getVlanForIpAddress</span><span class="p">(</span><span class="n">vsi</span><span class="p">[</span><span class="s1">&#39;frontedVLAN&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">guest</span><span class="p">[</span><span class="s1">&#39;primaryNetworkComponent&#39;</span><span class="p">][</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fronted</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the fronted Vlan. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">vsis</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">guest</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">orderData</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;prices&#34;</span><span class="p">:</span> <span class="n">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;packageId&#34;</span><span class="p">:</span> <span class="n">PACKAGE</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;location&#34;</span><span class="p">:</span> <span class="n">location</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;hardware&#39;</span><span class="p">:</span> <span class="n">vsis</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s1">&#39;useHourlyPricing&#39;</span><span class="p">:</span> <span class="n">useHourlyPricing</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="n">postInstallScript</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">orderData</span><span class="p">[</span><span class="s1">&#39;provisionScripts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">postInstallScript</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sshKeys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">objectfilter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;sshKeys&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;label&#34;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;operation&#34;</span><span class="p">:</span> <span class="s2">&#34;in&#34;</span><span class="p">,</span> <span class="s2">&#34;options&#34;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;data&#34;</span><span class="p">,</span> <span class="s2">&#34;value&#34;</span><span class="p">:</span> <span class="n">sshKeys</span><span class="p">}]}}}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sshs</span> <span class="o">=</span> <span class="n">accountService</span><span class="o">.</span><span class="n">getSshKeys</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="n">objectfilter</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="s2">&#34;mask[id]&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to get the ssh keys. &#34;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sshs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">orderData</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sshKeyIds</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sshKeyIds</span><span class="p">[</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">ssh</span> <span class="ow">in</span> <span class="n">sshs</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">sshKeyIds</span><span class="p">[</span><span class="s1">&#39;sshKeyIds&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ssh</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="n">orderData</span><span class="p">[</span><span class="s1">&#39;sshKeys&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sshKeyIds</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;None ssh key was found&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># When you are ready to order the VSI</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># change verifyOrder() method by placeOrder() method.</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">orderService</span><span class="o">.</span><span class="n">verifyOrder</span><span class="p">(</span><span class="n">orderData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;: &#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl"><span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;Unable to create the order. &#34;</span>
+</span></span><span class="line"><span class="cl">          <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">faultCode</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">faultString</span><span class="p">))</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

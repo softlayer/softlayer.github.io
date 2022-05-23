@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -152,99 +148,99 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="err">#</span> <span class="nx">Order</span> <span class="nx">Virtual</span> <span class="nx">Guest</span> <span class="nx">on</span> <span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">.</span>
-<span class="err">#</span>
-<span class="err">#</span> <span class="nx">This</span> <span class="nx">script</span> <span class="nx">shows</span> <span class="nx">how</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">a</span> <span class="nx">vsi</span> <span class="nx">on</span> <span class="nx">an</span> <span class="nx">customer</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">dedicated</span> <span class="nx">host</span><span class="p">.</span>
-<span class="err">#</span>
-<span class="err">#</span> <span class="nx">Important</span> <span class="nx">manual</span> <span class="nx">pages</span><span class="p">:</span>
-<span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Order
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItemPrices
-</span><span class="c1"></span><span class="err">#</span>
-<span class="err">#</span> <span class="nx">License</span><span class="p">:</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/License
-</span><span class="c1"></span><span class="err">#</span> <span class="nx">Author</span><span class="p">:</span> <span class="nx">SoftLayer</span> <span class="nx">Technologies</span><span class="p">,</span> <span class="nx">Inc</span><span class="p">.</span> <span class="p">&lt;</span><span class="nx">sldn</span><span class="err">@</span><span class="nx">softlayer</span><span class="p">.</span><span class="nx">com</span><span class="p">&gt;</span>
-
-<span class="nx">require</span> <span class="err">&#39;</span><span class="nx">softlayer_api</span><span class="err">&#39;</span>
-<span class="nx">require</span> <span class="err">&#39;</span><span class="nx">json</span><span class="err">&#39;</span>
-
-<span class="err">#</span> <span class="nx">Your</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">username</span> <span class="nx">and</span> <span class="nx">key</span><span class="p">.</span>
-<span class="nx">USERNAME</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
-<span class="nx">API_KEY</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
-
-<span class="err">#</span> <span class="nx">Declare</span> <span class="nx">the</span> <span class="nx">hostId</span><span class="p">,</span> <span class="nx">packageId</span> <span class="nx">and</span> <span class="nx">quantity</span> <span class="k">for</span> <span class="nx">the</span> <span class="nx">virtual</span> <span class="nx">guest</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
-<span class="nx">host_id</span> <span class="p">=</span> <span class="mi">9301</span>
-<span class="nx">package_id</span> <span class="p">=</span> <span class="mi">46</span>
-<span class="nx">quantity</span> <span class="p">=</span> <span class="mi">1</span>
-
-<span class="err">#</span> <span class="nx">Skeleton</span> <span class="nx">of</span> <span class="nx">SoftLayer_Virtual_Guest</span> <span class="nx">object</span> <span class="nx">to</span> <span class="nx">model</span> <span class="nx">the</span> <span class="nx">hostname</span><span class="p">,</span>
-<span class="err">#</span> <span class="nx">domain</span> <span class="nx">and</span> <span class="nx">the</span> <span class="nx">router</span> <span class="nx">that</span> <span class="nx">we</span> <span class="nx">want</span> <span class="k">for</span> <span class="nx">our</span> <span class="nx">dedicated</span> <span class="nx">host</span><span class="p">.</span>
-<span class="nx">virtualGuests</span> <span class="p">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="p">:</span><span class="nx">domain</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">softlayer</span><span class="p">.</span><span class="nx">com</span><span class="err">&#39;</span><span class="p">,</span>
-        <span class="p">:</span><span class="nx">hostname</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">vsi</span><span class="o">-</span><span class="nx">dedicated</span><span class="err">&#39;</span><span class="p">,</span>
-        <span class="p">:</span><span class="nx">primaryBackendNetworkComponent</span> <span class="p">=&gt;</span> <span class="p">{</span>
-            <span class="p">:</span><span class="nx">networkVlan</span> <span class="p">=&gt;</span> <span class="p">{</span>
-                <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">1404269</span><span class="p">,</span>
-                <span class="p">:</span><span class="nx">primarySubnet</span> <span class="p">=&gt;</span> <span class="mi">1314283</span>
-            <span class="p">}</span>
-        <span class="p">},</span>
-        <span class="p">:</span><span class="nx">primaryNetworkComponent</span> <span class="p">=&gt;</span> <span class="p">{</span>
-            <span class="p">:</span><span class="nx">networkVlan</span> <span class="p">=&gt;</span> <span class="p">{</span>
-                <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">1404267</span><span class="p">,</span>
-                <span class="p">:</span><span class="nx">primarySubnet</span> <span class="p">=&gt;</span> <span class="mi">1319803</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">]</span>
-
-<span class="err">#</span> <span class="nx">Build</span> <span class="nx">a</span> <span class="nx">skeleton</span> <span class="nx">SoftLayer_Product_Item_Price</span> <span class="nx">objects</span><span class="p">.</span> <span class="nx">To</span> <span class="nx">get</span> <span class="nx">the</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">valid</span>
-<span class="err">#</span> <span class="nx">prices</span> <span class="k">for</span> <span class="nx">the</span> <span class="kn">package</span> <span class="nx">use</span> <span class="nx">the</span> <span class="nx">SoftLayer_Product_Package</span><span class="p">:</span><span class="nx">getItemPrices</span> <span class="nx">method</span><span class="p">.</span>
-<span class="nx">prices</span> <span class="p">=</span> <span class="p">[</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">200313</span> <span class="p">},</span>        <span class="err">#</span> <span class="mi">4</span> <span class="nx">x</span> <span class="mf">2.0</span> <span class="nx">GHz</span> <span class="nf">Cores</span> <span class="p">(</span><span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">)</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">200397</span> <span class="p">},</span>        <span class="err">#</span> <span class="mi">100</span> <span class="nf">GB</span> <span class="p">(</span><span class="nx">Local</span> <span class="nx">Disk</span> <span class="o">-</span> <span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">)</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">45456</span> <span class="p">},</span>         <span class="err">#</span> <span class="nx">CentOS</span> <span class="mf">7.</span><span class="nx">x</span> <span class="o">-</span> <span class="nx">LAMP</span> <span class="nf">Install</span> <span class="p">(</span><span class="mi">64</span> <span class="nx">bit</span><span class="p">)</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">200365</span> <span class="p">},</span>        <span class="err">#</span> <span class="mi">32</span> <span class="nf">GB</span> <span class="p">(</span><span class="nx">RAM</span> <span class="o">-</span> <span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">)</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">1800</span> <span class="p">},</span>          <span class="err">#</span> <span class="mi">0</span> <span class="nx">GB</span> <span class="nx">Bandwidth</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">55</span> <span class="p">},</span>            <span class="err">#</span> <span class="nx">Host</span> <span class="nx">Ping</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">57</span> <span class="p">},</span>            <span class="err">#</span> <span class="nx">Email</span> <span class="nx">and</span> <span class="nx">Ticket</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">273</span> <span class="p">},</span>           <span class="err">#</span> <span class="mi">100</span> <span class="nx">Mbps</span> <span class="nx">Public</span> <span class="o">&amp;</span> <span class="nx">Private</span> <span class="nx">Network</span> <span class="nx">Uplinks</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">21</span> <span class="p">},</span>            <span class="err">#</span> <span class="mi">1</span> <span class="nx">IP</span> <span class="nx">Address</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">905</span> <span class="p">},</span>           <span class="err">#</span> <span class="nx">Reboot</span> <span class="o">/</span> <span class="nx">Remote</span> <span class="nx">Console</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">58</span> <span class="p">},</span>            <span class="err">#</span> <span class="nx">Automated</span> <span class="nx">Notification</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">420</span> <span class="p">},</span>           <span class="err">#</span> <span class="nx">Unlimited</span> <span class="nx">SSL</span> <span class="nx">VPN</span> <span class="nx">Users</span> <span class="o">&amp;</span> <span class="mi">1</span> <span class="nx">PPTP</span> <span class="nx">VPN</span> <span class="nx">User</span> <span class="nx">per</span> <span class="nx">account</span>
-    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">418</span> <span class="p">}</span>            <span class="err">#</span> <span class="nx">Nessus</span> <span class="nx">Vulnerability</span> <span class="nx">Assessment</span> <span class="o">&amp;</span> <span class="nx">Reporting</span>
-<span class="p">]</span>
-
-<span class="err">#</span> <span class="nx">Build</span> <span class="nx">the</span> <span class="nx">skeleton</span> <span class="nx">of</span> <span class="nx">SoftLayer_Container_Product_Order</span> <span class="nx">object</span>
-<span class="err">#</span> <span class="nx">containing</span> <span class="nx">the</span> <span class="nx">order</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">place</span><span class="p">.</span>
-<span class="nx">template_order</span> <span class="p">=</span> <span class="p">{</span>
-    <span class="p">:</span><span class="nx">orderContainers</span> <span class="p">=&gt;</span> <span class="p">[</span>
-        <span class="p">:</span><span class="nx">complexType</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">SoftLayer_Container_Product_Order_Virtual_Guest</span><span class="err">&#39;</span><span class="p">,</span>
-        <span class="p">:</span><span class="nx">hostId</span> <span class="p">=&gt;</span> <span class="nx">host_id</span><span class="p">,</span>
-        <span class="p">:</span><span class="nx">packageId</span> <span class="p">=&gt;</span> <span class="nx">package_id</span><span class="p">,</span>
-        <span class="p">:</span><span class="nx">virtualGuests</span> <span class="p">=&gt;</span> <span class="nx">virtualGuests</span><span class="p">,</span>
-        <span class="p">:</span><span class="nx">prices</span> <span class="p">=&gt;</span> <span class="nx">prices</span><span class="p">,</span>
-        <span class="p">:</span><span class="nx">quantity</span> <span class="p">=&gt;</span> <span class="nx">quantity</span>
-    <span class="p">]</span>
-<span class="p">}</span>
-
-<span class="err">#</span> <span class="nx">Create</span> <span class="nx">a</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">client</span> <span class="nx">object</span>
-<span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">::</span><span class="nx">Client</span><span class="p">.</span><span class="nb">new</span><span class="p">(</span><span class="nx">username</span><span class="p">:</span> <span class="nx">USERNAME</span><span class="p">,</span> <span class="nx">api_key</span><span class="p">:</span> <span class="nx">API_KEY</span><span class="p">)</span>
-<span class="nx">service</span> <span class="p">=</span> <span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">SoftLayer_Product_Order</span><span class="err">&#39;</span><span class="p">]</span>
-
-<span class="nx">begin</span>
-  <span class="err">#</span> <span class="nx">Use</span> <span class="nf">verifyOrder</span><span class="p">()</span> <span class="nx">method</span> <span class="nx">to</span> <span class="nx">check</span> <span class="k">for</span> <span class="nx">errors</span><span class="p">.</span> <span class="nx">Replace</span> <span class="nx">this</span> <span class="nx">with</span> <span class="nf">placeOrder</span><span class="p">()</span> <span class="nx">when</span>
-  <span class="err">#</span> <span class="nx">you</span> <span class="nx">are</span> <span class="nx">ready</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
-  <span class="nx">receipt</span> <span class="p">=</span> <span class="nx">service</span><span class="p">.</span><span class="nx">verifyOrder</span> <span class="nx">template_order</span>
-
-  <span class="nx">puts</span> <span class="nx">JSON</span><span class="p">.</span><span class="nf">pretty_generate</span><span class="p">(</span><span class="nx">receipt</span><span class="p">)</span>
-
-<span class="nx">rescue</span> <span class="nx">StandardError</span> <span class="p">=&gt;</span> <span class="nx">exception</span>
-  <span class="nx">puts</span> <span class="s">&#34;Unable to place order: #{exception}&#34;</span>
-<span class="nx">end</span>
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Order</span> <span class="nx">Virtual</span> <span class="nx">Guest</span> <span class="nx">on</span> <span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">This</span> <span class="nx">script</span> <span class="nx">shows</span> <span class="nx">how</span> <span class="nx">to</span> <span class="nx">order</span> <span class="nx">a</span> <span class="nx">vsi</span> <span class="nx">on</span> <span class="nx">an</span> <span class="nx">customer</span><span class="err">&#39;</span><span class="nx">s</span> <span class="nx">dedicated</span> <span class="nx">host</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Important</span> <span class="nx">manual</span> <span class="nx">pages</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/reference/services/SoftLayer_Product_Package/getItemPrices
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">License</span><span class="p">:</span> <span class="nx">http</span><span class="p">:</span><span class="c1">//sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="err">#</span> <span class="nx">Author</span><span class="p">:</span> <span class="nx">SoftLayer</span> <span class="nx">Technologies</span><span class="p">,</span> <span class="nx">Inc</span><span class="p">.</span> <span class="p">&lt;</span><span class="nx">sldn</span><span class="err">@</span><span class="nx">softlayer</span><span class="p">.</span><span class="nx">com</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">require</span> <span class="err">&#39;</span><span class="nx">softlayer_api</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">require</span> <span class="err">&#39;</span><span class="nx">json</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Your</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">username</span> <span class="nx">and</span> <span class="nx">key</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">USERNAME</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">API_KEY</span> <span class="p">=</span> <span class="err">&#39;</span><span class="nx">set</span> <span class="nx">me</span><span class="err">&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Declare</span> <span class="nx">the</span> <span class="nx">hostId</span><span class="p">,</span> <span class="nx">packageId</span> <span class="nx">and</span> <span class="nx">quantity</span> <span class="k">for</span> <span class="nx">the</span> <span class="nx">virtual</span> <span class="nx">guest</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">host_id</span> <span class="p">=</span> <span class="mi">9301</span>
+</span></span><span class="line"><span class="cl"><span class="nx">package_id</span> <span class="p">=</span> <span class="mi">46</span>
+</span></span><span class="line"><span class="cl"><span class="nx">quantity</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Skeleton</span> <span class="nx">of</span> <span class="nx">SoftLayer_Virtual_Guest</span> <span class="nx">object</span> <span class="nx">to</span> <span class="nx">model</span> <span class="nx">the</span> <span class="nx">hostname</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">domain</span> <span class="nx">and</span> <span class="nx">the</span> <span class="nx">router</span> <span class="nx">that</span> <span class="nx">we</span> <span class="nx">want</span> <span class="k">for</span> <span class="nx">our</span> <span class="nx">dedicated</span> <span class="nx">host</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">virtualGuests</span> <span class="p">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">domain</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">softlayer</span><span class="p">.</span><span class="nx">com</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">hostname</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">vsi</span><span class="o">-</span><span class="nx">dedicated</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">primaryBackendNetworkComponent</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="p">:</span><span class="nx">networkVlan</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">1404269</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="p">:</span><span class="nx">primarySubnet</span> <span class="p">=&gt;</span> <span class="mi">1314283</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">primaryNetworkComponent</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="p">:</span><span class="nx">networkVlan</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">1404267</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="p">:</span><span class="nx">primarySubnet</span> <span class="p">=&gt;</span> <span class="mi">1319803</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Build</span> <span class="nx">a</span> <span class="nx">skeleton</span> <span class="nx">SoftLayer_Product_Item_Price</span> <span class="nx">objects</span><span class="p">.</span> <span class="nx">To</span> <span class="nx">get</span> <span class="nx">the</span> <span class="nx">list</span> <span class="nx">of</span> <span class="nx">valid</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">prices</span> <span class="k">for</span> <span class="nx">the</span> <span class="kn">package</span> <span class="nx">use</span> <span class="nx">the</span> <span class="nx">SoftLayer_Product_Package</span><span class="p">:</span><span class="nx">getItemPrices</span> <span class="nx">method</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">prices</span> <span class="p">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">200313</span> <span class="p">},</span>        <span class="err">#</span> <span class="mi">4</span> <span class="nx">x</span> <span class="mf">2.0</span> <span class="nx">GHz</span> <span class="nf">Cores</span> <span class="p">(</span><span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">200397</span> <span class="p">},</span>        <span class="err">#</span> <span class="mi">100</span> <span class="nf">GB</span> <span class="p">(</span><span class="nx">Local</span> <span class="nx">Disk</span> <span class="o">-</span> <span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">45456</span> <span class="p">},</span>         <span class="err">#</span> <span class="nx">CentOS</span> <span class="mf">7.</span><span class="nx">x</span> <span class="o">-</span> <span class="nx">LAMP</span> <span class="nf">Install</span> <span class="p">(</span><span class="mi">64</span> <span class="nx">bit</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">200365</span> <span class="p">},</span>        <span class="err">#</span> <span class="mi">32</span> <span class="nf">GB</span> <span class="p">(</span><span class="nx">RAM</span> <span class="o">-</span> <span class="nx">Dedicated</span> <span class="nx">Host</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">1800</span> <span class="p">},</span>          <span class="err">#</span> <span class="mi">0</span> <span class="nx">GB</span> <span class="nx">Bandwidth</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">55</span> <span class="p">},</span>            <span class="err">#</span> <span class="nx">Host</span> <span class="nx">Ping</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">57</span> <span class="p">},</span>            <span class="err">#</span> <span class="nx">Email</span> <span class="nx">and</span> <span class="nx">Ticket</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">273</span> <span class="p">},</span>           <span class="err">#</span> <span class="mi">100</span> <span class="nx">Mbps</span> <span class="nx">Public</span> <span class="o">&amp;</span> <span class="nx">Private</span> <span class="nx">Network</span> <span class="nx">Uplinks</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">21</span> <span class="p">},</span>            <span class="err">#</span> <span class="mi">1</span> <span class="nx">IP</span> <span class="nx">Address</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">905</span> <span class="p">},</span>           <span class="err">#</span> <span class="nx">Reboot</span> <span class="o">/</span> <span class="nx">Remote</span> <span class="nx">Console</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">58</span> <span class="p">},</span>            <span class="err">#</span> <span class="nx">Automated</span> <span class="nx">Notification</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">420</span> <span class="p">},</span>           <span class="err">#</span> <span class="nx">Unlimited</span> <span class="nx">SSL</span> <span class="nx">VPN</span> <span class="nx">Users</span> <span class="o">&amp;</span> <span class="mi">1</span> <span class="nx">PPTP</span> <span class="nx">VPN</span> <span class="nx">User</span> <span class="nx">per</span> <span class="nx">account</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span> <span class="p">:</span><span class="nx">id</span> <span class="p">=&gt;</span> <span class="mi">418</span> <span class="p">}</span>            <span class="err">#</span> <span class="nx">Nessus</span> <span class="nx">Vulnerability</span> <span class="nx">Assessment</span> <span class="o">&amp;</span> <span class="nx">Reporting</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Build</span> <span class="nx">the</span> <span class="nx">skeleton</span> <span class="nx">of</span> <span class="nx">SoftLayer_Container_Product_Order</span> <span class="nx">object</span>
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">containing</span> <span class="nx">the</span> <span class="nx">order</span> <span class="nx">you</span> <span class="nx">wish</span> <span class="nx">to</span> <span class="nx">place</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">template_order</span> <span class="p">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="p">:</span><span class="nx">orderContainers</span> <span class="p">=&gt;</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">complexType</span> <span class="p">=&gt;</span> <span class="err">&#39;</span><span class="nx">SoftLayer_Container_Product_Order_Virtual_Guest</span><span class="err">&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">hostId</span> <span class="p">=&gt;</span> <span class="nx">host_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">packageId</span> <span class="p">=&gt;</span> <span class="nx">package_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">virtualGuests</span> <span class="p">=&gt;</span> <span class="nx">virtualGuests</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">prices</span> <span class="p">=&gt;</span> <span class="nx">prices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">:</span><span class="nx">quantity</span> <span class="p">=&gt;</span> <span class="nx">quantity</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">#</span> <span class="nx">Create</span> <span class="nx">a</span> <span class="nx">SoftLayer</span> <span class="nx">API</span> <span class="nx">client</span> <span class="nx">object</span>
+</span></span><span class="line"><span class="cl"><span class="nx">client</span> <span class="p">=</span> <span class="nx">SoftLayer</span><span class="p">::</span><span class="nx">Client</span><span class="p">.</span><span class="nb">new</span><span class="p">(</span><span class="nx">username</span><span class="p">:</span> <span class="nx">USERNAME</span><span class="p">,</span> <span class="nx">api_key</span><span class="p">:</span> <span class="nx">API_KEY</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">service</span> <span class="p">=</span> <span class="nx">client</span><span class="p">[</span><span class="err">&#39;</span><span class="nx">SoftLayer_Product_Order</span><span class="err">&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">begin</span>
+</span></span><span class="line"><span class="cl">  <span class="err">#</span> <span class="nx">Use</span> <span class="nf">verifyOrder</span><span class="p">()</span> <span class="nx">method</span> <span class="nx">to</span> <span class="nx">check</span> <span class="k">for</span> <span class="nx">errors</span><span class="p">.</span> <span class="nx">Replace</span> <span class="nx">this</span> <span class="nx">with</span> <span class="nf">placeOrder</span><span class="p">()</span> <span class="nx">when</span>
+</span></span><span class="line"><span class="cl">  <span class="err">#</span> <span class="nx">you</span> <span class="nx">are</span> <span class="nx">ready</span> <span class="nx">to</span> <span class="nx">order</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">receipt</span> <span class="p">=</span> <span class="nx">service</span><span class="p">.</span><span class="nx">verifyOrder</span> <span class="nx">template_order</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nx">puts</span> <span class="nx">JSON</span><span class="p">.</span><span class="nf">pretty_generate</span><span class="p">(</span><span class="nx">receipt</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">rescue</span> <span class="nx">StandardError</span> <span class="p">=&gt;</span> <span class="nx">exception</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">puts</span> <span class="s">&#34;Unable to place order: #{exception}&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">end</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

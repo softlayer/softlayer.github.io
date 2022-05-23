@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -146,60 +142,59 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-perl" data-lang="perl"><span class="c1"># Order a NAS</span>
-<span class="c1"># </span>
-<span class="c1"># Build a SoftLayer_Container_Product_Order_Network_Storage_Nas</span>
-<span class="c1"># object for a new CDN account order and pass it to the SoftLayer_Product_Order</span>
-<span class="c1"># API service to order it. In this script we&#39;ll order a NAS. See below for more details.</span>
-<span class="c1"># </span>
-<span class="c1"># Important manual pages:</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_Nas</span>
-<span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder</span>
-<span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder</span>
-<span class="c1"># </span>
-<span class="c1"># License: http://sldn.softlayer.com/article/License</span>
-<span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
-
-<span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
-<span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
-
-<span class="c1"># Your SoftLayer API username and key.</span>
-<span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-<span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
-
-<span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Network_Storage_Nas object</span>
-<span class="c1"># containing the order you wish to place.</span>
-<span class="k">my</span> <span class="nv">$order_data</span> <span class="o">=</span> <span class="nb">bless</span><span class="p">({</span>
-    <span class="s">&#39;packageId&#39;</span> <span class="o">=&gt;</span> <span class="mi">216</span><span class="p">,</span> <span class="c1"># The package id to order NAS</span>
-    <span class="s">&#39;location&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;AMSTERDAM&#39;</span><span class="p">,</span>
-    <span class="c1"># The prices to order the NAS</span>
-    <span class="s">&#39;prices&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="s">&#39;complexType&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;SoftLayer_Product_Item_Price&#39;</span><span class="p">,</span>
-            <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">508</span> <span class="c1"># 20 GB NAS</span>
-        <span class="p">}</span>
-    <span class="p">],</span>
-    <span class="s">&#39;quantity&#39;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="c1"># We only want 1 firewall</span>
-    <span class="s">&#39;privateCloudOrderFlag&#39;</span> <span class="o">=&gt;</span> <span class="n">False</span><span class="p">,</span>
-<span class="p">},</span><span class="s">&#39;slapi:SoftLayer_Container_Product_Order_Network_Storage_Nas&#39;</span><span class="p">);</span>
-
-<span class="c1"># Creating a SoftLayer API client object</span>
-<span class="k">my</span> <span class="nv">$softLayer_product_order</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
-
-<span class="c1"># verifyOrder() will check your order for errors. Replace this with a call to</span>
-<span class="c1"># placeOrder() when you&#39;re ready to order. Both calls return a receipt object</span>
-<span class="c1"># that you can use for your records.</span>
-<span class="c1"># Once your order is placed it&#39;ll go through SoftLayer&#39;s provisioning process.</span>
-<span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$softLayer_product_order</span><span class="o">-&gt;</span><span class="n">verifyOrder</span><span class="p">(</span><span class="nv">$order_data</span><span class="p">);</span>
-<span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nb">die</span> <span class="s">&#39;Unable to order. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="k">print</span> <span class="n">Dumper</span><span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">);</span>
-<span class="k">print</span> <span class="p">(</span><span class="s">&#34;The order was verified successfully&#34;</span><span class="p">);</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-perl" data-lang="perl"><span class="line"><span class="cl"><span class="c1"># Order a NAS</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># </span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Build a SoftLayer_Container_Product_Order_Network_Storage_Nas</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># object for a new CDN account order and pass it to the SoftLayer_Product_Order</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># API service to order it. In this script we&#39;ll order a NAS. See below for more details.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># </span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Important manual pages:</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Product_Order_Network_Storage_Nas</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Product_Item_Price</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/verifyOrder</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># http://sldn.softlayer.com/reference/services/SoftLayer_Product_Order/placeOrder</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># </span>
+</span></span><span class="line"><span class="cl"><span class="c1"># License: http://sldn.softlayer.com/article/License</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">lib</span> <span class="s">&#39;softlayer-api-perl-client-master/&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">SoftLayer::API::SOAP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">use</span> <span class="nn">Data::Dumper</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Your SoftLayer API username and key.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$username</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$key</span> <span class="o">=</span> <span class="s">&#39;set me&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Building a skeleton SoftLayer_Container_Product_Order_Network_Storage_Nas object</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># containing the order you wish to place.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$order_data</span> <span class="o">=</span> <span class="nb">bless</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;packageId&#39;</span> <span class="o">=&gt;</span> <span class="mi">216</span><span class="p">,</span> <span class="c1"># The package id to order NAS</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;location&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;AMSTERDAM&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># The prices to order the NAS</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;prices&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#39;complexType&#39;</span> <span class="o">=&gt;</span> <span class="s">&#39;SoftLayer_Product_Item_Price&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="s">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="mi">508</span> <span class="c1"># 20 GB NAS</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">],</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;quantity&#39;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="c1"># We only want 1 firewall</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#39;privateCloudOrderFlag&#39;</span> <span class="o">=&gt;</span> <span class="n">False</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">},</span><span class="s">&#39;slapi:SoftLayer_Container_Product_Order_Network_Storage_Nas&#39;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Creating a SoftLayer API client object</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$softLayer_product_order</span> <span class="o">=</span> <span class="nn">SoftLayer::API::SOAP</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="s">&#39;SoftLayer_Product_Order&#39;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nv">$username</span><span class="p">,</span> <span class="nv">$key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># verifyOrder() will check your order for errors. Replace this with a call to</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># placeOrder() when you&#39;re ready to order. Both calls return a receipt object</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># that you can use for your records.</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Once your order is placed it&#39;ll go through SoftLayer&#39;s provisioning process.</span>
+</span></span><span class="line"><span class="cl"><span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$softLayer_product_order</span><span class="o">-&gt;</span><span class="n">verifyOrder</span><span class="p">(</span><span class="nv">$order_data</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">fault</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">die</span> <span class="s">&#39;Unable to order. &#39;</span> <span class="o">.</span> <span class="nv">$result</span><span class="o">-&gt;</span><span class="n">faultstring</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">print</span> <span class="n">Dumper</span><span class="p">(</span><span class="nv">$result</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">print</span> <span class="p">(</span><span class="s">&#34;The order was verified successfully&#34;</span><span class="p">);</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

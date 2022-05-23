@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -149,251 +145,251 @@ if (!doNotTrack) {
                 
 				
                 <p>This example deals with a few ways of pulling data from <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Event_Log/">SoftLayer_Event_Log</a>. There can be quite a few Logs here, therefore it is recommended to use a filter like in <code>getRecentLogs</code> to limit how far back your search for Events, otherwise you will be paging through Events for a long time. Moreover, this example uses the <code>maxNumberOfEvents</code> value to limit the number of event logs that will be retrieved.</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;time&#34;</span>
-<span class="p">)</span>
-
-<span class="c1">// Session created using values set in the environment, or from the local configuration file (i.e. ~/.softlayer).
-</span><span class="c1"></span><span class="kd">var</span> <span class="nx">sess</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-
-<span class="c1">// Set the limit number of events that the API retrieves in each SoftLayer_Event_Log::getAllObjects  method call.
-</span><span class="c1"></span><span class="kd">var</span> <span class="nx">pagination</span> <span class="p">=</span> <span class="mi">50</span>
-
-<span class="c1">// Set the max number of events to retrieve in each log example function.
-</span><span class="c1"></span><span class="kd">var</span> <span class="nx">maxNumberOfEvents</span> <span class="p">=</span><span class="mi">200</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="nx">sess</span><span class="p">.</span><span class="nx">Debug</span> <span class="p">=</span> <span class="kc">true</span>
-
-	<span class="c1">//shows the all user type events
-</span><span class="c1"></span>	<span class="nf">getEventUserTypes</span><span class="p">()</span>
-	<span class="nx">userType</span><span class="o">:=</span><span class="s">&#34;EMPLOYEE&#34;</span>
-	<span class="c1">//shows the events with names is a userType value
-</span><span class="c1"></span>	<span class="nf">getLogsByUserType</span><span class="p">(</span><span class="nx">userType</span><span class="p">)</span>
-
-	<span class="c1">//shows the all user type events
-</span><span class="c1"></span>	<span class="nf">getEventNames</span><span class="p">()</span>
-	<span class="nx">eventName</span><span class="o">:=</span><span class="s">&#34;Authentication&#34;</span>
-	<span class="c1">//shows the events which names contain the eventName value
-</span><span class="c1"></span>	<span class="nf">getLogsByName</span><span class="p">(</span><span class="nx">eventName</span><span class="p">)</span>
-
-	<span class="c1">//shows the events created from a specific number of days ago
-</span><span class="c1"></span>	<span class="nx">daysAgo</span><span class="o">:=</span><span class="mi">30</span>
-	<span class="nf">getRecentLogs</span><span class="p">(</span><span class="nx">daysAgo</span><span class="p">)</span>
-
-	<span class="c1">//shows the system logs
-</span><span class="c1"></span>	<span class="nf">getSystemLogs</span><span class="p">()</span>
-
-	<span class="c1">//shows the login logs
-</span><span class="c1"></span>	<span class="nf">getLoginLogs</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Shows the Event Logs by user type.
-</span><span class="cm">Request URL:
-</span><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="cm">objectFilter={&#34;userType&#34;:{&#34;operation&#34;:&#34;userType&#34;}}&amp;
-</span><span class="cm">objectMask=mask[userType,eventName,eventCreateDate]&amp;
-</span><span class="cm">resultLimit=0,50
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getLogsByUserType</span><span class="p">(</span><span class="nx">eventUserType</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;userType&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">eventUserType</span><span class="p">))</span>
-	<span class="nx">mask</span><span class="o">:=</span><span class="s">&#34;userType,eventName,eventCreateDate&#34;</span>
-	<span class="nx">systemEvents</span><span class="o">:=</span><span class="nf">getAllEvents</span><span class="p">(</span><span class="nx">filter</span><span class="p">,</span><span class="nx">mask</span><span class="p">,</span><span class="nx">pagination</span><span class="p">,</span><span class="nx">maxNumberOfEvents</span><span class="p">)</span>
-	<span class="nf">printLogs</span><span class="p">(</span><span class="nx">systemEvents</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Shows the Event Logs which eventName contains nameQuery value
-</span><span class="cm">RequestURL:
-</span><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="cm">objectFilter={&#34;eventName&#34;:{&#34;operation&#34;:&#34;^=+nameQuery&#34;}}&amp;
-</span><span class="cm">objectMask=mask[userType;eventName,eventCreateDate]&amp;
-</span><span class="cm">resultLimit=0,50
-</span><span class="cm">*/</span>
-<span class="kd">func</span>
-<span class="nf">getLogsByName</span><span class="p">(</span><span class="nx">nameQuery</span> <span class="kt">string</span><span class="p">){</span>
-	<span class="nx">filterQuery</span><span class="o">:=</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;^= %s&#34;</span><span class="p">,</span><span class="nx">nameQuery</span><span class="p">)</span>
-	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;eventName&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">filterQuery</span><span class="p">))</span>
-	<span class="nx">mask</span><span class="o">:=</span><span class="s">&#34;userType;eventName,eventCreateDate&#34;</span>
-	<span class="nx">eventLogs</span> <span class="o">:=</span><span class="nf">getAllEvents</span><span class="p">(</span><span class="nx">filter</span><span class="p">,</span><span class="nx">mask</span><span class="p">,</span><span class="nx">pagination</span><span class="p">,</span><span class="nx">maxNumberOfEvents</span><span class="p">)</span>
-	<span class="nf">printLogs</span><span class="p">(</span><span class="nx">eventLogs</span><span class="p">)</span>
-<span class="p">}</span>
-
-
-<span class="cm">/**
-</span><span class="cm">Shows the SYSTEM Logs.
-</span><span class="cm">Request URL:
-</span><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="cm">objectFilter={&#34;userType&#34;:{&#34;operation&#34;:&#34;SYSTEM&#34;}}&amp;
-</span><span class="cm">objectMask=mask[userType,eventName,eventCreateDate]&amp;
-</span><span class="cm">resultLimit=0,50
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getSystemLogs</span><span class="p">(){</span>
-	<span class="nf">getLogsByUserType</span><span class="p">(</span><span class="s">&#34;SYSTEM&#34;</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Shows the Login Logs
-</span><span class="cm">RequestURL:
-</span><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="cm">objectFilter={&#34;eventName&#34;:{&#34;operation&#34;:&#34;^=+Login&#34;}}&amp;
-</span><span class="cm">objectMask=mask[userType;eventName,eventCreateDate]&amp;
-</span><span class="cm">resultLimit=0,50
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getLoginLogs</span><span class="p">(){</span>
-	<span class="nf">getLogsByName</span><span class="p">(</span><span class="s">&#34;Login&#34;</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Shows the recent Logs, based on a number of days ago.
-</span><span class="cm">Request URL:
-</span><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="cm">objectFilter={&#34;eventCreateDate&#34;:{&#34;operation&#34;:&#34;greaterThanDate&#34;,
-</span><span class="cm">	&#34;options&#34;:[{&#34;name&#34;:&#34;date&#34;,&#34;value&#34;:[&#34;2021-04-24T00:00:00.0000-06:00&#34;]}]}}&amp;
-</span><span class="cm">objectMask=mask[userType;eventName,eventCreateDate]&amp;
-</span><span class="cm">resultLimit=0,50
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getRecentLogs</span><span class="p">(</span><span class="nx">daysAgo</span> <span class="kt">int</span><span class="p">){</span>
-	<span class="nx">offsetDate</span> <span class="o">:=</span><span class="nf">getDateString</span><span class="p">(</span><span class="o">-</span><span class="nx">daysAgo</span><span class="p">)</span>
-	<span class="nx">filterObject</span><span class="o">:=</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;eventCreateDate&#34;</span><span class="p">).</span><span class="nf">DateAfter</span><span class="p">(</span><span class="nx">offsetDate</span><span class="p">))</span>
-	<span class="nx">mask</span><span class="o">:=</span><span class="s">&#34;userType;eventName,eventCreateDate&#34;</span>
-	<span class="nx">recentEvents</span><span class="o">:=</span><span class="nf">getAllEvents</span><span class="p">(</span><span class="nx">filterObject</span><span class="p">,</span><span class="nx">mask</span><span class="p">,</span><span class="nx">pagination</span><span class="p">,</span><span class="nx">maxNumberOfEvents</span><span class="p">)</span>
-	<span class="nf">printLogs</span><span class="p">(</span><span class="nx">recentEvents</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Pages through all results from the Event_Log. This might take long time.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getAllEvents</span><span class="p">(</span>
-	<span class="nx">filter</span> <span class="kt">string</span><span class="p">,</span>
-	<span class="nx">mask</span> <span class="kt">string</span><span class="p">,</span>
-	<span class="nx">pagination</span> <span class="kt">int</span><span class="p">,</span>
-	<span class="nx">maxNumberOfEvents</span> <span class="kt">int</span><span class="p">,</span>
-<span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">limit</span><span class="o">:=</span><span class="nx">pagination</span>
-	<span class="nx">offset</span><span class="o">:=</span><span class="mi">0</span>
-	<span class="nx">eventsSize</span><span class="o">:=</span><span class="nx">limit</span>
-	<span class="kd">var</span> <span class="nx">allEvents</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span>
-	<span class="k">for</span> <span class="nx">eventsSize</span><span class="o">&lt;=</span><span class="nx">maxNumberOfEvents</span> <span class="p">{</span>
-		<span class="nx">events</span> <span class="o">:=</span> <span class="nf">getAllObjects</span><span class="p">(</span><span class="nx">limit</span><span class="p">,</span><span class="nx">offset</span><span class="p">,</span><span class="nx">filter</span><span class="p">,</span><span class="nx">mask</span><span class="p">)</span>
-		<span class="c1">// return if the events are a list of empty structure like [{}]
-</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="p">(</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">{}){</span>
-			<span class="k">return</span> <span class="nx">allEvents</span>
-		<span class="p">}</span>
-		<span class="nx">allEvents</span><span class="p">=</span><span class="nb">append</span><span class="p">(</span><span class="nx">allEvents</span><span class="p">,</span> <span class="nx">events</span><span class="o">...</span><span class="p">)</span>
-		<span class="nx">eventsSize</span><span class="p">=</span><span class="nx">eventsSize</span><span class="o">+</span><span class="nx">pagination</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="nx">allEvents</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Request URL:
-</span><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
-</span><span class="cm">objectFilter= filter &amp;
-</span><span class="cm">objectMask= mask &amp;
-</span><span class="cm">resultLimit=0,50
-</span><span class="cm">
-</span><span class="cm">It returns an array of Event_Log encountered.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getAllObjects</span><span class="p">(</span>
-	<span class="nx">limit</span> <span class="kt">int</span><span class="p">,</span>
-	<span class="nx">offset</span> <span class="kt">int</span><span class="p">,</span>
-	<span class="nx">filter</span> <span class="kt">string</span><span class="p">,</span>
-	<span class="nx">mask</span> <span class="kt">string</span><span class="p">,</span>
-<span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">)</span> <span class="p">{</span>
-	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetEventLogService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span>
-		<span class="nf">Limit</span><span class="p">(</span><span class="nx">limit</span><span class="p">).</span>
-		<span class="nf">Offset</span><span class="p">(</span><span class="nx">offset</span><span class="p">).</span>
-		<span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span>
-		<span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span>
-		<span class="nf">GetAllObjects</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Events:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="nx">result</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Shows the Event Logs Names.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getEventNames</span><span class="p">(){</span>
-	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetEventLogService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">GetAllEventObjectNames</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Events:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Shows the Event Logs User Types.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getEventUserTypes</span><span class="p">()</span> <span class="p">{</span>
-	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetEventLogService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">GetAllUserTypes</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get User types:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Gets a date offset in days determined by offsetDays value.
-</span><span class="cm">It returns a string date with SL API date filtering format.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">getDateString</span><span class="p">(</span><span class="nx">offsetDays</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">years</span><span class="o">:=</span><span class="mi">0</span>
-	<span class="nx">months</span><span class="o">:=</span><span class="mi">0</span>
-	<span class="nx">days</span><span class="o">:=</span> <span class="nx">offsetDays</span>
-	<span class="nx">offsetTime</span><span class="o">:=</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">AddDate</span><span class="p">(</span><span class="nx">years</span><span class="p">,</span><span class="nx">months</span><span class="p">,</span><span class="nx">days</span><span class="p">)</span>
-	<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span>
-		<span class="s">&#34;%d-%02d-%02dT00:00:00.0000-06:00&#34;</span><span class="p">,</span>
-		<span class="nx">offsetTime</span><span class="p">.</span><span class="nf">Year</span><span class="p">(),</span>
-		<span class="nx">offsetTime</span><span class="p">.</span><span class="nf">Month</span><span class="p">(),</span>
-		<span class="nx">offsetTime</span><span class="p">.</span><span class="nf">Day</span><span class="p">())</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the data as format JSON.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">data</span> <span class="kd">interface</span><span class="p">{}){</span>
-	<span class="nx">jsonData</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;    &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nb">println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonData</span><span class="p">))</span>
-<span class="p">}</span>
-
-<span class="cm">/**
-</span><span class="cm">Prints the Event Logs.
-</span><span class="cm">*/</span>
-<span class="kd">func</span> <span class="nf">printLogs</span><span class="p">(</span><span class="nx">logs</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">){</span>
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %35s | %25s |%10s |\n&#34;</span><span class="p">,</span><span class="s">&#34;Event Name&#34;</span><span class="p">,</span><span class="s">&#34;Event Create Date&#34;</span><span class="p">,</span><span class="s">&#34;User Type&#34;</span><span class="p">)</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">log</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">logs</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">log</span><span class="o">!=</span><span class="p">(</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">{}){</span>
-			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %35s &#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">log</span><span class="p">.</span><span class="nx">EventName</span><span class="p">)</span>
-			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %25s &#34;</span><span class="p">,</span> <span class="nx">log</span><span class="p">.</span><span class="nx">EventCreateDate</span><span class="p">)</span>
-			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %10s |\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">log</span><span class="p">.</span><span class="nx">UserType</span><span class="p">)</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;time&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Session created using values set in the environment, or from the local configuration file (i.e. ~/.softlayer).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="nx">sess</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Set the limit number of events that the API retrieves in each SoftLayer_Event_Log::getAllObjects  method call.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="nx">pagination</span> <span class="p">=</span> <span class="mi">50</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Set the max number of events to retrieve in each log example function.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">var</span> <span class="nx">maxNumberOfEvents</span> <span class="p">=</span><span class="mi">200</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">sess</span><span class="p">.</span><span class="nx">Debug</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//shows the all user type events
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">getEventUserTypes</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">userType</span><span class="o">:=</span><span class="s">&#34;EMPLOYEE&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//shows the events with names is a userType value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">getLogsByUserType</span><span class="p">(</span><span class="nx">userType</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//shows the all user type events
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">getEventNames</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">eventName</span><span class="o">:=</span><span class="s">&#34;Authentication&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//shows the events which names contain the eventName value
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">getLogsByName</span><span class="p">(</span><span class="nx">eventName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//shows the events created from a specific number of days ago
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">daysAgo</span><span class="o">:=</span><span class="mi">30</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">getRecentLogs</span><span class="p">(</span><span class="nx">daysAgo</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//shows the system logs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">getSystemLogs</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">//shows the login logs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">getLoginLogs</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Shows the Event Logs by user type.
+</span></span></span><span class="line"><span class="cl"><span class="cm">Request URL:
+</span></span></span><span class="line"><span class="cl"><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectFilter={&#34;userType&#34;:{&#34;operation&#34;:&#34;userType&#34;}}&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectMask=mask[userType,eventName,eventCreateDate]&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">resultLimit=0,50
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getLogsByUserType</span><span class="p">(</span><span class="nx">eventUserType</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;userType&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">eventUserType</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span><span class="o">:=</span><span class="s">&#34;userType,eventName,eventCreateDate&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">systemEvents</span><span class="o">:=</span><span class="nf">getAllEvents</span><span class="p">(</span><span class="nx">filter</span><span class="p">,</span><span class="nx">mask</span><span class="p">,</span><span class="nx">pagination</span><span class="p">,</span><span class="nx">maxNumberOfEvents</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printLogs</span><span class="p">(</span><span class="nx">systemEvents</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Shows the Event Logs which eventName contains nameQuery value
+</span></span></span><span class="line"><span class="cl"><span class="cm">RequestURL:
+</span></span></span><span class="line"><span class="cl"><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectFilter={&#34;eventName&#34;:{&#34;operation&#34;:&#34;^=+nameQuery&#34;}}&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectMask=mask[userType;eventName,eventCreateDate]&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">resultLimit=0,50
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span>
+</span></span><span class="line"><span class="cl"><span class="nf">getLogsByName</span><span class="p">(</span><span class="nx">nameQuery</span> <span class="kt">string</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filterQuery</span><span class="o">:=</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;^= %s&#34;</span><span class="p">,</span><span class="nx">nameQuery</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filter</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;eventName&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">filterQuery</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span><span class="o">:=</span><span class="s">&#34;userType;eventName,eventCreateDate&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">eventLogs</span> <span class="o">:=</span><span class="nf">getAllEvents</span><span class="p">(</span><span class="nx">filter</span><span class="p">,</span><span class="nx">mask</span><span class="p">,</span><span class="nx">pagination</span><span class="p">,</span><span class="nx">maxNumberOfEvents</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printLogs</span><span class="p">(</span><span class="nx">eventLogs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Shows the SYSTEM Logs.
+</span></span></span><span class="line"><span class="cl"><span class="cm">Request URL:
+</span></span></span><span class="line"><span class="cl"><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectFilter={&#34;userType&#34;:{&#34;operation&#34;:&#34;SYSTEM&#34;}}&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectMask=mask[userType,eventName,eventCreateDate]&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">resultLimit=0,50
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getSystemLogs</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">getLogsByUserType</span><span class="p">(</span><span class="s">&#34;SYSTEM&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Shows the Login Logs
+</span></span></span><span class="line"><span class="cl"><span class="cm">RequestURL:
+</span></span></span><span class="line"><span class="cl"><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectFilter={&#34;eventName&#34;:{&#34;operation&#34;:&#34;^=+Login&#34;}}&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectMask=mask[userType;eventName,eventCreateDate]&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">resultLimit=0,50
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getLoginLogs</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">getLogsByName</span><span class="p">(</span><span class="s">&#34;Login&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Shows the recent Logs, based on a number of days ago.
+</span></span></span><span class="line"><span class="cl"><span class="cm">Request URL:
+</span></span></span><span class="line"><span class="cl"><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectFilter={&#34;eventCreateDate&#34;:{&#34;operation&#34;:&#34;greaterThanDate&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="cm">	&#34;options&#34;:[{&#34;name&#34;:&#34;date&#34;,&#34;value&#34;:[&#34;2021-04-24T00:00:00.0000-06:00&#34;]}]}}&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectMask=mask[userType;eventName,eventCreateDate]&amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">resultLimit=0,50
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getRecentLogs</span><span class="p">(</span><span class="nx">daysAgo</span> <span class="kt">int</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">offsetDate</span> <span class="o">:=</span><span class="nf">getDateString</span><span class="p">(</span><span class="o">-</span><span class="nx">daysAgo</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filterObject</span><span class="o">:=</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Build</span><span class="p">(</span><span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;eventCreateDate&#34;</span><span class="p">).</span><span class="nf">DateAfter</span><span class="p">(</span><span class="nx">offsetDate</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span><span class="o">:=</span><span class="s">&#34;userType;eventName,eventCreateDate&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">recentEvents</span><span class="o">:=</span><span class="nf">getAllEvents</span><span class="p">(</span><span class="nx">filterObject</span><span class="p">,</span><span class="nx">mask</span><span class="p">,</span><span class="nx">pagination</span><span class="p">,</span><span class="nx">maxNumberOfEvents</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printLogs</span><span class="p">(</span><span class="nx">recentEvents</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Pages through all results from the Event_Log. This might take long time.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getAllEvents</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filter</span> <span class="kt">string</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="kt">string</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">pagination</span> <span class="kt">int</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">maxNumberOfEvents</span> <span class="kt">int</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">limit</span><span class="o">:=</span><span class="nx">pagination</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">offset</span><span class="o">:=</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">eventsSize</span><span class="o">:=</span><span class="nx">limit</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">allEvents</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">eventsSize</span><span class="o">&lt;=</span><span class="nx">maxNumberOfEvents</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">events</span> <span class="o">:=</span> <span class="nf">getAllObjects</span><span class="p">(</span><span class="nx">limit</span><span class="p">,</span><span class="nx">offset</span><span class="p">,</span><span class="nx">filter</span><span class="p">,</span><span class="nx">mask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// return if the events are a list of empty structure like [{}]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="p">(</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">{}){</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="nx">allEvents</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">allEvents</span><span class="p">=</span><span class="nb">append</span><span class="p">(</span><span class="nx">allEvents</span><span class="p">,</span> <span class="nx">events</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">eventsSize</span><span class="p">=</span><span class="nx">eventsSize</span><span class="o">+</span><span class="nx">pagination</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">allEvents</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Request URL:
+</span></span></span><span class="line"><span class="cl"><span class="cm">GET https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/getAllObjects.json?
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectFilter= filter &amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">objectMask= mask &amp;
+</span></span></span><span class="line"><span class="cl"><span class="cm">resultLimit=0,50
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">It returns an array of Event_Log encountered.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getAllObjects</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">limit</span> <span class="kt">int</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">offset</span> <span class="kt">int</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">filter</span> <span class="kt">string</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">mask</span> <span class="kt">string</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetEventLogService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">Limit</span><span class="p">(</span><span class="nx">limit</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">Offset</span><span class="p">(</span><span class="nx">offset</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">Filter</span><span class="p">(</span><span class="nx">filter</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">GetAllObjects</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Events:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">result</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Shows the Event Logs Names.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getEventNames</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetEventLogService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">GetAllEventObjectNames</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Events:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Shows the Event Logs User Types.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getEventUserTypes</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">service</span> <span class="p">=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetEventLogService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">GetAllUserTypes</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get User types:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Gets a date offset in days determined by offsetDays value.
+</span></span></span><span class="line"><span class="cl"><span class="cm">It returns a string date with SL API date filtering format.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">getDateString</span><span class="p">(</span><span class="nx">offsetDays</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">years</span><span class="o">:=</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">months</span><span class="o">:=</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">days</span><span class="o">:=</span> <span class="nx">offsetDays</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">offsetTime</span><span class="o">:=</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">AddDate</span><span class="p">(</span><span class="nx">years</span><span class="p">,</span><span class="nx">months</span><span class="p">,</span><span class="nx">days</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="s">&#34;%d-%02d-%02dT00:00:00.0000-06:00&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">offsetTime</span><span class="p">.</span><span class="nf">Year</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">offsetTime</span><span class="p">.</span><span class="nf">Month</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">offsetTime</span><span class="p">.</span><span class="nf">Day</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the data as format JSON.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printAsJsonFormat</span><span class="p">(</span><span class="nx">data</span> <span class="kd">interface</span><span class="p">{}){</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">jsonData</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;    &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nb">println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonData</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">Prints the Event Logs.
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">printLogs</span><span class="p">(</span><span class="nx">logs</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %35s | %25s |%10s |\n&#34;</span><span class="p">,</span><span class="s">&#34;Event Name&#34;</span><span class="p">,</span><span class="s">&#34;Event Create Date&#34;</span><span class="p">,</span><span class="s">&#34;User Type&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">log</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">logs</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">log</span><span class="o">!=</span><span class="p">(</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Event_Log</span><span class="p">{}){</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %35s &#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">log</span><span class="p">.</span><span class="nx">EventName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %25s &#34;</span><span class="p">,</span> <span class="nx">log</span><span class="p">.</span><span class="nx">EventCreateDate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;| %10s |\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">log</span><span class="p">.</span><span class="nx">UserType</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

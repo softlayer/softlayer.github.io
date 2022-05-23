@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -144,91 +140,90 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Create Image Template from external source
-</span><span class="cm">
-</span><span class="cm">This script creates a transaction to import a disk image from an external source and create
-</span><span class="cm">a standard image template
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest_Block_Device_Template_Group/createFromExternalSource
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Virtual_Guest_Block_Device_Template_Configuration
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_Block_Device_Template_Group
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key.
-</span><span class="c1"></span>	<span class="nx">username</span>  <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>    <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// Declare the name, note to be applied to the imported template
-</span><span class="c1"></span>	<span class="nx">name</span> <span class="o">:=</span> <span class="s">&#34;ExportImageTemplateTest&#34;</span>
-	<span class="nx">note</span> <span class="o">:=</span> <span class="s">&#34;Test - create from external source&#34;</span>
-
-	<span class="cm">/*
-</span><span class="cm">	Declare referenceCode of the operating system software description, some available options:
-</span><span class="cm">	   CENTOS_6_32, CENTOS_6_64, CENTOS_7_64, REDHAT_6_32, REDHAT_6_64, REDHAT_7_64, UBUNTU_12_32,
-</span><span class="cm">	   UBUNTU_12_64, UBUNTU_14_32, UBUNTU_14_64, WIN_2003-STD-SP2-5_32, WIN_2003-STD-SP2-5_64,
-</span><span class="cm">	   WIN_2008-STD-R2-SP1_64, WIN_2012-STD_64.
-</span><span class="cm">	*/</span>
-	<span class="nx">operatingSystemReferenceCode</span> <span class="o">:=</span> <span class="s">&#34;CENTOS_6_64&#34;</span>
-
-	<span class="c1">// Declare storage, cluster, container and filename used to create the URL where image
-</span><span class="c1"></span>	<span class="c1">// will be copied.
-</span><span class="c1"></span>	<span class="nx">storageName</span>   <span class="o">:=</span> <span class="s">&#34;SLOS307608-40&#34;</span>
-	<span class="nx">clusterName</span>   <span class="o">:=</span> <span class="s">&#34;sao01&#34;</span>
-	<span class="nx">containerName</span> <span class="o">:=</span> <span class="s">&#34;softlayer_container&#34;</span>
-	<span class="nx">fileName</span>      <span class="o">:=</span> <span class="s">&#34;centos6test.vhd&#34;</span>
-
-	<span class="c1">// Build URL where image is hosted
-</span><span class="c1"></span>	<span class="nx">swift</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;swift://%s@%s/%s/%s&#34;</span><span class="p">,</span> <span class="nx">storageName</span><span class="p">,</span> <span class="nx">clusterName</span><span class="p">,</span> <span class="nx">containerName</span><span class="p">,</span> <span class="nx">fileName</span> <span class="p">)</span>
-
-	<span class="c1">// Build the Container_Virtual_Guest_Block_Device_Template_Configuration object
-</span><span class="c1"></span>	<span class="nx">configuration</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Virtual_Guest_Block_Device_Template_Configuration</span><span class="p">{</span>
-		<span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">name</span><span class="p">),</span>
-		<span class="nx">Note</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">note</span><span class="p">),</span>
-		<span class="nx">OperatingSystemReferenceCode</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">operatingSystemReferenceCode</span><span class="p">),</span>
-		<span class="nx">Uri</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">swift</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Virtual_Guest_Block_Device_Template_Group service.
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestBlockDeviceTemplateGroupService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Create standard image from external source.
-</span><span class="c1"></span>	<span class="nx">image</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">CreateFromExternalSource</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">configuration</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to create standard image:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following creates a JSON object which is based on data of the captured image.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">JsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">image</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">JsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">JsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Print result in JSON format
-</span><span class="c1"></span>	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Create Image Template from external source
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">This script creates a transaction to import a disk image from an external source and create
+</span></span></span><span class="line"><span class="cl"><span class="cm">a standard image template
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest_Block_Device_Template_Group/createFromExternalSource
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Container_Virtual_Guest_Block_Device_Template_Configuration
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Virtual_Guest_Block_Device_Template_Group
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span>  <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>    <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare the name, note to be applied to the imported template
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">name</span> <span class="o">:=</span> <span class="s">&#34;ExportImageTemplateTest&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">note</span> <span class="o">:=</span> <span class="s">&#34;Test - create from external source&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">	Declare referenceCode of the operating system software description, some available options:
+</span></span></span><span class="line"><span class="cl"><span class="cm">	   CENTOS_6_32, CENTOS_6_64, CENTOS_7_64, REDHAT_6_32, REDHAT_6_64, REDHAT_7_64, UBUNTU_12_32,
+</span></span></span><span class="line"><span class="cl"><span class="cm">	   UBUNTU_12_64, UBUNTU_14_32, UBUNTU_14_64, WIN_2003-STD-SP2-5_32, WIN_2003-STD-SP2-5_64,
+</span></span></span><span class="line"><span class="cl"><span class="cm">	   WIN_2008-STD-R2-SP1_64, WIN_2012-STD_64.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	*/</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">operatingSystemReferenceCode</span> <span class="o">:=</span> <span class="s">&#34;CENTOS_6_64&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare storage, cluster, container and filename used to create the URL where image
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// will be copied.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">storageName</span>   <span class="o">:=</span> <span class="s">&#34;SLOS307608-40&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">clusterName</span>   <span class="o">:=</span> <span class="s">&#34;sao01&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">containerName</span> <span class="o">:=</span> <span class="s">&#34;softlayer_container&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fileName</span>      <span class="o">:=</span> <span class="s">&#34;centos6test.vhd&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build URL where image is hosted
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">swift</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;swift://%s@%s/%s/%s&#34;</span><span class="p">,</span> <span class="nx">storageName</span><span class="p">,</span> <span class="nx">clusterName</span><span class="p">,</span> <span class="nx">containerName</span><span class="p">,</span> <span class="nx">fileName</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build the Container_Virtual_Guest_Block_Device_Template_Configuration object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">configuration</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Virtual_Guest_Block_Device_Template_Configuration</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Name</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">name</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Note</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">note</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">OperatingSystemReferenceCode</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">operatingSystemReferenceCode</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Uri</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">swift</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Virtual_Guest_Block_Device_Template_Group service.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetVirtualGuestBlockDeviceTemplateGroupService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create standard image from external source.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">image</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">CreateFromExternalSource</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">configuration</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to create standard image:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following creates a JSON object which is based on data of the captured image.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">JsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">image</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">JsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">JsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Print result in JSON format
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

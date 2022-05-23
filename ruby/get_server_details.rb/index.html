@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -144,96 +140,95 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-fallback" data-lang="fallback"># Get server details
-#
-# Retrieve a list of hardware and print a report with server hostname, domain,
-# login info, network, CPU, and RAM details.
-# This script makes a single call to the getHardware() method in the
-# SoftLayer_Account API service
-# (http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware)
-# and uses an object mask to retrieve related information. It uses the
-# SoftLayer API Ruby client
-# &lt;https://github.com/softlayer/softlayer-ruby&gt; to handle API calls.
-# See below for more details.
-#
-# Important manual pages:
-# http://sldn.softlayer.com/reference/services/SoftLayer_Account
-# http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
-#
-# License: http://sldn.softlayer.com/article/License
-# Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-require &#39;rubygems&#39;
-require &#39;softlayer_api&#39;
-require &#39;json&#39;
-
-# Your SoftLayer API username and key.
-USERNAME = &#39;set me&#39;
-API_KEY = &#39;set me&#39;
-
-# Declaring the API client
-client = SoftLayer::Client.new(username: USERNAME, api_key: API_KEY)
-account_service = client[&#39;SoftLayer_Account&#39;]
-
-# Add an object mask to retrieve our hardwares&#39; related items such as its
-# operating system, hardware components, and network components. Object masks
-# can retrieve any information related to your object. See
-# http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
-# for a list of the relational properties you can retrieve along with hardware.
-object_mask = &#39;mask[processors, processorCount, memory, memoryCount, networkComponents, primaryIpAddress, operatingSystem[passwords]]&#39;
-
-begin
-  # Make the call to retrieve our hardware records.
-  hardware_list = account_service.object_mask(object_mask).getHardware
-rescue StandardError =&gt; exception
-  # If there was an error returned from the SoftLayer API then bomb out with the
-  # error message.
-  puts &#34;Unable to list the servers: #{exception}&#34;
-end
-
-hardware_list.each do |hardware|
-  # Puts hardware
-  passwords = hardware[&#39;operatingSystem&#39;][&#39;passwords&#39;][0]
-  networks = hardware[&#39;networkComponents&#39;]
-  public_mac_address = &#39;not found&#39;
-  private_mac_address = &#39;not found&#39;
-  networks.each do |network|
-    # SoftLayer uses eth0 on the private network and eth1 on the public
-    # network.
-    if network[&#39;name&#39;] == &#39;eth&#39; &amp;&amp; network[&#39;port&#39;] == 0
-      private_mac_address = network[&#39;macAddress&#39;]
-    else
-      if network[&#39;name&#39;] == &#39;eth&#39; &amp;&amp; network[&#39;port&#39;] == 1
-        public_mac_address = network[&#39;macAddress&#39;]
-      end
-    end
-  end
-
-  # Hardware can only have like processors in them, so use the first item in
-  # the processors array to get the type of processor in the server.
-  processor_type = hardware[&#39;processors&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;capacity&#39;] + \
-                   hardware[&#39;processors&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;units&#39;] + &#39; &#39; + \
-                   hardware[&#39;processors&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;description&#39;]
-
-  # Treat memory the same way we did processors.
-  memory_type = hardware[&#39;memory&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;capacity&#39;] + \
-                hardware[&#39;memory&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;units&#39;] + &#39; &#39; + \
-                hardware[&#39;memory&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;description&#39;]
-
-  # All done! Print hardware info.
-  puts &#39;Hostname: &#39; + hardware[&#39;hostname&#39;]
-  puts &#39;Domain: &#39; + hardware[&#39;domain&#39;]
-  puts &#39;Login: &#39; + passwords[&#39;username&#39;] + &#39;/&#39; + passwords[&#39;password&#39;]
-  puts &#39;Public IP Address: &#39; + hardware[&#39;primaryIpAddress&#39;]
-  puts &#39;Public MAC Address: &#39; + public_mac_address
-  puts &#39;Private IP Address: &#39; + hardware[&#39;privateIpAddress&#39;]
-  puts &#39;Private MAC Address: &#39; + private_mac_address
-  puts &#39;CPUs: &#39; + (hardware[&#39;processorCount&#39;]).to_s + &#39;x &#39; + processor_type
-  puts &#39;RAM: &#39; + (hardware[&#39;memoryCount&#39;]).to_s + &#39;x &#39; + memory_type
-  puts &#39; &#39;
-end
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># Get server details
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># Retrieve a list of hardware and print a report with server hostname, domain,
+</span></span><span class="line"><span class="cl"># login info, network, CPU, and RAM details.
+</span></span><span class="line"><span class="cl"># This script makes a single call to the getHardware() method in the
+</span></span><span class="line"><span class="cl"># SoftLayer_Account API service
+</span></span><span class="line"><span class="cl"># (http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware)
+</span></span><span class="line"><span class="cl"># and uses an object mask to retrieve related information. It uses the
+</span></span><span class="line"><span class="cl"># SoftLayer API Ruby client
+</span></span><span class="line"><span class="cl"># &lt;https://github.com/softlayer/softlayer-ruby&gt; to handle API calls.
+</span></span><span class="line"><span class="cl"># See below for more details.
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># Important manual pages:
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Account
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/services/SoftLayer_Account/getHardware
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
+</span></span><span class="line"><span class="cl">#
+</span></span><span class="line"><span class="cl"># License: http://sldn.softlayer.com/article/License
+</span></span><span class="line"><span class="cl"># Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span><span class="line"><span class="cl">require &#39;rubygems&#39;
+</span></span><span class="line"><span class="cl">require &#39;softlayer_api&#39;
+</span></span><span class="line"><span class="cl">require &#39;json&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Your SoftLayer API username and key.
+</span></span><span class="line"><span class="cl">USERNAME = &#39;set me&#39;
+</span></span><span class="line"><span class="cl">API_KEY = &#39;set me&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Declaring the API client
+</span></span><span class="line"><span class="cl">client = SoftLayer::Client.new(username: USERNAME, api_key: API_KEY)
+</span></span><span class="line"><span class="cl">account_service = client[&#39;SoftLayer_Account&#39;]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># Add an object mask to retrieve our hardwares&#39; related items such as its
+</span></span><span class="line"><span class="cl"># operating system, hardware components, and network components. Object masks
+</span></span><span class="line"><span class="cl"># can retrieve any information related to your object. See
+</span></span><span class="line"><span class="cl"># http://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server
+</span></span><span class="line"><span class="cl"># for a list of the relational properties you can retrieve along with hardware.
+</span></span><span class="line"><span class="cl">object_mask = &#39;mask[processors, processorCount, memory, memoryCount, networkComponents, primaryIpAddress, operatingSystem[passwords]]&#39;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">begin
+</span></span><span class="line"><span class="cl">  # Make the call to retrieve our hardware records.
+</span></span><span class="line"><span class="cl">  hardware_list = account_service.object_mask(object_mask).getHardware
+</span></span><span class="line"><span class="cl">rescue StandardError =&gt; exception
+</span></span><span class="line"><span class="cl">  # If there was an error returned from the SoftLayer API then bomb out with the
+</span></span><span class="line"><span class="cl">  # error message.
+</span></span><span class="line"><span class="cl">  puts &#34;Unable to list the servers: #{exception}&#34;
+</span></span><span class="line"><span class="cl">end
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">hardware_list.each do |hardware|
+</span></span><span class="line"><span class="cl">  # Puts hardware
+</span></span><span class="line"><span class="cl">  passwords = hardware[&#39;operatingSystem&#39;][&#39;passwords&#39;][0]
+</span></span><span class="line"><span class="cl">  networks = hardware[&#39;networkComponents&#39;]
+</span></span><span class="line"><span class="cl">  public_mac_address = &#39;not found&#39;
+</span></span><span class="line"><span class="cl">  private_mac_address = &#39;not found&#39;
+</span></span><span class="line"><span class="cl">  networks.each do |network|
+</span></span><span class="line"><span class="cl">    # SoftLayer uses eth0 on the private network and eth1 on the public
+</span></span><span class="line"><span class="cl">    # network.
+</span></span><span class="line"><span class="cl">    if network[&#39;name&#39;] == &#39;eth&#39; &amp;&amp; network[&#39;port&#39;] == 0
+</span></span><span class="line"><span class="cl">      private_mac_address = network[&#39;macAddress&#39;]
+</span></span><span class="line"><span class="cl">    else
+</span></span><span class="line"><span class="cl">      if network[&#39;name&#39;] == &#39;eth&#39; &amp;&amp; network[&#39;port&#39;] == 1
+</span></span><span class="line"><span class="cl">        public_mac_address = network[&#39;macAddress&#39;]
+</span></span><span class="line"><span class="cl">      end
+</span></span><span class="line"><span class="cl">    end
+</span></span><span class="line"><span class="cl">  end
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  # Hardware can only have like processors in them, so use the first item in
+</span></span><span class="line"><span class="cl">  # the processors array to get the type of processor in the server.
+</span></span><span class="line"><span class="cl">  processor_type = hardware[&#39;processors&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;capacity&#39;] + \
+</span></span><span class="line"><span class="cl">                   hardware[&#39;processors&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;units&#39;] + &#39; &#39; + \
+</span></span><span class="line"><span class="cl">                   hardware[&#39;processors&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;description&#39;]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  # Treat memory the same way we did processors.
+</span></span><span class="line"><span class="cl">  memory_type = hardware[&#39;memory&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;capacity&#39;] + \
+</span></span><span class="line"><span class="cl">                hardware[&#39;memory&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;units&#39;] + &#39; &#39; + \
+</span></span><span class="line"><span class="cl">                hardware[&#39;memory&#39;][0][&#39;hardwareComponentModel&#39;][&#39;hardwareGenericComponentModel&#39;][&#39;description&#39;]
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  # All done! Print hardware info.
+</span></span><span class="line"><span class="cl">  puts &#39;Hostname: &#39; + hardware[&#39;hostname&#39;]
+</span></span><span class="line"><span class="cl">  puts &#39;Domain: &#39; + hardware[&#39;domain&#39;]
+</span></span><span class="line"><span class="cl">  puts &#39;Login: &#39; + passwords[&#39;username&#39;] + &#39;/&#39; + passwords[&#39;password&#39;]
+</span></span><span class="line"><span class="cl">  puts &#39;Public IP Address: &#39; + hardware[&#39;primaryIpAddress&#39;]
+</span></span><span class="line"><span class="cl">  puts &#39;Public MAC Address: &#39; + public_mac_address
+</span></span><span class="line"><span class="cl">  puts &#39;Private IP Address: &#39; + hardware[&#39;privateIpAddress&#39;]
+</span></span><span class="line"><span class="cl">  puts &#39;Private MAC Address: &#39; + private_mac_address
+</span></span><span class="line"><span class="cl">  puts &#39;CPUs: &#39; + (hardware[&#39;processorCount&#39;]).to_s + &#39;x &#39; + processor_type
+</span></span><span class="line"><span class="cl">  puts &#39;RAM: &#39; + (hardware[&#39;memoryCount&#39;]).to_s + &#39;x &#39; + memory_type
+</span></span><span class="line"><span class="cl">  puts &#39; &#39;
+</span></span><span class="line"><span class="cl">end
+</span></span></code></pre></div>
             </div>
         </div>
 

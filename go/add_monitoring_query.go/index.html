@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -142,92 +138,91 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">The script creates a monitoring network with Service ping in a determinate IP address
-</span><span class="cm">
-</span><span class="cm">Important manual pages
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Monitor_Version1_Query_Host
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Monitor_Version1_Query_Host
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// The ID of virtual guest to want to apply monitoring query.
-</span><span class="c1"></span>	<span class="nx">guestId</span>  <span class="o">:=</span> <span class="mi">32834621</span>
-
-	<span class="c1">// The IP address to be monitored. Must be attached to the hardware/virtual guest
-</span><span class="c1"></span>	<span class="c1">// on this object.
-</span><span class="c1"></span>	<span class="nx">ipAddress</span> <span class="o">:=</span> <span class="s">&#34;10.77.176.12&#34;</span>
-
-	<span class="c1">// The ID of the query type to use. You can get the ID types using the following method.
-</span><span class="c1"></span>	<span class="c1">// SoftLayer_Network_Monitor_Version1_Query_Host_Stratum::getAllQueryTypes
-</span><span class="c1"></span>	<span class="nx">queryTypeId</span> <span class="o">:=</span> <span class="mi">17</span>       <span class="c1">// SLOW PING
-</span><span class="c1"></span>
-	<span class="c1">// The ID of the response action to take when the monitor fails. You can get IDs using
-</span><span class="c1"></span>	<span class="c1">// following method SoftLayer_Network_Monitor_Version1_Query_Host_Stratum::getAllResponseTypes
-</span><span class="c1"></span>	<span class="nx">responseActionId</span> <span class="o">:=</span> <span class="mi">1</span>           <span class="c1">// No Nothing
-</span><span class="c1"></span>
-	<span class="c1">// The status of this monitoring instance. Anything other than &#34;ON&#34; means that the monitor
-</span><span class="c1"></span>	<span class="c1">// has been disabled
-</span><span class="c1"></span>	<span class="nx">status</span> <span class="o">:=</span> <span class="s">&#34;ON&#34;</span>
-
-	<span class="c1">// The number of 5-minute cycles to wait before the &#34;responseAction&#34; is taken.
-</span><span class="c1"></span>	<span class="c1">// If set to 0, the response action will be taken immediately
-</span><span class="c1"></span>	<span class="nx">waitCycles</span> <span class="o">:=</span> <span class="mi">1</span>
-
-	<span class="c1">// Build object template used to create the network monitor
-</span><span class="c1"></span>	<span class="nx">objectTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Monitor_Version1_Query_Host</span><span class="p">{</span>
-		<span class="nx">GuestId</span>		 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">guestId</span><span class="p">),</span>
-		<span class="nx">IpAddress</span>	 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">ipAddress</span><span class="p">),</span>
-		<span class="nx">QueryTypeId</span>	 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">queryTypeId</span><span class="p">),</span>
-		<span class="nx">ResponseActionId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">responseActionId</span><span class="p">),</span>
-		<span class="nx">Status</span>		 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">status</span><span class="p">),</span>
-		<span class="nx">WaitCycles</span>	 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">waitCycles</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Create a session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Network_Monitor_Version1_Query_Host service
-</span><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkMonitorVersion1QueryHostService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Declare mask used to get specific information from monitor.
-</span><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;queryType[id,name]&#34;</span>
-
-	<span class="c1">// Create network monitoring query
-</span><span class="c1"></span>	<span class="nx">monitor</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">objectTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to add network monitor:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">monitor</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">The script creates a monitoring network with Service ping in a determinate IP address
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Monitor_Version1_Query_Host
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Monitor_Version1_Query_Host
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The ID of virtual guest to want to apply monitoring query.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">guestId</span>  <span class="o">:=</span> <span class="mi">32834621</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The IP address to be monitored. Must be attached to the hardware/virtual guest
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// on this object.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">ipAddress</span> <span class="o">:=</span> <span class="s">&#34;10.77.176.12&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The ID of the query type to use. You can get the ID types using the following method.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftLayer_Network_Monitor_Version1_Query_Host_Stratum::getAllQueryTypes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">queryTypeId</span> <span class="o">:=</span> <span class="mi">17</span>       <span class="c1">// SLOW PING
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// The ID of the response action to take when the monitor fails. You can get IDs using
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// following method SoftLayer_Network_Monitor_Version1_Query_Host_Stratum::getAllResponseTypes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">responseActionId</span> <span class="o">:=</span> <span class="mi">1</span>           <span class="c1">// No Nothing
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// The status of this monitoring instance. Anything other than &#34;ON&#34; means that the monitor
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// has been disabled
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">status</span> <span class="o">:=</span> <span class="s">&#34;ON&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The number of 5-minute cycles to wait before the &#34;responseAction&#34; is taken.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// If set to 0, the response action will be taken immediately
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">waitCycles</span> <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Build object template used to create the network monitor
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">objectTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Monitor_Version1_Query_Host</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">GuestId</span>		 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">guestId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">IpAddress</span>	 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">ipAddress</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">QueryTypeId</span>	 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">queryTypeId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ResponseActionId</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">responseActionId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Status</span>		 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">status</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">WaitCycles</span>	 <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">waitCycles</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Network_Monitor_Version1_Query_Host service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkMonitorVersion1QueryHostService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Declare mask used to get specific information from monitor.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;queryType[id,name]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create network monitoring query
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">monitor</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">objectTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to add network monitor:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">monitor</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

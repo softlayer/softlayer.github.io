@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -146,107 +142,106 @@ if (!doNotTrack) {
 				
                 
 				
-                <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="cm">/*
-</span><span class="cm">Create a Vulnerability Scan Request for a SoftLayer_Hardware_Server.
-</span><span class="cm">
-</span><span class="cm">This example shows how to create a scan request for a SoftLayer_Hardware_Server object. First, we&#39;ll
-</span><span class="cm">retrieve data like accountId, hardwareId and ipAddress to build a object template and pass it to
-</span><span class="cm">SoftLayer_Network_Security_Scanner_Request::createObject method in order to create the scan request.
-</span><span class="cm">See below for more details.
-</span><span class="cm">
-</span><span class="cm">Important manual pages:
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getObject
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject
-</span><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Security_Scanner_Request/createObject
-</span><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Security_Scanner_Request
-</span><span class="cm">https://sldn.softlayer.com/article/object-Masks
-</span><span class="cm">
-</span><span class="cm">License: http://sldn.softlayer.com/article/License
-</span><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span><span class="cm">*/</span>
-
-<span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-	<span class="s">&#34;fmt&#34;</span>
-	<span class="s">&#34;encoding/json&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-	<span class="c1">// SoftLayer API username and key
-</span><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
-
-	<span class="c1">// The id of hardware server you wish to create a scan request
-</span><span class="c1"></span>	<span class="nx">hardwareId</span> <span class="o">:=</span> <span class="mi">438878</span>
-
-	<span class="c1">// Create a session
-</span><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
-
-	<span class="c1">// Get Account, Hardware_Server, and Network_Security_Scanner_Request services
-</span><span class="c1"></span>	<span class="nx">accountService</span>     <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">hardwareService</span>    <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetHardwareServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-	<span class="nx">scanRequestService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkSecurityScannerRequestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-	<span class="c1">// Get SoftLayer_Account object
-</span><span class="c1"></span>	<span class="nx">account</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">accountService</span><span class="p">.</span><span class="nf">GetObject</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Account object:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following mask helps to get the id and ip addresses from hardware server.
-</span><span class="c1"></span>	<span class="nx">hardwareMask</span> <span class="o">:=</span> <span class="s">&#34;id;primaryIpAddress;primaryBackendIpAddress&#34;</span>
-
-	<span class="c1">// Call to SoftLayer_Hardware_Server::getObject in order to get id and ip addresses.
-</span><span class="c1"></span>	<span class="nx">hardware</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">hardwareService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">hardwareId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">hardwareMask</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Hardware Server object:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="cm">/*
-</span><span class="cm">	Build the object template used to make a scan request. The Network_Security_Scanner_Request
-</span><span class="cm">	service can scan any Ip Address belonging to your account:
-</span><span class="cm">		- Primary Ip Address
-</span><span class="cm">		- Primary Backend Ip Address
-</span><span class="cm">		- Portable Ip Addresses
-</span><span class="cm">		- Static Secondary IPs
-</span><span class="cm">	If you have a firewall, SoftLayer&#39;s administrative networks need to be allowed for the
-</span><span class="cm">	vulnerability scan to be effective. If a firewall is blocking all ports, the report may not
-</span><span class="cm">	show any problems even if some exist.
-</span><span class="cm">	*/</span>
-	<span class="nx">objectTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Security_Scanner_Request</span><span class="p">{</span>
-		<span class="nx">AccountId</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">account</span><span class="p">.</span><span class="nx">Id</span><span class="p">),</span>
-		<span class="nx">HardwareId</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">hardware</span><span class="p">.</span><span class="nx">Id</span><span class="p">),</span>
-		<span class="nx">IpAddress</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="o">*</span><span class="nx">hardware</span><span class="p">.</span><span class="nx">PrimaryIpAddress</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Object-Mask in order to get specific data from response.
-</span><span class="c1"></span>	<span class="nx">scanMask</span> <span class="o">:=</span> <span class="s">&#34;accountId;createDate;id;ipAddress;hardwareId;status[name]&#34;</span>
-
-	<span class="c1">// Call to createObject() method to create a scan request.
-</span><span class="c1"></span>	<span class="nx">scanRequest</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">scanRequestService</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">scanMask</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">objectTemplate</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to create a scan request:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">scanRequest</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-		<span class="k">return</span>
-	<span class="p">}</span>
-	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-<span class="p">}</span>
-
-</code></pre></div>
+                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">Create a Vulnerability Scan Request for a SoftLayer_Hardware_Server.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">This example shows how to create a scan request for a SoftLayer_Hardware_Server object. First, we&#39;ll
+</span></span></span><span class="line"><span class="cl"><span class="cm">retrieve data like accountId, hardwareId and ipAddress to build a object template and pass it to
+</span></span></span><span class="line"><span class="cl"><span class="cm">SoftLayer_Network_Security_Scanner_Request::createObject method in order to create the scan request.
+</span></span></span><span class="line"><span class="cl"><span class="cm">See below for more details.
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">Important manual pages:
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Account/getObject
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/getObject
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/services/SoftLayer_Network_Security_Scanner_Request/createObject
+</span></span></span><span class="line"><span class="cl"><span class="cm">http://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Security_Scanner_Request
+</span></span></span><span class="line"><span class="cl"><span class="cm">https://sldn.softlayer.com/article/object-Masks
+</span></span></span><span class="line"><span class="cl"><span class="cm">
+</span></span></span><span class="line"><span class="cl"><span class="cm">License: http://sldn.softlayer.com/article/License
+</span></span></span><span class="line"><span class="cl"><span class="cm">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// SoftLayer API username and key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">username</span> <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">apikey</span>   <span class="o">:=</span> <span class="s">&#34;set me&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The id of hardware server you wish to create a scan request
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hardwareId</span> <span class="o">:=</span> <span class="mi">438878</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">username</span><span class="p">,</span> <span class="nx">apikey</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get Account, Hardware_Server, and Network_Security_Scanner_Request services
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">accountService</span>     <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">hardwareService</span>    <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetHardwareServerService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">scanRequestService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkSecurityScannerRequestService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Get SoftLayer_Account object
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">account</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">accountService</span><span class="p">.</span><span class="nf">GetObject</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Account object:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following mask helps to get the id and ip addresses from hardware server.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hardwareMask</span> <span class="o">:=</span> <span class="s">&#34;id;primaryIpAddress;primaryBackendIpAddress&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call to SoftLayer_Hardware_Server::getObject in order to get id and ip addresses.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hardware</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">hardwareService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">hardwareId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">hardwareMask</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to get Hardware Server object:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">	Build the object template used to make a scan request. The Network_Security_Scanner_Request
+</span></span></span><span class="line"><span class="cl"><span class="cm">	service can scan any Ip Address belonging to your account:
+</span></span></span><span class="line"><span class="cl"><span class="cm">		- Primary Ip Address
+</span></span></span><span class="line"><span class="cl"><span class="cm">		- Primary Backend Ip Address
+</span></span></span><span class="line"><span class="cl"><span class="cm">		- Portable Ip Addresses
+</span></span></span><span class="line"><span class="cl"><span class="cm">		- Static Secondary IPs
+</span></span></span><span class="line"><span class="cl"><span class="cm">	If you have a firewall, SoftLayer&#39;s administrative networks need to be allowed for the
+</span></span></span><span class="line"><span class="cl"><span class="cm">	vulnerability scan to be effective. If a firewall is blocking all ports, the report may not
+</span></span></span><span class="line"><span class="cl"><span class="cm">	show any problems even if some exist.
+</span></span></span><span class="line"><span class="cl"><span class="cm">	*/</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">objectTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Security_Scanner_Request</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">AccountId</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">account</span><span class="p">.</span><span class="nx">Id</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">HardwareId</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="o">*</span><span class="nx">hardware</span><span class="p">.</span><span class="nx">Id</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">IpAddress</span><span class="p">:</span>  <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="o">*</span><span class="nx">hardware</span><span class="p">.</span><span class="nx">PrimaryIpAddress</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Object-Mask in order to get specific data from response.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">scanMask</span> <span class="o">:=</span> <span class="s">&#34;accountId;createDate;id;ipAddress;hardwareId;status[name]&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Call to createObject() method to create a scan request.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">scanRequest</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">scanRequestService</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">scanMask</span><span class="p">).</span><span class="nf">CreateObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">objectTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;\n Unable to create a scan request:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">scanRequest</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;     &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 

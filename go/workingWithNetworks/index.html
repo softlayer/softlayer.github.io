@@ -40,18 +40,14 @@
 			$('table').addClass("table table-hover table-striped")
 		})
 	</script>
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-88235803-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9XPZ9ZBSJE');
 </script>
 </head>
 
@@ -156,423 +152,422 @@ if (!doNotTrack) {
 <blockquote>
 <p>github.com/softlayer/softlayer-go/examples/cmd/vlan_list.go</p>
 </blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">cmd</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-    <span class="s">&#34;fmt&#34;</span>
-
-    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
-
-    <span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">listVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Datacenter</span><span class="p">,</span> <span class="s">&#34;datacenter&#34;</span><span class="p">,</span> <span class="s">&#34;d&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;List only VLANs from this datacenter&#34;</span><span class="p">)</span>
-    <span class="nx">listVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">BoolVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Firewall</span><span class="p">,</span> <span class="s">&#34;firewall&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&#34;List only VLANs with a dedicated firewall&#34;</span><span class="p">)</span>
-    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">listVlanCmd</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">Datacenter</span> <span class="kt">string</span>
-<span class="kd">var</span> <span class="nx">Firewall</span> <span class="kt">bool</span>
-<span class="kd">var</span> <span class="nx">listVlanCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
-    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-list&#34;</span><span class="p">,</span>
-    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Lists all vlans on the account&#34;</span><span class="p">,</span>
-    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Lists all vlans on the account`</span><span class="p">,</span>
-    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nf">VlanListCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
-    <span class="p">},</span>
-<span class="p">}</span>
-
-
-
-<span class="kd">func</span> <span class="nf">VlanListCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-    <span class="nx">resultLimit</span> <span class="o">:=</span> <span class="mi">50</span>
-    <span class="nx">resultOffset</span> <span class="o">:=</span> <span class="mi">0</span>
-    <span class="nx">objectMask</span> <span class="o">:=</span> <span class="s">&#34;mask[id,name,vlanNumber,primaryRouter[id,hostname,datacenterName,datacenter[name]]]&#34;</span>
-    <span class="c1">// When using a result Limit to break up your API request, its important to include an orderBy objectFilter
-</span><span class="c1"></span>    <span class="c1">// to enforce an order on the query, as the database might not always return results in the same order between
-</span><span class="c1"></span>    <span class="c1">// queries otherwise
-</span><span class="c1"></span>    <span class="nx">filters</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-    <span class="nx">filters</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">filters</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;networkVlans.id&#34;</span><span class="p">).</span><span class="nf">OrderBy</span><span class="p">(</span><span class="s">&#34;DESC&#34;</span><span class="p">))</span>
-    <span class="k">if</span> <span class="nx">Datacenter</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
-        <span class="nx">filters</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">filters</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;networkVlans.primaryRouter.datacenter.name&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">Datacenter</span><span class="p">))</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="nx">Firewall</span> <span class="p">{</span>
-        <span class="nx">filters</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">filters</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;networkVlans.dedicatedFirewallFlag&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
-    <span class="p">}</span>
-    <span class="nx">objectFilter</span> <span class="o">:=</span> <span class="nx">filters</span><span class="p">.</span><span class="nf">Build</span><span class="p">()</span>
-    <span class="c1">// fmt.Println(&#34;FILTER: &#34;, objectFilter)
-</span><span class="c1"></span>
-    <span class="c1">// Sets up the session with authentication headers.
-</span><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-    <span class="c1">// uncomment to output API calls as they are made.
-</span><span class="c1"></span>    <span class="c1">// sess.Debug = true
-</span><span class="c1"></span>
-    <span class="c1">// creates a reference to the service object (SoftLayer_Account)
-</span><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-    <span class="c1">// Sets the mask, filter, result limit, and then makes the API call SoftLayer_Account::getHardware()
-</span><span class="c1"></span>    <span class="nx">vlans</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">objectMask</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">objectFilter</span><span class="p">).</span>
-        <span class="nf">Offset</span><span class="p">(</span><span class="nx">resultOffset</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="nx">resultLimit</span><span class="p">).</span><span class="nf">GetNetworkVlans</span><span class="p">()</span>
-    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Id, VLAN, Name, Datacenter\n&#34;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="p">{</span>
-
-        <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">s</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">vlans</span> <span class="p">{</span>
-            <span class="nx">name</span> <span class="o">:=</span> <span class="s">&#34;-&#34;</span>
-            <span class="c1">// The Name property doesn&#39;t get returned if the vlan hasn&#39;t been named, which will cause a 
-</span><span class="c1"></span>            <span class="c1">// &#39;panic: runtime error: invalid memory address&#39; error if we dont check first.
-</span><span class="c1"></span>            <span class="k">if</span> <span class="nx">s</span><span class="p">.</span><span class="nx">Name</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-                <span class="nx">name</span> <span class="p">=</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">Name</span>
-            <span class="p">}</span>
-            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%v, %v, %v, %v\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">VlanNumber</span><span class="p">,</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">PrimaryRouter</span><span class="p">.</span><span class="nx">Datacenter</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="c1">// If we get less than the number of results we asked for, we are at the end of our server list
-</span><span class="c1"></span>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">vlans</span><span class="p">)</span> <span class="p">&lt;</span> <span class="nx">resultLimit</span> <span class="p">{</span>
-            <span class="k">break</span>
-        <span class="p">}</span>
-        <span class="c1">// Increment the offset to get next set of results
-</span><span class="c1"></span>        <span class="nx">resultOffset</span> <span class="p">=</span> <span class="nx">resultOffset</span> <span class="o">+</span> <span class="nx">resultLimit</span>
-        
-        <span class="nx">vlans</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">objectMask</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">objectFilter</span><span class="p">).</span>
-            <span class="nf">Offset</span><span class="p">(</span><span class="nx">resultOffset</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="nx">resultLimit</span><span class="p">).</span><span class="nf">GetNetworkVlans</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="nx">err</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="details-about-a-specific-vlan">Details about a specific VLAN</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">cmd</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/filter&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">listVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Datacenter</span><span class="p">,</span> <span class="s">&#34;datacenter&#34;</span><span class="p">,</span> <span class="s">&#34;d&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;List only VLANs from this datacenter&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">listVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">BoolVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Firewall</span><span class="p">,</span> <span class="s">&#34;firewall&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&#34;List only VLANs with a dedicated firewall&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">listVlanCmd</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">Datacenter</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">Firewall</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">listVlanCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-list&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Lists all vlans on the account&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Lists all vlans on the account`</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">VlanListCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">VlanListCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">resultLimit</span> <span class="o">:=</span> <span class="mi">50</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">resultOffset</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">objectMask</span> <span class="o">:=</span> <span class="s">&#34;mask[id,name,vlanNumber,primaryRouter[id,hostname,datacenterName,datacenter[name]]]&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// When using a result Limit to break up your API request, its important to include an orderBy objectFilter
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// to enforce an order on the query, as the database might not always return results in the same order between
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// queries otherwise
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">filters</span> <span class="o">:=</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">filters</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">filters</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;networkVlans.id&#34;</span><span class="p">).</span><span class="nf">OrderBy</span><span class="p">(</span><span class="s">&#34;DESC&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">Datacenter</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">filters</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">filters</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;networkVlans.primaryRouter.datacenter.name&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="nx">Datacenter</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">Firewall</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">filters</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">filters</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nf">Path</span><span class="p">(</span><span class="s">&#34;networkVlans.dedicatedFirewallFlag&#34;</span><span class="p">).</span><span class="nf">Eq</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">objectFilter</span> <span class="o">:=</span> <span class="nx">filters</span><span class="p">.</span><span class="nf">Build</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// fmt.Println(&#34;FILTER: &#34;, objectFilter)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Sets up the session with authentication headers.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// uncomment to output API calls as they are made.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// sess.Debug = true
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// creates a reference to the service object (SoftLayer_Account)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetAccountService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Sets the mask, filter, result limit, and then makes the API call SoftLayer_Account::getHardware()
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">vlans</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">objectMask</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">objectFilter</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">Offset</span><span class="p">(</span><span class="nx">resultOffset</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="nx">resultLimit</span><span class="p">).</span><span class="nf">GetNetworkVlans</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Id, VLAN, Name, Datacenter\n&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">s</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">vlans</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">name</span> <span class="o">:=</span> <span class="s">&#34;-&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// The Name property doesn&#39;t get returned if the vlan hasn&#39;t been named, which will cause a 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// &#39;panic: runtime error: invalid memory address&#39; error if we dont check first.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">if</span> <span class="nx">s</span><span class="p">.</span><span class="nx">Name</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">name</span> <span class="p">=</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">Name</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;%v, %v, %v, %v\n&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">VlanNumber</span><span class="p">,</span> <span class="o">*</span><span class="nx">s</span><span class="p">.</span><span class="nx">PrimaryRouter</span><span class="p">.</span><span class="nx">Datacenter</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// If we get less than the number of results we asked for, we are at the end of our server list
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">vlans</span><span class="p">)</span> <span class="p">&lt;</span> <span class="nx">resultLimit</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// Increment the offset to get next set of results
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">resultOffset</span> <span class="p">=</span> <span class="nx">resultOffset</span> <span class="o">+</span> <span class="nx">resultLimit</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="nx">vlans</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">objectMask</span><span class="p">).</span><span class="nf">Filter</span><span class="p">(</span><span class="nx">objectFilter</span><span class="p">).</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">Offset</span><span class="p">(</span><span class="nx">resultOffset</span><span class="p">).</span><span class="nf">Limit</span><span class="p">(</span><span class="nx">resultLimit</span><span class="p">).</span><span class="nf">GetNetworkVlans</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="details-about-a-specific-vlan">Details about a specific VLAN</h2>
 <p>This command shows a quick example of how to print out some important details about a specific vlan. A <a href="https://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Vlan/">VLAN</a> object has a lot of fields that could be useful aside from what is shown in this command. Hopefully this example is clear enough to get started though.</p>
 <blockquote>
 <p>github.com/softlayer/softlayer-go/examples/cmd/vlan_detail.go</p>
 </blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">cmd</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-    <span class="s">&#34;fmt&#34;</span>
-    <span class="s">&#34;errors&#34;</span>
-    <span class="s">&#34;os&#34;</span>
-    <span class="s">&#34;strconv&#34;</span>
-
-    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
-    <span class="s">&#34;github.com/jedib0t/go-pretty/v6/table&#34;</span>
-
-    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">detailVlanCmd</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">detailVlanCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
-    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-detail [vlanId]&#34;</span><span class="p">,</span>
-    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Vlan Details&#34;</span><span class="p">,</span>
-    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Gets a lot of information about a VLAN`</span><span class="p">,</span>
-    <span class="nx">Args</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="s">&#34;a VLAN ID is required&#34;</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="kc">nil</span>
-    <span class="p">},</span>
-    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nf">VlanDetailCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
-    <span class="p">},</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">VlanDetailCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-    <span class="c1">// resultLimit := 50
-</span><span class="c1"></span>    <span class="c1">// resultOffset := 0
-</span><span class="c1"></span>    <span class="nx">objectMask</span> <span class="o">:=</span> <span class="s">`mask[id,name,vlanNumber,primaryRouter[id,hostname,datacenterName,datacenter[name]],
-</span><span class="s">subnets[id,networkIdentifier,note, subnetType]]`</span>
-
-    <span class="c1">// Sets up the softlayer-client session and Service
-</span><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-    <span class="c1">// sess.Debug = true
-</span><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-    <span class="c1">// Make sure vlanId is an int
-</span><span class="c1"></span>    <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Atoi</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-
-    <span class="c1">// Get the VLAN object from the API https://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getObject/
-</span><span class="c1"></span>    <span class="nx">vlan</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">objectMask</span><span class="p">).</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
-    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-    
-    <span class="c1">// https://github.com/jedib0t/go-pretty/tree/main/table
-</span><span class="c1"></span>    <span class="c1">// A fancy table builder so our output can look nice.
-</span><span class="c1"></span>    <span class="nx">t</span> <span class="o">:=</span> <span class="nx">table</span><span class="p">.</span><span class="nf">NewWriter</span><span class="p">()</span>
-    <span class="nx">t</span><span class="p">.</span><span class="nf">SetOutputMirror</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdout</span><span class="p">)</span>
-    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendHeader</span><span class="p">(</span><span class="nx">table</span><span class="p">.</span><span class="nx">Row</span><span class="p">{</span><span class="s">&#34;Property&#34;</span><span class="p">,</span> <span class="s">&#34;Value&#34;</span><span class="p">})</span>
-
-    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Id&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">Id</span><span class="p">})</span>
-    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Number&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">VlanNumber</span><span class="p">})</span>
-    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Name&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">Name</span><span class="p">})</span>
-    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Datacenter&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">PrimaryRouter</span><span class="p">.</span><span class="nx">DatacenterName</span><span class="p">})</span>
-    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Primary Router&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">PrimaryRouter</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">})</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">Subnets</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span>  <span class="p">{</span>
-        <span class="nx">subnetTable</span> <span class="o">:=</span> <span class="nx">table</span><span class="p">.</span><span class="nf">NewWriter</span><span class="p">()</span>
-        <span class="nx">subnetTable</span><span class="p">.</span><span class="nf">AppendHeader</span><span class="p">(</span><span class="nx">table</span><span class="p">.</span><span class="nx">Row</span><span class="p">{</span><span class="s">&#34;Id&#34;</span><span class="p">,</span> <span class="s">&#34;Network&#34;</span><span class="p">,</span> <span class="s">&#34;Type&#34;</span><span class="p">,</span> <span class="s">&#34;Note&#34;</span><span class="p">})</span>
-        <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">subnet</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">vlan</span><span class="p">.</span><span class="nx">Subnets</span> <span class="p">{</span>
-            <span class="nx">note</span> <span class="o">:=</span> <span class="s">&#34;-&#34;</span>
-            <span class="c1">// Subnets do not always have notes, this is required to avoid invalid memory address errors
-</span><span class="c1"></span>            <span class="k">if</span> <span class="nx">subnet</span><span class="p">.</span><span class="nx">Note</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-                <span class="nx">note</span> <span class="p">=</span> <span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">Note</span>
-            <span class="p">}</span>
-            <span class="nx">subnetTable</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">NetworkIdentifier</span><span class="p">,</span> <span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">SubnetType</span><span class="p">,</span> <span class="nx">note</span><span class="p">})</span>
-        <span class="p">}</span>
-        <span class="c1">// Renders the subnet table to the main table instead of main output
-</span><span class="c1"></span>        <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Subnets&#34;</span><span class="p">,</span> <span class="nx">subnetTable</span><span class="p">.</span><span class="nf">Render</span><span class="p">()})</span>
-    <span class="p">}</span>
-    <span class="c1">// Prints out the table
-</span><span class="c1"></span>    <span class="nx">t</span><span class="p">.</span><span class="nf">Render</span><span class="p">()</span>
-    <span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-</code></pre></div><h2 id="set-a-vlans-name">Set a VLANs name</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">cmd</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;errors&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;os&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;strconv&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/jedib0t/go-pretty/v6/table&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">detailVlanCmd</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">detailVlanCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-detail [vlanId]&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Vlan Details&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Gets a lot of information about a VLAN`</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Args</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="s">&#34;a VLAN ID is required&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">VlanDetailCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">VlanDetailCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// resultLimit := 50
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// resultOffset := 0
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">objectMask</span> <span class="o">:=</span> <span class="s">`mask[id,name,vlanNumber,primaryRouter[id,hostname,datacenterName,datacenter[name]],
+</span></span></span><span class="line"><span class="cl"><span class="s">subnets[id,networkIdentifier,note, subnetType]]`</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Sets up the softlayer-client session and Service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// sess.Debug = true
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Make sure vlanId is an int
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Atoi</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Get the VLAN object from the API https://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/getObject/
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">vlan</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">objectMask</span><span class="p">).</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">GetObject</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1">// https://github.com/jedib0t/go-pretty/tree/main/table
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// A fancy table builder so our output can look nice.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">t</span> <span class="o">:=</span> <span class="nx">table</span><span class="p">.</span><span class="nf">NewWriter</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">t</span><span class="p">.</span><span class="nf">SetOutputMirror</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdout</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendHeader</span><span class="p">(</span><span class="nx">table</span><span class="p">.</span><span class="nx">Row</span><span class="p">{</span><span class="s">&#34;Property&#34;</span><span class="p">,</span> <span class="s">&#34;Value&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Id&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">Id</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Number&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">VlanNumber</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Name&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">Name</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Datacenter&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">PrimaryRouter</span><span class="p">.</span><span class="nx">DatacenterName</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Primary Router&#34;</span><span class="p">,</span> <span class="o">*</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">PrimaryRouter</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">vlan</span><span class="p">.</span><span class="nx">Subnets</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span>  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">subnetTable</span> <span class="o">:=</span> <span class="nx">table</span><span class="p">.</span><span class="nf">NewWriter</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">subnetTable</span><span class="p">.</span><span class="nf">AppendHeader</span><span class="p">(</span><span class="nx">table</span><span class="p">.</span><span class="nx">Row</span><span class="p">{</span><span class="s">&#34;Id&#34;</span><span class="p">,</span> <span class="s">&#34;Network&#34;</span><span class="p">,</span> <span class="s">&#34;Type&#34;</span><span class="p">,</span> <span class="s">&#34;Note&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">subnet</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">vlan</span><span class="p">.</span><span class="nx">Subnets</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">note</span> <span class="o">:=</span> <span class="s">&#34;-&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// Subnets do not always have notes, this is required to avoid invalid memory address errors
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">if</span> <span class="nx">subnet</span><span class="p">.</span><span class="nx">Note</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">note</span> <span class="p">=</span> <span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">Note</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">subnetTable</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">NetworkIdentifier</span><span class="p">,</span> <span class="o">*</span><span class="nx">subnet</span><span class="p">.</span><span class="nx">SubnetType</span><span class="p">,</span> <span class="nx">note</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// Renders the subnet table to the main table instead of main output
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">t</span><span class="p">.</span><span class="nf">AppendRow</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{}{</span><span class="s">&#34;Subnets&#34;</span><span class="p">,</span> <span class="nx">subnetTable</span><span class="p">.</span><span class="nf">Render</span><span class="p">()})</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Prints out the table
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">t</span><span class="p">.</span><span class="nf">Render</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="set-a-vlans-name">Set a VLANs name</h2>
 <p>This example displays how to make an API request that requires parameters be sent in. This will edit a VLANs name property to be whatever you input.</p>
 <blockquote>
 <p>github.com/softlayer/softlayer-go/examples/cmd/vlan_name.go</p>
 </blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">cmd</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-    <span class="s">&#34;fmt&#34;</span>
-    <span class="s">&#34;errors&#34;</span>
-    <span class="s">&#34;strconv&#34;</span>
-
-    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
-
-    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">vlanNameCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">VlanName</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">,</span> <span class="s">&#34;n&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;New VLAN name&#34;</span><span class="p">)</span>
-    <span class="nx">vlanNameCmd</span><span class="p">.</span><span class="nf">MarkFlagRequired</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">)</span>
-    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">vlanNameCmd</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">VlanName</span> <span class="kt">string</span>
-<span class="kd">var</span> <span class="nx">vlanNameCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
-    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-name [vlanId]&#34;</span><span class="p">,</span>
-    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Set a VLAN&#39;s name&#34;</span><span class="p">,</span>
-    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Set a VLAN&#39;s name.`</span><span class="p">,</span>
-    <span class="nx">Args</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="s">&#34;a VLAN ID is required&#34;</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="kc">nil</span>
-    <span class="p">},</span>
-    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nf">VlanNameCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
-    <span class="p">},</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">VlanNameCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-    <span class="c1">// Sets up the softlayer-client session and Service
-</span><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-    <span class="c1">// sess.Debug = true
-</span><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-    <span class="c1">// Make sure vlanId is an int
-</span><span class="c1"></span>    <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Atoi</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-
-    <span class="c1">// https://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Vlan/
-</span><span class="c1"></span>    <span class="c1">// only Name and Note are editable on a Vlan object.
-</span><span class="c1"></span>    <span class="nx">vlanSkel</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Vlan</span><span class="p">{</span>
-        <span class="nx">Name</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">VlanName</span><span class="p">,</span>
-    <span class="p">}</span>
-    <span class="c1">// https://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/editObject/
-</span><span class="c1"></span>    <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">EditObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">vlanSkel</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Set name of VLan %v to %v\n&#34;</span><span class="p">,</span> <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">VlanName</span><span class="p">)</span>
-    <span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-</code></pre></div><h2 id="cancel-a-vlan">Cancel a Vlan</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">cmd</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;errors&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;strconv&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">vlanNameCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">VlanName</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">,</span> <span class="s">&#34;n&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;New VLAN name&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">vlanNameCmd</span><span class="p">.</span><span class="nf">MarkFlagRequired</span><span class="p">(</span><span class="s">&#34;name&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">vlanNameCmd</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">VlanName</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">vlanNameCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-name [vlanId]&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Set a VLAN&#39;s name&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Set a VLAN&#39;s name.`</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Args</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="s">&#34;a VLAN ID is required&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">VlanNameCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">VlanNameCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Sets up the softlayer-client session and Service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// sess.Debug = true
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Make sure vlanId is an int
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Atoi</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// https://sldn.softlayer.com/reference/datatypes/SoftLayer_Network_Vlan/
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// only Name and Note are editable on a Vlan object.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">vlanSkel</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Network_Vlan</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Name</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">VlanName</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// https://sldn.softlayer.com/reference/services/SoftLayer_Network_Vlan/editObject/
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">EditObject</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">vlanSkel</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Set name of VLan %v to %v\n&#34;</span><span class="p">,</span> <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">VlanName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="cancel-a-vlan">Cancel a Vlan</h2>
 <blockquote>
 <p>github.com/softlayer/softlayer-go/examples/cmd/vlan_cancel.go</p>
 </blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">cmd</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-    <span class="s">&#34;fmt&#34;</span>
-    <span class="s">&#34;errors&#34;</span>
-    <span class="s">&#34;strconv&#34;</span>
-
-    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
-
-    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">vlanDeleteCmd</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">VlanName</span> <span class="kt">string</span>
-<span class="kd">var</span> <span class="nx">vlanDeleteCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
-    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-delete [vlanId]&#34;</span><span class="p">,</span>
-    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Delete a vlan&#34;</span><span class="p">,</span>
-    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Cancells a VLAN. Only additional VLANs (the ones you pay for and order individually) can be cancelled this way. VLANs that are provisioned automatically will be cancelled automatically as well.`</span><span class="p">,</span>
-    <span class="nx">Args</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="s">&#34;a VLAN ID is required&#34;</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="kc">nil</span>
-    <span class="p">},</span>
-    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nf">VlanDeleteCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
-    <span class="p">},</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">VlanDeleteCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-    <span class="c1">// Sets up the softlayer-client session and Service
-</span><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-    <span class="c1">// sess.Debug = true
-</span><span class="c1"></span>    <span class="nx">vlanService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-    <span class="nx">billingService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingItemService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-    <span class="c1">// Make sure vlanId is an int
-</span><span class="c1"></span>    <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Atoi</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>    
-
-    <span class="c1">// Limiting the mask to only the ID property helps API calls return faster.
-</span><span class="c1"></span>    <span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id&#34;</span>
-
-    <span class="c1">// Get the SoftLayer_Network_Vlan&#39;s Billing_Item object id
-</span><span class="c1"></span>    <span class="nx">billingItem</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">vlanService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetBillingItem</span><span class="p">()</span>
-    <span class="c1">// No billingItem means this vlan isn&#39;t billed, so can not be cancelled.
-</span><span class="c1"></span>    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to get the billing item of Network Vlan:\n\t%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-
-    <span class="c1">// Cancel the SoftLayer_Billing_Item of Vlan.
-</span><span class="c1"></span>    <span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">billingService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">billingItem</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">CancelService</span><span class="p">()</span>
-    <span class="c1">// Usually VLANs can not be cancelled because there exists a subnet or other resource on that VLAN.
-</span><span class="c1"></span>    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to cancel Network Vlan:\n\t%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Successfully cancelled vlan %d\n&#34;</span><span class="p">,</span> <span class="nx">vlanId</span><span class="p">)</span>
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div><h2 id="order-a-vlan">Order a Vlan</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">cmd</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;errors&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;strconv&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">vlanDeleteCmd</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">VlanName</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">vlanDeleteCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-delete [vlanId]&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Delete a vlan&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Cancells a VLAN. Only additional VLANs (the ones you pay for and order individually) can be cancelled this way. VLANs that are provisioned automatically will be cancelled automatically as well.`</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Args</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="s">&#34;a VLAN ID is required&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">VlanDeleteCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">VlanDeleteCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Sets up the softlayer-client session and Service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// sess.Debug = true
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">vlanService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetNetworkVlanService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">billingService</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetBillingItemService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Make sure vlanId is an int
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">vlanId</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Atoi</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>    
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Limiting the mask to only the ID property helps API calls return faster.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">mask</span> <span class="o">:=</span> <span class="s">&#34;id&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Get the SoftLayer_Network_Vlan&#39;s Billing_Item object id
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">billingItem</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">vlanService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="nx">vlanId</span><span class="p">).</span><span class="nf">Mask</span><span class="p">(</span><span class="nx">mask</span><span class="p">).</span><span class="nf">GetBillingItem</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// No billingItem means this vlan isn&#39;t billed, so can not be cancelled.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to get the billing item of Network Vlan:\n\t%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Cancel the SoftLayer_Billing_Item of Vlan.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">billingService</span><span class="p">.</span><span class="nf">Id</span><span class="p">(</span><span class="o">*</span><span class="nx">billingItem</span><span class="p">.</span><span class="nx">Id</span><span class="p">).</span><span class="nf">CancelService</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Usually VLANs can not be cancelled because there exists a subnet or other resource on that VLAN.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to cancel Network Vlan:\n\t%s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Successfully cancelled vlan %d\n&#34;</span><span class="p">,</span> <span class="nx">vlanId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="order-a-vlan">Order a Vlan</h2>
 <blockquote>
 <p>github.com/softlayer/softlayer-go/examples/cmd/vlan_order.go</p>
 </blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">cmd</span>
-
-<span class="kn">import</span> <span class="p">(</span>
-    <span class="s">&#34;encoding/json&#34;</span>
-    <span class="s">&#34;fmt&#34;</span>
-
-    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
-
-    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
-    <span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
-
-<span class="p">)</span>
-
-<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">orderVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Location</span><span class="p">,</span> <span class="s">&#34;datacenter&#34;</span><span class="p">,</span> <span class="s">&#34;d&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;Datacenter name to order in (like dal13)&#34;</span><span class="p">)</span>
-    <span class="nx">orderVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Name</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">,</span> <span class="s">&#34;n&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;Name of this new vlan&#34;</span><span class="p">)</span>
-    <span class="nx">orderVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">IntVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">RouterId</span><span class="p">,</span> <span class="s">&#34;routerId&#34;</span><span class="p">,</span> <span class="s">&#34;r&#34;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;RouterId if you want this vlan in a specific POD in a datacenter&#34;</span><span class="p">)</span>
-    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">orderVlanCmd</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">Location</span> <span class="kt">string</span>
-<span class="kd">var</span> <span class="nx">Name</span> <span class="kt">string</span>
-<span class="kd">var</span> <span class="nx">RouterId</span> <span class="kt">int</span>
-
-<span class="kd">var</span> <span class="nx">orderVlanCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
-    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-order&#34;</span><span class="p">,</span>
-    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Orders a Vlan&#34;</span><span class="p">,</span>
-    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Orders a vlan with 32 static public IP addresses.`</span><span class="p">,</span>
-    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nf">VlanOrderCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
-    <span class="p">},</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">VlanOrderCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-    <span class="c1">// Declare the properties like complexType, location, packageId and quantity for the
-</span><span class="c1"></span>    <span class="c1">// vlan you wish to order
-</span><span class="c1"></span>    <span class="nx">quantity</span>           <span class="o">:=</span> <span class="mi">1</span>
-    <span class="nx">packageId</span>          <span class="o">:=</span> <span class="mi">0</span>
-    <span class="nx">sendQuoteEmailFlag</span> <span class="o">:=</span> <span class="kc">true</span>
-
-    <span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
-</span><span class="c1"></span>    <span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
-</span><span class="c1"></span>    <span class="nx">itemPrices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
-            <span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">2018</span><span class="p">)</span> <span class="p">},</span>     <span class="c1">// Price for the new Public Network Vlan
-</span><span class="c1"></span>            <span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1092</span><span class="p">)</span> <span class="p">},</span>     <span class="c1">// Price for 32 Static Public IP Addresses
-</span><span class="c1"></span>    <span class="p">}</span>
-
-    <span class="c1">// Create a session
-</span><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
-
-    <span class="c1">// Get SoftLayer_Product_Order service
-</span><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
-
-    <span class="c1">// Build the Container_Product_Order_Network_Vlan containing the order you wish to place.
-</span><span class="c1"></span>    <span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Vlan</span> <span class="p">{</span>
-        <span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
-            <span class="nx">Prices</span>         <span class="p">:</span> <span class="nx">itemPrices</span><span class="p">,</span>
-            <span class="nx">PackageId</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
-            <span class="nx">Location</span>       <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">Location</span><span class="p">),</span>
-            <span class="nx">Quantity</span>       <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
-            <span class="nx">SendQuoteEmailFlag</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="nx">sendQuoteEmailFlag</span><span class="p">),</span>
-        <span class="p">},</span>
-        <span class="nx">Name</span>     <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">Name</span><span class="p">),</span>
-    <span class="p">}</span>
-
-    <span class="k">if</span> <span class="nx">RouterId</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-        <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">RouterId</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">RouterId</span><span class="p">)</span>
-    <span class="p">}</span>
-
-    <span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
-</span><span class="c1"></span>    <span class="c1">// you are ready to order.
-</span><span class="c1"></span>    <span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nx">err</span>
-    <span class="p">}</span>
-
-    <span class="c1">// Following helps to print the result in json format.
-</span><span class="c1"></span>    <span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;    &#34;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nx">jsonErr</span>
-    <span class="p">}</span>
-
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
-    <span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">cmd</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/spf13/cobra&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/services&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/session&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/datatypes&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;github.com/softlayer/softlayer-go/sl&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">orderVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Location</span><span class="p">,</span> <span class="s">&#34;datacenter&#34;</span><span class="p">,</span> <span class="s">&#34;d&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;Datacenter name to order in (like dal13)&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">orderVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">StringVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">Name</span><span class="p">,</span> <span class="s">&#34;name&#34;</span><span class="p">,</span> <span class="s">&#34;n&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;Name of this new vlan&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">orderVlanCmd</span><span class="p">.</span><span class="nf">Flags</span><span class="p">().</span><span class="nf">IntVarP</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">RouterId</span><span class="p">,</span> <span class="s">&#34;routerId&#34;</span><span class="p">,</span> <span class="s">&#34;r&#34;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;RouterId if you want this vlan in a specific POD in a datacenter&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rootCmd</span><span class="p">.</span><span class="nf">AddCommand</span><span class="p">(</span><span class="nx">orderVlanCmd</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">Location</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">Name</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">RouterId</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">orderVlanCmd</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Use</span><span class="p">:</span>   <span class="s">&#34;vlan-order&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Short</span><span class="p">:</span> <span class="s">&#34;Orders a Vlan&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Long</span><span class="p">:</span>  <span class="s">`Orders a vlan with 32 static public IP addresses.`</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">RunE</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nf">VlanOrderCommand</span><span class="p">(</span><span class="nx">cmd</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">VlanOrderCommand</span><span class="p">(</span><span class="nx">cmd</span> <span class="o">*</span><span class="nx">cobra</span><span class="p">.</span><span class="nx">Command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="kt">string</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Declare the properties like complexType, location, packageId and quantity for the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// vlan you wish to order
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">quantity</span>           <span class="o">:=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">packageId</span>          <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">sendQuoteEmailFlag</span> <span class="o">:=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Build a skeleton SoftLayer_Product_Item_Price objects. To get the list of valid
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// prices for the package use the SoftLayer_Product_Package:getItems method
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">itemPrices</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Product_Item_Price</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">2018</span><span class="p">)</span> <span class="p">},</span>     <span class="c1">// Price for the new Public Network Vlan
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="p">{</span> <span class="nx">Id</span><span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="mi">1092</span><span class="p">)</span> <span class="p">},</span>     <span class="c1">// Price for 32 Static Public IP Addresses
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Create a session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">sess</span> <span class="o">:=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Get SoftLayer_Product_Order service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">service</span> <span class="o">:=</span> <span class="nx">services</span><span class="p">.</span><span class="nf">GetProductOrderService</span><span class="p">(</span><span class="nx">sess</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Build the Container_Product_Order_Network_Vlan containing the order you wish to place.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">orderTemplate</span> <span class="o">:=</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order_Network_Vlan</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Container_Product_Order</span> <span class="p">:</span> <span class="nx">datatypes</span><span class="p">.</span><span class="nx">Container_Product_Order</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">Prices</span>         <span class="p">:</span> <span class="nx">itemPrices</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">PackageId</span>      <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">packageId</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">Location</span>       <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">Location</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">Quantity</span>       <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">quantity</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">SendQuoteEmailFlag</span> <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="nx">sendQuoteEmailFlag</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Name</span>     <span class="p">:</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">Name</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">RouterId</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">orderTemplate</span><span class="p">.</span><span class="nx">RouterId</span> <span class="p">=</span> <span class="nx">sl</span><span class="p">.</span><span class="nf">Int</span><span class="p">(</span><span class="nx">RouterId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Use verifyOrder() method to check for errors. Replace this with placeOrder() when
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// you are ready to order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">receipt</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">service</span><span class="p">.</span><span class="nf">VerifyOrder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">orderTemplate</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;Unable to place order:\n - %s\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Following helps to print the result in json format.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">jsonFormat</span><span class="p">,</span> <span class="nx">jsonErr</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">MarshalIndent</span><span class="p">(</span><span class="nx">receipt</span><span class="p">,</span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="s">&#34;    &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">jsonErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nx">jsonErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">jsonErr</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">jsonFormat</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
             </div>
         </div>
 
