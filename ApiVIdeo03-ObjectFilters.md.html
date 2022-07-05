@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The SoftLayer API</title>
+    <meta charset="utf-8">
+    <style>
+      body { 
+        font-family: monospace; 
+        font-size: 2em;
+      }
+      h1 {
+        font-family: monospace;
+        color: #F2B632;
+      } 
+      h2 {
+        font-family: monospace;
+        color: #8834A5;
+      }
+      h3 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      h4 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { 
+        font-family: 'Courier New'; 
+        font-size: 16px;
+      }
+      /*.remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }*/
+      .remark-slide-content {
+        background-color: #252839;
+        color: #E1F4EC;
+        font-size: 25px;
+        padding: 0em 1em 1em 1em;
+      }
+      .minicode {
+        font-size: 10px;
+      }
+
+    img {background-color: #E1F4EC ;}
+    .columnA {float:left; width: 49%;}
+    .columnB {float:right; width: 49%; }
+    .columnD {float:right; width: 40%; }
+    .columnC {float:right; width: 60%; }
+    a {color:#A57712; }
+    hr {border-color: #8834A5; background-color:#8834A5; border-width: 2px; border-style: solid; }
+    li {margin-bottom: .5em; margin-top: .5em;}
+    blockquote { 
+        color: #F2B632;
+        font-family: Palatino;
+        font-weight: normal;
+        font-size: 35px;
+     }
+     .MathJax {
+     font-size: 8em !important;
+     color: #D69ECA !important;
+    }
+    th {
+      color:#A57712 ;
+    }
+    .brightGold {
+      color: #F2B632
+    }
+    .lightPurple {
+      color: #8834A5 ;
+    }
+    .bigO {
+      height: 475px;
+    }
+    .darkGold {
+      color: #A57712 ;
+    }
+    .warning {
+      color:  #FC2003;
+    }
+    </style>
+<!-- <link rel="stylesheet" href="/remark/default.min.css"> -->
+  </head>
+  <body>
+    <!--#A57712  Dark Gold-->
+    <!--#E1F4EC  White Gold -->
+    <!--#F2B632  Bright Gold -->
+    <!--#27182C  Dark Purple -->
+    <!--#8834A5  Light Purple -->
+    <!--#D69ECA  White Purple -->
+    <textarea id="source">
+
+
+
+class: center, middle
+# .center[SoftLayer API]
+### .center[Object Filters]
+Christopher Gallo, Senior API Developer
+
+---
+
+
+# Object Filters
+
+>A JSON Object used to restrict and order the API results
+
+```json
+{
+ "property1": {
+   "subProperty": {
+     "operation": "value_to_check"
+   }
+ }
+}
+```
+
+.warning[__*WARNING*__] Bad object filters are often ignored silently, make sure your filter is actually filtering before assuming it is.
+
+.darkGold[__*REQUIREMENT*__] The method should have a ObjectFilter listed in the .lightPurple[Required Headers] section
+
+
+---
+
+# Concepts
+
+### Datatype
+
+While objectMasks start at the datatype returned by a method, objectFilters start at the Service of that method. 
+For example if you were making an API call to .darkGold[SoftLayer_Account::getVirtualGuests()] 
+
+- ObjectMask: SoftLayer_Virtual_Guest datatype (.darkGold[mask[id,hostname,domain]])
+- ObjectFilter: SoftLayer_Account datatype (.darkGold[{"virtualGuests":{"hostname":{"operation":"testHostname"}}}])
+
+---
+
+# Concepts
+
+### Unfilterable Properties
+- Count properties can't be filtered by
+- Relational property that returns a "basic" value (like string, int). 
+- Some "computed" properties (that don't exist as a literal column in a database table) Such as "fullyQualifiedDomainName" for Hardware and Virtual Guests.
+
+Any property in your objectFilter should also be in your objectMask
+
+---
+
+# Concepts
+
+ObjectFilters contol which properties are added to the SQL `WHERE` and `ORDER BY` clauses
+
+```bash
+$ slcli --format=json call-api SoftLayer_Account getVirtualGuests --id=113821290 \
+          --mask="mask[id,hostname]" \
+          --json-filter='{"virtualGuests":{"hostname":{"operation":"testHostname"}}}'
+```
+
+```SQL
+SELECT virtual_guest.id, virtual_guest.hostname FROM virtual_guest
+WHERE virtual_guest.account_id = active_user.account_id
+AND virtual_guest.hostname = 'testHostname'
+```
+
+---
+
+# Step 1: Find The Datastructure
+
+The starting point for your filter will usually be the Service for the Method you are calling.
+
+If you are calling something like "SoftLayer_Service::getProperty", your objectFilter will start with `property`
+
+- SoftLayer_Account::getVirtualGuests -> {"virtualGuests"}
+  + https://sldn.softlayer.com/reference/datatypes/SoftLayer_Account/#virtualGuests
+- SoftLayer_Hardware_Server::getActiveTickets -> {"activeTickets"}
+  + https://sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware_Server/#activeTickets
+- SoftLayer_User_Customer::getHardware -> {"hardware"} 
+  + https://sldn.softlayer.com/reference/datatypes/SoftLayer_User_Customer/#hardware
+
+---
+
+# Step 2: Find Properties
+
+Keep adding child objects to your filter until you reach a local property you want to filter by.
+
+For Example, if we want to find all the Hardware on our account that is connected to a specific backendRouter, we would build our filter this way.
+
+```json
+{
+  "hardware": {   // sldn.softlayer.com/reference/datatypes/SoftLayer_Account/#hardware
+    "backendRouters": { // sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware/#backendRouters
+      "hostname": { // sldn.softlayer.com/reference/datatypes/SoftLayer_Hardware/#hostname
+        "operation": "bcr03a.dal10 "
+      }
+    }
+  }
+}
+```
+
+---
+
+# Step 3: Create the filter
+
+Bookmark: https://sldn.softlayer.com/article/object-filters/
+
+.columnA[<img src="./Pics/objectFilters.png" height="400px">]
+.columnB[
+```json
+{
+  "property1": {
+    "operation": "^= someString"
+  },
+  "property2": {
+    "subProperty": {
+      "childProperty": {
+        "operation": "!= somethingElse"
+      }
+    }
+  }
+}
+```
+
+Property1 start with 'someString' AND childProperty does not equal 'somethingElse'
+]
+
+---
+
+# Complex Filters
+
+.columnA[
+
+### IN
+```json
+{"virtualGuests": {
+    "hostname": {
+      "operation": "in",
+      "options": [{
+        "name":"data", 
+        "value":["hostname1", "hostname2", "hostname3"]}]}}}
+// does not support operators, faster than 'OR'
+```
+
+### OR
+
+```json
+{"virtualGuests": {
+    "hostname": {
+      "operation": "or",
+      "options": [{
+        "name":"data", 
+        "value":["^= host", "$= name"]}]}}}
+// supports operators like ^= and $=
+```
+]
+
+.columnB[
+
+### NOT IN
+
+```json
+{"virtualGuests": {
+    "hostname": {
+      "operation": "not in",
+      "options": [{
+        "name":"data", 
+        "value":["hostname1", "hostname2", "hostname3"]}]}}}
+// opposite of IN
+```
+
+### AND
+
+```json
+{"virtualGuests": {
+    "hostname": {
+      "operation": "and",
+      "options": [{
+        "name":"data", 
+        "value":["^= host", "$= name"]}]}}}
+// hostname starts with 'host' and ends with 'name'
+```
+]
+
+---
+
+# Date Operations
+
+>Date format is .lightPurple[MM/DD/YY HH24:MI:SS] (Oracle Notation). .lightPurple[sysdate] is also an option
+
+.columnA[
+```json
+{
+  "virtualGuests": {
+    "provisionDate": {
+      "operation": { "> sysdate - 30"}
+    }
+  }
+}
+// Greater than NOW/sysdate minus 30 days
+```
+
+```json
+{ "virtualGuests": {
+    "provisionDate": {
+      "operation": "betweenDate",
+      "options": [
+        { "name": "date", 
+          "value": ["02/01/06"]}, // Fab 01, 2006
+        { "name": "date", 
+          "value": ["02/29/06"]} // Feb 29, 2006
+      ]}
+  }
+}
+```
+]
+
+.columnB[
+```json
+{ 
+  "virtualGuests": {
+    "provisionDate": {
+      "operation": "greaterThanDate",
+      "options": [
+        { 
+          "name": "date",
+          "value": ["02/01/06"] // Feb 1, 2006
+        }
+      ]
+    }
+  }
+}
+```
+]
+
+---
+
+# All Date Operations
+ 
+- lessThanDate
+- greaterThanDate
+- betweenDate : Required 2 options, start and end
+- isDate
+
+---
+
+# Sorting
+
+.columnA[
+- Not all queries have a default order, so subsequent queries might have different ordering
+- Dont have to sort on the client isde
+- Can not filter and sort by the same property
+]
+
+.columnB[
+```json
+{
+  "virtualGuests": {
+    "id": {
+      "operation": "orderBy",
+      "options": [
+        {
+          "name": "sort",
+          "value": ["DESC"]  // ASC only other option
+        }
+      ]
+    }
+  }
+}
+```
+
+]
+
+---
+
+# Sort Order
+
+It is possible to sort by multiple properties, you just need to specify their priority with the .lightPurple[sortOrder] option.
+
+```json
+{ 
+  "virtualGuests": {
+    "provisionDate": {
+      "operation": "orderBy",
+      "options": [
+        {"name": "sort", "value": ["DESC"]},
+*       {"name": "sortOrder", "value": [0]}
+      ]
+    },
+    "maxMemory": {
+      "operation": "orderBy",
+      "options": [
+        {"name": "sort", "value": ["ASC"]}, 
+*       {"name": "sortOrder","value": [1]}
+      ]
+    }
+  }
+}
+```
+ 
+---
+
+# Result Limits
+
+A result limit allows you set to the maximum number of results from an API request, along with the offset, allowing for pagination of large queries.
+
+.warning[__*WARNING*__] ALWAYS use a orderBy filter, usually on an id column, when using result limits. Not all queries have an order imposed on them internally and the database might choose a different index between API calls, giving you results out of order.
+
+Just add `resultLimit=<OFFSET>,<LIMIT>` as a URL parameter for REST calls
+
+```bash
+curl -u $SL_USER:$SL_APIKEY \
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getHardware.json?resultLimit=0%2C2'
+```
+
+---
+
+# Result Limit XML/SOAP
+
+.columnA[
+```xml
+<xml>
+<struct>
+  <member>
+    <name>resultLimit</name>
+    <value><struct>
+        <member>
+            <name>limit</name>
+            <value><int>10</int></value>
+        </member>
+        <member>
+            <name>offset</name>
+            <value><int>5</int></value>
+        </member>
+        </struct></value>
+  </member>
+</struct>
+</xml>
+```
+]
+
+.columnB[
+```xml
+<xml>
+<resultLimit xsi:type="slt:resultLimit" xmlns:slt="http://api.service.softlayer.com/soap/v3/SLTypes/">
+    <limit xsi:type="xsd:int">10</limit>
+    <offset xsi:type="xsd:int">5</offset>
+</resultLimit>
+</xml>
+```
+]
+
+---
+
+# Conclusion
+
+- https://sldn.softlayer.com/article/object-filters/ has all this written down for reference
+- Filters that are incorrect will usually be silently ignored
+- Require orderBy filters when using a resultLimit
+
+
+
+</textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <!-- <script src="/remark/jquery-2.2.4.min.js"></script> -->
+    <!-- <script src="/remark/highlight.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        highlightStyle: 'default',
+        ratio: '16:9',
+        highlightLines: true
+      });
+    </script>
+  </body>
+</html>
