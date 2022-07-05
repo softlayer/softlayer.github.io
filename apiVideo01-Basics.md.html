@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The SoftLayer API</title>
+    <meta charset="utf-8">
+    <style>
+      body { 
+        font-family: monospace; 
+        font-size: 2em;
+      }
+      h1 {
+        font-family: monospace;
+        color: #F2B632;
+      } 
+      h2 {
+        font-family: monospace;
+        color: #8834A5;
+      }
+      h3 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      h4 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { 
+        font-family: 'Courier New'; 
+        font-size: 16px;
+      }
+      /*.remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }*/
+      .remark-slide-content {
+        background-color: #252839;
+        color: #E1F4EC;
+        font-size: 25px;
+        padding: 0em 1em 1em 1em;
+      }
+      .minicode {
+        font-size: 10px;
+      }
+
+    img {background-color: #E1F4EC ;}
+    .columnA {float:left; width: 49%;}
+    .columnB {float:right; width: 49%; }
+    .columnD {float:right; width: 40%; }
+    .columnC {float:right; width: 60%; }
+    a {color:#A57712; }
+    hr {border-color: #8834A5; background-color:#8834A5; border-width: 2px; border-style: solid; }
+    li {margin-bottom: .5em; margin-top: .5em;}
+    blockquote { 
+        color: #F2B632;
+        font-family: Palatino;
+        font-weight: normal;
+        font-size: 35px;
+     }
+     .MathJax {
+     font-size: 8em !important;
+     color: #D69ECA !important;
+    }
+    th {
+      color:#A57712 ;
+    }
+    .brightGold {
+      color: #F2B632
+    }
+    .lightPurple {
+      color: #8834A5 ;
+    }
+    .bigO {
+      height: 475px;
+    }
+    .darkGold {
+      color: #A57712 ;
+    }
+    </style>
+<!-- <link rel="stylesheet" href="/remark/default.min.css"> -->
+  </head>
+  <body>
+    <!--#A57712  Dark Gold-->
+    <!--#E1F4EC  White Gold -->
+    <!--#F2B632  Bright Gold -->
+    <!--#27182C  Dark Purple -->
+    <!--#8834A5  Light Purple -->
+    <!--#D69ECA  White Purple -->
+    <textarea id="source">
+
+
+
+class: center, middle
+# .center[SoftLayer API]
+### .center[How it works, and what to do when it doesn't]
+Christopher Gallo, Senior API Developer
+
+---
+
+
+# .center[Anatomy of an API Call]
+
+.center[The SoftLayer API has two main urls to send requests to.]
+
+- Public:  https://api.softlayer.com
+- Private: https://api.service.softlayer.com
+
+Only big difference is the SoftLayer_Resource_Metadata service only exists on the private network API.
+
+
+
+---
+
+Specify the endpoint type and version
+
+## api.softlayer.com/<span class='brightGold'>rest</span>/<span class='darkGold'>v3.1</span>
+
+.columnA[
+### Types
+- REST
+- SOAP
+- XMLRPC
+
+### Versions
+- v3
+- v3.1 (Includes the SoftLayer_Search service, and some objectMask improvements)
+]
+
+.columnB[
+<img src='https://i.imgur.com/P00TpJ5.png'/ width="90%">
+]
+
+---
+
+API is broken down into "Services", which contain a collection of methods that perform some action.
+
+<br>
+
+## api.softlayer.com/rest/v3.1/<span class='brightGold'>SoftLayer_Service
+
+<br>
+
+Data returned by the API is broken down into "Datatypes". Services usually have a matching datatype, but not all datatypes have a matching service.
+
+- https://sldn.softlayer.com/reference
+
+</br>
+
+---
+
+.center[<img src='./Pics/SoftLayer_Account_Service.png' height="650px">]
+
+---
+
+Methods tell the API which action to actually run in a class/service.
+
+
+## api.softlayer.com/rest/v3.1/SoftLayer_Service/ <span class='brightGold'>method</span>
+
+- https://sldn.softlayer.com/reference/services/SoftLayer_Account/getObject/
+
+```bash
+$ curl -s -u $SL_USER:$SL_APIKEY \
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getObject.json'
+{"accountManagedResourcesFlag":false,"accountStatusId":1001,"address1":"4849 Alpha Rd","allowedPptpVpnQuantity":0,"brandId":2,"city":"Dallas", LOTS OF DATA}
+```
+
+For XML and SOAP requests, the method, and all other parameters will go into the request payload envelope.
+
+---
+Some methods require an InitParamter, listed in the documentation. For REST calls, this goes between the Service and Method. 
+For SOAP/XML requests, this is set in the header.
+
+## api.softlayer.com/rest/v3.1/SoftLayer_Service/ <span class='brightGold'>initParameter</span>/method
+
+- https://sldn.softlayer.com/reference/services/SoftLayer_Virtual_Guest/getObject/
+
+```bash
+$  curl -s  -u $SL_USER:$SL_APIKEY \
+'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/100317048/getObject'
+{"accountId":307608,"createDate":"2020-04-07T04:01:49-06:00","dedicatedAccountHostOnlyFlag":false,"domain":"chechu.com", OTHER DATA}
+```
+The documentation for this API method says it requires a `SoftLayer_Virtual_GuestInitParameters` header, which means we need to send in a Virtual Guest id as the init parameter. If you get a 404 error on these sort of API calls, check your user has access to the resource, and the resource is active. Cancelled resources are usually not available from the API.
+
+---
+
+.center[<img src='./Pics/SoftLayer_Virtual_Guest_editObject.png' height="450px">]
+
+```bash
+curl -u $SL_USER:$SL_APIKEY -X POST  \
+  -d '{"parameters": [{"hostname": "testingEdit"}]}'
+  'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/999999999/editObject.json'
+```
+
+---
+
+
+You can control the format of the returned data by adding .FORMAT to the end of the URI for REST requests. XML requests will return XML data, SOAP requests will return SOAP data.
+
+
+## api.softlayer.com/SoftLayer_Service/ initParameter/method<span class='brightGold'>.json</span>
+
+### Available formats
+- json (default for REST)
+- txt
+- xml
+
+---
+
+# Authentication
+
+1. .lightPurple[Classic API Key: ]
+  - 64 Characters, associated with a SoftLayer user (Your VPN username in the cloud.ibm.com portal)
+2. .lightPurple[Cloud.ibm.com: ]
+  - API Key 32 Characters, associated with an IBMid account
+3. .lightPurple[Token from Username / Password: ]
+  - Temporary, associated with a SoftLayer user
+4. .lightPurple[Bearer Token: ]
+  - Temporary, retrieved from the IBMCloud IAM service
+
+Read [Authenticating to the SoftLayer API](https://sldn.softlayer.com/article/authenticating-softlayer-api/) for full details.
+
+---
+
+# Metadata service
+
+[SoftLayer_Resource_Metadata](https://sldn.softlayer.com/reference/services/SoftLayer_Resource_Metadata/)
+
+- Only useable on the https://api.service.softlayer.com endpoint. 
+- No authentication needed. 
+- Only provides basic information about the resource making the API call
+  + `getUserMetadata()`
+  + `getTags()`
+  + `getHostname()`
+  + `getDatacenter`
+  + etc...
+
+---
+
+# API Errors
+
+1. .lightPurple[Authentication Headers not found]
+  + Make sure your authentication headers are correctly being sent.
+2. .lightPurple[SoftLayer_Exception_ObjectNotFound  (404)]
+  + Make sure the user making the API request has access to the resource
+  + Make sure the resource exists, and hasn't been cancelled
+3. .lightPurple[SoftLayer_Exception_Public Internal Error]
+  + Requesting too much data can result in this error. Try removing some items from the objectMask or a resultLimit
+  + Some other unexpected error happened.
+4. .lightPurple[SoftLayer_Exception_WebService_BadRequest]
+  + The API was not able to parse your request. Make sure there are no odd characters or mismatching brackets. 
+
+---
+
+# XML Example
+
+```bash
+$ curl -d @SoftLayer_Account-getObject.xml https://api.softlayer.com/xmlrpc/v3.1/SoftLayer_Account
+```
+
+
+```xml
+*SoftLayer_Account-getObject.xml
+<?xml version='1.0' encoding='iso-8859-1'?>
+<methodCall>
+*<methodName>getObject</methodName>
+  <params>
+    <param><value><struct><member>
+      <name>headers</name>
+      <value><struct><member>
+        <name>authenticate</name>
+        <value>
+          <struct>
+*           <member><name>username</name><value><string>SL123456</string></value></member>
+*           <member><name>apiKey</name><value><string>APIKEYGOESHERE</string></value></member>
+          </struct>
+        </value>
+      </member>
+      <member>
+        <name>SoftLayer_ObjectMask</name>
+        <value><struct>
+*         <member><name>mask</name><value><string>mask[id,companyName]</string></value></member>
+        </struct></value>
+      </member></struct></value>
+    </member></struct></value></param>
+  </params>
+</methodCall>
+```
+
+---
+
+# XML Response
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<params>
+<param>
+ <value>
+  <struct>
+   <member>
+    <name>companyName</name>
+    <value><string>SoftLayer Internal - Development Community</string></value>
+   </member>
+   <member>
+    <name>id</name><value><int>307608</int></value>
+   </member>
+  </struct>
+ </value>
+</param>
+</params>
+```
+
+
+---
+
+# SOAP Example
+
+```bash
+curl -d @soapAccountGetObject.soap https://api.softlayer.com/soap/v3.1/SoftLayer_Account
+```
+
+```xml
+*soapAccountGetObject.soap
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://api.service.softlayer.com/soap/v3.1/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://www.w3.org/2001/XMLSchema-instance" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+  <SOAP-ENV:Header>
+    <ns1:authenticate xmlns:ns1="http://api.service.softlayer.com/soap/v3.1/">
+*       <ns1:username>SL123456</ns1:username>
+*       <ns1:apiKey>APIKEYGOESHERE</ns1:apiKey>
+    </ns1:authenticate>
+    <ns1:SoftLayer_ObjectMask>
+*     <mask>mask[id,companyName]</mask>
+    </ns1:SoftLayer_ObjectMask>
+  </SOAP-ENV:Header>
+  <SOAP-ENV:Body>
+*   <ns1:getObject/>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+```
+
+---
+
+# SOAP Response
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://api.service.softlayer.com/soap/v3.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><SOAP-ENV:Body><ns1:getObjectResponse><getObjectReturn xsi:type="ns1:SoftLayer_Account"><companyName xsi:type="xsd:string">SoftLayer Internal - Development Community</companyName><id xsi:type="xsd:int">307608</id></getObjectReturn></ns1:getObjectResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>
+```
+
+---
+
+# REST Example
+
+### Basic Template
+```bash
+$> curl -u [username]:[apiKey]  \
+  -d '{"parameters": ["first", "second"]}' \
+  https://api.[service.]softlayer.com/rest/v3.1/[serviceName]/[initializationParameter]/[methodName]?
+    objectMask=mask[]&
+    objectFilter={}
+    &resultLimit=[offsetValue],[limitValue]
+```
+
+### Real Example
+
+```bash
+$> curl -u $SL_USER:$SL_APIKEY 'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/getObject.json?
+  objectMask=mask%5Bid%2CcompanyName%5D'
+
+{"companyName":"SoftLayer Internal - Development Community","id":307608}
+```
+
+
+*line breaks added for readability only*
+
+---
+
+# Simple API calls with CLI tools
+
+#### [SLCLI](https://github.com/softlayer/softlayer-python)
+https://github.com/softlayer/softlayer-python
+
+
+```bash
+$ slcli call-api --help
+Usage: slcli call-api [OPTIONS] SERVICE METHOD [PARAMETERS]...
+
+$ slcli call-api SoftLayer_Account getObject --mask="mask[id,companyName]"
+:.............:............................................:
+:        name : value                                      :
+:.............:............................................:
+: companyName : SoftLayer Internal - Development Community :
+:          id : 307608                                     :
+:.............:............................................:
+```
+
+---
+
+
+#### [IBMCLOUD SL](https://www.ibm.com/cloud/cli)
+https://www.ibm.com/cloud/cli
+
+```bash
+$ ibmcloud.exe sl call-api --help
+USAGE:
+  ibmcloud.exe sl call-api SERVICE METHOD [OPTIONS]
+
+$ ibmcloud.exe sl call-api SoftLayer_Account getObject --mask="mask[id,companyName]"
+
+{
+        "companyName": "SoftLayer Internal - Development Community",
+        "id": 307608
+}
+
+```
+
+---
+
+# API Gotchas
+
+- Sending in method parameters requires the following format for REST requests
+```json
+{"parameters": ["first", {"second_is_object":{"id":1234}}]}
+``` 
+- Paramters are NOT NAMED in the request, they go in order as listed on sldn.softlayer.com
+- XMLRPC returns integers as signed 32 bit, so some large numbers might overflow
+- Adding a LOCAL property to an object mask removes all default properties
+- Its very easy to request too much data from the API. Be mindful of how many properties you are asking for in a single request. 
+- Its better to make a lot of small API requests than one large request.
+
+---
+
+# .center[The End]
+
+.center[for more detailed information and documentation]
+## .center[https://sldn.softlayer.com/article/]
+
+
+
+
+
+</textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <!-- <script src="/remark/jquery-2.2.4.min.js"></script> -->
+    <!-- <script src="/remark/highlight.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        highlightStyle: 'default',
+        ratio: '16:9',
+        highlightLines: true
+      });
+    </script>
+  </body>
+</html>

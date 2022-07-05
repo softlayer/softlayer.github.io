@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The SoftLayer API</title>
+    <meta charset="utf-8">
+    <style>
+      body { 
+        font-family: monospace; 
+        font-size: 2em;
+      }
+      h1 {
+        font-family: monospace;
+        color: #F2B632;
+      } 
+      h2 {
+        font-family: monospace;
+        color: #8834A5;
+      }
+      h3 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      h4 {
+        color: #A57712;
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { 
+        font-family: 'Courier New'; 
+        font-size: 16px;
+      }
+      /*.remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }*/
+      .remark-slide-content {
+        background-color: #252839;
+        color: #E1F4EC;
+        font-size: 25px;
+        padding: 0em 1em 1em 1em;
+      }
+      .minicode {
+        font-size: 10px;
+      }
+
+    img {background-color: #E1F4EC ;}
+    .columnA {float:left; width: 49%;}
+    .columnB {float:right; width: 49%; }
+    .columnD {float:right; width: 40%; }
+    .columnC {float:right; width: 60%; }
+    a {color:#A57712; }
+    hr {border-color: #8834A5; background-color:#8834A5; border-width: 2px; border-style: solid; }
+    li {margin-bottom: .5em; margin-top: .5em;}
+    blockquote { 
+        color: #F2B632;
+        font-family: Palatino;
+        font-weight: normal;
+        font-size: 35px;
+     }
+     .MathJax {
+     font-size: 8em !important;
+     color: #D69ECA !important;
+    }
+    th {
+      color:#A57712 ;
+    }
+    .brightGold {
+      color: #F2B632
+    }
+    .lightPurple {
+      color: #8834A5 ;
+    }
+    .bigO {
+      height: 475px;
+    }
+    .darkGold {
+      color: #A57712 ;
+    }
+    </style>
+<!-- <link rel="stylesheet" href="/remark/default.min.css"> -->
+  </head>
+  <body>
+    <!--#A57712  Dark Gold-->
+    <!--#E1F4EC  White Gold -->
+    <!--#F2B632  Bright Gold -->
+    <!--#27182C  Dark Purple -->
+    <!--#8834A5  Light Purple -->
+    <!--#D69ECA  White Purple -->
+    <textarea id="source">
+
+
+
+class: center, middle
+# .center[SoftLayer API]
+### .center[Object Masks]
+Christopher Gallo, Senior API Developer
+
+---
+
+
+# Object Masks
+
+> An array like string used to select properties to be included in the response to an API request
+
+```python
+*mask[  # Required start of the mask
+  property1[
+    nested1,  # property1->nested1
+    nested2[  # property1->nested2
+      reallyNested  # property1->nested2->reallyNested
+    ]
+  ],
+  property2,
+  property3
+*] # Required end of the mask
+```
+
+When sending into the API, it will look something like this:
+
+```bash
+"mask[property1[nested1,nested2[reallyNested]],property2,property3]"
+```
+
+
+---
+
+# Concepts
+
+### Datatype
+
+Represent a table in a SQL database, generally speaking. The starting datatype for an objectMask is the return Type of a method
+
+### Local Property
+
+The columns in the table that the datatype represents. Adding a local property to an objectMask removes any default properties from the returned data.
+
+### Relational Property
+
+Properties in foreign tables that relate to this peice of data. Adding relational properties to an objectMask esentially adds another `SQL JOIN` clause to the select statement being executed.
+
+---
+
+
+# Concepts
+
+ObjectMasks control which properties are added to the SQL `SELECT` and `JOIN` clauses.
+
+
+```bash
+$ slcli --format=json call-api SoftLayer_Account getObject \
+          --mask="mask[id,companyName,virtualGuests[id,hostname]]"
+```
+
+ Would generate a SQL statement something like 
+
+ ```sql
+SELECT account.id, account.companyName, virtual_guest.id, virtual_guest.hostname FROM account
+JOIN virtual_guest ON virtual_guest.account_id = account.id
+WHERE account.id = active_user.account_id
+ ```
+
+---
+
+# Step 1: Find The Datastructure
+
+.center[<img src="./Pics/Virtual_Guest_getObject.png" height="450px">]
+
+Only methods that mention they accept ObjectMask headers can have masks applied to them
+
+---
+
+# Step 2: Find Properties
+
+.columnA[<img src="./Pics/Virtual_Guest_getObject2.png" height="500px">]
+.columnB[
+```python
+mask[id, hostname, createDate, allowedNetworkStorage]
+```
+
+All these properties are on the same 'level' as the Virtual_Guest datatype.
+`allowedNetworkStorage` is a datatype itself, so we can expand into that datatype and select more properties.
+
+]
+
+---
+
+# Output
+
+```bash
+$ slcli --format=json call-api SoftLayer_Virtual_Guest getObject --id=113821290 \
+          --mask="mask[id,hostname,allowedNetworkStorage]"
+```
+
+```json
+{
+  "hostname": "testname",
+  "id": 113821290,
+  "allowedNetworkStorage": [
+    {
+      "accountId": 307608,
+      "capacityGb": 40,
+      "createDate": "2020-04-16T15:25:47-06:00",
+      "guestId": null,
+      "hardwareId": null,
+      "hostId": null,
+      "id": 135925188,
+      "nasType": "ISCSI",
+      "serviceProviderId": 1,
+      "serviceResourceName": "Storage Type 02 Block Aggregate stbf-dal1303h",
+      "storageTypeId": "5",
+      "upgradableFlag": true,
+      "username": "SL02SL307608-30"
+    }
+  ]
+}
+
+```
+
+---
+
+# Step 3: Find More Properties
+
+.columnA[<img src="./Pics/Network_Storage.png" height="500px">]
+
+.columnB[
+```python
+mask[id, hostname, createDate, allowedNetworkStorage[
+  id, capacityGb, billingItem
+  ]
+]
+```
+.lightPurple[allowedNetworkStorage] Is a Network_Storage Datatype, so we can open up some .lightPurple[[]] at the end of that property and go deeper into the relationships to select more properties.
+
+When sending in the objectMask to the API, its best to remove spaces and newlines, they are added here for readability.
+
+]
+
+---
+```bash
+$ slcli --format=json call-api SoftLayer_Virtual_Guest getObject --id=113821290 
+          --mask="mask[id,hostname,allowedNetworkStorage[id,capacityGb,billingItem]]"
+```
+```json
+{
+  "hostname": "testname",
+  "id": 113821290,
+  "allowedNetworkStorage": [
+    {
+      "billingItem": {
+        "categoryCode": "storage_as_a_service",
+        "createDate": "2020-04-16T15:24:15-06:00",
+        "currentHourlyCharge": "0",
+        "cycleStartDate": "2022-06-03T23:10:08-06:00",
+        "description": "Storage as a Service",
+        "hourlyRecurringFee": "0",
+        "hoursUsed": "455",
+        "id": 652744096,
+        "laborFee": "0",
+        "laborFeeTaxRate": "0",
+        "lastBillDate": "2022-06-03T23:10:08-06:00",
+        "modifyDate": "2022-06-03T23:10:08-06:00",
+        "nextBillDate": "2022-07-03T23:00:00-06:00",
+        "recurringFeeTaxRate": "0",
+        "recurringMonths": 1,
+        "serviceProviderId": 1,
+        "setupFee": "0",
+        "setupFeeTaxRate": "0"
+      },
+      "capacityGb": 40,
+      "id": 135925188
+    }
+  ]
+}
+```
+
+---
+
+# Step 4: Even More Properties
+
+.columnA[<img src="./Pics/Billing_Item.png" height="500px">]
+
+.columnB[
+```python
+mask[id, hostname, createDate, allowedNetworkStorage[
+  id, capacityGb, billingItem[
+    id, hoursUsed, notes
+    ]
+  ]
+]
+```
+.lightPurple[billingItem] Is a Billing_Item Datatype, so we can open up some .lightPurple[[]] at the end of that property and go deeper into the relationships to select more properties.
+
+Multiple properties can be opened up this way in a single mask.
+
+]
+
+---
+
+
+```bash
+$ slcli --format=json call-api SoftLayer_Virtual_Guest getObject --id=113821290 
+          --mask="mask[id,hostname,allowedNetworkStorage[id,capacityGb,billingItem[id,hoursUsed,notes]]]"
+```
+```json
+{
+  "hostname": "testname",
+  "id": 113821290,
+  "allowedNetworkStorage": [
+    {
+      "billingItem": {
+        "hoursUsed": "455",
+        "id": 652744096,
+        "notes": "SL02SL307608-30"
+      },
+      "capacityGb": 40,
+      "id": 135925188
+    }
+  ]
+}
+```
+
+Since we selected some local (to Billing_Item) properties, this reduced the amount of data returned compared to the previous API call.
+
+
+---
+
+# XML Example
+
+```xml
+<?xml version='1.0' encoding='iso-8859-1'?>
+<methodCall>
+<methodName>getObject</methodName>
+  <params>
+    <param><value><struct><member>
+*     <name>headers</name>
+      <value><struct><member>
+        <name>authenticate</name>
+        <value>
+          <struct>
+           <member><name>username</name><value><string>SL123456</string></value></member>
+           <member><name>apiKey</name><value><string>APIKEYGOESHERE</string></value></member>
+          </struct>
+        </value>
+      </member>
+      <member>
+*       <name>SoftLayer_ObjectMask</name>
+        <value><struct>
+          <member>
+*           <name>mask</name>
+*           <value><string>mask[id,companyName]</string></value>
+          </member>
+        </struct></value>
+      </member></struct></value>
+    </member></struct></value></param>
+  </params>
+</methodCall>
+```
+
+---
+
+# SOAP Example
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://api.service.softlayer.com/soap/v3.1/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://www.w3.org/2001/XMLSchema-instance" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+* <SOAP-ENV:Header>
+    <ns1:authenticate xmlns:ns1="http://api.service.softlayer.com/soap/v3.1/">
+        <ns1:username>SL12345</ns1:username>
+        <ns1:apiKey>APIKEY</ns1:apiKey>
+    </ns1:authenticate>
+*   <ns1:SoftLayer_ObjectMask>
+*     <mask>mask[id,companyName]</mask>
+    </ns1:SoftLayer_ObjectMask>
+  </SOAP-ENV:Header>
+  <SOAP-ENV:Body>
+    <ns1:getObject/>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+```
+
+You can use .lightPurple[ns1:< SERVICE >ObjectMask] style object masks as well, which is a < SERVICE > style object and the objects defined there are included in the mask. However it is often simpler to just use the .lightPurple[mask[]] string format.
+
+---
+
+# Warnings
+
+The ObjectMask system is very powerful, but it does allow you to shoot yourself in the foot if you are not careful.
+
+For example, most Datatypes link back to the Account Datatype, which allows you to branch off to all sorts of unrelated data.
+
+`"mask[id,hostname,account[invoices]]"`
+
+```bash
+curl -g -v -u $SL_USER:$SL_APIKEY  'https://api.softlayer.com/rest/v3.1/SoftLayer_Virtual_Guest/113821290/
+getObject.json?objectMask=mask[id,hostname,account[invoices]]' > out.json
+
+< HTTP/1.1 200 OK
+< Date: Thu, 23 Jun 2022 03:48:38 GMT
+< Server: Apache
+< X-Frame-Options: SAMEORIGIN
+*< Content-Length: 5098863 (5.1Mb) Without the `invoices` property the response is only 5035 bytes
+< Vary: Accept-Encoding
+< Connection: close
+< Content-Type: application/json
+< Strict-Transport-Security: max-age=31536000
+```
+
+As a rule, try to limit your mask to only the properties you need.
+
+---
+
+Getting too many objects can also be a problem and result in Internal Server Errors. Some of the default properties can by themselves be too much data if there are a large number of entires to retrieve.
+
+```bash
+curl -g -v -u $SL_USER:$SL_APIKEY  'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/
+getAllBillingItems' 
+
+< HTTP/1.0 200 OK
+< Vary: Accept-Encoding
+< Content-Length: 62
+< Connection: close
+< Content-Type: application/json
+< Strict-Transport-Security: max-age=31536000
+<
+{"error":"Internal Error","code":"SoftLayer_Exception_Public"}
+```
+
+```bash
+$ curl -g -v -u $SL_USER:$SL_APIKEY  'https://api.softlayer.com/rest/v3.1/SoftLayer_Account/
+getAllBillingItems?objectMask=mask[id]'
+
+< HTTP/1.1 200 OK
+*< SoftLayer-Total-Items: 128202
+< Content-Length: 1666755
+< Vary: Accept-Encoding
+< Connection: close
+< Content-Type: application/json
+< Strict-Transport-Security: max-age=31536000
+```
+
+---
+
+# Type Casting Object Masks
+
+.lightPurple[SoftLayer_Account::getHardware()] returns a SoftLayer_Hardware object, however many of the entires that get returns are actually a child class, SoftLayer_Hardware_Server. Which has many of the same properties, but some that do not appear in the parent class.
+
+For example, VMWare servers provisioned by IBM Cloud have some basic data about them and their virtual guests available through the API. The .lightPurple[virtualGuests] property exists on the SoftLayer_Hardware_Server class, but not on the SoftLayer_Hardware class.
+
+```bash
+$> slcli call-api SoftLayer_Account getHardware --mask="mask[id, hostname, virtualGuests[id]]"
+SoftLayerAPIError(500): Property 'virtualGuests' not valid for 'SoftLayer_Hardware'.
+```
+
+---
+
+# Type Casting Object Masks
+
+Forcing the API to use the SoftLayer_Hardware_Server datatype helps solve this problem.
+
+```bash
+$ ./slcli --format=json call-api SoftLayer_Account getHardware 
+*         --mask="mask(SoftLayer_Hardware_Server)[id, hostname, virtualGuests[id]]"
+```
+```json
+[
+  {
+    "hostname": "bardcabero",
+    "id": 1403539,
+    "virtualGuests": []
+  },
+  {
+    "hostname": "gpu.vmware",
+    "id": 1866407,
+    "virtualGuests": [
+      {
+        "id": 99423014
+      },
+      {
+        "id": 113102210
+      }
+    ]
+  }
+]
+```
+
+---
+
+# Type Casting Object Masks
+
+This is also useful for the SoftLayer_Search service, or any of the few services that can return multiple datatypes (Billing_Item is the biggest other example). .lightPurple[SoftLayer_Search::search()] returns the SoftLayer_Entity datatype, which doesn't really have any properties at all, so by default its impossible to apply a mask to them.
+
+If I wanted to find all the Servers and Virtual Guests with test.com in their FQDN, I would do something like this.
+
+```bash
+$ ./slcli --format=json call-api SoftLayer_Search search 
+          "_objectType:SoftLayer_Hardware,SoftLayer_Virtual_Guest test.com"
+```
+
+---
+
+```json
+[
+  {"matchedTerms": [
+      {"value": "domain:|test.com|"},
+      {"value": "domain.sort:|test.com|"}
+    ],
+    "relevanceScore": "9.017289",
+    "resource": {
+      "accountId": 307608,
+      "createDate": "2022-02-08T08:33:12-06:00",
+      "dedicatedAccountHostOnlyFlag": false,
+      "deviceStatusId": 8,
+      "domain": "test.com",
+      "fullyQualifiedDomainName": "lab-web.test.com",
+      "hostname": "lab-web",
+    },
+    "resourceType": "SoftLayer_Virtual_Guest"
+  },
+  {"matchedTerms": [
+      {"value": "domain:|test.com|"},
+      {"value": "domain.sort:|test.com|"}
+    ],
+    "relevanceScore": "9.017289",
+    "resource": {
+      "accountId": 307608,
+      "createDate": "2022-04-22T09:03:42-06:00",
+      "dedicatedAccountHostOnlyFlag": false,
+      "deviceStatusId": 8,
+      "domain": "test.com",
+      "fullyQualifiedDomainName": "testvs-9dca.test.com",
+      "hostname": "testvs-9dca",
+    },
+    "resourceType": "SoftLayer_Virtual_Guest"
+  },
+```
+
+---
+
+# Type Casting Object Masks
+
+But if I want to use an objectMask I get the following error.
+
+```bash
+$ ./slcli --format=json call-api SoftLayer_Search search 
+          "_objectType:SoftLayer_Hardware,SoftLayer_Virtual_Guest test.com" 
+          --mask="mask[id,hostname]"
+SoftLayerAPIError(500): Property 'id' not valid for 'SoftLayer_Container_Search_Result'.
+```
+
+Solution:
+
+```bash
+slcli --format=json call-api SoftLayer_Search search 
+      "_objectType:SoftLayer_Hardware,SoftLayer_Virtual_Guest test.com" 
+      --mask="mask[
+        resource(SoftLayer_Hardware)[id, hostname],
+        resource(SoftLayer_Virtual_Guest)[id, hostname]
+      ]"
+
+```
+
+---
+
+```json
+[
+  {
+    "matchedTerms": [
+      {"value": "domain:|test.com|"},
+      {"value": "domain.sort:|test.com|"}
+    ],
+    "relevanceScore": "9.017654",
+    "resource": {
+      "hostname": "lab-web",
+      "id": 127890106
+    },
+    "resourceType": "SoftLayer_Virtual_Guest"
+  },
+  {
+    "matchedTerms": [
+      {"value": "domain:|test.com|"},
+      {"value": "domain.sort:|test.com|"}
+    ],
+    "relevanceScore": "9.017654",
+    "resource": {
+      "hostname": "testvs-9dca",
+      "id": 129906358
+    },
+    "resourceType": "SoftLayer_Virtual_Guest"
+  }
+]
+```
+
+---
+
+# Conclusion
+
+ObjectMasks are what makes the SoftLayer API so versitile, but can be very confusing.
+
+The API is basically a huge [ORM Model](http://www.orm.net), and the datatypes are all of those models you have access to. The objectMasks are how you select which of those models you want to query and be returned.
+
+
+
+</textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <!-- <script src="/remark/jquery-2.2.4.min.js"></script> -->
+    <!-- <script src="/remark/highlight.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+    <script type="text/javascript">
+      var slideshow = remark.create({
+        highlightStyle: 'default',
+        ratio: '16:9',
+        highlightLines: true
+      });
+    </script>
+  </body>
+</html>
