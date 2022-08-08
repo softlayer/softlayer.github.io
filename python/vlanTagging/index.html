@@ -8,7 +8,7 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>Tag Vlans - https://sldn.softlayer.com/</title>
+    <title>Trunking VLANs - https://sldn.softlayer.com/</title>
     <link rel="canonical" href="https://sldn.softlayer.com/python/vlanTagging/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
@@ -114,7 +114,7 @@ if (!doNotTrack) {
     
         <div class="col-md-3">
             <div style="word-wrap: break-word;"> 
-                <h4>June 9, 2017<br></h4>
+                <h4>August 4, 2022<br></h4>
             </div>
         </div>
         <div class="col-md-9">
@@ -137,14 +137,148 @@ if (!doNotTrack) {
 		<div class="col-md-12">
             <div class="well well-sm  article" style="word-wrap: break-word;">
                 <div class="article-title">
-				    <h1>Tag Vlans</h1>
-                    <small>Some examles of how to add vlans to a server. AKA Vlan Trunks.</small>
+				    <h1>Trunking VLANs</h1>
+                    <small>Some examples of how to add VLAN Trunks. AKA VLAN Tagging</small>
                 </div>
 				
                 
 				
-                <p>A rough examples of how to add vlans to servers</p>
-<p><em>NOTE</em> When trying to get the vlan tags/trunks from a server, the trunk information is on the <code>Hardware_Server-&gt;networkComponent-&gt;uplinkComponent-&gt;vlanTrunks</code> relationship.</p>
+                <p>This example shows how to add VLAN Trunks to a server.</p>
+<p><em>NOTE</em> When trying to get the vlan tags/trunks from a server, the trunk information is on the <code>Hardware_Server-&gt;networkComponent-&gt;uplinkComponent-&gt;networkVlanTrunks</code> relationship.</p>
+<h2 id="vlan-trunks">VLAN Trunks</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">@author Christopher Gallo
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">Adds specified Public and Private VLANs to a given server ID.
+</span></span></span><span class="line"><span class="cl"><span class="s2">Script requried
+</span></span></span><span class="line"><span class="cl"><span class="s2">Python 3.7+
+</span></span></span><span class="line"><span class="cl"><span class="s2">click 8.0+
+</span></span></span><span class="line"><span class="cl"><span class="s2">rich 
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Click is used to make this script support CLI arguments</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">click</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Used for details table output</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">rich.console</span> <span class="kn">import</span> <span class="n">Console</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">rich.table</span> <span class="kn">import</span> <span class="n">Table</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">VlanTrunk</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;SoftLayer Client&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">trunkPublic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverId</span><span class="p">,</span> <span class="n">vlans</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Adds Trunks to a Public network component&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getNetworkComponents</span><span class="p">(</span><span class="n">serverId</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">networkVlans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listToVlan</span><span class="p">(</span><span class="n">vlans</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">addTrunks</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">networkVlans</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&#34;Public&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">       
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">trunkPrivate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverId</span><span class="p">,</span> <span class="n">vlans</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Adds Trunks to a Private network component&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getNetworkComponents</span><span class="p">(</span><span class="n">serverId</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">networkVlans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">listToVlan</span><span class="p">(</span><span class="n">vlans</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">addTrunks</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">),</span> <span class="n">networkVlans</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&#34;Private&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">addTrunks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_id</span><span class="p">,</span> <span class="n">networkVlans</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&#34;Public&#34;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Makes the actual API call to add VLAN Trunks&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># Vlans should be added in a single API call. networkVlans is a list of all the vlans you want added</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;Network_Component&#39;</span><span class="p">,</span> <span class="s1">&#39;addNetworkVlanTrunks&#39;</span><span class="p">,</span> <span class="n">networkVlans</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">component_id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;VLANs successfully added&#34;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">SoftLayerAPIError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Unable to trunk vlans on the </span><span class="si">{</span><span class="nb">type</span><span class="si">}</span><span class="s2"> Interface...&#34;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s2">&#34;red&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">click</span><span class="o">.</span><span class="n">secho</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">ex</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s2">&#34;red&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getNetworkComponents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverId</span><span class="p">,</span> <span class="n">private</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Returns either Private or Public network component for a server&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;getPrimaryNetworkComponent&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">private</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;getPrimaryBackendNetworkComponent&#39;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">serverId</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">component</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">getServerDetails</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverId</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Prints some basic information about the server and its Network Components, VLANs, VLAN Trunks&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">serverMask</span> <span class="o">=</span> <span class="s2">&#34;&#34;&#34;mask[id,hostname,domain,networkComponents[uplinkComponent[
+</span></span></span><span class="line"><span class="cl"><span class="s2">                        networkVlan,networkVlanTrunks[networkVlan[id,vlanNumber]]]]]&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">server</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;getObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">serverId</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">serverMask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hostname&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;domain&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> Network Components&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="s2">&#34;Id&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="s2">&#34;Primary IP&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="s2">&#34;Primary VLAN&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">table</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="s2">&#34;VLAN Trunks&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">server</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;networkComponents&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">component</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;primaryIpAddress&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="n">uplink</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;uplinkComponent&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="n">trunks</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># Trunk information is stored in the UPLINK component, not the server&#39;s component</span>
+</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="n">trunk</span> <span class="ow">in</span> <span class="n">uplink</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;networkVlanTrunks&#39;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">trunk_vlan</span> <span class="o">=</span> <span class="n">trunk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">trunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">trunk_vlan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="n">vlan</span> <span class="o">=</span> <span class="n">uplink</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;networkVlan&#39;</span><span class="p">,</span> <span class="p">{})</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># Need to cast everything to string for Rich.Table()</span>
+</span></span><span class="line"><span class="cl">                <span class="n">table</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">str</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)),</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">str</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;primaryIpAddress&#39;</span><span class="p">)),</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">str</span><span class="p">(</span><span class="n">vlan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">)),</span> 
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;, &#34;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">trunks</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nd">@staticmethod</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">listToVlan</span><span class="p">(</span><span class="n">vlans</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;converts a list of vlan numbers to SoftLayer_Network_Vlan objects&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">networkVlans</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">vlan</span> <span class="ow">in</span> <span class="n">vlans</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">networkVlans</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;vlanNumber&#39;</span><span class="p">:</span> <span class="n">vlan</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">networkVlans</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nd">@click</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s1">&#39;serverid&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;-u&#39;</span><span class="p">,</span> <span class="s1">&#39;--public&#39;</span><span class="p">,</span> <span class="n">multiple</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Public VLAN number to add&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="s1">&#39;--private&#39;</span><span class="p">,</span> <span class="n">multiple</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Private VLAN number to add&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--detail&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Shows details of this server&#39;s network components&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">trunkVlans</span><span class="p">(</span><span class="n">serverid</span><span class="p">,</span> <span class="n">public</span><span class="p">,</span> <span class="n">private</span><span class="p">,</span> <span class="n">detail</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">vlanTrunk</span> <span class="o">=</span> <span class="n">VlanTrunk</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">public</span><span class="p">,</span> <span class="n">private</span><span class="p">,</span> <span class="n">detail</span><span class="p">]):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">raise</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">ClickException</span><span class="p">(</span><span class="s2">&#34;Specify at least one VLAN, or --detail&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">public</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">vlanTrunk</span><span class="o">.</span><span class="n">trunkPublic</span><span class="p">(</span><span class="n">serverid</span><span class="p">,</span> <span class="n">public</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">private</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">vlanTrunk</span><span class="o">.</span><span class="n">trunkPrivate</span><span class="p">(</span><span class="n">serverid</span><span class="p">,</span> <span class="n">private</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">detail</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">vlanTrunk</span><span class="o">.</span><span class="n">getServerDetails</span><span class="p">(</span><span class="n">serverid</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">trunkVlans</span><span class="p">()</span>
+</span></span></code></pre></div><h3 id="output">Output</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">$ python vlanTaggingExample.py 1403539 --detail --public 997  --private 1325
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Hardware_Server::getPrimaryNetworkComponent(id=1403539, mask=&#39;&#39;, filter=&#39;None&#39;, args=(), limit=None, offset=None))
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Network_Component::addNetworkVlanTrunks(id=10646647, mask=&#39;&#39;, filter=&#39;None&#39;, args=([{&#39;vlanNumber&#39;: &#39;997&#39;}],), limit=None, offset=None))
+</span></span><span class="line"><span class="cl">VLANs successfully added
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Hardware_Server::getPrimaryBackendNetworkComponent(id=1403539, mask=&#39;&#39;, filter=&#39;None&#39;, args=(), limit=None, offset=None))
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Network_Component::addNetworkVlanTrunks(id=10646645, mask=&#39;&#39;, filter=&#39;None&#39;, args=([{&#39;vlanNumber&#39;: &#39;1325&#39;}],), limit=None, offset=None))
+</span></span><span class="line"><span class="cl">VLANs successfully added
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Hardware_Server::getObject(id=1403539, mask=&#39;mask[id,hostname,domain,networkComponents[uplinkComponent[ networkVlan,networkVlanTrunks[networkVlan[id,vlanNumber]]]]]&#39;, filter=&#39;None&#39;, args=(), limit=None, offset=None))
+</span></span><span class="line"><span class="cl">        bardcabero.testedit.com Network Components
+</span></span><span class="line"><span class="cl">+--------------------------------------------------------+
+</span></span><span class="line"><span class="cl">| Id       | Primary IP     | Primary VLAN | VLAN Trunks |
+</span></span><span class="line"><span class="cl">|----------+----------------+--------------+-------------|
+</span></span><span class="line"><span class="cl">| 10646645 | 10.93.138.202  | 886          | 1325        |
+</span></span><span class="line"><span class="cl">| 10646647 | 169.48.191.244 | 1236         | 997         |
+</span></span><span class="line"><span class="cl">+--------------------------------------------------------+
+</span></span></code></pre></div><h2 id="old-example">Old Example</h2>
+<p>This example was created in 2017 and is kept to show the difference in how the API has changed. In this example, Vlan Trunks are added to the network component in a series of API calls. However it is best to add all VLANs you want in a single API call.</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
 </span></span></span><span class="line"><span class="cl"><span class="s2">@author Christopher Gallo
 </span></span></span><span class="line"><span class="cl"><span class="s2">
@@ -232,7 +366,7 @@ if (!doNotTrack) {
             <p>
                 If this article contains any error, or leaves any of your questions unanswered, please help us out by 
                 opening up a github issue.<br>
-                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20Tag%20Vlans&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fvlanTagging%2f"> Open an issue</a>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20Trunking%20VLANs&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fvlanTagging%2f"> Open an issue</a>
                 <i class="fab fa-github" alt="github"></i>
             </p>
     </div>
