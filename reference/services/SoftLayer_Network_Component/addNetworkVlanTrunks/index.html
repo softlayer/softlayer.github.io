@@ -192,13 +192,15 @@ if (!doNotTrack) {
 
             
             <p>
-                Add VLAN trunks to network component
+                Add VLAN trunks to a network component
             </p>
             <h2>Description</h2>
 
-                <p>Add VLANs as trunks to a network component. The VLANs given must be assigned to your account, and on the router to which this network component is connected. The current native VLAN (networkVlanId/networkVlan) cannot be added as a trunk. This method should be called on a network component attached directly to customer assigned hardware, though all trunking operations will occur on the uplinkComponent. A current list of VLAN trunks for a network component on a customer server can be found at &lsquo;uplinkComponent-&gt;networkVlanTrunks&rsquo;.</p>
-<p>This method returns an array of SoftLayer_Network_Vlans which were added as trunks. Any requested trunks which are already trunked will be silently ignored, and will not be returned.</p>
-<p>Configuration of network hardware is done asynchronously, do not depend on the return of this call as an indication that the newly trunked VLANs will be accessible.</p>
+                <p>Add VLANs as trunks to a network component. The VLANs given must be assigned to your account and belong to the same pod in which this network component and its hardware reside. The current native VLAN cannot be added as a trunk.</p>
+<p>This method should be called on a network component of assigned hardware. A current list of VLAN trunks for a network component on a customer server can be found at &lsquo;uplinkComponent-&gt;networkVlanTrunks&rsquo;.</p>
+<p>This method returns an array of SoftLayer_Network_Vlans which were added as trunks. Any requested VLANs which are already trunked will be ignored and will not be returned.</p>
+<p>Affected VLANs will not yet be operational as trunks on the network upon return of this call, but activation will have been scheduled and should be considered imminent. The trunking records associated with the affected VLANs will maintain an &lsquo;isUpdating&rsquo; value of &lsquo;1&rsquo; so long as this is the case.</p>
+<p>Note that in the event of an &ldquo;internal system error&rdquo; some VLANs may still have been affected and scheduled for activation.</p>
 
 
             <hr>
@@ -274,6 +276,77 @@ if (!doNotTrack) {
                     
                 </li></ul>
             
+                <h3>Error Handling</h3>
+                    <ul>
+                    
+                        
+                            <li>Throw the error &lsquo;Invalid value provided for 'id and vlanNumber'&rsquo; if sufficient data was not provided from which to retrieve a VLAN record. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;The following VLAN IDs|numbers are not valid&rsquo; if a VLAN record could not be retrieved for the provided data. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;Insufficient permissions to modify server&rsquo; if the user lacks access to the associated hardware. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;Hardware is not supported for customer-managed trunking&rsquo; if trunking cannot be modified for the associated hardware. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;Component is not supported for customer-managed trunking&rsquo; if trunking cannot be modified on the given component. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;VLAN <name> does not belong to the same pod as component <name>&rsquo; if a given VLAN is not associated with the same network as the given component. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;VLAN <name> is directly attached, and thus not eligible for trunking&rsquo; if a given VLAN is attached natively to the given component. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;Trunking management is not available to gateway inside VLANs&rsquo; if a given VLAN is already associated to this gateway. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;Server is not currently available for VLAN trunk modification&rsquo; if the associated hardware cannot be modified at this time. Try again later. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;The network is undergoing maintenance and requests to modify trunking cannot be fulfilled at this time&rsquo; if the network is undergoing maintenance. Try again later. </li>
+                        
+                        
+
+                    
+                        
+                            <li>Throw the error &lsquo;A pending API request to update trunks for network component <name> exists&rsquo; if a trunking request for this component is in-progress. Try again later. </li>
+                        
+                        
+
+                    
+                    </ul>
+            
 
             
         </div>
@@ -284,7 +357,7 @@ if (!doNotTrack) {
 <footer>
     <div class="row">
         <div class="col-sm-12">
-            <p>&copy; SoftLayer 2022<br>
+            <p>&copy; SoftLayer 2023<br>
             Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
         </div>
     </div>
