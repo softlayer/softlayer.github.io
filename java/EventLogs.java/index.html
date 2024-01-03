@@ -145,146 +145,146 @@ if (!doNotTrack) {
 				
                 <h1 id="event-log">Event Log</h1>
 <p>This example deals with a few ways of pulling data from <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Event_Log/">SoftLayer_Event_Log</a>. Also, uses the latest version of the SoftLayer API Client for Java (<code>v0.3.2</code> at the time of publishing this example), which does not support object filters available in the SoftLayer API, so programmatic filters are used instead.</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.google.gson.Gson</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.google.gson.GsonBuilder</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.ApiClient</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.RestApiClient</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.ResultLimit</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">com.softlayer.api.service.event.Log</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.time.LocalDate</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.stream.Collectors</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">EventLogExample</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kd">final</span> <span class="n">ApiClient</span> <span class="n">client</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kd">final</span> <span class="n">Log</span><span class="o">.</span><span class="na">Service</span>  <span class="n">logService</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="kd">public</span> <span class="nf">EventLogExample</span><span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">String</span> <span class="n">username</span> <span class="o">=</span> <span class="s">&#34;set-me&#34;</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">String</span> <span class="n">apiKey</span> <span class="o">=</span> <span class="s">&#34;set-me&#34;</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RestApiClient</span><span class="o">().</span><span class="na">withCredentials</span><span class="o">(</span><span class="n">username</span><span class="o">,</span> <span class="n">apiKey</span><span class="o">).</span><span class="na">withLoggingEnabled</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">logService</span> <span class="o">=</span> <span class="n">Log</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">client</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">EventLogExample</span> <span class="n">eventLogExample</span> <span class="o">=</span> <span class="k">new</span> <span class="n">EventLogExample</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">eventLogExample</span><span class="o">.</span><span class="na">getAllTypes</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">eventLogExample</span><span class="o">.</span><span class="na">getUserTypes</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">eventLogExample</span><span class="o">.</span><span class="na">allLogs</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">eventLogExample</span><span class="o">.</span><span class="na">loginLogs</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">eventLogExample</span><span class="o">.</span><span class="na">recentLogs</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">eventLogExample</span><span class="o">.</span><span class="na">systemLogs</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="cm">/**
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">com.google.gson.Gson</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">com.google.gson.GsonBuilder</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">com.softlayer.api.ApiClient</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">com.softlayer.api.RestApiClient</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">com.softlayer.api.ResultLimit</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">com.softlayer.api.service.event.Log</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">java.time.LocalDate</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.ArrayList</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.List</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kn">import</span><span class="w"> </span><span class="nn">java.util.stream.Collectors</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">EventLogExample</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ApiClient</span><span class="w"> </span><span class="n">client</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Log</span><span class="p">.</span><span class="na">Service</span><span class="w">  </span><span class="n">logService</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">EventLogExample</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;set-me&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">apiKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;set-me&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RestApiClient</span><span class="p">().</span><span class="na">withCredentials</span><span class="p">(</span><span class="n">username</span><span class="p">,</span><span class="w"> </span><span class="n">apiKey</span><span class="p">).</span><span class="na">withLoggingEnabled</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">logService</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Log</span><span class="p">.</span><span class="na">service</span><span class="p">(</span><span class="n">client</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">EventLogExample</span><span class="w"> </span><span class="n">eventLogExample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">EventLogExample</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">eventLogExample</span><span class="p">.</span><span class="na">getAllTypes</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">eventLogExample</span><span class="p">.</span><span class="na">getUserTypes</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">eventLogExample</span><span class="p">.</span><span class="na">allLogs</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">eventLogExample</span><span class="p">.</span><span class="na">loginLogs</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">eventLogExample</span><span class="p">.</span><span class="na">recentLogs</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">eventLogExample</span><span class="p">.</span><span class="na">systemLogs</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="cm">/**
 </span></span></span><span class="line"><span class="cl"><span class="cm">   * Running GET on https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/AllEventObjectNames.json with no body
-</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">getAllTypes</span><span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">print</span><span class="o">(</span><span class="n">logService</span><span class="o">.</span><span class="na">getAllEventObjectNames</span><span class="o">());</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="cm">/***
+</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">getAllTypes</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="n">logService</span><span class="p">.</span><span class="na">getAllEventObjectNames</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="cm">/***
 </span></span></span><span class="line"><span class="cl"><span class="cm">   * Running GET on https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/AllUserTypes.json with no body
-</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">getUserTypes</span><span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">print</span><span class="o">(</span><span class="n">logService</span><span class="o">.</span><span class="na">getAllUserTypes</span><span class="o">());</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="cm">/***
+</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">getUserTypes</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="n">logService</span><span class="p">.</span><span class="na">getAllUserTypes</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="cm">/***
 </span></span></span><span class="line"><span class="cl"><span class="cm">   * Running GET on https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/AllObjects.json?resultLimit=0,50 with no body
-</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">systemLogs</span><span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">logs</span><span class="o">=</span><span class="n">getAllEvents</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">String</span> <span class="n">systemName</span><span class="o">=</span><span class="s">&#34;SYSTEM&#34;</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">systemLogs</span> <span class="o">=</span> <span class="n">logs</span><span class="o">.</span><span class="na">stream</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">            <span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="n">log</span> <span class="o">-&gt;</span> <span class="n">systemName</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">log</span><span class="o">.</span><span class="na">getEventName</span><span class="o">()))</span>
-</span></span><span class="line"><span class="cl">            <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="n">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
-</span></span><span class="line"><span class="cl">    <span class="n">printEventLogs</span><span class="o">(</span><span class="n">systemLogs</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">systemLogs</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logs</span><span class="o">=</span><span class="n">getAllEvents</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">systemName</span><span class="o">=</span><span class="s">&#34;SYSTEM&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">systemLogs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logs</span><span class="p">.</span><span class="na">stream</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">log</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">systemName</span><span class="p">.</span><span class="na">equalsIgnoreCase</span><span class="p">(</span><span class="n">log</span><span class="p">.</span><span class="na">getEventName</span><span class="p">()))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">Collectors</span><span class="p">.</span><span class="na">toList</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">printEventLogs</span><span class="p">(</span><span class="n">systemLogs</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="cm">/**
 </span></span></span><span class="line"><span class="cl"><span class="cm">   * Running GET on https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/AllObjects.json?resultLimit=0,50 with no body
-</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">recentLogs</span><span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">LocalDate</span> <span class="n">daysAgo</span> <span class="o">=</span> <span class="n">LocalDate</span><span class="o">.</span><span class="na">now</span><span class="o">().</span><span class="na">minusDays</span><span class="o">(</span><span class="n">30</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">logs</span><span class="o">=</span><span class="n">getAllEvents</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">recentLogs</span> <span class="o">=</span> <span class="n">logs</span><span class="o">.</span><span class="na">stream</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">            <span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="n">log</span> <span class="o">-&gt;</span> <span class="n">log</span><span class="o">.</span><span class="na">getEventCreateDate</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">                    <span class="o">.</span><span class="na">toZonedDateTime</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">                    <span class="o">.</span><span class="na">toLocalDate</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">                    <span class="o">.</span><span class="na">compareTo</span><span class="o">(</span><span class="n">daysAgo</span><span class="o">)&gt;</span><span class="n">0</span><span class="o">)</span>
-</span></span><span class="line"><span class="cl">            <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="n">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
-</span></span><span class="line"><span class="cl">    <span class="n">printEventLogs</span><span class="o">(</span><span class="n">recentLogs</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">recentLogs</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">LocalDate</span><span class="w"> </span><span class="n">daysAgo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LocalDate</span><span class="p">.</span><span class="na">now</span><span class="p">().</span><span class="na">minusDays</span><span class="p">(</span><span class="n">30</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logs</span><span class="o">=</span><span class="n">getAllEvents</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">recentLogs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logs</span><span class="p">.</span><span class="na">stream</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">log</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">log</span><span class="p">.</span><span class="na">getEventCreateDate</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">.</span><span class="na">toZonedDateTime</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">.</span><span class="na">toLocalDate</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">.</span><span class="na">compareTo</span><span class="p">(</span><span class="n">daysAgo</span><span class="p">)</span><span class="o">&gt;</span><span class="n">0</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">Collectors</span><span class="p">.</span><span class="na">toList</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">printEventLogs</span><span class="p">(</span><span class="n">recentLogs</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="cm">/**
 </span></span></span><span class="line"><span class="cl"><span class="cm">   * Running GET on https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/AllObjects.json?resultLimit=0,50 with no body
-</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">loginLogs</span><span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">logs</span><span class="o">=</span><span class="n">getAllEvents</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">String</span> <span class="n">loginName</span><span class="o">=</span><span class="s">&#34;login&#34;</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">loginLogs</span> <span class="o">=</span> <span class="n">logs</span><span class="o">.</span><span class="na">stream</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">            <span class="o">.</span><span class="na">filter</span><span class="o">(</span><span class="n">log</span> <span class="o">-&gt;</span> <span class="n">log</span>
-</span></span><span class="line"><span class="cl">                    <span class="o">.</span><span class="na">getEventName</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">                    <span class="o">.</span><span class="na">toLowerCase</span><span class="o">()</span>
-</span></span><span class="line"><span class="cl">                    <span class="o">.</span><span class="na">contains</span><span class="o">(</span><span class="n">loginName</span><span class="o">))</span>
-</span></span><span class="line"><span class="cl">            <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="n">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
-</span></span><span class="line"><span class="cl">    <span class="n">printEventLogs</span><span class="o">(</span><span class="n">loginLogs</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">loginLogs</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logs</span><span class="o">=</span><span class="n">getAllEvents</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">loginName</span><span class="o">=</span><span class="s">&#34;login&#34;</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">loginLogs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logs</span><span class="p">.</span><span class="na">stream</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">filter</span><span class="p">(</span><span class="n">log</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">log</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">.</span><span class="na">getEventName</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">.</span><span class="na">toLowerCase</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">loginName</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">Collectors</span><span class="p">.</span><span class="na">toList</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">printEventLogs</span><span class="p">(</span><span class="n">loginLogs</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="cm">/**
 </span></span></span><span class="line"><span class="cl"><span class="cm">   * Running GET on https://api.softlayer.com/rest/v3.1/SoftLayer_Event_Log/AllObjects.json?resultLimit=0,50 with no body
-</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">allLogs</span><span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">printEventLogs</span><span class="o">(</span><span class="n">getAllEvents</span><span class="o">(</span><span class="kc">false</span><span class="o">));</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">allLogs</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">printEventLogs</span><span class="p">(</span><span class="n">getAllEvents</span><span class="p">(</span><span class="kc">false</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="cm">/**
 </span></span></span><span class="line"><span class="cl"><span class="cm">   * Pages through all results from the Event_Log. This might take long time.
-</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span>
-</span></span><span class="line"><span class="cl">  <span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="nf">getAllEvents</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">allEvents</span><span class="o">)</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">result</span><span class="o">=</span><span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">limit</span> <span class="o">=</span><span class="n">50</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">offset</span> <span class="o">=</span><span class="n">0</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">ResultLimit</span> <span class="n">resultLimit</span> <span class="o">=</span><span class="k">new</span> <span class="n">ResultLimit</span><span class="o">(</span><span class="n">offset</span><span class="o">,</span><span class="n">limit</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">boolean</span> <span class="n">iterateEvents</span><span class="o">=</span><span class="kc">true</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">while</span><span class="o">(</span><span class="n">iterateEvents</span><span class="o">)</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">      <span class="n">logService</span><span class="o">.</span><span class="na">setResultLimit</span><span class="o">(</span><span class="n">resultLimit</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">      <span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">logs</span> <span class="o">=</span> <span class="n">logService</span><span class="o">.</span><span class="na">getAllObjects</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">      <span class="n">result</span><span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">logs</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="o">(</span><span class="n">logs</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&lt;</span> <span class="n">resultLimit</span><span class="o">.</span><span class="na">limit</span><span class="o">)</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">iterateEvents</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">      <span class="o">}</span>
-</span></span><span class="line"><span class="cl">      <span class="n">offset</span><span class="o">+=</span><span class="n">limit</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">      <span class="n">resultLimit</span><span class="o">=</span><span class="k">new</span> <span class="n">ResultLimit</span><span class="o">(</span><span class="n">offset</span><span class="o">,</span><span class="n">limit</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">      <span class="n">iterateEvents</span><span class="o">=</span><span class="n">iterateEvents</span><span class="o">&amp;&amp;</span><span class="n">allEvents</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="o">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="kt">void</span> <span class="nf">print</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">)</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">Gson</span> <span class="n">gson</span> <span class="o">=</span> <span class="k">new</span> <span class="n">GsonBuilder</span><span class="o">().</span><span class="na">setPrettyPrinting</span><span class="o">().</span><span class="na">create</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">String</span> <span class="n">json</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">json</span> <span class="o">=</span> <span class="n">gson</span><span class="o">.</span><span class="na">toJson</span><span class="o">(</span><span class="n">object</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">json</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="kt">void</span> <span class="nf">printEventLogs</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span> <span class="n">logs</span><span class="o">){</span>
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="o">(</span><span class="n">Log</span> <span class="n">event</span> <span class="o">:</span><span class="n">logs</span><span class="o">)</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">&#34;%s - %s - %s&#34;</span><span class="o">,</span>
-</span></span><span class="line"><span class="cl">                      <span class="n">event</span><span class="o">.</span><span class="na">getEventName</span><span class="o">(),</span>
-</span></span><span class="line"><span class="cl">                      <span class="n">event</span><span class="o">.</span><span class="na">getEventCreateDate</span><span class="o">().</span><span class="na">getTime</span><span class="o">(),</span>
-</span></span><span class="line"><span class="cl">                      <span class="n">event</span><span class="o">.</span><span class="na">getUserType</span><span class="o">()));</span>
-</span></span><span class="line"><span class="cl">    <span class="o">}</span>
-</span></span><span class="line"><span class="cl">  <span class="o">}</span>
-</span></span><span class="line"><span class="cl"><span class="o">}</span>
-</span></span></code></pre></div>
+</span></span></span><span class="line"><span class="cl"><span class="cm">   */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getAllEvents</span><span class="p">(</span><span class="kt">boolean</span><span class="w"> </span><span class="n">allEvents</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="o">=</span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">limit</span><span class="w"> </span><span class="o">=</span><span class="n">50</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="n">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ResultLimit</span><span class="w"> </span><span class="n">resultLimit</span><span class="w"> </span><span class="o">=</span><span class="k">new</span><span class="w"> </span><span class="n">ResultLimit</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span><span class="n">limit</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">boolean</span><span class="w"> </span><span class="n">iterateEvents</span><span class="o">=</span><span class="kc">true</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">while</span><span class="p">(</span><span class="n">iterateEvents</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">logService</span><span class="p">.</span><span class="na">setResultLimit</span><span class="p">(</span><span class="n">resultLimit</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logService</span><span class="p">.</span><span class="na">getAllObjects</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">result</span><span class="p">.</span><span class="na">addAll</span><span class="p">(</span><span class="n">logs</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">logs</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">resultLimit</span><span class="p">.</span><span class="na">limit</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">iterateEvents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">offset</span><span class="o">+=</span><span class="n">limit</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">resultLimit</span><span class="o">=</span><span class="k">new</span><span class="w"> </span><span class="n">ResultLimit</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span><span class="n">limit</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">iterateEvents</span><span class="o">=</span><span class="n">iterateEvents</span><span class="o">&amp;&amp;</span><span class="n">allEvents</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">print</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">object</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Gson</span><span class="w"> </span><span class="n">gson</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GsonBuilder</span><span class="p">().</span><span class="na">setPrettyPrinting</span><span class="p">().</span><span class="na">create</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">json</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gson</span><span class="p">.</span><span class="na">toJson</span><span class="p">(</span><span class="n">object</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">json</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">printEventLogs</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Log</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logs</span><span class="p">){</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Log</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="p">:</span><span class="n">logs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">String</span><span class="p">.</span><span class="na">format</span><span class="p">(</span><span class="s">&#34;%s - %s - %s&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                      </span><span class="n">event</span><span class="p">.</span><span class="na">getEventName</span><span class="p">(),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                      </span><span class="n">event</span><span class="p">.</span><span class="na">getEventCreateDate</span><span class="p">().</span><span class="na">getTime</span><span class="p">(),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                      </span><span class="n">event</span><span class="p">.</span><span class="na">getUserType</span><span class="p">()));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div>
             </div>
         </div>
 
@@ -308,7 +308,7 @@ if (!doNotTrack) {
 <footer>
     <div class="row">
         <div class="col-sm-12">
-            <p>&copy; SoftLayer 2023<br>
+            <p>&copy; SoftLayer 2024<br>
             Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
         </div>
     </div>
