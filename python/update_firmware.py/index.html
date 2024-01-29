@@ -8,7 +8,7 @@
     <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
     <meta name="author" content="SoftLayer">
 
-    <title>update_firmware.py - https://sldn.softlayer.com/</title>
+    <title>Update Firmware - https://sldn.softlayer.com/</title>
     <link rel="canonical" href="https://sldn.softlayer.com/python/update_firmware.py/">
         <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
     <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
@@ -126,7 +126,7 @@ if (!doNotTrack) {
                 <br>
                 <strong>Tags <span class="fa fa-tags"/></strong>
                 
-                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/baremetalservers">baremetalservers</a>
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/server">server</a>
                           
         </div>
     </div>
@@ -135,59 +135,133 @@ if (!doNotTrack) {
 		<div class="col-md-12">
             <div class="well well-sm  article" style="word-wrap: break-word;">
                 <div class="article-title">
-				    <h1>update_firmware.py</h1>
-                    <small>update_firmware.py</small>
+				    <h1>Update Firmware</h1>
+                    <small>An explanation of how to update the firmware on a bare metal server using the Python SDK.</small>
                 </div>
 				
                 
 				
-                <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">&#34;&#34;&#34;
-</span></span><span class="line"><span class="cl">Update the firmware in a BareMetal server
+                <p>This example shows how to update the firmware on a given server. Primarily this script calls <a href="https://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/createFirmwareUpdateTransaction/">SoftLayer_Hardware_Server::createFirmwareUpdateTransaction</a>, which has options for what specific bits of firmware you want to update. Currently you can choose to update the following:</p>
+<ul>
+<li>IPMI</li>
+<li>Raid Controller</li>
+<li>BIOS</li>
+<li>Hard Drives</li>
+<li>Network Card</li>
+</ul>
+<p><em>NOTE</em> The server will need to be offline for about 20 minutes this update to happen, so be aware of that.</p>
+<p><em>NOTE</em> The <a href="https://softlayer-python.readthedocs.io/en/latest/cli/hardware/#hardware-update-firmware"><code>slcli hardware update-firmware</code></a> and <a href="https://cloud.ibm.com/docs/cli?topic=cli-sl-manage-bare-metal#sl_hardware_update_firmware"><code>ibmcloud sl hardware update-firmware</code></a> commands have this feature as well. Although they simply update all firmware and do not allow for selecting a specific bit to update.</p>
+<h2 id="example">Example</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">@author Christopher Gallo
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">Updates the firmware of the specified serverid. Server must be offline to be updated.
+</span></span></span><span class="line"><span class="cl"><span class="s2">Script requried
+</span></span></span><span class="line"><span class="cl"><span class="s2">Python 3.7+
+</span></span></span><span class="line"><span class="cl"><span class="s2">click 8.0+  - For making this script a CLI command easily
+</span></span></span><span class="line"><span class="cl"><span class="s2">rich  - To make the output look nice
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;&#34;&#34;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">The script makes a single call to SoftLayer_Hardware_Server::createFirmwareUpdateTransaction
-</span></span><span class="line"><span class="cl">method to update the firmware in a bare metal server. It will bring your server offline for
-</span></span><span class="line"><span class="cl">approximately 20 minutes while the updates are in progress.
+</span></span><span class="line"><span class="cl"><span class="c1"># Click is used to make this script support CLI arguments</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">click</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Used for details table output</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">rich.console</span> <span class="kn">import</span> <span class="n">Console</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">rich.table</span> <span class="kn">import</span> <span class="n">Table</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">rich.prompt</span> <span class="kn">import</span> <span class="n">Confirm</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">rich.live</span> <span class="kn">import</span> <span class="n">Live</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">rich</span> <span class="kn">import</span> <span class="nb">print</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># The SoftLayer SDK</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">SoftLayer</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Used for time.sleep() to wait for a server to power off</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">time</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">See below for more details
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">Important manual pages:
-</span></span><span class="line"><span class="cl">http://sldn.softlayer.com/reference/services/SoftLayer_Hardware_Server/createFirmwareUpdateTransaction
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">SLSDK</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;Class used to manage making API calls to the SL API&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;SoftLayer Client Initialization&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># This part allows printing out the exact API calls used</span>
+</span></span><span class="line"><span class="cl">        <span class="n">debugger</span> <span class="o">=</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">DebugTransport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">transport</span> <span class="o">=</span> <span class="n">debugger</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">License: http://sldn.softlayer.com/article/License
-</span></span><span class="line"><span class="cl">Author: SoftLayer Technologies, Inc. &lt;sldn@softlayer.com&gt;
-</span></span><span class="line"><span class="cl">&#34;&#34;&#34;
-</span></span><span class="line"><span class="cl">import SoftLayer.API
-</span></span><span class="line"><span class="cl">from pprint import pprint as pp
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">resolveServerId</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Gets the Fully Qualified Domain Name for a server&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fqdnMask</span> <span class="o">=</span> <span class="s2">&#34;mask[id,fullyQualifiedDomainName]&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fqdn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;getObject&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">serverid</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">fqdnMask</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">fqdn</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fullyQualifiedDomainName&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"># Your SoftLayer API username and key.
-</span></span><span class="line"><span class="cl">API_USERNAME = &#39;set-me&#39;
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">powerOff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Powers off serverid&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;powerOff&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">serverid</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"># Generate one at https://control.softlayer.com/account/users
-</span></span><span class="line"><span class="cl">API_KEY = &#39;set-me&#39;
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">powerOn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Powers on serverid&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;powerOn&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">serverid</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"># Declare the API client
-</span></span><span class="line"><span class="cl">client = SoftLayer.create_client_from_env(username=API_USERNAME, api_key=API_KEY)
-</span></span><span class="line"><span class="cl">hardwareServerService = client[&#39;SoftLayer_Hardware_Server&#39;]
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serverid</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ipmi</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">raid</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">bios</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">harddrive</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">network</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;&#34;&#34;Updates firmware for serverID for the specified devices&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SoftLayer_Hardware_Server&#39;</span><span class="p">,</span> <span class="s1">&#39;createFirmwareUpdateTransaction&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                  <span class="n">ipmi</span><span class="p">,</span> <span class="n">raid</span><span class="p">,</span> <span class="n">bios</span><span class="p">,</span> <span class="n">harddrive</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">serverid</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">result</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"># The if of the bare metal server you wish to update the firmware
-</span></span><span class="line"><span class="cl">hardwareId = 284776
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">&#34;&#34;&#34;
-</span></span><span class="line"><span class="cl">The firmware to update
-</span></span><span class="line"><span class="cl">set the values with &#34;1&#34; to update and &#34;0&#34; skip
-</span></span><span class="line"><span class="cl">&#34;&#34;&#34;
-</span></span><span class="line"><span class="cl">ipmi = 1
-</span></span><span class="line"><span class="cl">raidController = 1
-</span></span><span class="line"><span class="cl">bios = 1
-</span></span><span class="line"><span class="cl">hardDrive = 0
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">waitForReboot</span><span class="p">(</span><span class="n">seconds</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="sa">f</span><span class="s2">&#34;Wait </span><span class="si">{</span><span class="n">seconds</span><span class="si">}</span><span class="s2"> for server to reboot...&#34;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">try:
-</span></span><span class="line"><span class="cl">    result = hardwareServerService.createFirmwareUpdateTransaction(ipmi, raidController, bios, hardDrive, id=hardwareId)
-</span></span><span class="line"><span class="cl">    pp(result)
-</span></span><span class="line"><span class="cl">except SoftLayer.SoftLayerAPIError as e:
-</span></span><span class="line"><span class="cl">    print(&#34;Unable to update the firmware: \nfaultCode= %s, \nfaultString= %s&#34;
-</span></span><span class="line"><span class="cl">          % (e.faultCode, e.faultString))
-</span></span><span class="line"><span class="cl">    exit(1)
+</span></span><span class="line"><span class="cl"><span class="nd">@click.command</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click.argument</span><span class="p">(</span><span class="s1">&#39;serverid&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="s1">&#39;--force&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Skips the confirmation dialog prompts&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="s1">&#39;--ipmi&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Update IPMI firmware&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span> <span class="s1">&#39;--raid&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Update RAID firmware&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;-b&#39;</span><span class="p">,</span> <span class="s1">&#39;--bios&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Update BIOS firmware&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--harddrive&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Update Hard Drives firmware&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nd">@click.option</span><span class="p">(</span><span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;--network&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&#34;Update Network Card firmware&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">updateFirmware</span><span class="p">(</span><span class="n">serverid</span><span class="p">,</span> <span class="n">force</span><span class="p">,</span> <span class="n">ipmi</span><span class="p">,</span> <span class="n">raid</span><span class="p">,</span> <span class="n">bios</span><span class="p">,</span> <span class="n">harddrive</span><span class="p">,</span> <span class="n">network</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># init the SDK Class</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sdk</span> <span class="o">=</span> <span class="n">SLSDK</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Take the serverId and get a FQDN from it</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fqdn</span> <span class="o">=</span> <span class="n">sdk</span><span class="o">.</span><span class="n">resolveServerId</span><span class="p">(</span><span class="n">serverid</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;[red]Failed to get server [underline]</span><span class="si">{</span><span class="n">serverid</span><span class="si">}</span><span class="s2">[/underline]. Error: [underline]</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">[/underline]&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">Abort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Make sure the user knows what is about to happen to their server</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">force</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;You are about to reboot server [red]</span><span class="si">{</span><span class="n">fqdn</span><span class="si">}</span><span class="s2">[/red] and update its firmware, continue?&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="ow">not</span> <span class="n">Confirm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="n">prompt</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">Abort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Shutdown the server, wait a few seconds for that to processes</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Shutting down and updating [red]</span><span class="si">{</span><span class="n">fqdn</span><span class="si">}</span><span class="s2">[/red] now...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sdk</span><span class="o">.</span><span class="n">powerOff</span><span class="p">(</span><span class="n">serverid</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">waitFor</span> <span class="o">=</span> <span class="mi">15</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># This bit is just to be fancy and have an update-in-place counter</span>
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="n">Live</span><span class="p">(</span><span class="n">waitForReboot</span><span class="p">(</span><span class="n">waitFor</span><span class="p">),</span> <span class="n">refresh_per_second</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">live</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">second</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">waitFor</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">live</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">waitForReboot</span><span class="p">(</span><span class="n">waitFor</span> <span class="o">-</span> <span class="n">second</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># Actually do the firmware update. This might return an exception if no firmwares were requested to be udpated.</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sdk</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">serverid</span><span class="p">,</span> <span class="n">ipmi</span><span class="p">,</span> <span class="n">raid</span><span class="p">,</span> <span class="n">bios</span><span class="p">,</span> <span class="n">harddrive</span><span class="p">,</span> <span class="n">network</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;[green]Successfully updated [underline]</span><span class="si">{</span><span class="n">fqdn</span><span class="si">}</span><span class="s2">[/underline]&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">except</span> <span class="n">SoftLayer</span><span class="o">.</span><span class="n">SoftLayerError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;[red]Failed to update server [underline]</span><span class="si">{</span><span class="n">fqdn</span><span class="si">}</span><span class="s2">[/underline]. Error: [underline]</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">[/underline]&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">raise</span> <span class="n">click</span><span class="o">.</span><span class="n">Abort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">updateFirmware</span><span class="p">()</span>
+</span></span></code></pre></div><h2 id="output">Output</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">$&gt; python testFirmwareUpdate.py 3332650 -f -i -r -b -d -n
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Hardware_Server::getObject(id=3332650, mask=&#39;mask[id,fullyQualifiedDomainName]&#39;, filter=&#39;None&#39;, args=(), limit=None, offset=None)
+</span></span><span class="line"><span class="cl">Shutting down and updating ibmtesttest01.ibmtest.com now...
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Hardware_Server::powerOff(id=3332650, mask=&#39;&#39;, filter=&#39;None&#39;, args=(), limit=None, offset=None)
+</span></span><span class="line"><span class="cl">Wait 1 for server to reboot...
+</span></span><span class="line"><span class="cl">Calling: SoftLayer_Hardware_Server::createFirmwareUpdateTransaction(id=3332650, mask=&#39;&#39;, filter=&#39;None&#39;, args=(True, True, True, True, True), limit=None, offset=None)
+</span></span><span class="line"><span class="cl">Successfully updated ibmtesttest01.ibmtest.com
 </span></span></code></pre></div>
             </div>
         </div>
@@ -202,7 +276,7 @@ if (!doNotTrack) {
             <p>
                 If this article contains any error, or leaves any of your questions unanswered, please help us out by 
                 opening up a github issue.<br>
-                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20update_firmware.py&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fupdate_firmware.py%2f"> Open an issue</a>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20python%20-%20Update%20Firmware&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fpython%2fupdate_firmware.py%2f"> Open an issue</a>
                 <i class="fab fa-github" alt="github"></i>
             </p>
     </div>
