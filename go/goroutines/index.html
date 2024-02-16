@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SoftLayer API Examples, implementations, and release notes.">
+    <meta name="author" content="SoftLayer">
+
+    <title>Goroutines, Pagination and the SoftLayer API - https://sldn.softlayer.com/</title>
+    <link rel="canonical" href="https://sldn.softlayer.com/go/goroutines/">
+        <link href="https://sldn.softlayer.com/css/main.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/bootstrap.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/custom.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/monokai.css" rel="stylesheet">
+    <link href="https://sldn.softlayer.com/css/highlight/solarized_dark.css" rel="stylesheet">
+
+    <script src="https://sldn.softlayer.com/js/highlight.pack.js"></script>
+
+    <script>hljs.initHighlightingOnLoad();</script>
+    <link rel="shortcut icon" href="https://sldn.softlayer.com/img/favicon.ico" type="image/x-icon" />
+	<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Lato" />
+            
+
+    <script src="https://sldn.softlayer.com/js/jquery-3.3.1.min.js"></script> 
+    <script src="https://sldn.softlayer.com/js/sldn.js"></script>
+
+
+    <link href="https://sldn.softlayer.com/fontawesome/css/fontawesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/brands.min.css" rel="stylesheet" type="text/css">
+    <link href="https://sldn.softlayer.com/fontawesome/css/solid.min.css" rel="stylesheet" type="text/css">
+    
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/solid.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/brands.min.js"></script>
+    <script defer src="https://sldn.softlayer.com/fontawesome/js/fontawesome.min.js"></script>
+
+    <script>
+		$(document).ready(function() {
+			$('table').addClass("table table-hover table-striped")
+		})
+	</script>
+    
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9XPZ9ZBSJE"></script>
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'G-9XPZ9ZBSJE', { 'anonymize_ip': false });
+}
+</script>
+
+</head>
+
+<body>
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle Navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="https://sldn.softlayer.com/">SoftLayer API</a>
+            </div>
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav">
+                    
+                        <li><a href="https://sldn.softlayer.com/article/">Articles</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/reference/softlayerapi">Documentation</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/go/">Go</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/java/">Java</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/perl/">Perl</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/php/">PHP</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/python/">Python</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/rest/">Rest</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/ruby/">Ruby</a></li>
+                    
+                        <li><a href="https://sldn.softlayer.com/tools/">Tools</a></li>
+                    
+
+                    
+                </ul>
+                <div id="custom-search-input" class="pull-right">
+                  <form class="navbar-form" role="search" method="get" action="https://www.bing.com/search">
+                    <div class="input-group col-md-12">
+                      <input type="text" class="form-control input-md" placeholder="Search" name="q" id="srch-term">
+                      <input type="hidden" name="q1" value="site:sldn.softlayer.com" />
+                      <div class="input-group-btn">
+                        <button class="btn btn-info" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+<div class="container">
+    <div class="row">
+    
+        <div class="col-md-3">
+            <div style="word-wrap: break-word;"> 
+                <h4>January 1, 0001<br></h4>
+            </div>
+        </div>
+        <div class="col-md-9">
+
+                <strong>Classes <span class="fa fa-book"/></strong>
+                
+                <br>
+                <strong>Tags <span class="fa fa-tags"/></strong>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/cli">cli</a>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/sdk">sdk</a>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/pagination">pagination</a>
+                
+                    <a class="label label-danger" href="https://sldn.softlayer.com/tags/resultlimit">resultlimit</a>
+                          
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+		<div class="col-md-12">
+            <div class="well well-sm  article" style="word-wrap: break-word;">
+                <div class="article-title">
+				    <h1>Goroutines, Pagination and the SoftLayer API</h1>
+                    <small>Describes some ways to implement concurrency in your golang applications when interacting with the SoftLayer API. A few examples and explanation of softlayer-go&#39;s features.</small>
+                </div>
+				
+                
+				
+                <h1 id="basics-of-goroutines">Basics of Goroutines</h1>
+<p>If you are unfamiliar with Goroutines, they are a way to easily add paralleism to your application. For a brief explanation on how they work in go, check out the following:</p>
+<ul>
+<li><a href="https://dev.to/gophers/what-are-goroutines-and-how-are-they-scheduled-2nj3">What are goroutines and how are they scheduled?</a></li>
+<li><a href="https://medium.com/technofunnel/understanding-golang-and-goroutines-72ac3c9a014d">Understanding Golang and Goroutines</a></li>
+<li><a href="https://www.youtube.com/watch?v=5Z8skvm4g64">Goroutines Crash Course (Mutex, Channels, Wait Group, &amp; More!)</a></li>
+<li><a href="https://www.youtube.com/watch?v=Bk1c30avsuU">https://www.youtube.com/watch?v=Bk1c30avsuU</a></li>
+</ul>
+<p>The basic pattern here will be to make a single api call to get the first set of results, but also the expected total number of results. From there we will use goroutines to create a thread for each needed API call, wait for them all to finish and collect the results.</p>
+<h1 id="examples-from-the-softlayer-go-sdk">Examples from the softlayer-go SDK</h1>
+<p>In <a href="https://github.com/softlayer/softlayer-go/releases/tag/v1.1.3">v1.1.4</a> I&rsquo;ve added a couple of helper functions that user goroutiunes to paginate through API results, and will likely add more in the future. For now I will use these as examples and go in detail about what these functions do, and how they do it.</p>
+<h2 id="the-codehttpsgithubcomsoftlayersoftlayer-goblobmasterhelpersvirtualvirtualgol167"><a href="https://github.com/softlayer/softlayer-go/blob/master/helpers/virtual/virtual.go#L167">The Code</a></h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">GetVirtualGuestsIter</span><span class="p">(</span><span class="nx">session</span> <span class="nx">session</span><span class="p">.</span><span class="nx">SLSession</span><span class="p">,</span> <span class="nx">options</span> <span class="o">*</span><span class="nx">sl</span><span class="p">.</span><span class="nx">Options</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">options</span><span class="p">.</span><span class="nf">SetOffset</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">limit</span> <span class="o">:=</span> <span class="nx">options</span><span class="p">.</span><span class="nf">ValidateLimit</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Can&#39;t call service.GetVirtualGuests because it passes a copy of options, not the address to options sadly.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">err</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">DoRequest</span><span class="p">(</span><span class="s">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="s">&#34;getVirtualGuests&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">resp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">apicalls</span> <span class="o">:=</span> <span class="nx">options</span><span class="p">.</span><span class="nf">GetRemainingAPICalls</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">var</span> <span class="nx">wg</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">x</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">x</span> <span class="o">&lt;=</span> <span class="nx">apicalls</span><span class="p">;</span> <span class="nx">x</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">go</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">defer</span> <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">offset</span> <span class="o">:=</span> <span class="nx">i</span> <span class="o">*</span> <span class="nx">limit</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">this_resp</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">options</span><span class="p">.</span><span class="nx">Offset</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">offset</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">err</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">DoRequest</span><span class="p">(</span><span class="s">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="s">&#34;getVirtualGuests&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">this_resp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;[ERROR] %v\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">resp</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">resp</span><span class="p">,</span> <span class="nx">this_resp</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}(</span><span class="nx">x</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>This function takes in two arguments. The first is a copy of your session, and the second is a pointer to your request options, which will include any ObjectMask or ObjectFilter you set. You might also want to set a specific ResultLimit if the default of 50 isn&rsquo;t appropriate. This function will return a slice of Virtual_Guests and an error (if any). Error handling with goroutines can be a bit tricky, so for these examples I opted to just print the errors out. <code>err</code> will only not be nil if the first API call errors, or the last api call errors. Any errors between that will be somewhat lost. To improve on that, we would need to use a <a href="https://pkg.go.dev/golang.org/x/sync/errgroup">sync/errorgroup</a>.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="nx">options</span><span class="p">.</span><span class="nf">SetOffset</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">limit</span> <span class="o">:=</span> <span class="nx">options</span><span class="p">.</span><span class="nf">ValidateLimit</span><span class="p">()</span>
+</span></span></code></pre></div><p>This will force the Offset to be 0, and make sure the limit is set to something valid (&gt;2 basically, a resultLimit of 1 will only return a single result, and go expects a slice of results, which will cause errors).</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="nx">err</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">DoRequest</span><span class="p">(</span><span class="s">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="s">&#34;getVirtualGuests&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">resp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">apicalls</span> <span class="o">:=</span> <span class="nx">options</span><span class="p">.</span><span class="nf">GetRemainingAPICalls</span><span class="p">()</span>
+</span></span></code></pre></div><p>Next we make a single API call to get the first set of results, along with finding out how many results we should expect (this is from the <code>SoftLayer-Total-Items</code> result header)</p>
+<blockquote>
+<p><em>NOTE</em> This will only work if you are using the <code>REST</code> endpoint, the XMLRPC endpoint isn&rsquo;t setup to save the results of the <code>SoftLayer-Total-Items</code> header currently. You can still use goroutines, but you will have to iterate through results until you get less results than your Limit, which isn&rsquo;t great if you don&rsquo;t know how many API calls you have to make.</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="kd">var</span> <span class="nx">wg</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span>
+</span></span></code></pre></div><p>The <code>wg</code> is a WaitGroup, which basically lets go collect the results of all the API calls we made.</p>
+<blockquote>
+<p><em>NOTE</em> The order of the results might not reflect the order from the API since API calls will return in a somewhat random order. You may need to sort this slice after the API calls are completed.</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">x</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">x</span> <span class="o">&lt;=</span> <span class="nx">apicalls</span><span class="p">;</span> <span class="nx">x</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">wg</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">...</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span></code></pre></div><p>Since we know how many API calls are needed, we will create a goroutine for each one, incrementing <code>wg</code> by 1. We could likely do <code>wg.Add(apicalls)</code> before the for loop, but this pattern matches a lot of what you will see in other examples so I kept it that way.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="k">go</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nx">wg</span><span class="p">.</span><span class="nf">Done</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="o">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">}(</span><span class="nx">x</span><span class="p">)</span>
+</span></span></code></pre></div><p>This will launch a goroutine (with the keyworkd <code>go</code> here) and pass in <code>i</code> (the iteration count) to the function. This lets us know what our offset needs to be for each API call, so were not getting the same data over and over again. Then we <code>defer</code> the closure of the <code>wg</code> waitgroup, which basically tells the waitgroup that this goroutine is done.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="nx">offset</span> <span class="o">:=</span> <span class="nx">i</span> <span class="o">*</span> <span class="nx">limit</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">this_resp</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">datatypes</span><span class="p">.</span><span class="nx">Virtual_Guest</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">options</span><span class="p">.</span><span class="nx">Offset</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">offset</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">err</span> <span class="p">=</span> <span class="nx">session</span><span class="p">.</span><span class="nf">DoRequest</span><span class="p">(</span><span class="s">&#34;SoftLayer_Account&#34;</span><span class="p">,</span> <span class="s">&#34;getVirtualGuests&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">this_resp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;[ERROR] %v\n&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">resp</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">resp</span><span class="p">,</span> <span class="nx">this_resp</span><span class="o">...</span><span class="p">)</span>
+</span></span></code></pre></div><p>From here we just make an API call. Increment the offset, create a holder for the result, set the offset, make the API call. Check for the error and print it out if any, then append the response to the main slice of responses.</p>
+<p>The reason we have to call <code>session.DoRequest</code> directly is because calling the services.Account::GetVirtualGeusts() method will pass a copy of our options into the session, which means we don&rsquo;t get updated on the amount of SoftLayer-Total-Items we have to expect. A bit of a pain to deal with, but this final format isn&rsquo;t too bad to work with.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="nx">wg</span><span class="p">.</span><span class="nf">Wait</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span>
+</span></span></code></pre></div><p>Finally we wait for the <code>wg</code> Waitgroup to finish all its tasks, then just return the result and err.</p>
+<h1 id="notes">Notes</h1>
+<ul>
+<li>This method of pagination will only work on the <code>REST</code> endpoint for now. If you need it to work on the <code>XMLRPC</code> endpoint feel free to <a href="https://github.com/softlayer/softlayer-go/issues/new">Open an issue</a> to let me know there is demand for that.</li>
+<li>Any errors after the first will largely be ignored with this function, which isn&rsquo;t great. Generally the only errors you might hit assuming the first call worked would be a rate limit exception. Try to keep your requests to under 50/second and you should avoid this limit. I may add an auto limiter to this function one day, but for now just be aware of that.</li>
+<li>Always use a OrderBy ObjectFilter when using <a href="https://sldn.softlayer.com/article/using-result-limits-softlayer-api/">resultlimits</a> to ensure each API call gets the same section of results. Without an OrderBy the database can sometimes use a different index between api calls causing some data overlap. HOWEVER, becuase the results of the goroutines might come back out of order, <code>resp</code> might not be ordered by what you specified in the ObjectFilter.</li>
+</ul>
+
+            </div>
+        </div>
+
+    </div>
+    <hr>
+    <div class="row">
+        <div class="row">
+            <div class="col-md-6">
+    <div class="well well-sm" style="word-wrap: break-word;"> 
+        <strong>Feedback? <span class="fas fa-comment"/></strong>
+            <p>
+                If this article contains any error, or leaves any of your questions unanswered, please help us out by 
+                opening up a github issue.<br>
+                <a class="" href="https://github.com/softlayer/githubio_source/issues/new?title=Feedback%20for%20go%20-%20Goroutines%2c%20Pagination%20and%20the%20SoftLayer%20API&body=Feedback+regarding%3A%20https%3a%2f%2fsldn.softlayer.com%2fgo%2fgoroutines%2f"> Open an issue</a>
+                <i class="fab fa-github" alt="github"></i>
+            </p>
+    </div>
+</div>
+        </div>
+    </div>
+<footer>
+    <div class="row">
+        <div class="col-sm-12">
+            <p>&copy; SoftLayer 2024<br>
+            Built with <a href="https://github.com/spf13/hugo">Hugo</a></p>
+        </div>
+    </div>
+</footer>
+</div>
+
+    <script src="https://sldn.softlayer.com/js/jquery.js"></script>
+    <script src="https://sldn.softlayer.com/js/bootstrap.js"></script>
+</body>
+</html>
